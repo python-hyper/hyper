@@ -12,9 +12,9 @@ except ImportError:
     import httplib
 
 
-class HTTPConnection(object):
+class HTTPSConnection(object):
     """
-    An object representing a single HTTP connection, whether HTTP/1.1 or
+    An object representing a single HTTPS connection, whether HTTP/1.1 or
     HTTP/2.0.
 
     More specifically, this object represents an abstraction over the
