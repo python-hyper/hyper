@@ -16,7 +16,14 @@ class Frame(object):
 
     def __init__(self):
         self.stream_id = 0
-        self.flags = 0
+        self.flags = set()
+
+    def parse_flags(self, flag_byte):
+        for flag, flag_bit in self.defined_flags:
+            if flag_byte & flag_bit:
+                self.flags.add(flag)
+
+        return self.flags
 
     def serialize(self):
         raise NotImplementedError()
