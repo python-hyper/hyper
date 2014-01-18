@@ -13,6 +13,21 @@ SUPPORTED_PROTOCOLS = ['http/1.1']
 # to.
 _context = None
 
+
+def wrap_socket(socket, server_hostname):
+    """
+    A vastly simplified SSL wrapping function. We'll probably extend this to
+    do more things later.
+    """
+    if _context is None:
+        _init_context()
+
+    if ssl.HAS_SNI:
+        return _context.wrap_socket(socket, server_hostname=server_hostname)
+
+    return _context.wrap_socket(socket)
+
+
 def _init_context():
     """
     Creates the singleton SSLContext we use.
