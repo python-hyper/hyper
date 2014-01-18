@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
-from hyper.http20.frame import Frame
+from hyper.http20.frame import Frame, DataFrame
 import pytest
+
 
 class TestGeneralFrameBehaviour(object):
     def test_base_frame_ignores_flags(self):
@@ -18,3 +19,10 @@ class TestGeneralFrameBehaviour(object):
         f = Frame(0)
         with pytest.raises(NotImplementedError):
             f.build_frame_header()
+
+
+class TestDataFrame(object):
+    def test_data_frame_has_only_one_flag(self):
+        f = DataFrame(1)
+        flags = f.parse_flags(0xFF)
+        assert flags == set(['END_STREAM'])
