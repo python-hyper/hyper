@@ -9,7 +9,8 @@ socket.
 """
 class Frame(object):
     def __init__(self):
-        self.stream_id = None
+        self.stream_id = 0
+        self.flags = 0
 
     def serialize(self):
         raise NotImplementedError()
