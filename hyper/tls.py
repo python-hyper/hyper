@@ -19,8 +19,10 @@ def wrap_socket(socket, server_hostname):
     A vastly simplified SSL wrapping function. We'll probably extend this to
     do more things later.
     """
+    global _context
+
     if _context is None:
-        _init_context()
+        _context = _init_context()
 
     if ssl.HAS_SNI:
         return _context.wrap_socket(socket, server_hostname=server_hostname)
@@ -32,22 +34,24 @@ def _init_context():
     """
     Creates the singleton SSLContext we use.
     """
-    _context = ssl.SSLContext(ssl.PROTOCOL_SSLv23)
-    _context.set_default_verify_paths()
-    _context.verify_mode = ssl.CERT_REQUIRED
+    context = ssl.SSLContext(ssl.PROTOCOL_SSLv23)
+    context.set_default_verify_paths()
+    context.verify_mode = ssl.CERT_REQUIRED
 
     try:
-        _context.set_npn_protocols(SUPPORTED_PROTOCOLS)
+        context.set_npn_protocols(SUPPORTED_PROTOCOLS)
     except (AttributeError, NotImplementedError):
         pass
 
     # We do our best to do better security
     try:
-        _context.options |= ssl.OP_NO_SSLv2
+        context.options |= ssl.OP_NO_SSLv2
     except AttributeError:
         pass
 
     try:
-        _context.options |= ssl.OP_NO_COMPRESSION
+        context.options |= ssl.OP_NO_COMPRESSION
     except AttributeError:
         pass
+
+    return context
