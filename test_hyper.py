@@ -13,3 +13,8 @@ class TestGeneralFrameBehaviour(object):
         f = Frame(0)
         with pytest.raises(NotImplementedError):
             f.serialize()
+
+    def test_base_frame_cant_generate_frame_header(self):
+        f = Frame(0)
+        with pytest.raises(NotImplementedError):
+            f.build_frame_header()
