@@ -46,11 +46,9 @@ class Frame(object):
 
         return self.flags
 
-    def build_frame_header(self):
+    def build_frame_header(self, length):
         # Build the common frame header.
-        length = self._get_len()
-
-        # Get the flags.
+        # First, get the flags.
         flags = 0
 
         for flag, flag_bit in self.defined_flags:
@@ -91,11 +89,8 @@ class DataFrame(Frame):
         if not self.stream_id:
             raise ValueError()
 
-    def _get_len(self):
-        return len(self.data)
-
     def serialize(self):
-        data = self.build_frame_header()
+        data = self.build_frame_header(len(self.data))
         data += self.data
         return data
 
