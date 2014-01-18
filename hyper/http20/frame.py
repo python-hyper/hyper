@@ -7,6 +7,12 @@ Defines framing logic for HTTP/2.0. Provides both classes to represent framed
 data and logic for aiding the connection when it comes to reading from the
 socket.
 """
+# A map of type byte to frame class.
+FRAMES = {
+    0x00: DataFrame
+}
+
+
 class Frame(object):
     """
     The base class for all HTTP/2.0 frames.
