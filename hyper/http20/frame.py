@@ -14,8 +14,8 @@ class Frame(object):
     # The flags defined on this type of frame.
     defined_flags = []
 
-    def __init__(self):
-        self.stream_id = 0
+    def __init__(self, stream_id):
+        self.stream_id = stream_id
         self.flags = set()
 
     def parse_flags(self, flag_byte):
