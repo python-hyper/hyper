@@ -9,12 +9,6 @@ socket.
 """
 import struct
 
-# A map of type byte to frame class.
-FRAMES = {
-    0x00: DataFrame
-}
-
-
 class Frame(object):
     """
     The base class for all HTTP/2.0 frames.
@@ -78,3 +72,9 @@ class Frame(object):
 
     def _get_len(self):
         raise NotImplementedError()
+
+
+# A map of type byte to frame class.
+FRAMES = {
+    0x00: DataFrame
+}
