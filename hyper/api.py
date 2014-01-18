@@ -6,12 +6,14 @@ hyper/api
 This file defines the publicly-accessible API for hyper. This API also
 constitutes the abstraction layer between HTTP/1.1 and HTTP/2.0.
 """
+import socket
 try:
     import http.client as httplib
 except ImportError:
     import httplib
 
 import ssl
+from .tls import wrap_socket
 
 # If there's no NPN support, we're going to drop all support for HTTP/2.0.
 try:
@@ -75,3 +77,37 @@ if support_20:
 
             # Call through to the underlying object.
             return getattr(self._conn, name)
+
+        def _delayed_connect(self):
+            """
+            Called when we need to work out what kind of HTTPS connection we're
+            actually going to use.
+            """
+            # Because we're ghetto, we're going to quickly create a
+            # HTTPConnection object to parse the args and kwargs for us, and
+            # grab the values out.
+            tempconn = httplib.HTTPConnection(*self._original_args,
+                                              **self._original_kwargs)
+            host = tempconn.host
+            port = tempconn.port
+            timeout = tempconn.timeout
+            source_address = tempconn.source_address
+
+            # Connect to the remote server.
+            sock = socket.create_connection(
+                (host, port),
+                timeout,
+                source_address
+            )
+
+            # Wrap it in TLS. This needs to be looked at in future when I pull
+            # in the TLS verification logic from urllib3, but right now we
+            # accept insecurity because no-one's using this anyway.
+            sock = wrap_socket(sock, host)
+
+            # At this early stage the library can't do HTTP/2.0, so who cares?
+            tempconn.sock = sock
+            self._sock = sock
+            self._conn = tempconn
+
+            return
