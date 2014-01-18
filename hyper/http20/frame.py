@@ -74,6 +74,32 @@ class Frame(object):
         raise NotImplementedError()
 
 
+class DataFrame(Frame):
+    """
+    DATA frames convey arbitrary, variable-length sequences of octets
+    associated with a stream. One or more DATA frames are used, for instance,
+    to carry HTTP request or response payloads.
+    """
+    defined_flags = [('END_STREAM', 0x01)]
+
+    def __init__(self, stream_id):
+        super(DataFrame, self).__init__(stream_id)
+
+        self.data = b''
+
+        # Data frames may not be stream 0.
+        if not self.stream_id:
+            raise ValueError()
+
+    def _get_len(self):
+        return len(self.data)
+
+    def serialize(self):
+        data = self.build_frame_header()
+        data += self.data
+        return data
+
+
 # A map of type byte to frame class.
 FRAMES = {
     0x00: DataFrame
