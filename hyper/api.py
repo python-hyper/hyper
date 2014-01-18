@@ -21,13 +21,11 @@ except AttributeError:
 
 # The HTTPConnection object is currently always the underlying one.
 HTTPConnection = httplib.HTTPConnection
+HTTPSConnection = httplib.HTTPSConnection
 
 # If we have NPN support, define our custom one, otherwise just use the
 # default.
-if not support_20:
-    HTTPSConnection = httplib.HTTPSConnection
-else:
-
+if support_20:
     class HTTPSConnection(object):
         """
         An object representing a single HTTPS connection, whether HTTP/1.1 or
