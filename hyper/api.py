@@ -32,3 +32,31 @@ class HTTPSConnection(object):
         # Set up some variables we're going to use later.
         self._sock = None
         self._conn = None
+
+        # Prepare our backlog of method calls.
+        self._call_queue = []
+
+    def __getattr__(self, name):
+        # Anything that can't be found on this instance is presumably a
+        # property of underlying connection object.
+        # We need to be a little bit careful here. There are a few methods that
+        # can act on a HTTPSConnection before it actually connects to the
+        # remote server. We don't want to change the semantics of the,
+        # HTTPSConnection so we need to spot these and queue them up. When we
+        # actually create the backing Connection, we'll apply them immediately.
+        # These methods can't throw exceptions, so we should be fine.
+        delay_methods = ["set_tunnel", "set_debuglevel"]
+
+        if self._conn is None and name in delay_methods:
+            # Return a little closure that saves off the method call to apply
+            # later.
+            def capture(obj, *args, **kwargs):
+                self._call_queue.append((name, args, kwargs))
+            return capture
+        elif self._conn is None:
+            # We're being told to do something! We can now connect to the
+            # remote server and build the connection object.
+            self._delayed_connect()
+
+        # Call through to the underlying object.
+        return getattr(self._conn, name)
