@@ -26,3 +26,11 @@ class TestDataFrame(object):
         f = DataFrame(1)
         flags = f.parse_flags(0xFF)
         assert flags == set(['END_STREAM'])
+
+    def test_data_frame_serializes_properly(self):
+        f = DataFrame(1)
+        f.flags = set(['END_STREAM'])
+        f.data = b'testdata'
+
+        s = f.serialize()
+        assert s == b'\x00\x08\x00\x01\x00\x00\x00\x01testdata'
