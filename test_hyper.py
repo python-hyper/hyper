@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 from hyper.http20.frame import (
     Frame, DataFrame, PriorityFrame, RstStreamFrame, SettingsFrame,
+    PushPromiseFrame, PingFrame
 )
 import pytest
 
@@ -89,3 +90,17 @@ class TestSettingsFrame(object):
             b'\x00\x00\x00\x0A\x00\x00\x00\x01' +  # FLOW_CONTROL_OPTIONS
             b'\x00\x00\x00\x07\x00\x00\xFF\xFF'    # INITIAL_WINDOW_SIZE
         )
+
+
+class TestPushPromiseFrame(object):
+    def test_push_promise_unsupported(self):
+        with pytest.raises(NotImplementedError):
+            f = PushPromiseFrame(1)
+
+
+class TestPingFrame(object):
+    def test_ping_frame_has_only_one_flag(self):
+        f = PingFrame(0)
+        flags = f.parse_flags(0xFF)
+
+        assert flags == set(['ACK'])
