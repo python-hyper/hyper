@@ -80,6 +80,8 @@ class DataFrame(Frame):
     """
     defined_flags = [('END_STREAM', 0x01)]
 
+    type = 0
+
     def __init__(self, stream_id):
         super(DataFrame, self).__init__(stream_id)
 
