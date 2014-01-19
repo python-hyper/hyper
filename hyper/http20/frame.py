@@ -97,6 +97,31 @@ class DataFrame(Frame):
         return data
 
 
+class PriorityFrame(Frame):
+    """
+    The PRIORITY frame specifies the sender-advised priority of a stream. It
+    can be sent at any time for an existing stream. This enables
+    reprioritisation of existing streams.
+    """
+
+    defined_flags = []
+
+    type = 0x02
+
+    def __init__(self, stream_id):
+        super(PriorityFrame, self).__init__(stream_id)
+
+        self.priority = 0
+
+        if not stream_id:
+            raise ValueError()
+
+    def serialize(self):
+        data = self.build_frame_header(4)
+        data += struct.pack("!L", self.priority & 0x7FFFFFFF)
+        return data
+
+
 # A map of type byte to frame class.
 FRAMES = {
     0x00: DataFrame

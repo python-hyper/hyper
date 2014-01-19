@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-from hyper.http20.frame import Frame, DataFrame
+from hyper.http20.frame import Frame, DataFrame, PriorityFrame
 import pytest
 
 
@@ -29,3 +29,18 @@ class TestDataFrame(object):
 
         s = f.serialize()
         assert s == b'\x00\x08\x00\x01\x00\x00\x00\x01testdata'
+
+
+class TestPriorityFrame(object):
+    def test_priority_frame_has_no_flags(self):
+        f = PriorityFrame(1)
+        flags = f.parse_flags(0xFF)
+        assert not flags
+        assert isinstance(flags, set)
+
+    def test_priority_frame_serializes_properly(self):
+        f = PriorityFrame(1)
+        f.priority = 0xFF
+
+        s = f.serialize()
+        assert s == b'\x00\x04\x02\x00\x00\x00\x00\x01\x00\x00\x00\xff'
