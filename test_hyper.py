@@ -1,5 +1,7 @@
 # -*- coding: utf-8 -*-
-from hyper.http20.frame import Frame, DataFrame, PriorityFrame, RstStreamFrame
+from hyper.http20.frame import (
+    Frame, DataFrame, PriorityFrame, RstStreamFrame, SettingsFrame,
+)
 import pytest
 
 
@@ -59,3 +61,31 @@ class TestRstStreamFrame(object):
 
         s = f.serialize()
         assert s == b'\x00\x04\x03\x00\x00\x00\x00\x01\x00\x00\x01\xa4'
+
+
+class TestSettingsFrame(object):
+    def test_settings_frame_has_only_one_flag(self):
+        f = SettingsFrame(0)
+        flags = f.parse_flags(0xFF)
+        assert flags == set(['ACK'])
+
+    def test_settings_frame_serializes_properly(self):
+        f = SettingsFrame(0)
+        f.parse_flags(0xFF)
+        f.settings = {
+            SettingsFrame.HEADER_TABLE_SIZE: 4096,
+            SettingsFrame.ENABLE_PUSH: 0,
+            SettingsFrame.MAX_CONCURRENT_STREAMS: 100,
+            SettingsFrame.INITIAL_WINDOW_SIZE: 65535,
+            SettingsFrame.FLOW_CONTROL_OPTIONS: 1,
+        }
+
+        s = f.serialize()
+        assert s == (
+            b'\x00\x28\x04\x01\x00\x00\x00\x00' +  # Frame header
+            b'\x00\x00\x00\x01\x00\x00\x10\x00' +  # HEADER_TABLE_SIZE
+            b'\x00\x00\x00\x02\x00\x00\x00\x00' +  # ENABLE_PUSH
+            b'\x00\x00\x00\x04\x00\x00\x00\x64' +  # MAX_CONCURRENT_STREAMS
+            b'\x00\x00\x00\x0A\x00\x00\x00\x01' +  # FLOW_CONTROL_OPTIONS
+            b'\x00\x00\x00\x07\x00\x00\xFF\xFF'    # INITIAL_WINDOW_SIZE
+        )
