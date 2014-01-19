@@ -130,3 +130,17 @@ class TestGoAwayFrame(object):
 
         assert not flags
         assert isinstance(flags, set)
+
+    def test_goaway_serializes_properly(self):
+        f = GoAwayFrame(0)
+        f.last_stream_id = 64
+        f.error_code = 32
+        f.additional_data = b'hello'
+
+        s = f.serialize()
+        assert s == (
+            b'\x00\x0D\x07\x00\x00\x00\x00\x00' +  # Frame header
+            b'\x00\x00\x00\x40'                 +  # Last Stream ID
+            b'\x00\x00\x00\x20'                 +  # Error Code
+            b'hello'                               # Additional data
+        )
