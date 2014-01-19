@@ -103,7 +103,6 @@ class PriorityFrame(Frame):
     can be sent at any time for an existing stream. This enables
     reprioritisation of existing streams.
     """
-
     defined_flags = []
 
     type = 0x02
