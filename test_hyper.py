@@ -104,3 +104,13 @@ class TestPingFrame(object):
         flags = f.parse_flags(0xFF)
 
         assert flags == set(['ACK'])
+
+    def test_ping_frame_serializes_properly(self):
+        f = PingFrame(0)
+        f.parse_flags(0xFF)
+        f.opaque_data = b'\x01\x02'
+
+        s = f.serialize()
+        assert s == (
+            b'\x00\x08\x06\x01\x00\x00\x00\x00\x01\x02\x00\x00\x00\x00\x00\x00'
+        )
