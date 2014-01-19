@@ -121,6 +121,33 @@ class PriorityFrame(Frame):
         return data
 
 
+class RstStreamFrame(Frame):
+    """
+    The RST_STREAM frame allows for abnormal termination of a stream. When sent
+    by the initiator of a stream, it indicates that they wish to cancel the
+    stream or that an error condition has occurred. When sent by the receiver
+    of a stream, it indicates that either the receiver is rejecting the stream,
+    requesting that the stream be cancelled or that an error condition has
+    occurred.
+    """
+    defined_flags = []
+
+    type = 0x03
+
+    def __init__(self, stream_id):
+        super(RstStreamFrame, self).__init__(stream_id)
+
+        self.error_code = 0
+
+        if not stream_id:
+            raise ValueError()
+
+    def serialize(self):
+        data = self.build_frame_header(4)
+        data += struct.pack("!L", self.error_code)
+        return data
+
+
 # A map of type byte to frame class.
 FRAMES = {
     0x00: DataFrame,
