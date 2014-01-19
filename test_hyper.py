@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 from hyper.http20.frame import (
     Frame, DataFrame, PriorityFrame, RstStreamFrame, SettingsFrame,
-    PushPromiseFrame, PingFrame
+    PushPromiseFrame, PingFrame, GoAwayFrame
 )
 import pytest
 
@@ -121,3 +121,12 @@ class TestPingFrame(object):
 
         with pytest.raises(ValueError):
             f.serialize()
+
+
+class TestGoAwayFrame(object):
+    def test_go_away_has_no_flags(self):
+        f = GoAwayFrame(0)
+        flags = f.parse_flags(0xFF)
+
+        assert not flags
+        assert isinstance(flags, set)
