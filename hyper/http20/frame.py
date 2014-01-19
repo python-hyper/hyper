@@ -148,6 +148,51 @@ class RstStreamFrame(Frame):
         return data
 
 
+class SettingsFrame(Frame):
+    """
+    The SETTINGS frame conveys configuration parameters that affect how
+    endpoints communicate. The parameters are either constraints on peer
+    behavior or preferences.
+
+    Settings are not negotiated. Settings describe characteristics of the
+    sending peer, which are used by the receiving peer. Different values for
+    the same setting can be advertised by each peer. For example, a client
+    might set a high initial flow control window, whereas a server might set a
+    lower value to conserve resources.
+    """
+    defined_flags = [('ACK', 0x01)]
+
+    type = 0x04
+
+    # We need to define the known settings, they may as well be class
+    # attributes.
+    HEADER_TABLE_SIZE      = 0x01
+    ENABLE_PUSH            = 0x02
+    MAX_CONCURRENT_STREAMS = 0x04
+    INITIAL_WINDOW_SIZE    = 0x07
+    FLOW_CONTROL_OPTIONS   = 0x0A
+
+    def __init__(self, stream_id):
+        super(SettingsFrame, self).__init__(stream_id)
+
+        # A dictionary of the setting type byte to the value.
+        self.settings = {}
+
+        if stream_id:
+            raise ValueError()
+
+    def serialize(self):
+        # Each setting consumes 8 bytes.
+        length = len(self.settings) * 8
+
+        data = self.build_frame_header(length)
+
+        for setting, value in self.settings.items():
+            data += struct.pack("!LL", setting & 0x00FFFFFF, value)
+
+        return data
+
+
 # A map of type byte to frame class.
 FRAMES = {
     0x00: DataFrame,
