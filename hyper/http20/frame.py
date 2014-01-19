@@ -207,6 +207,34 @@ class PushPromiseFrame(Frame):
         raise NotImplementedError("hyper doesn't support server push")
 
 
+class PingFrame(Frame):
+    """
+    The PING frame is a mechanism for measuring a minimal round-trip time from
+    the sender, as well as determining whether an idle connection is still
+    functional. PING frames can be sent from any endpoint.
+    """
+    defined_flags = [('ACK', 0x01)]
+
+    type = 0x06
+
+    def __init__(self, stream_id):
+        super(PingFrame, self).__init__(stream_id)
+
+        self.opaque_data = b''
+
+        if stream_id:
+            raise ValueError()
+
+    def serialize(self):
+        if len(self.opaque_data) > 8:
+            raise ValueError()
+
+        data = self.build_frame_header(8)
+        data += self.opaque_data
+        data += b'\x00' * (8 - len(self.opaque_data))
+        return data
+
+
 # A map of type byte to frame class.
 FRAMES = {
     0x00: DataFrame,
