@@ -193,6 +193,20 @@ class SettingsFrame(Frame):
         return data
 
 
+class PushPromiseFrame(Frame):
+    """
+    The PUSH_PROMISE frame is used to notify the peer endpoint in advance of
+    streams the sender intends to initiate.
+
+    Right now hyper doesn't support these, so we treat the body data as totally
+    opaque, along with the flags.
+    """
+    type = 0x05
+
+    def __init__(self, stream_id):
+        raise NotImplementedError("hyper doesn't support server push")
+
+
 # A map of type byte to frame class.
 FRAMES = {
     0x00: DataFrame,
