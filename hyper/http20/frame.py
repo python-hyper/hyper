@@ -235,6 +235,37 @@ class PingFrame(Frame):
         return data
 
 
+class GoAwayFrame(Frame):
+    """
+    The GOAWAY frame informs the remote peer to stop creating streams on this
+    connection. It can be sent from the client or the server. Once sent, the
+    sender will ignore frames sent on new streams for the remainder of the
+    connection.
+    """
+    type = 0x07
+
+    def __init__(self, stream_id):
+        super(GoAwayFrame, self).__init__(stream_id)
+
+        self.last_stream_id = 0
+        self.error_code = 0
+        self.additional_data = b''
+
+        if stream_id:
+            raise ValueError()
+
+    def serialize(self):
+        data = self.build_frame_header(8 + len(self.additional_data))
+        data += struct.pack(
+            "!HH",
+            self.last_stream_id & 0x7FFFFFFF,
+            self.error_code
+        )
+        data += self.additional_data
+
+        return data
+
+
 # A map of type byte to frame class.
 FRAMES = {
     0x00: DataFrame,
