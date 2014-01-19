@@ -124,5 +124,6 @@ class PriorityFrame(Frame):
 
 # A map of type byte to frame class.
 FRAMES = {
-    0x00: DataFrame
+    0x00: DataFrame,
+    0x02: PriorityFrame,
 }
