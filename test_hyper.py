@@ -114,3 +114,10 @@ class TestPingFrame(object):
         assert s == (
             b'\x00\x08\x06\x01\x00\x00\x00\x00\x01\x02\x00\x00\x00\x00\x00\x00'
         )
+
+    def test_no_more_than_8_octets(self):
+        f = PingFrame(0)
+        f.opaque_data = b'\x01\x02\x03\x04\x05\x06\x07\x08\x09'
+
+        with pytest.raises(ValueError):
+            f.serialize()
