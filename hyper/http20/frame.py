@@ -257,7 +257,7 @@ class GoAwayFrame(Frame):
     def serialize(self):
         data = self.build_frame_header(8 + len(self.additional_data))
         data += struct.pack(
-            "!HH",
+            "!LL",
             self.last_stream_id & 0x7FFFFFFF,
             self.error_code
         )
