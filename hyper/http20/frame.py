@@ -266,6 +266,33 @@ class GoAwayFrame(Frame):
         return data
 
 
+class WindowUpdateFrame(Frame):
+    """
+    The WINDOW_UPDATE frame is used to implement flow control.
+
+    Flow control operates at two levels: on each individual stream and on the
+    entire connection.
+
+    Both types of flow control are hop by hop; that is, only between the two
+    endpoints. Intermediaries do not forward WINDOW_UPDATE frames between
+    dependent connections. However, throttling of data transfer by any receiver
+    can indirectly cause the propagation of flow control information toward the
+    original sender.
+    """
+    type = 0x09
+
+    def __init__(self, stream_id):
+        super(WindowUpdateFrame, self).__init__(stream_id)
+
+        self.window_increment = 0
+
+    def serialize(self):
+        data = self.build_frame_header(4)
+        data += struct.pack("!L", self.window_increment & 0x7FFFFFFF)
+
+        return data
+
+
 # A map of type byte to frame class.
 FRAMES = {
     0x00: DataFrame,
