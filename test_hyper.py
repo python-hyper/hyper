@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 from hyper.http20.frame import (
     Frame, DataFrame, PriorityFrame, RstStreamFrame, SettingsFrame,
-    PushPromiseFrame, PingFrame, GoAwayFrame
+    PushPromiseFrame, PingFrame, GoAwayFrame, WindowUpdateFrame,
 )
 import pytest
 
@@ -144,3 +144,12 @@ class TestGoAwayFrame(object):
             b'\x00\x00\x00\x20'                 +  # Error Code
             b'hello'                               # Additional data
         )
+
+
+class TestWindowUpdateFrame(object):
+    def test_window_update_has_no_flags(self):
+        f = WindowUpdateFrame(0)
+        flags = f.parse_flags(0xFF)
+
+        assert not flags
+        assert isinstance(flags, set)
