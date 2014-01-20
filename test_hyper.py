@@ -153,3 +153,10 @@ class TestWindowUpdateFrame(object):
 
         assert not flags
         assert isinstance(flags, set)
+
+    def test_window_update_serializes_properly(self):
+        f = WindowUpdateFrame(0)
+        f.window_increment = 512
+
+        s = f.serialize()
+        assert s == b'\x00\x04\x09\x00\x00\x00\x00\x00\x00\x00\x02\x00'
