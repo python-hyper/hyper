@@ -68,9 +68,6 @@ class Frame(object):
     def serialize(self):
         raise NotImplementedError()
 
-    def _get_len(self):
-        raise NotImplementedError()
-
 
 class DataFrame(Frame):
     """
