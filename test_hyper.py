@@ -201,3 +201,14 @@ class TestContinuationFrame(object):
         flags = f.parse_flags(0xFF)
 
         assert flags == set(['END_HEADERS'])
+
+    def test_continuation_frame_serializes(self):
+        f = ContinuationFrame(1)
+        f.parse_flags(0xFF)
+        f.data = b'hello world'
+
+        s = f.serialize()
+        assert s == (
+            b'\x00\x0B\x0A\x04\x00\x00\x00\x01' +
+            b'hello world'
+        )
