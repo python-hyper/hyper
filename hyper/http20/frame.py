@@ -398,4 +398,5 @@ FRAMES = {
     0x06: PingFrame,
     0x07: GoAwayFrame,
     0x09: WindowUpdateFrame,
+    0x0A: ContinuationFrame
 }

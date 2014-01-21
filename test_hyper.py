@@ -307,3 +307,12 @@ class TestContinuationFrame(object):
             b'\x00\x0B\x0A\x04\x00\x00\x00\x01' +
             b'hello world'
         )
+
+    def test_continuation_frame_parses_properly(self):
+        s = b'\x00\x0B\x0A\x04\x00\x00\x00\x01hello world'
+        f, length = Frame.parse_frame_header(s[:8])
+        f.parse_body(s[8:8 + length])
+
+        assert isinstance(f, ContinuationFrame)
+        assert f.flags == set(['END_HEADERS'])
+        assert f.data == b'hello world'
