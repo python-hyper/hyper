@@ -181,3 +181,14 @@ class TestHeadersFrame(object):
             b'\x40\x00\x00\x01' +
             b'hello world'
         )
+
+    def test_headers_frame_serialize_without_priority_properly(self):
+        f = HeadersFrame(1)
+        f.parse_flags(0xFF)
+        f.data = b'hello world'
+
+        s = f.serialize()
+        assert s == (
+            b'\x00\x0B\x01\x0D\x00\x00\x00\x01' +
+            b'hello world'
+        )
