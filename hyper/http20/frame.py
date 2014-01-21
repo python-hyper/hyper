@@ -254,6 +254,12 @@ class PingFrame(Frame):
         data += b'\x00' * (8 - len(self.opaque_data))
         return data
 
+    def parse_body(self, data):
+        if len(data) > 8:
+            raise ValueError()
+
+        self.opaque_data = data
+
 
 class GoAwayFrame(Frame):
     """

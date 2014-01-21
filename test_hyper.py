@@ -172,6 +172,15 @@ class TestPingFrame(object):
         with pytest.raises(ValueError):
             f.serialize()
 
+    def test_ping_frame_parses_properly(self):
+        s = b'\x00\x08\x06\x01\x00\x00\x00\x00\x01\x02\x00\x00\x00\x00\x00\x00'
+        f, length = Frame.parse_frame_header(s[:8])
+        f.parse_body(s[8:8 + length])
+
+        assert isinstance(f, PingFrame)
+        assert f.flags == set(['ACK'])
+        assert f.opaque_data == b'\x01\x02\x00\x00\x00\x00\x00\x00'
+
 
 class TestGoAwayFrame(object):
     def test_go_away_has_no_flags(self):
