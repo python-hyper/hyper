@@ -156,6 +156,12 @@ class RstStreamFrame(Frame):
         data += struct.pack("!L", self.error_code)
         return data
 
+    def parse_body(self, data):
+        if len(data) != 4:
+            raise ValueError()
+
+        self.error_code = struct.unpack("!L", data)[0]
+
 
 class SettingsFrame(Frame):
     """
