@@ -204,6 +204,20 @@ class TestGoAwayFrame(object):
             b'hello'                               # Additional data
         )
 
+    def test_goaway_frame_parses_properly(self):
+        s = (
+            b'\x00\x0D\x07\x00\x00\x00\x00\x00' +  # Frame header
+            b'\x00\x00\x00\x40'                 +  # Last Stream ID
+            b'\x00\x00\x00\x20'                 +  # Error Code
+            b'hello'                               # Additional data
+        )
+        f, length = Frame.parse_frame_header(s[:8])
+        f.parse_body(s[8:8 + length])
+
+        assert isinstance(f, GoAwayFrame)
+        assert f.flags == set()
+        assert f.additional_data == b'hello'
+
 
 class TestWindowUpdateFrame(object):
     def test_window_update_has_no_flags(self):

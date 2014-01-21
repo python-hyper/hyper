@@ -291,6 +291,12 @@ class GoAwayFrame(Frame):
 
         return data
 
+    def parse_body(self, data):
+        self.last_stream_id, self.error_code = struct.unpack("!LL", data[:8])
+
+        if len(data) > 8:
+            self.additional_data = data[8:]
+
 
 class WindowUpdateFrame(Frame):
     """
