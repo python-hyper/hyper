@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 from hyper.http20.frame import (
     Frame, DataFrame, PriorityFrame, RstStreamFrame, SettingsFrame,
-    PushPromiseFrame, PingFrame, GoAwayFrame, WindowUpdateFrame,
+    PushPromiseFrame, PingFrame, GoAwayFrame, WindowUpdateFrame, HeadersFrame,
 )
 import pytest
 
@@ -160,3 +160,11 @@ class TestWindowUpdateFrame(object):
 
         s = f.serialize()
         assert s == b'\x00\x04\x09\x00\x00\x00\x00\x00\x00\x00\x02\x00'
+
+
+class TestHeadersFrame(object):
+    def test_headers_frame_flags(self):
+        f = HeadersFrame(1)
+        flags = f.parse_flags(0xFF)
+
+        assert flags == set(['END_STREAM', 'END_HEADERS', 'PRIORITY'])
