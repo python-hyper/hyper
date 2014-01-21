@@ -2,6 +2,7 @@
 from hyper.http20.frame import (
     Frame, DataFrame, PriorityFrame, RstStreamFrame, SettingsFrame,
     PushPromiseFrame, PingFrame, GoAwayFrame, WindowUpdateFrame, HeadersFrame,
+    ContinuationFrame,
 )
 import pytest
 
@@ -192,3 +193,11 @@ class TestHeadersFrame(object):
             b'\x00\x0B\x01\x0D\x00\x00\x00\x01' +
             b'hello world'
         )
+
+
+class TestContinuationFrame(object):
+    def test_continuation_frame_flags(self):
+        f = ContinuationFrame(1)
+        flags = f.parse_flags(0xFF)
+
+        assert flags == set(['END_HEADERS'])
