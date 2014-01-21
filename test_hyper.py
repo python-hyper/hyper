@@ -82,7 +82,7 @@ class TestRstStreamFrame(object):
         s = f.serialize()
         assert s == b'\x00\x04\x03\x00\x00\x00\x00\x01\x00\x00\x01\xa4'
 
-    def test_priority_frame_parses_properly(self):
+    def test_rst_stream_frame_parses_properly(self):
         s = b'\x00\x04\x03\x00\x00\x00\x00\x01\x00\x00\x01\xa4'
         f, length = Frame.parse_frame_header(s[:8])
         f.parse_body(s[8:8 + length])
