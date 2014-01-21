@@ -123,6 +123,12 @@ class PriorityFrame(Frame):
         data += struct.pack("!L", self.priority & 0x7FFFFFFF)
         return data
 
+    def parse_body(self, data):
+        if len(data) != 4:
+            raise ValueError()
+
+        self.priority = struct.unpack("!L", data)[0]
+
 
 class RstStreamFrame(Frame):
     """
