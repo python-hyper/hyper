@@ -293,6 +293,42 @@ class WindowUpdateFrame(Frame):
         return data
 
 
+class HeadersFrame(DataFrame):
+    """
+    The HEADERS frame carries name-value pairs. It is used to open a stream.
+    HEADERS frames can be sent on a stream in the "open" or "half closed
+    (remote)" states.
+
+    The HeadersFrame class is actually basically a data frame in this
+    implementation, becuase of the requirement to control the sizes of frames.
+    A header block fragment that doesn't fit in an entire HEADERS frame needs
+    to be followed with CONTINUATION frames. From the perspective of the frame
+    building code the header block is an opaque data segment.
+    """
+    type = 0x01
+
+    defined_flags = [
+        ('END_STREAM', 0x01),
+        ('END_HEADERS', 0x04),
+        ('PRIORITY', 0x08)
+    ]
+
+    def __init__(self, stream_id):
+        super(HeadersFrame, self).__init__(stream_id)
+
+        self.priority = None
+
+    def serialize(self):
+        if self.priority is None:
+            data = self.build_frame_header(len(self.data))
+        else:
+            data = self.build_frame_header(len(self.data) + 4)
+            data += struct.pack("!L", self.priority)
+
+        data += self.data
+        return data
+
+
 # A map of type byte to frame class.
 FRAMES = {
     0x00: DataFrame,
