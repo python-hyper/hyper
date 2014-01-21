@@ -37,7 +37,7 @@ class TestDataFrame(object):
     def test_data_frame_parses_properly(self):
         s = b'\x00\x08\x00\x01\x00\x00\x00\x01testdata'
         f, length = Frame.parse_frame_header(s[:8])
-        f.parse_body(s[8:])
+        f.parse_body(s[8:8 + length])
 
         assert isinstance(f, DataFrame)
         assert f.flags == set(['END_STREAM'])
