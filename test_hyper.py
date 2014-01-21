@@ -168,3 +168,16 @@ class TestHeadersFrame(object):
         flags = f.parse_flags(0xFF)
 
         assert flags == set(['END_STREAM', 'END_HEADERS', 'PRIORITY'])
+
+    def test_headers_frame_serialize_with_priority_properly(self):
+        f = HeadersFrame(1)
+        f.parse_flags(0xFF)
+        f.priority = (2 ** 30) + 1
+        f.data = b'hello world'
+
+        s = f.serialize()
+        assert s == (
+            b'\x00\x0F\x01\x0D\x00\x00\x00\x01' +
+            b'\x40\x00\x00\x01' +
+            b'hello world'
+        )
