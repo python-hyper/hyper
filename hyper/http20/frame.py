@@ -329,6 +329,22 @@ class HeadersFrame(DataFrame):
         return data
 
 
+class ContinuationFrame(DataFrame):
+    """
+    The CONTINUATION frame is used to continue a sequence of header block
+    fragments. Any number of CONTINUATION frames can be sent on an existing
+    stream, as long as the preceding frame on the same stream is one of
+    HEADERS, PUSH_PROMISE or CONTINUATION without the END_HEADERS or
+    END_PUSH_PROMISE flag set.
+
+    Much like the HEADERS frame, hyper treats this as an opaque data frame with
+    different flags and a different type.
+    """
+    type = 0x0A
+
+    defined_flags = [('END_HEADERS', 0x04)]
+
+
 # A map of type byte to frame class.
 FRAMES = {
     0x00: DataFrame,
