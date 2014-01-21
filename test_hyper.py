@@ -119,6 +119,28 @@ class TestSettingsFrame(object):
             b'\x00\x00\x00\x07\x00\x00\xFF\xFF'    # INITIAL_WINDOW_SIZE
         )
 
+    def test_settings_frame_parses_properly(self):
+        s = (
+            b'\x00\x28\x04\x01\x00\x00\x00\x00' +  # Frame header
+            b'\x00\x00\x00\x01\x00\x00\x10\x00' +  # HEADER_TABLE_SIZE
+            b'\x00\x00\x00\x02\x00\x00\x00\x00' +  # ENABLE_PUSH
+            b'\x00\x00\x00\x04\x00\x00\x00\x64' +  # MAX_CONCURRENT_STREAMS
+            b'\x00\x00\x00\x0A\x00\x00\x00\x01' +  # FLOW_CONTROL_OPTIONS
+            b'\x00\x00\x00\x07\x00\x00\xFF\xFF'    # INITIAL_WINDOW_SIZE
+        )
+        f, length = Frame.parse_frame_header(s[:8])
+        f.parse_body(s[8:8 + length])
+
+        assert isinstance(f, SettingsFrame)
+        assert f.flags == set(['ACK'])
+        assert f.settings == {
+            SettingsFrame.HEADER_TABLE_SIZE: 4096,
+            SettingsFrame.ENABLE_PUSH: 0,
+            SettingsFrame.MAX_CONCURRENT_STREAMS: 100,
+            SettingsFrame.INITIAL_WINDOW_SIZE: 65535,
+            SettingsFrame.FLOW_CONTROL_OPTIONS: 1,
+        }
+
 
 class TestPushPromiseFrame(object):
     def test_push_promise_unsupported(self):

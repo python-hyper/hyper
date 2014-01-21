@@ -207,6 +207,11 @@ class SettingsFrame(Frame):
 
         return data
 
+    def parse_body(self, data):
+        for i in range(0, len(data), 8):
+            name, value = struct.unpack("!LL", data[i:i+8])
+            self.settings[name] = value
+
 
 class PushPromiseFrame(Frame):
     """
