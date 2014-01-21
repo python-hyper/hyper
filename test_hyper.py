@@ -58,6 +58,15 @@ class TestPriorityFrame(object):
         s = f.serialize()
         assert s == b'\x00\x04\x02\x00\x00\x00\x00\x01\x00\x00\x00\xff'
 
+    def test_priority_frame_parses_properly(self):
+        s = b'\x00\x04\x02\x00\x00\x00\x00\x01\x00\x00\x00\xff'
+        f, length = Frame.parse_frame_header(s[:8])
+        f.parse_body(s[8:8 + length])
+
+        assert isinstance(f, PriorityFrame)
+        assert f.flags == set()
+        assert f.priority == 0xFF
+
 
 class TestRstStreamFrame(object):
     def test_rst_stream_frame_has_no_flags(self):
