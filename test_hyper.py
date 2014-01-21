@@ -234,6 +234,15 @@ class TestWindowUpdateFrame(object):
         s = f.serialize()
         assert s == b'\x00\x04\x09\x00\x00\x00\x00\x00\x00\x00\x02\x00'
 
+    def test_windowupdate_frame_parses_properly(self):
+        s = b'\x00\x04\x09\x00\x00\x00\x00\x00\x00\x00\x02\x00'
+        f, length = Frame.parse_frame_header(s[:8])
+        f.parse_body(s[8:8 + length])
+
+        assert isinstance(f, WindowUpdateFrame)
+        assert f.flags == set()
+        assert f.window_increment == 512
+
 
 class TestHeadersFrame(object):
     def test_headers_frame_flags(self):

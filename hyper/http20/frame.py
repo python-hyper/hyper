@@ -324,6 +324,9 @@ class WindowUpdateFrame(Frame):
 
         return data
 
+    def parse_body(self, data):
+        self.window_increment = struct.unpack("!L", data)[0]
+
 
 class HeadersFrame(DataFrame):
     """
