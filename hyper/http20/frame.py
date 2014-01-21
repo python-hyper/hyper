@@ -68,6 +68,9 @@ class Frame(object):
     def serialize(self):
         raise NotImplementedError()
 
+    def parse_body(self, data):
+        raise NotImplementedError()
+
 
 class DataFrame(Frame):
     """
@@ -92,6 +95,9 @@ class DataFrame(Frame):
         data = self.build_frame_header(len(self.data))
         data += self.data
         return data
+
+    def parse_body(self, data):
+        self.data = data
 
 
 class PriorityFrame(Frame):
