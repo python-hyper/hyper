@@ -363,6 +363,13 @@ class HeadersFrame(DataFrame):
         data += self.data
         return data
 
+    def parse_body(self, data):
+        if 'PRIORITY' in self.flags:
+            self.priority = struct.unpack("!L", data[:4])[0]
+            data = data[4:]
+
+        super(HeadersFrame, self).parse_body(data)
+
 
 class ContinuationFrame(DataFrame):
     """
