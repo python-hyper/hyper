@@ -348,5 +348,12 @@ class ContinuationFrame(DataFrame):
 # A map of type byte to frame class.
 FRAMES = {
     0x00: DataFrame,
+    0x01: HeadersFrame,
     0x02: PriorityFrame,
+    0x03: RstStreamFrame,
+    0x04: SettingsFrame,
+    0x05: PushPromiseFrame,
+    0x06: PingFrame,
+    0x07: GoAwayFrame,
+    0x09: WindowUpdateFrame,
 }
