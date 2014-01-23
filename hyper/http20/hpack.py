@@ -15,7 +15,7 @@ def encode_integer(integer, prefix_bits):
     max_number = (2 ** prefix_bits) - 1
 
     if (integer < max_number):
-        return bytes([integer])  # Seriously?
+        return bytearray([integer])  # Seriously?
     else:
         elements = [max_number]
         integer = integer - max_number
@@ -26,7 +26,7 @@ def encode_integer(integer, prefix_bits):
 
         elements.append(integer)
 
-        return bytes(elements)
+        return bytearray(elements)
 
 
 

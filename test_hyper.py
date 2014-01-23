@@ -478,14 +478,14 @@ class TestIntegerEncoding(object):
     def test_encoding_10_with_5_bit_prefix(self):
         val = encode_integer(10, 5)
         assert len(val) == 1
-        assert val == b'\x0a'
+        assert val == bytearray(b'\x0a')
 
     def test_encoding_1337_with_5_bit_prefix(self):
         val = encode_integer(1337, 5)
         assert len(val) == 3
-        assert val == b'\x1f\x9a\x0a'
+        assert val == bytearray(b'\x1f\x9a\x0a')
 
     def test_encoding_42_with_8_bit_prefix(self):
         val = encode_integer(42, 8)
         assert len(val) == 1
-        assert val == b'\x2a'
+        assert val == bytearray(b'\x2a')
