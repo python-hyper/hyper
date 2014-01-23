@@ -106,6 +106,54 @@ class Encoder(object):
         Literal text values may optionally be Huffman encoded. For now we don't
         do that, because it's an extra bit of complication, but we will later.
         """
+        # First, turn the headers into an iterable of tuples if possible. This
+        # is the natural way to interact with them in HPACK.
+        if isinstance(headers, dict):
+            headers = headers.items()
+
+        for name, value in headers:
+            # First, we need to determine what set of headers we need to emit.
+            # We do this by comparing against the reference set.
+
+            # Check if we're already in the header table.
+            name_matches = self.matching_header(name, value)
+
+            if name_matches is not None and name_matches[1]:
+                pass
+            elif name_matches is not None:
+                # Have a partial match.
+                pass
+            else:
+                # No match, need to use a literal.
+                pass
+
+
+    def matching_header(self, name, value):
+        """
+        Scans the header table and the static table. Returns a tuple, where the
+        first value is the index of the match, and the second is whether there
+        was a full match or not. Prefers full matches to partial ones.
+
+        Upsettingly, the header table is one-indexed, not zero-indexed.
+        """
+        partial_match = None
+        header_table_size = len(self.header_table)
+
+        for (i, (n, v)) in enumerate(self.header_table):
+            if n == name:
+                if v == value:
+                    return (i + 1, True)
+                elif partial_match is None:
+                    partial_match = (i + 1, False)
+
+        for (i, (n, v)) in enumerate(Encoder.static_table):
+            if n == name:
+                if v == value:
+                    return (i + header_table_size + 1, True)
+                elif partial_match is None:
+                    partial_match = (i + header_table_size + 1, False)
+
+        return partial_match
 
 
 class Decoder(object):
