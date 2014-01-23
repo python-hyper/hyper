@@ -180,7 +180,7 @@ class Encoder(object):
 
     def add(self, to_add):
         """
-        This function takes a set of header key-valu tuples and serializes
+        This function takes a set of header key-value tuples and serializes
         them for adding to the header table.
         """
         encoded = []
