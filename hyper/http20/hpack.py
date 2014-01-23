@@ -91,8 +91,20 @@ class Encoder(object):
 
         Transforming the headers into a header block is a procedure that can
         be modeled as a chain or pipe. First, the headers are compared against
-        the reference set. Any headers already in the header table don't need
-        to be emitted at all, they can be left alone.
+        the reference set. Any headers already in the reference set don't need
+        to be emitted at all, they can be left alone. Headers not in the
+        reference set need to be emitted. Headers in the reference set that
+        need to be removed (potentially to be replaced) need to be emitted as
+        well.
+
+        Next, the headers are encoded. This encoding can be done a number of
+        ways. If the header name-value pair are already in the header table we
+        can represent them using the indexed representation: the same is true
+        if they are in the static table. Otherwise, a literal representation
+        will be used.
+
+        Literal text values may optionally be Huffman encoded. For now we don't
+        do that, because it's an extra bit of complication, but we will later.
         """
 
 
