@@ -259,7 +259,7 @@ class Encoder(object):
         is True, the header will be added to the header table: otherwise it
         will not.
         """
-        prefix = 0x40 if indexing else 0x00
+        prefix = bytes([0x40 if indexing else 0x00])
 
         name = name.encode('utf-8')
         value = value.encode('utf-8')
