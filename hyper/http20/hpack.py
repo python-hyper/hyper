@@ -259,7 +259,7 @@ class Encoder(object):
         is True, the header will be added to the header table: otherwise it
         will not.
         """
-        prefix = bytes([0x40 if indexing else 0x00])
+        prefix = bytes([0x00 if indexing else 0x40])
 
         name = name.encode('utf-8')
         value = value.encode('utf-8')
@@ -274,7 +274,7 @@ class Encoder(object):
         ``indexing`` is True, the header will be added to the header table:
         otherwise it will not.
         """
-        mask = 0x40 if indexing else 0x00
+        mask = 0x00 if indexing else 0x40
 
         name = encode_integer(index, 6)
         name[0] = name[0] | mask
