@@ -7,7 +7,6 @@ Implements the HPACK header compression algorithm as detailed by the IETF.
 
 Implements the version dated January 9, 2014.
 """
-from collections import OrderedDict
 
 
 class Encoder(object):
