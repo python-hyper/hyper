@@ -361,7 +361,7 @@ class TestHPACKEncoder(object):
     def test_indexed_header_field_from_static_table(self):
         e = Encoder()
         e.header_table_size = 0
-        header_set = {':method', 'GET'}
+        header_set = {':method': 'GET'}
         result = b'\x82'
 
         assert e.encode(header_set, huffman=False) == result
