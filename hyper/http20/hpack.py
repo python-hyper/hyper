@@ -175,6 +175,45 @@ class Encoder(object):
 
         return partial_match
 
+    def _encode_indexed(self, index):
+        """
+        Encodes a header using the indexed representation.
+        """
+        field = encode_integer(index, 7)
+        field[0] = field[0] | 0x80  # we set the top bit
+        return field
+
+    def _encode_literal(self, name, value, indexing):
+        """
+        Encodes a header with a literal name and literal value. If ``indexing``
+        is True, the header will be added to the header table: otherwise it
+        will not.
+        """
+        prefix = 0x40 if indexing else 0x00
+
+        name = name.encode('utf-8')
+        value = value.encode('utf-8')
+        name_len = encode_integer(len(name), 8)
+        value_len = encode_integer(len(value), 8)
+
+        return b''.join([prefix, name_len, name, value_len, value])
+
+    def _encode_indexed_literal(self, index, value, indexing):
+        """
+        Encodes a header with an indexed name and a literal value. If
+        ``indexing`` is True, the header will be added to the header table:
+        otherwise it will not.
+        """
+        mask = 0x40 if indexing else 0x00
+
+        name = encode_integer(index, 6)
+        name[0] = name[0] | mask
+
+        value = value.encode('utf-8')
+        value_len = encode_integer(len(value), 8)
+
+        return b''.join([name, value_len, value])
+
 
 class Decoder(object):
     """
