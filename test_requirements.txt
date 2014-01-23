@@ -1,3 +1,4 @@
+colorama==0.2.7
+distribute==0.6.34
 py==1.4.19
 pytest==2.5.1
-wsgiref==0.1.2
