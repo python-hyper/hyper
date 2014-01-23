@@ -126,26 +126,96 @@ class Encoder(object):
         Literal text values may optionally be Huffman encoded. For now we don't
         do that, because it's an extra bit of complication, but we will later.
         """
-        # First, turn the headers into an iterable of tuples if possible. This
-        # is the natural way to interact with them in HPACK.
+        # First, turn the headers into a list of tuples if possible. This is
+        # the natural way to interact with them in HPACK.
         if isinstance(headers, dict):
-            headers = headers.items()
+            incoming_set = set(headers.items())
+        else:
+            incoming_set = set(headers)
 
-        for name, value in headers:
-            # First, we need to determine what set of headers we need to emit.
-            # We do this by comparing against the reference set.
+        # First, we need to determine what set of headers we need to emit.
+        # We do this by comparing against the reference set.
+        to_add = incoming_set - self.reference_set
+        to_remove = self.reference_set - incoming_set
 
-            # Check if we're already in the header table.
-            name_matches = self.matching_header(name, value)
+        # Now, serialize the headers. Do removal first.
+        header_block = self.remove(to_remove)
+        header_block += self.add(to_add)
 
-            if name_matches is not None and name_matches[1]:
-                pass
-            elif name_matches is not None:
-                # Have a partial match.
-                pass
+        return header_block
+
+    def remove(self, to_remove):
+        """
+        This function takes a set of header key-value tuples and serializes
+        them. These must be in the header table, so must be represented as
+        their indexed form.
+        """
+        encoded = []
+
+        for name, value in to_remove:
+            try:
+                index, perfect = self.matching_header(name, value)
+            except TypeError:
+                index, perfect = -1, False
+
+            # The header must be in the header block. That means that:
+            # - perfect must be True
+            # - index must be <= len(self.header_table)
+            max_index = len(self.header_table)
+
+            if (not perfect) or (index > max_index):
+                raise ValueError(
+                    '"%s: %s" not present in the header table' % (name, value)
+                )
+
+            # We can safely encode this as the indexed representation.
+            encoded.append(self._encode_indexed(index))
+
+            # Having encoded it in the indexed form, we now remove it from the
+            # header table.
+            del self.header_table[index]
+
+        return b''.join(encoded)
+
+    def add(self, to_add):
+        """
+        This function takes a set of header key-valu tuples and serializes
+        them for adding to the header table.
+        """
+        encoded = []
+
+        for name, value in to_add:
+            # Search for a matching header in the header table.
+            match = self.matching_header(name, value)
+
+            if match is None:
+                # Not in the header table. Encode using the literal syntax,
+                # and add it to the header table.
+                s = self._encode_literal(name, value, True)
+                encoded.append(s)
+                self.header_table.insert(0, (name, value))
+                continue
+
+            # The header is in the table, break out the values. If we matched
+            # perfectly, we can use the indexed representation: otherwise we
+            # can use the indexed literal.
+            index, perfect = match
+
+            if perfect:
+                # Indexed representation. If the index is larger than the size
+                # of the header table, also add to the header table.
+                s = self._encode_indexed(index)
+                encoded.append(s)
+
+                if index > len(self.header_table):
+                    self.header_table.insert(0, (name, value))
             else:
-                # No match, need to use a literal.
-                pass
+                # Indexed literal.
+                s = self._encode_indexed_literal(index, value, True)
+                encoded.append(s)
+                self.header_table.insert(0, (name, value))
+
+        return b''.join(encoded)
 
 
     def matching_header(self, name, value):
