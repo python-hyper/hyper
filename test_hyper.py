@@ -4,7 +4,7 @@ from hyper.http20.frame import (
     PushPromiseFrame, PingFrame, GoAwayFrame, WindowUpdateFrame, HeadersFrame,
     ContinuationFrame,
 )
-from hyper.http20.hpack import Encoder, Decoder
+from hyper.http20.hpack import Encoder, Decoder, encode_integer
 import pytest
 
 
@@ -472,3 +472,20 @@ class TestHPACKEncoder(object):
         # reliable. Check its length though.
         assert len(e.header_table) == 8
 
+
+class TestIntegerEncoding(object):
+    # These tests are stolen from the HPACK spec.
+    def test_encoding_10_with_5_bit_prefix(self):
+        val = encode_integer(10, 5)
+        assert len(val) == 1
+        assert val == b'\x0a'
+
+    def test_encoding_1337_with_5_bit_prefix(self):
+        val = encode_integer(1337, 5)
+        assert len(val) == 3
+        assert val == b'\x1f\x9a\x0a'
+
+    def test_encoding_42_with_8_bit_prefix(self):
+        val = encode_integer(42, 8)
+        assert len(val) == 1
+        assert val == b'\x2a'
