@@ -172,8 +172,9 @@ class Encoder(object):
             encoded.append(self._encode_indexed(index))
 
             # Having encoded it in the indexed form, we now remove it from the
-            # header table.
+            # header table and the reference set.
             del self.header_table[index]
+            self.reference_set.remove((name, value))
 
         return b''.join(encoded)
 
@@ -194,6 +195,7 @@ class Encoder(object):
                 s = self._encode_literal(name, value, True)
                 encoded.append(s)
                 self.header_table.insert(0, (name, value))
+                self.reference_set.add((name, value))
                 continue
 
             # The header is in the table, break out the values. If we matched
@@ -215,8 +217,10 @@ class Encoder(object):
                 s = self._encode_indexed_literal(index, value, False)
                 encoded.append(s)
 
-        return b''.join(encoded)
+            # Either way, we add to the reference set.
+            self.reference_set.add((name, value))
 
+        return b''.join(encoded)
 
     def matching_header(self, name, value):
         """
