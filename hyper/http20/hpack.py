@@ -210,10 +210,10 @@ class Encoder(object):
                 if index > len(self.header_table):
                     self.header_table.insert(0, (name, value))
             else:
-                # Indexed literal.
-                s = self._encode_indexed_literal(index, value, True)
+                # Indexed literal. Since we have a partial match, don't add to
+                # the header table, it won't help us.
+                s = self._encode_indexed_literal(index, value, False)
                 encoded.append(s)
-                self.header_table.insert(0, (name, value))
 
         return b''.join(encoded)
 
