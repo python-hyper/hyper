@@ -7,6 +7,27 @@ Implements the HPACK header compression algorithm as detailed by the IETF.
 
 Implements the version dated January 9, 2014.
 """
+def encode_integer(integer, prefix_bits):
+    """
+    This encodes an integer according to the wacky integer encoding rules
+    defined in the HPACK spec.
+    """
+    max_number = (2 ** prefix_bits) - 1
+
+    if (integer < max_number):
+        return bytes([integer])  # Seriously?
+    else:
+        elements = [max_number]
+        integer = integer - max_number
+
+        while integer >= 128:
+            elements.append((integer % 128) + 128)
+            integer = integer // 128  # We need integer division
+
+        elements.append(integer)
+
+        return bytes(elements)
+
 
 
 class Encoder(object):
