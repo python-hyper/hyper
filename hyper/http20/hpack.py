@@ -80,7 +80,7 @@ class Encoder(object):
 
     def __init__(self):
         self.header_table = []
-        self.reference_set = []
+        self.reference_set = set()
         self.header_table_size = 4096  # This value set by the standard.
 
     def encode(self, headers, huffman=True):
@@ -163,5 +163,5 @@ class Decoder(object):
 
     def __init__(self):
         self.header_table = []
-        self.reference_set = []
+        self.reference_set = set()
         self.header_table_size = 4096  # This value set by the standard.
