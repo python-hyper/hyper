@@ -84,7 +84,7 @@ class Encoder(object):
         self.reference_set = []
         self.header_table_size = 4096  # This value set by the standard.
 
-    def encode(self, headers):
+    def encode(self, headers, huffman=True):
         """
         Takes a set of headers and encodes them into a HPACK-encoded header
         block.
