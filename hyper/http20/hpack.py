@@ -80,7 +80,7 @@ class Encoder(object):
     ]
 
     def __init__(self):
-        self.header_table = OrderedDict()
+        self.header_table = []
         self.reference_set = []
         self.header_table_size = 4096  # This value set by the standard.
 
@@ -103,6 +103,6 @@ class Decoder(object):
     static_table = []
 
     def __init__(self):
-        self.header_table = OrderedDict()
+        self.header_table = []
         self.reference_set = []
         self.header_table_size = 4096  # This value set by the standard.
