@@ -4,6 +4,7 @@ from hyper.http20.frame import (
     PushPromiseFrame, PingFrame, GoAwayFrame, WindowUpdateFrame, HeadersFrame,
     ContinuationFrame,
 )
+from hyper.http20.hpack import Encoder, Decoder
 import pytest
 
 
@@ -316,3 +317,158 @@ class TestContinuationFrame(object):
         assert isinstance(f, ContinuationFrame)
         assert f.flags == set(['END_HEADERS'])
         assert f.data == b'hello world'
+
+
+class TestHPACKEncoder(object):
+    # These tests are stolen entirely from the IETF specification examples.
+    def test_literal_header_field_with_indexing(self):
+        """
+        The header field representation uses a literal name and a literal
+        value.
+        """
+        e = Encoder()
+        header_set = {'custom-key': 'custom-header'}
+        result = b'\x00\x0acustom-key\x0dcustom-header'
+
+        assert e.encode(header_set, huffman=False) == result
+        assert e.header_table == list(header_set.items())
+
+    def test_literal_header_field_without_indexing(self):
+        """
+        The header field representation uses an indexed name and a literal
+        value.
+        """
+        e = Encoder()
+        header_set = {':path': '/sample/path'}
+        result = b'\x44\x0c/sample/path'
+
+        assert e.encode(header_set, huffman=False) == result
+        assert e.header_table == []
+
+    def test_indexed_header_field(self):
+        """
+        The header field representation uses an indexed header field, from
+        the static table.  Upon using it, the static table entry is copied
+        into the header table.
+        """
+        e = Encoder()
+        header_set = {':method': 'GET'}
+        result = b'\x82'
+
+        assert e.encode(header_set, huffman=False) == result
+        assert e.header_table == list(header_set.items())
+
+    def test_indexed_header_field_from_static_table(self):
+        e = Encoder()
+        e.header_table_size = 0
+        header_set = {':method', 'GET'}
+        result = b'\x82'
+
+        assert e.encode(header_set, huffman=False) == result
+        assert e.header_table == []
+
+    def test_request_examples_without_huffman(self):
+        """
+        This section shows several consecutive header sets, corresponding to
+        HTTP requests, on the same connection.
+        """
+        e = Encoder()
+        first_header_set = {
+            ':method': 'GET',
+            ':scheme': 'http',
+            ':path': '/',
+            ':authority': 'www.example.com'
+        }
+        first_result = b'\x82\x87\x86\x04\x0fwww.example.com'
+
+        assert e.encode(first_header_set, huffman=False) == first_result
+        assert e.header_table == list(first_header_set.items())
+
+        # This request takes advantage of the differential encoding of header
+        # sets.
+        second_header_set = {
+            ':method': 'GET',
+            ':scheme': 'http',
+            ':path': '/',
+            ':authority': 'www.example.com',
+            'cache-control': 'no-cache'
+        }
+        second_result = b'\x1b\x08no-cache'
+
+        assert e.encode(second_header_set, huffman=False) == second_result
+        assert e.header_table == (
+            [('cache-control', 'no-cache')] + list(first_header_set.items())
+        )
+
+        # This request has not enough headers in common with the previous
+        # request to take advantage of the differential encoding.  Therefore,
+        # the reference set is emptied before encoding the header fields.
+        third_header_set = {
+            ':method': 'GET',
+            ':scheme': 'https',
+            ':path': '/index.html',
+            ':authority': 'www.example.com',
+            'custom-key': 'custom-value'
+        }
+        third_result = b'\x80\x85\x8c\x8b\x84\x00\x0acustom-key\x0ccustom-value'
+
+        assert e.encode(third_header_set, huffman=False) == third_result
+        # Don't check the header table here, it's just too complex to be
+        # reliable. Check its length though.
+        assert len(e.header_table) == 8
+
+    def test_request_examples_with_huffman(self):
+        """
+        This section shows the same examples as the previous section, but
+        using Huffman encoding for the literal values.
+        """
+        e = Encoder()
+        first_header_set = {
+            ':method': 'GET',
+            ':scheme': 'http',
+            ':path': '/',
+            ':authority': 'www.example.com'
+        }
+        first_result = (
+            b'\x82\x87\x86\x04\x8b\xdb\x6d\x88\x3e\x68\xd1\xcb\x12\x25\xba\x7f'
+        )
+
+        assert e.encode(first_header_set, huffman=True) == first_result
+        assert e.header_table == list(first_header_set.items())
+
+        # This request takes advantage of the differential encoding of header
+        # sets.
+        second_header_set = {
+            ':method': 'GET',
+            ':scheme': 'http',
+            ':path': '/',
+            ':authority': 'www.example.com',
+            'cache-control': 'no-cache'
+        }
+        second_result = b'\x1b\x86\x63\x65\x4a\x13\x98\xff'
+
+        assert e.encode(second_header_set, huffman=True) == second_result
+        assert e.header_table == (
+            [('cache-control', 'no-cache')] + list(first_header_set.items())
+        )
+
+        # This request has not enough headers in common with the previous
+        # request to take advantage of the differential encoding.  Therefore,
+        # the reference set is emptied before encoding the header fields.
+        third_header_set = {
+            ':method': 'GET',
+            ':scheme': 'https',
+            ':path': '/index.html',
+            ':authority': 'www.example.com',
+            'custom-key': 'custom-value'
+        }
+        third_result = (
+            b'\x80\x85\x8c\x8b\x84\x00\x88\x4e\xb0\x8b\x74\x97\x90\xfa\x7f\x89'
+            b'\x4e\xb0\x8b\x74\x97\x9a\x17\xa8\xff'
+        )
+
+        assert e.encode(third_header_set, huffman=True) == third_result
+        # Don't check the header table here, it's just too complex to be
+        # reliable. Check its length though.
+        assert len(e.header_table) == 8
+
