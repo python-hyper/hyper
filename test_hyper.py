@@ -373,12 +373,12 @@ class TestHPACKEncoder(object):
         HTTP requests, on the same connection.
         """
         e = Encoder()
-        first_header_set = {
-            ':method': 'GET',
-            ':scheme': 'http',
-            ':path': '/',
-            ':authority': 'www.example.com'
-        }
+        first_header_set = [
+            (':method', 'GET',),
+            (':scheme', 'http',),
+            (':path', '/',),
+            (':authority', 'www.example.com'),
+        ]
         first_result = b'\x82\x87\x86\x04\x0fwww.example.com'
 
         assert e.encode(first_header_set, huffman=False) == first_result
@@ -386,13 +386,13 @@ class TestHPACKEncoder(object):
 
         # This request takes advantage of the differential encoding of header
         # sets.
-        second_header_set = {
-            ':method': 'GET',
-            ':scheme': 'http',
-            ':path': '/',
-            ':authority': 'www.example.com',
-            'cache-control': 'no-cache'
-        }
+        second_header_set = [
+            (':method', 'GET',),
+            (':scheme', 'http',),
+            (':path', '/',),
+            (':authority', 'www.example.com',),
+            ('cache-control', 'no-cache'),
+        ]
         second_result = b'\x1b\x08no-cache'
 
         assert e.encode(second_header_set, huffman=False) == second_result
@@ -403,13 +403,13 @@ class TestHPACKEncoder(object):
         # This request has not enough headers in common with the previous
         # request to take advantage of the differential encoding.  Therefore,
         # the reference set is emptied before encoding the header fields.
-        third_header_set = {
-            ':method': 'GET',
-            ':scheme': 'https',
-            ':path': '/index.html',
-            ':authority': 'www.example.com',
-            'custom-key': 'custom-value'
-        }
+        third_header_set = [
+            (':method', 'GET',),
+            (':scheme', 'https',),
+            (':path', '/index.html',),
+            (':authority', 'www.example.com',),
+            ('custom-key', 'custom-value'),
+        ]
         third_result = b'\x80\x85\x8c\x8b\x84\x00\x0acustom-key\x0ccustom-value'
 
         assert e.encode(third_header_set, huffman=False) == third_result
