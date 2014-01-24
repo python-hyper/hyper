@@ -379,10 +379,12 @@ class TestHPACKEncoder(object):
             (':path', '/',),
             (':authority', 'www.example.com'),
         ]
+        # The first_header_table doesn't contain 'authority'
+        first_header_table = first_header_set[::-1][1:]
         first_result = b'\x82\x87\x86\x44\x0fwww.example.com'
 
         assert e.encode(first_header_set, huffman=False) == first_result
-        assert e.header_table == first_header_set
+        assert e.header_table == first_header_table
 
         # This request takes advantage of the differential encoding of header
         # sets.
