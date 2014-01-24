@@ -382,7 +382,7 @@ class TestHPACKEncoder(object):
         first_result = b'\x82\x87\x86\x44\x0fwww.example.com'
 
         assert e.encode(first_header_set, huffman=False) == first_result
-        assert e.header_table == list(first_header_set.items())
+        assert e.header_table == first_header_set
 
         # This request takes advantage of the differential encoding of header
         # sets.
@@ -397,7 +397,7 @@ class TestHPACKEncoder(object):
 
         assert e.encode(second_header_set, huffman=False) == second_result
         assert e.header_table == (
-            [('cache-control', 'no-cache')] + list(first_header_set.items())
+            [('cache-control', 'no-cache')] + first_header_set
         )
 
         # This request has not enough headers in common with the previous
