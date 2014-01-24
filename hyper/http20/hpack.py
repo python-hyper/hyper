@@ -40,6 +40,10 @@ def header_table_size(table):
     # I appreciate it's an attempt to prevent DoS attacks by sending lots of
     # large headers in the header table, but it seems like a better approach
     # would be to limit the size of headers. Ah well.
+
+    # This is a very costly action due to the repeated encodings: we do this
+    # once per header we emit! This is a strong argument for using bytes
+    # internally to the Encoder class.
     return sum(32 + len(name.encode('utf-8')) + len(value.encode('utf-8'))
                for name, value in table)
 
