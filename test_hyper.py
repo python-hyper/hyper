@@ -410,12 +410,15 @@ class TestHPACKEncoder(object):
             (':authority', 'www.example.com',),
             ('custom-key', 'custom-value'),
         ]
-        third_result = b'\x80\x85\x8c\x8b\x84\x00\x0acustom-key\x0ccustom-value'
+        third_result = (
+            b'\x80\x83\x8a\x89\x46\x0fwww.example.com' +
+            b'\x00\x0acustom-key\x0ccustom-value'
+        )
 
         assert e.encode(third_header_set, huffman=False) == third_result
         # Don't check the header table here, it's just too complex to be
         # reliable. Check its length though.
-        assert len(e.header_table) == 8
+        assert len(e.header_table) == 6
 
     @pytest.mark.xfail
     def test_request_examples_with_huffman(self):
