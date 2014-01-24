@@ -231,7 +231,7 @@ class Encoder(object):
                 # and add it to the header table.
                 s = self._encode_literal(name, value, True)
                 encoded.append(s)
-                self.header_table.insert(0, (name, value))
+                self._add_to_header_table(name, value)
                 self.reference_set.add((name, value))
                 continue
 
@@ -247,7 +247,7 @@ class Encoder(object):
                 encoded.append(s)
 
                 if index > len(self.header_table):
-                    self.header_table.insert(0, (name, value))
+                    self._add_to_header_table(name, value)
             else:
                 # Indexed literal. Since we have a partial match, don't add to
                 # the header table, it won't help us.
@@ -285,6 +285,23 @@ class Encoder(object):
                     partial_match = (i + header_table_size + 1, False)
 
         return partial_match
+
+    def _add_to_header_table(self, name, value):
+        """
+        Adds a header to the header table, evicting old ones if necessary.
+        """
+        # Be optimistic: add the header straight away.
+        self.header_table.insert(0, (name, value))
+
+        # Now, work out how big the header table is.
+        actual_size = header_table_size(self.header_table)
+
+        # Loop and remove whatever we need to.
+        while actual_size > self.header_table_size:
+            n, v = self.header_table.pop()
+            actual_size -= (
+                32 + len(n.encode('utf-8')) + len(v.encode('utf-8'))
+            )
 
     def _encode_indexed(self, index):
         """
