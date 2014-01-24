@@ -182,7 +182,17 @@ class Encoder(object):
         )
 
         # Now, serialize the headers. Do removal first.
-        header_block = self.remove(to_remove)
+        # If the list of headers we're removing is more than half of the
+        # reference set, just emit an 'empty the reference set' message.
+        if (len(self.reference_set - incoming_set) >
+                                               (len(self.reference_set) // 2)):
+            header_block = b'\x80'  # Indexed representation of 0.
+
+            # Remove everything from the reference set.
+            self.reference_set = set()
+        else:
+            header_block = self.remove(to_remove)
+
         header_block += self.add(to_add)
 
         return header_block
