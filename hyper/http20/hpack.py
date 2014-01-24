@@ -167,13 +167,19 @@ class Encoder(object):
         # the natural way to interact with them in HPACK.
         if isinstance(headers, dict):
             incoming_set = set(headers.items())
+            headers = headers.items()
         else:
             incoming_set = set(headers)
 
         # First, we need to determine what set of headers we need to emit.
         # We do this by comparing against the reference set.
-        to_add = incoming_set - self.reference_set
-        to_remove = self.reference_set - incoming_set
+        # Because the HPACK standard defines a header set as 'potentially
+        # ordered', we should try to maintain their order. It's a hassle, but
+        # there we go.
+        to_add = (x for x in headers if x in incoming_set - self.reference_set)
+        to_remove = (
+            x for x in headers if x in self.reference_set - incoming_set
+        )
 
         # Now, serialize the headers. Do removal first.
         header_block = self.remove(to_remove)
