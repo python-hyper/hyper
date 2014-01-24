@@ -395,12 +395,10 @@ class TestHPACKEncoder(object):
             (':authority', 'www.example.com',),
             ('cache-control', 'no-cache'),
         ]
-        second_result = b'\x1b\x08no-cache'
+        second_result = b'\x5a\x08no-cache'
 
         assert e.encode(second_header_set, huffman=False) == second_result
-        assert e.header_table == (
-            [('cache-control', 'no-cache')] + first_header_set
-        )
+        assert e.header_table == first_header_table
 
         # This request has not enough headers in common with the previous
         # request to take advantage of the differential encoding.  Therefore,
