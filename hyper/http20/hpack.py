@@ -120,7 +120,26 @@ class Encoder(object):
     def __init__(self):
         self.header_table = []
         self.reference_set = set()
-        self.header_table_size = 4096  # This value set by the standard.
+        self._header_table_size = 4096  # This value set by the standard.
+
+    @property
+    def header_table_size(self):
+        return self._header_table_size
+
+    @header_table_size.setter
+    def header_table_size(self, value):
+        # If the new value is larger than the current one, no worries!
+        # Otherwise, we may need to shrink the header table.
+        if value < self._header_table_size:
+            current_size = header_table_size(self.header_table)
+
+            while value < current_size:
+                n, v = self.header_table.pop()
+                current_size -= (
+                    32 + len(n.encode('utf-8')) + len(v.encode('utf-8'))
+                )
+
+        self._header_table_size = value
 
     def encode(self, headers, huffman=True):
         """
@@ -316,4 +335,23 @@ class Decoder(object):
     def __init__(self):
         self.header_table = []
         self.reference_set = set()
-        self.header_table_size = 4096  # This value set by the standard.
+        self._header_table_size = 4096  # This value set by the standard.
+
+    @property
+    def header_table_size(self):
+        return self._header_table_size
+
+    @header_table_size.setter
+    def header_table_size(self, value):
+        # If the new value is larger than the current one, no worries!
+        # Otherwise, we may need to shrink the header table.
+        if value < self._header_table_size:
+            current_size = header_table_size(self.header_table)
+
+            while value < current_size:
+                n, v = self.header_table.pop()
+                current_size -= (
+                    32 + len(n.encode('utf-8')) + len(v.encode('utf-8'))
+                )
+
+        self._header_table_size = value
