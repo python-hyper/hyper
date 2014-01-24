@@ -29,6 +29,20 @@ def encode_integer(integer, prefix_bits):
         return bytearray(elements)
 
 
+def header_table_size(table):
+    """
+    Calculates the 'size' of the header table as defined by the HTTP/2.0
+    specification.
+    """
+    # It's phenomenally frustrating that the specification feels it is able to
+    # tell me how large the header table is, considering that its calculations
+    # assume a very particular layout that most implementations will not have.
+    # I appreciate it's an attempt to prevent DoS attacks by sending lots of
+    # large headers in the header table, but it seems like a better approach
+    # would be to limit the size of headers. Ah well.
+    return sum(32 + len(name.encode('utf-8')) + len(value.encode('utf-8'))
+               for name, value in table)
+
 
 class Encoder(object):
     """
