@@ -477,6 +477,164 @@ class TestHPACKEncoder(object):
         assert len(e.header_table) == 8
 
 
+class TestHPACKDecoder(object):
+    # These tests are stolen entirely from the IETF specification examples.
+    def test_literal_header_field_with_indexing(self):
+        """
+        The header field representation uses a literal name and a literal
+        value.
+        """
+        d = Decoder()
+        header_set = {'custom-key': 'custom-header'}
+        data = b'\x00\x0acustom-key\x0dcustom-header'
+
+        assert d.decode(data) == header_set
+        assert d.header_table == list(header_set.items())
+
+    def test_literal_header_field_without_indexing(self):
+        """
+        The header field representation uses an indexed name and a literal
+        value.
+        """
+        d = Decoder()
+        header_set = {':path': '/sample/path'}
+        data = b'\x44\x0c/sample/path'
+
+        assert d.decode(data) == header_set
+        assert d.header_table == []
+
+    def test_indexed_header_field(self):
+        """
+        The header field representation uses an indexed header field, from
+        the static table.  Upon using it, the static table entry is copied
+        into the header table.
+        """
+        d = Decoder()
+        header_set = {':method': 'GET'}
+        data = b'\x82'
+
+        assert d.decode(data) == header_set
+        assert d.header_table == list(header_set.items())
+
+    def test_indexed_header_field_from_static_table(self):
+        d = Decoder()
+        d.header_table_size = 0
+        header_set = {':method': 'GET'}
+        data = b'\x82'
+
+        assert d.decode(data) == header_set
+        assert d.header_table == []
+
+    def test_request_examples_without_huffman(self):
+        """
+        This section shows several consecutive header sets, corresponding to
+        HTTP requests, on the same connection.
+        """
+        d = Decoder()
+        first_header_set = [
+            (':method', 'GET',),
+            (':scheme', 'http',),
+            (':path', '/',),
+            (':authority', 'www.example.com'),
+        ]
+        # The first_header_table doesn't contain 'authority'
+        first_header_table = first_header_set[::-1][1:]
+        first_data = b'\x82\x87\x86\x44\x0fwww.example.com'
+
+        assert d.decode(first_data) == dict(first_header_set)
+        assert d.header_table == first_header_table
+
+        # This request takes advantage of the differential encoding of header
+        # sets.
+        second_header_set = [
+            (':method', 'GET',),
+            (':scheme', 'http',),
+            (':path', '/',),
+            (':authority', 'www.example.com',),
+            ('cache-control', 'no-cache'),
+        ]
+        second_data = b'\x5a\x08no-cache'
+
+        assert d.decode(second_data) == dict(second_header_set)
+        assert d.header_table == first_header_table
+
+        # This request has not enough headers in common with the previous
+        # request to take advantage of the differential encoding.  Therefore,
+        # the reference set is emptied before encoding the header fields.
+        third_header_set = [
+            (':method', 'GET',),
+            (':scheme', 'https',),
+            (':path', '/index.html',),
+            (':authority', 'www.example.com',),
+            ('custom-key', 'custom-value'),
+        ]
+        third_data = (
+            b'\x80\x83\x8a\x89\x46\x0fwww.example.com' +
+            b'\x00\x0acustom-key\x0ccustom-value'
+        )
+
+        assert d.decode(third_data) == dict(third_header_set)
+        # Don't check the header table here, it's just too complex to be
+        # reliable. Check its length though.
+        assert len(d.header_table) == 6
+
+    @pytest.mark.xfail
+    def test_request_examples_with_huffman(self):
+        """
+        This section shows the same examples as the previous section, but
+        using Huffman encoding for the literal values.
+        """
+        e = Encoder()
+        first_header_set = {
+            ':method': 'GET',
+            ':scheme': 'http',
+            ':path': '/',
+            ':authority': 'www.example.com'
+        }
+        first_result = (
+            b'\x82\x87\x86\x04\x8b\xdb\x6d\x88\x3e\x68\xd1\xcb\x12\x25\xba\x7f'
+        )
+
+        assert e.encode(first_header_set, huffman=True) == first_result
+        assert e.header_table == list(first_header_set.items())
+
+        # This request takes advantage of the differential encoding of header
+        # sets.
+        second_header_set = {
+            ':method': 'GET',
+            ':scheme': 'http',
+            ':path': '/',
+            ':authority': 'www.example.com',
+            'cache-control': 'no-cache'
+        }
+        second_result = b'\x1b\x86\x63\x65\x4a\x13\x98\xff'
+
+        assert e.encode(second_header_set, huffman=True) == second_result
+        assert e.header_table == (
+            [('cache-control', 'no-cache')] + list(first_header_set.items())
+        )
+
+        # This request has not enough headers in common with the previous
+        # request to take advantage of the differential encoding.  Therefore,
+        # the reference set is emptied before encoding the header fields.
+        third_header_set = {
+            ':method': 'GET',
+            ':scheme': 'https',
+            ':path': '/index.html',
+            ':authority': 'www.example.com',
+            'custom-key': 'custom-value'
+        }
+        third_result = (
+            b'\x80\x85\x8c\x8b\x84\x00\x88\x4e\xb0\x8b\x74\x97\x90\xfa\x7f\x89'
+            b'\x4e\xb0\x8b\x74\x97\x9a\x17\xa8\xff'
+        )
+
+        assert e.encode(third_header_set, huffman=True) == third_result
+        # Don't check the header table here, it's just too complex to be
+        # reliable. Check its length though.
+        assert len(e.header_table) == 8
+
+
 class TestIntegerEncoding(object):
     # These tests are stolen from the HPACK spec.
     def test_encoding_10_with_5_bit_prefix(self):
