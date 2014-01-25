@@ -664,5 +664,5 @@ class TestIntegerDecoding(object):
         assert val == 1337
 
     def test_encoding_42_with_8_bit_prefix(self):
-        val = encode_integer(b'\x2a', 8)
+        val = decode_integer(b'\x2a', 8)
         assert val == 42
