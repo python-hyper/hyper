@@ -29,6 +29,35 @@ def encode_integer(integer, prefix_bits):
         return bytearray(elements)
 
 
+def decode_integer(data, prefix_bits):
+    """
+    This decodes an integer according to the wacky integer encoding rules
+    defined in the HPACK spec. Returns a tuple of the decoded integer and the
+    number of bytes that were consumed from ``data`` in order to get that
+    integer.
+    """
+    multiple = lambda index: 128 ** (index - 1)
+    max_number = (2 ** prefix_bits) - 1
+    mask = 0xFF >> (8 - prefix_bits)
+    index = 0
+
+    number = data[index] & mask
+
+    if (number == max_number):
+
+        while True:
+            index += 1
+            next_byte = data[index]
+
+            if next_byte >= 128:
+                number += (next_byte - 128) * multiple(index)
+            else:
+                number += next_byte * multiple(index)
+                break
+
+    return (number, index + 1)
+
+
 def header_table_size(table):
     """
     Calculates the 'size' of the header table as defined by the HTTP/2.0
