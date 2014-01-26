@@ -547,3 +547,62 @@ class Decoder(object):
             self.reference_set.add(header)
 
         return None, consumed
+
+    def _decode_literal_no_index(self, data):
+        return self._decode_literal(data, False)
+
+    def _decode_literal_index(self, data):
+        return self._decode_literal(data, True)
+
+    def _decode_literal(self, data, should_index):
+        """
+        Decodes a header represented with a literal.
+        """
+        total_consumed = 0
+
+        # If the low six bits of the first byte are nonzero, the header
+        # name is indexed.
+        first_byte = data[0]
+
+        if first_byte & 0x3F:
+            # Indexed header name.
+            index, consumed = decode_integer(data, 6)
+            index -= 1
+
+            if index > len(self.header_table):
+                index -= len(self.header_table)
+                name = Decoder.static_table[index][0]
+            else:
+                name = self.header_table[index][0]
+
+            total_consumed = consumed
+            length = 0
+        else:
+            # Literal header name. The first byte was zero, so we need to
+            # move forward.
+            data = data[1:]
+            length, consumed = decode_integer(data, 8)
+            name = data[consumed:consumed + length].decode('utf-8')
+            total_consumed = consumed + length + 1  # Since we moved forward 1.
+
+        data = data[consumed + length:]
+
+        # The header value is definitely length-based.
+        length, consumed = decode_integer(data, 8)
+        value = data[consumed:consumed + length].decode('utf-8')
+
+        # Updated the total consumed length.
+        total_consumed += length + consumed
+
+        # If we've been asked to index this, add it to the header table and
+        # the reference set, then don't return it.
+        if should_index:
+            self.header_table.insert(0, (name, value))
+            self.reference_set.add((name, value))
+            header = None
+        else:
+            header = (name, value)
+
+        print(total_consumed)
+        return header, total_consumed
+
