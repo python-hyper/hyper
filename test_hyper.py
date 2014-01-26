@@ -544,7 +544,7 @@ class TestHPACKDecoder(object):
             (':authority', 'www.example.com',),
             ('cache-control', 'no-cache'),
         ]
-        second_data = b'\x5a\x08no-cache'
+        second_data = b'\x44\x0fwww.example.com\x5a\x08no-cache'
 
         assert d.decode(second_data) == dict(second_header_set)
         assert d.header_table == first_header_table
