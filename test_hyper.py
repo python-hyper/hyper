@@ -395,7 +395,7 @@ class TestHPACKEncoder(object):
             (':authority', 'www.example.com',),
             ('cache-control', 'no-cache'),
         ]
-        second_result = b'\x5a\x08no-cache'
+        second_result = b'\x44\x0fwww.example.com\x5a\x08no-cache'
 
         assert e.encode(second_header_set, huffman=False) == second_result
         assert e.header_table == first_header_table
