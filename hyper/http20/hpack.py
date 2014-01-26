@@ -603,6 +603,5 @@ class Decoder(object):
         else:
             header = (name, value)
 
-        print(total_consumed)
         return header, total_consumed
 
