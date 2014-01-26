@@ -525,6 +525,12 @@ class Decoder(object):
         Decodes a header represented using the indexed representation.
         """
         index, consumed = decode_integer(data, 7)
+
+        # If we get an indexed representation of zero, empty the reference set.
+        if not index:
+            self.reference_set = set()
+            return None, consumed
+
         index -= 1  # Because this idiot table is 1-indexed. Ugh.
 
         if index > len(self.header_table):
