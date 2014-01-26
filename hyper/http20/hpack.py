@@ -569,7 +569,7 @@ class Decoder(object):
             index, consumed = decode_integer(data, 6)
             index -= 1
 
-            if index > len(self.header_table):
+            if index >= len(self.header_table):
                 index -= len(self.header_table)
                 name = Decoder.static_table[index][0]
             else:
