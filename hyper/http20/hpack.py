@@ -293,14 +293,13 @@ class Encoder(object):
 
                 if index > len(self.header_table):
                     self._add_to_header_table(name, value)
+
+                self.reference_set.add((name, value))
             else:
                 # Indexed literal. Since we have a partial match, don't add to
                 # the header table, it won't help us.
                 s = self._encode_indexed_literal(index, value, False)
                 encoded.append(s)
-
-            # Either way, we add to the reference set.
-            self.reference_set.add((name, value))
 
         return b''.join(encoded)
 
