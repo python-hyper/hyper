@@ -516,15 +516,6 @@ class TestHPACKDecoder(object):
         assert d.decode(data) == header_set
         assert d.header_table == list(header_set.items())
 
-    def test_indexed_header_field_from_static_table(self):
-        d = Decoder()
-        d.header_table_size = 0
-        header_set = {':method': 'GET'}
-        data = b'\x82'
-
-        assert d.decode(data) == header_set
-        assert d.header_table == []
-
     def test_request_examples_without_huffman(self):
         """
         This section shows several consecutive header sets, corresponding to

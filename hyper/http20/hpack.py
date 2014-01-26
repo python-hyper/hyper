@@ -479,3 +479,71 @@ class Decoder(object):
                 )
 
         self._header_table_size = value
+
+    def decode(self, data):
+        """
+        Takes an HPACK-encoded header block and decodes it into a header set.
+        """
+        headers = set()
+        data_len = len(data)
+        current_index = 0
+
+        while current_index < data_len:
+            # Work out what kind of header we're decoding.
+            # If the high bit is 1, it's an indexed field.
+            indexed = bool(data[current_index] & 0x80)
+
+            # Otherwise, if the second-highest bit is 1 it's a field that
+            # doesn't alter the header table.
+            literal_no_index = bool(data[current_index] & 0x40)
+
+            if indexed:
+                header, consumed = self._decode_indexed(data[current_index:])
+            elif literal_no_index:
+                header, consumed = self._decode_literal_no_index(
+                    data[current_index:]
+                )
+            else:
+                # It's a literal header that does affect the header table.
+                header, consumed = self._decode_literal_index(
+                    data[current_index:]
+                )
+
+            if header:
+                headers.add(header)
+
+            current_index += consumed
+
+        # Now we're at the end, anything in the reference set that isn't in the
+        # headers already gets added.
+        headers = headers | self.reference_set
+
+        return dict(headers)
+
+
+    def _decode_indexed(self, data):
+        """
+        Decodes a header represented using the indexed representation.
+        """
+        index, consumed = decode_integer(data, 7)
+        index -= 1  # Because this idiot table is 1-indexed. Ugh.
+
+        if index > len(self.header_table):
+            index -= len(self.header_table)
+            header = Decoder.static_table[index]
+
+            # If this came out of the static table, we need to add it to the
+            # header table.
+            self.header_table.insert(0, header)
+        else:
+            header = self.header_table[index]
+
+        # If the header is in the reference set, remove it. Otherwise, add it.
+        # Since this updates the reference set, don't bother returning the
+        # header.
+        if header in self.reference_set:
+            self.reference_set.remove(header)
+        else:
+            self.reference_set.add(header)
+
+        return None, consumed
