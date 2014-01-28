@@ -15,6 +15,6 @@ class TestHPACKDecoderIntegration(object):
             decoded_headers = d.decode(unhexlify(case['wire']))
 
             # The correct headers are a list of dicts, which is annoying.
-            correct_headers = {item[0]: item[1] for header in case['headers'] for item in header.items()}
+            correct_headers = {(item[0], item[1]) for header in case['headers'] for item in header.items()}
             assert correct_headers == decoded_headers
 
