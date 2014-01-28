@@ -485,11 +485,11 @@ class TestHPACKDecoder(object):
         value.
         """
         d = Decoder()
-        header_set = {'custom-key': 'custom-header'}
+        header_set = set([('custom-key', 'custom-header')])
         data = b'\x00\x0acustom-key\x0dcustom-header'
 
         assert d.decode(data) == header_set
-        assert d.header_table == list(header_set.items())
+        assert d.header_table == list(header_set)
 
     def test_literal_header_field_without_indexing(self):
         """
@@ -497,7 +497,7 @@ class TestHPACKDecoder(object):
         value.
         """
         d = Decoder()
-        header_set = {':path': '/sample/path'}
+        header_set = set([(':path', '/sample/path')])
         data = b'\x44\x0c/sample/path'
 
         assert d.decode(data) == header_set
@@ -510,11 +510,11 @@ class TestHPACKDecoder(object):
         into the header table.
         """
         d = Decoder()
-        header_set = {':method': 'GET'}
+        header_set = set([(':method', 'GET')])
         data = b'\x82'
 
         assert d.decode(data) == header_set
-        assert d.header_table == list(header_set.items())
+        assert d.header_table == list(header_set)
 
     def test_request_examples_without_huffman(self):
         """
@@ -532,7 +532,7 @@ class TestHPACKDecoder(object):
         first_header_table = first_header_set[::-1][1:]
         first_data = b'\x82\x87\x86\x44\x0fwww.example.com'
 
-        assert d.decode(first_data) == dict(first_header_set)
+        assert d.decode(first_data) == set(first_header_set)
         assert d.header_table == first_header_table
 
         # This request takes advantage of the differential encoding of header
@@ -546,7 +546,7 @@ class TestHPACKDecoder(object):
         ]
         second_data = b'\x44\x0fwww.example.com\x5a\x08no-cache'
 
-        assert d.decode(second_data) == dict(second_header_set)
+        assert d.decode(second_data) == set(second_header_set)
         assert d.header_table == first_header_table
 
         # This request has not enough headers in common with the previous
@@ -564,7 +564,7 @@ class TestHPACKDecoder(object):
             b'\x00\x0acustom-key\x0ccustom-value'
         )
 
-        assert d.decode(third_data) == dict(third_header_set)
+        assert d.decode(third_data) == set(third_header_set)
         # Don't check the header table here, it's just too complex to be
         # reliable. Check its length though.
         assert len(d.header_table) == 6

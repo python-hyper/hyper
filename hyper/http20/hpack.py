@@ -517,7 +517,7 @@ class Decoder(object):
         # headers already gets added.
         headers = headers | self.reference_set
 
-        return dict(headers)
+        return headers
 
 
     def _decode_indexed(self, data):
