@@ -593,7 +593,7 @@ class Decoder(object):
         data = data[consumed + length:]
 
         # The header value is definitely length-based.
-        length, consumed = decode_integer(data, 8)
+        length, consumed = decode_integer(data, 7)
         value = data[consumed:consumed + length].decode('utf-8')
 
         # Updated the total consumed length.
@@ -609,4 +609,3 @@ class Decoder(object):
             header = (name, value)
 
         return header, total_consumed
-
