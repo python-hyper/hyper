@@ -1,0 +1,58 @@
+{
+    "context": "request",
+    "cases": [
+        {
+            "headers": [
+                {
+                    ":scheme": "https"
+                },
+                {
+                    ":authority": "example.com"
+                },
+                {
+                    ":path": "/"
+                },
+                {
+                    ":method": "GET"
+                },
+                {
+                    "user-agent": "hpack-test"
+                },
+                {
+                    "cookie": "xxxxxxx1"
+                },
+                {
+                    "x-hello": "world"
+                }
+            ],
+            "wire": "8040073a736368656d65056874747073400a3a617574686f726974790b6578616d706c652e636f6d40053a70617468012f40073a6d6574686f6403474554400a757365722d6167656e740a687061636b2d746573744006636f6f6b69650878787878787878314007782d68656c6c6f05776f726c64",
+            "header_table_size": 4096
+        },
+        {
+            "headers": [
+                {
+                    ":scheme": "https"
+                },
+                {
+                    ":authority": "example.com"
+                },
+                {
+                    ":path": "/"
+                },
+                {
+                    ":method": "GET"
+                },
+                {
+                    "user-agent": "hpack-test"
+                },
+                {
+                    "cookie": "xxxxxxx2"
+                }
+            ],
+            "wire": "8040073a736368656d65056874747073400a3a617574686f726974790b6578616d706c652e636f6d40053a70617468012f40073a6d6574686f6403474554400a757365722d6167656e740a687061636b2d746573744006636f6f6b6965087878787878787832",
+            "header_table_size": 4096
+        }
+    ],
+    "description": "Encoded by the http2 library in Haskell. First clear the reference set and encode all headers",
+    "draft": 5
+}
