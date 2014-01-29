@@ -1,14 +1,16 @@
-from hyper.http20.huffman_decoder import request_decoder,response_decoder
+from hyper.http20.huffman_decoder import HuffmanDecoder
+from hyper.http20.huffman_constants import REQUEST_CODES,REQUEST_CODES_LENGTH,RESPONSE_CODES,RESPONSE_CODES_LENGTHS
+
 
 def test_request_huffman_decoder():
-    decoder = request_decoder
+    decoder = HuffmanDecoder(REQUEST_CODES,REQUEST_CODES_LENGTH)
     assert decoder.decode(r'\xdb\x6d\x883e\x68\xd1\xcb\x12\x25\xba\x7f') == "www.example.com"
     assert decoder.decode(r'\x63\x65\x4a\x13\x98\xff') == "no-cache"
     assert decoder.decode(r'\x4e\xb0\x8b\x74\x97\x90\xfa\x7f') == "custom-key"
     assert decoder.decode(r'\x4e\xb0\x8b\x74\x97\x9a\x17\xa8\xff ') == "custom-value"
 
 def test_response_huffman_decoder():
-    decoder = response_decoder
+    decoder = HuffmanDecoder(RESPONSE_CODES,RESPONSE_CODES_LENGTHS)
     assert decoder.decode(r'\x40\x9f') == "302"
     assert decoder.decode(r'\xc3\x1b\x39\xbf\x38\x7f') == "private"
     assert decoder.decode(r'\xa2\xfb\xa2\x03\x20\xf2\xab\x30\x31\x24\x01\x8b\x49\x0d\x32\x09\xe8\x77') == "Mon, 21 Oct 2013 20:13:21 GMT"
