@@ -519,6 +519,22 @@ class Decoder(object):
 
         return headers
 
+    def _add_to_header_table(self, name, value):
+        """
+        Adds a header to the header table, evicting old ones if necessary.
+        """
+        # Be optimistic: add the header straight away.
+        self.header_table.insert(0, (name, value))
+
+        # Now, work out how big the header table is.
+        actual_size = header_table_size(self.header_table)
+
+        # Loop and remove whatever we need to.
+        while actual_size > self.header_table_size:
+            n, v = self.header_table.pop()
+            actual_size -= (
+                32 + len(n.encode('utf-8')) + len(v.encode('utf-8'))
+            )
 
     def _decode_indexed(self, data):
         """
@@ -539,7 +555,7 @@ class Decoder(object):
 
             # If this came out of the static table, we need to add it to the
             # header table.
-            self.header_table.insert(0, header)
+            self._add_to_header_table(*header)
         else:
             header = self.header_table[index]
 
@@ -602,7 +618,7 @@ class Decoder(object):
         # If we've been asked to index this, add it to the header table and
         # the reference set, then don't return it.
         if should_index:
-            self.header_table.insert(0, (name, value))
+            self._add_to_header_table(name, value)
             self.reference_set.add((name, value))
             header = None
         else:
