@@ -536,6 +536,10 @@ class Decoder(object):
                 32 + len(n.encode('utf-8')) + len(v.encode('utf-8'))
             )
 
+            # If something is removed from the header table, it also needs to
+            # be removed from the reference set.
+            self.reference_set.discard((n, v))
+
     def _decode_indexed(self, data):
         """
         Decodes a header represented using the indexed representation.
@@ -564,10 +568,11 @@ class Decoder(object):
         # header.
         if header in self.reference_set:
             self.reference_set.remove(header)
+            return None, consumed
         else:
             self.reference_set.add(header)
+            return header, consumed
 
-        return None, consumed
 
     def _decode_literal_no_index(self, data):
         return self._decode_literal(data, False)
@@ -616,12 +621,11 @@ class Decoder(object):
         total_consumed += length + consumed
 
         # If we've been asked to index this, add it to the header table and
-        # the reference set, then don't return it.
+        # the reference set.
         if should_index:
             self._add_to_header_table(name, value)
             self.reference_set.add((name, value))
-            header = None
-        else:
-            header = (name, value)
+
+        header = (name, value)
 
         return header, total_consumed
