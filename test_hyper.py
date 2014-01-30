@@ -331,7 +331,9 @@ class TestHPACKEncoder(object):
         result = b'\x00\x0acustom-key\x0dcustom-header'
 
         assert e.encode(header_set, huffman=False) == result
-        assert e.header_table == list(header_set.items())
+        assert e.header_table == [
+            (n.encode('utf-8'), v.encode('utf-8')) for n, v in header_set.items()
+        ]
 
     def test_literal_header_field_without_indexing(self):
         """
@@ -356,7 +358,9 @@ class TestHPACKEncoder(object):
         result = b'\x82'
 
         assert e.encode(header_set, huffman=False) == result
-        assert e.header_table == list(header_set.items())
+        assert e.header_table == [
+            (n.encode('utf-8'), v.encode('utf-8')) for n, v in header_set.items()
+        ]
 
     def test_indexed_header_field_from_static_table(self):
         e = Encoder()
@@ -384,7 +388,9 @@ class TestHPACKEncoder(object):
         first_result = b'\x82\x87\x86\x44\x0fwww.example.com'
 
         assert e.encode(first_header_set, huffman=False) == first_result
-        assert e.header_table == first_header_table
+        assert e.header_table == [
+            (n.encode('utf-8'), v.encode('utf-8')) for n, v in first_header_table
+        ]
 
         # This request takes advantage of the differential encoding of header
         # sets.
@@ -398,7 +404,9 @@ class TestHPACKEncoder(object):
         second_result = b'\x44\x0fwww.example.com\x5a\x08no-cache'
 
         assert e.encode(second_header_set, huffman=False) == second_result
-        assert e.header_table == first_header_table
+        assert e.header_table == [
+            (n.encode('utf-8'), v.encode('utf-8')) for n, v in first_header_table
+        ]
 
         # This request has not enough headers in common with the previous
         # request to take advantage of the differential encoding.  Therefore,
@@ -489,7 +497,9 @@ class TestHPACKDecoder(object):
         data = b'\x00\x0acustom-key\x0dcustom-header'
 
         assert d.decode(data) == header_set
-        assert d.header_table == list(header_set)
+        assert d.header_table == [
+            (n.encode('utf-8'), v.encode('utf-8')) for n, v in header_set
+        ]
 
     def test_literal_header_field_without_indexing(self):
         """
@@ -514,7 +524,9 @@ class TestHPACKDecoder(object):
         data = b'\x82'
 
         assert d.decode(data) == header_set
-        assert d.header_table == list(header_set)
+        assert d.header_table == [
+            (n.encode('utf-8'), v.encode('utf-8')) for n, v in header_set
+        ]
 
     def test_request_examples_without_huffman(self):
         """
@@ -533,7 +545,9 @@ class TestHPACKDecoder(object):
         first_data = b'\x82\x87\x86\x44\x0fwww.example.com'
 
         assert d.decode(first_data) == set(first_header_set)
-        assert d.header_table == first_header_table
+        assert d.header_table == [
+            (n.encode('utf-8'), v.encode('utf-8')) for n, v in first_header_table
+        ]
 
         # This request takes advantage of the differential encoding of header
         # sets.
@@ -547,7 +561,9 @@ class TestHPACKDecoder(object):
         second_data = b'\x44\x0fwww.example.com\x5a\x08no-cache'
 
         assert d.decode(second_data) == set(second_header_set)
-        assert d.header_table == first_header_table
+        assert d.header_table == [
+            (n.encode('utf-8'), v.encode('utf-8')) for n, v in first_header_table
+        ]
 
         # This request has not enough headers in common with the previous
         # request to take advantage of the differential encoding.  Therefore,
