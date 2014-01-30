@@ -69,12 +69,7 @@ def header_table_size(table):
     # I appreciate it's an attempt to prevent DoS attacks by sending lots of
     # large headers in the header table, but it seems like a better approach
     # would be to limit the size of headers. Ah well.
-
-    # This is a very costly action due to the repeated encodings: we do this
-    # once per header we emit! This is a strong argument for using bytes
-    # internally to the Encoder class.
-    return sum(32 + len(name.encode('utf-8')) + len(value.encode('utf-8'))
-               for name, value in table)
+    return sum(32 + len(name) + len(value) for name, value in table)
 
 
 class Encoder(object):
@@ -165,7 +160,7 @@ class Encoder(object):
             while value < current_size:
                 n, v = self.header_table.pop()
                 current_size -= (
-                    32 + len(n.encode('utf-8')) + len(v.encode('utf-8'))
+                    32 + len(n) + len(v)
                 )
 
         self._header_table_size = value
@@ -195,10 +190,12 @@ class Encoder(object):
         # First, turn the headers into a list of tuples if possible. This is
         # the natural way to interact with them in HPACK.
         if isinstance(headers, dict):
-            incoming_set = set(headers.items())
             headers = headers.items()
-        else:
-            incoming_set = set(headers)
+
+        # Next, walk across the headers and turn them all into bytestrings.
+        headers = [(n.encode('utf-8'), v.encode('utf-8')) for n, v in headers]
+
+        incoming_set = set(headers)
 
         # First, we need to determine what set of headers we need to emit.
         # We do this by comparing against the reference set.
@@ -344,7 +341,7 @@ class Encoder(object):
         while actual_size > self.header_table_size:
             n, v = self.header_table.pop()
             actual_size -= (
-                32 + len(n.encode('utf-8')) + len(v.encode('utf-8'))
+                32 + len(n) + len(v)
             )
 
     def _encode_indexed(self, index):
@@ -363,8 +360,8 @@ class Encoder(object):
         """
         prefix = bytes([0x00 if indexing else 0x40])
 
-        name = name.encode('utf-8')
-        value = value.encode('utf-8')
+        name = name
+        value = value
         name_len = encode_integer(len(name), 8)
         value_len = encode_integer(len(value), 8)
 
@@ -381,7 +378,7 @@ class Encoder(object):
         name = encode_integer(index, 6)
         name[0] = name[0] | mask
 
-        value = value.encode('utf-8')
+        value = value
         value_len = encode_integer(len(value), 8)
 
         return b''.join([name, value_len, value])
@@ -474,7 +471,7 @@ class Decoder(object):
             while value < current_size:
                 n, v = self.header_table.pop()
                 current_size -= (
-                    32 + len(n.encode('utf-8')) + len(v.encode('utf-8'))
+                    32 + len(n) + len(v)
                 )
 
         self._header_table_size = value
@@ -517,7 +514,7 @@ class Decoder(object):
         # headers already gets added.
         headers = headers | self.reference_set
 
-        return headers
+        return {(n.decode('utf-8'), v.decode('utf-8')) for n, v in headers}
 
     def _add_to_header_table(self, name, value):
         """
@@ -533,7 +530,7 @@ class Decoder(object):
         while actual_size > self.header_table_size:
             n, v = self.header_table.pop()
             actual_size -= (
-                32 + len(n.encode('utf-8')) + len(v.encode('utf-8'))
+                32 + len(n) + len(v)
             )
 
             # If something is removed from the header table, it also needs to
@@ -608,14 +605,14 @@ class Decoder(object):
             # move forward.
             data = data[1:]
             length, consumed = decode_integer(data, 8)
-            name = data[consumed:consumed + length].decode('utf-8')
+            name = data[consumed:consumed + length]
             total_consumed = consumed + length + 1  # Since we moved forward 1.
 
         data = data[consumed + length:]
 
         # The header value is definitely length-based.
         length, consumed = decode_integer(data, 7)
-        value = data[consumed:consumed + length].decode('utf-8')
+        value = data[consumed:consumed + length]
 
         # Updated the total consumed length.
         total_consumed += length + consumed
