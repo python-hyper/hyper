@@ -38,7 +38,7 @@ class HuffmanDecoder(object):
     def __init__(self, huffman_code_list, huffman_code_list_lengths):
         self.root = self._Node(None)
         for index, (huffman_code, code_length) in enumerate(zip(huffman_code_list, huffman_code_list_lengths)):
-            self._insert(huffman_code, code_length, chr(index))
+            self._insert(huffman_code, code_length, index)
 
     def _insert(self, hex_number, hex_length, letter):
         """
@@ -66,4 +66,4 @@ class HuffmanDecoder(object):
             if cur_node.data is not None:
                 decoded_message.append(cur_node.data)
                 cur_node = self.root
-        return "".join(decoded_message)
+        return bytes(decoded_message)
