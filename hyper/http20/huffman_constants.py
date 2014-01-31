@@ -1,3 +1,12 @@
+# -*- coding: utf-8 -*-
+"""
+hyper/http20/huffman_constants
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Defines the constant Huffman table. This takes up an upsetting amount of space,
+but c'est la vie.
+"""
+
 REQUEST_CODES = [
       0x7ffffba,
       0x7ffffbb,
