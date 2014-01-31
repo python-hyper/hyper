@@ -1,11 +1,8 @@
 def _pad_binary(bin_str, req_len=8):
     return max(0, req_len - len(bin_str)) * '0' + bin_str
 
-def _hex_to_binary(hex_string):
-    return bin(int("0x" + hex_string, 16))[2:]
-
 def _hex_to_bin_str(hex_string):
-    unpadded_bin_string_list = map(_hex_to_binary, hex_string.split("\\x")[1:])
+    unpadded_bin_string_list = map(bin, hex_string)
     padded_bin_string_list = map(_pad_binary, unpadded_bin_string_list)
     bitwise_message = "".join(padded_bin_string_list)
     return bitwise_message
