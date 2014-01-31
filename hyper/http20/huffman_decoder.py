@@ -1,4 +1,5 @@
 def _pad_binary(bin_str, req_len=8):
+    bin_str = bin_str[2:]  # Strip the 0b prefix
     return max(0, req_len - len(bin_str)) * '0' + bin_str
 
 def _hex_to_bin_str(hex_string):
@@ -20,7 +21,7 @@ class HuffmanDecoder(object):
             self._insert(huffman_code, code_length, chr(index))
 
     def _insert(self, hex_number, hex_length, letter):
-        hex_number = _pad_binary(bin(hex_number)[2:], hex_length)
+        hex_number = _pad_binary(bin(hex_number), hex_length)
         cur_node = self.root
         for digit in hex_number:
             if digit not in cur_node.mapping:
