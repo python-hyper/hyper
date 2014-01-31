@@ -3,10 +3,10 @@ class HuffmanEncoder(object):
         self.huffman_code_list = huffman_code_list
         self.huffman_code_list_lengths = huffman_code_list_lengths
 
-    def encode(self, bytes_to_encoded):
+    def encode(self, bytes_to_encode):
         final_num = 0
         final_int_len = 0
-        for letter in bytes_to_encoded:
+        for letter in bytes_to_encode:
             bin_int_len = self.huffman_code_list_lengths[letter]
             bin_int = self.huffman_code_list[letter] & (2 ** (bin_int_len + 1) - 1)
             final_num <<= bin_int_len
