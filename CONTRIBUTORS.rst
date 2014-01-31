@@ -9,3 +9,7 @@ Contributors
 ````````````
 
 In chronological order:
+
+- Sriram Ganesan (@elricL)
+
+  - Implemented the Huffman-decoding prefix tree.
