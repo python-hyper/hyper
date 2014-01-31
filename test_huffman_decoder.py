@@ -4,10 +4,10 @@ from hyper.http20.huffman_constants import REQUEST_CODES,REQUEST_CODES_LENGTH,RE
 
 def test_request_huffman_decoder():
     decoder = HuffmanDecoder(REQUEST_CODES,REQUEST_CODES_LENGTH)
-    assert decoder.decode(b'\xdb\x6d\x883e\x68\xd1\xcb\x12\x25\xba\x7f') == "www.example.com"
+    assert decoder.decode(b'\xdb\x6d\x88\x3e\x68\xd1\xcb\x12\x25\xba\x7f') == "www.example.com"
     assert decoder.decode(b'\x63\x65\x4a\x13\x98\xff') == "no-cache"
     assert decoder.decode(b'\x4e\xb0\x8b\x74\x97\x90\xfa\x7f') == "custom-key"
-    assert decoder.decode(b'\x4e\xb0\x8b\x74\x97\x9a\x17\xa8\xff ') == "custom-value"
+    assert decoder.decode(b'\x4e\xb0\x8b\x74\x97\x9a\x17\xa8\xff') == "custom-value"
 
 def test_response_huffman_decoder():
     decoder = HuffmanDecoder(RESPONSE_CODES,RESPONSE_CODES_LENGTHS)
