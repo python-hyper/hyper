@@ -216,9 +216,7 @@ class Encoder(object):
         # ordered', we should try to maintain their order. It's a hassle, but
         # there we go.
         to_add = (x for x in headers if x in incoming_set - self.reference_set)
-        to_remove = (
-            x for x in headers if x in self.reference_set - incoming_set
-        )
+        to_remove = (self.reference_set - incoming_set)
 
         # Now, serialize the headers. Do removal first.
         # If the list of headers we're removing is more than half of the
