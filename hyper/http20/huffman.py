@@ -70,19 +70,33 @@ class HuffmanDecoder(object):
 
 
 class HuffmanEncoder(object):
+    """
+    Encodes a string according to the Huffman encoding table defined in the
+    HPACK specification.
+    """
     def __init__(self, huffman_code_list, huffman_code_list_lengths):
         self.huffman_code_list = huffman_code_list
         self.huffman_code_list_lengths = huffman_code_list_lengths
 
     def encode(self, bytes_to_encode):
+        """
+        Given a string of bytes, encodes them according to the HPACK Huffman
+        specification.
+        """
         final_num = 0
         final_int_len = 0
+
+        # Turn each byte into its huffman code. These codes aren't necessarily
+        # octet aligned, so keep track of how far through an octet we are. To
+        # handle this cleanly, just use a single giant integer.
         for letter in bytes_to_encode:
             bin_int_len = self.huffman_code_list_lengths[letter]
             bin_int = self.huffman_code_list[letter] & (2 ** (bin_int_len + 1) - 1)
             final_num <<= bin_int_len
             final_num |= bin_int
             final_int_len += bin_int_len
+
+        # Pad out to an octet with ones.
         bits_to_be_padded = (8 - (final_int_len % 8)) % 8
         final_num <<= bits_to_be_padded
         final_num |= (1 << (bits_to_be_padded)) - 1
