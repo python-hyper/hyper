@@ -7,6 +7,12 @@ Implements the HPACK header compression algorithm as detailed by the IETF.
 
 Implements the version dated January 9, 2014.
 """
+from .huffman import HuffmanDecoder, HuffmanEncoder
+from hyper.http20.huffman_constants import (
+    REQUEST_CODES, REQUEST_CODES_LENGTH, RESPONSE_CODES, RESPONSE_CODES_LENGTHS
+)
+
+
 def encode_integer(integer, prefix_bits):
     """
     This encodes an integer according to the wacky integer encoding rules
@@ -145,6 +151,9 @@ class Encoder(object):
         self.header_table = []
         self.reference_set = set()
         self._header_table_size = 4096  # This value set by the standard.
+        self.huffman_coder = HuffmanEncoder(
+            REQUEST_CODES, REQUEST_CODES_LENGTH
+        )
 
     @property
     def header_table_size(self):
@@ -456,6 +465,9 @@ class Decoder(object):
         self.header_table = []
         self.reference_set = set()
         self._header_table_size = 4096  # This value set by the standard.
+        self.huffman_coder = HuffmanDecoder(
+            RESPONSE_CODES, RESPONSE_CODES_LENGTHS
+        )
 
     @property
     def header_table_size(self):
@@ -604,8 +616,12 @@ class Decoder(object):
             # Literal header name. The first byte was zero, so we need to
             # move forward.
             data = data[1:]
+
             length, consumed = decode_integer(data, 7)
             name = data[consumed:consumed + length]
+
+            if data[0] & 0x80:
+                name = self.huffman_coder.decode(name)
             total_consumed = consumed + length + 1  # Since we moved forward 1.
 
         data = data[consumed + length:]
@@ -613,6 +629,9 @@ class Decoder(object):
         # The header value is definitely length-based.
         length, consumed = decode_integer(data, 7)
         value = data[consumed:consumed + length]
+
+        if data[0] & 0x80:
+            value = self.huffman_coder.decode(value)
 
         # Updated the total consumed length.
         total_consumed += length + consumed
