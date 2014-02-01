@@ -86,4 +86,11 @@ class HuffmanEncoder(object):
         bits_to_be_padded = (8 - (final_int_len % 8)) % 8
         final_num <<= bits_to_be_padded
         final_num |= (1 << (bits_to_be_padded)) - 1
-        return bytes.fromhex(hex(final_num)[2:])
+
+        # Convert the number to hex and strip off the leading '0x'
+        final_num = hex(final_num)[2:]
+
+        # If this is odd, prepend a zero.
+        final_num = '0' + final_num if len(final_num) % 2 != 0 else final_num
+
+        return bytes.fromhex(final_num)
