@@ -1,0 +1,61 @@
+{
+  "draft": 5,
+  "context": "request",
+  "description": "https://github.com/jxck/hpack implemeted in Golang. Encoded using String Literal with Huffman, no Header/Static Table, and always start with emptied Reference Set. by Jxck.",
+  "cases": [
+    {
+      "header_table_size": 4096,
+      "wire": "804086f66831cdb87f84f77778ff4085f641398e8383ce31774088f62358e6d7aa3e9f88f4466d6912d271774084f63911cf810f",
+      "headers": [
+        {
+          ":method": "GET"
+        },
+        {
+          ":scheme": "http"
+        },
+        {
+          ":authority": "yahoo.co.jp"
+        },
+        {
+          ":path": "/"
+        }
+      ]
+    },
+    {
+      "header_table_size": 4096,
+      "wire": "804086f66831cdb87f84f77778ff4085f641398e8383ce31774088f62358e6d7aa3e9f8bdb6d89e88cdad225a4e2ef4084f63911cf810f",
+      "headers": [
+        {
+          ":method": "GET"
+        },
+        {
+          ":scheme": "http"
+        },
+        {
+          ":authority": "www.yahoo.co.jp"
+        },
+        {
+          ":path": "/"
+        }
+      ]
+    },
+    {
+      "header_table_size": 4096,
+      "wire": "804086f66831cdb87f84f77778ff4085f641398e8383ce31774088f62358e6d7aa3e9f87e44f45699138bb4084f63911cf9905688c860116b820e38274602db9365642534c5a0f591cccbf",
+      "headers": [
+        {
+          ":method": "GET"
+        },
+        {
+          ":scheme": "http"
+        },
+        {
+          ":authority": "k.yimg.jp"
+        },
+        {
+          ":path": "/images/top/sp2/cmn/logo-ns-130528.png"
+        }
+      ]
+    }
+  ]
+}

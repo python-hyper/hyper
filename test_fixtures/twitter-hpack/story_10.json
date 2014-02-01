@@ -1,0 +1,361 @@
+{
+  "draft": 5,
+  "cases": [
+    {
+      "headers": [
+        {
+          ":method": "GET"
+        },
+        {
+          ":scheme": "http"
+        },
+        {
+          ":authority": "msn.com"
+        },
+        {
+          ":path": "/"
+        },
+        {
+          "user-agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10.8; rv:16.0) Gecko/20100101 Firefox/16.0"
+        },
+        {
+          "accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8"
+        },
+        {
+          "accept-language": "en-US,en;q=0.5"
+        },
+        {
+          "accept-encoding": "gzip, deflate"
+        },
+        {
+          "connection": "keep-alive"
+        }
+      ],
+      "header_table_size": 4096,
+      "wire": "82870385d20c225ba7873dbeef6faa96b405042f47faef4254c8b619f5747c19115f477a13d1f4f0e8fdf418a4afaba1fcfd86a485ff7d1ee14f2681ca6294c53747053c716f981a921717af88f9c4338e8be9439cb5251153581e79c745ffcf3d17d287396a4a22a6b03cf45f5795a5259d3fd07f5d5e569495ff168b164bf8f0e91675795a5251168acbd54ee9e8c0715a223f00874b58c14c54d67f87e422e950b5731f"
+    },
+    {
+      "headers": [
+        {
+          ":method": "GET"
+        },
+        {
+          ":scheme": "http"
+        },
+        {
+          ":authority": "www.msn.com"
+        },
+        {
+          ":path": "/"
+        },
+        {
+          "user-agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10.8; rv:16.0) Gecko/20100101 Firefox/16.0"
+        },
+        {
+          "accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8"
+        },
+        {
+          "accept-language": "en-US,en;q=0.5"
+        },
+        {
+          "accept-encoding": "gzip, deflate"
+        },
+        {
+          "connection": "keep-alive"
+        }
+      ],
+      "header_table_size": 4096,
+      "wire": "0788db6d89a41844b74f88"
+    },
+    {
+      "headers": [
+        {
+          ":method": "GET"
+        },
+        {
+          ":scheme": "http"
+        },
+        {
+          ":authority": "ads1.msads.net"
+        },
+        {
+          ":path": "/library/primedns.gif"
+        },
+        {
+          "user-agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10.8; rv:16.0) Gecko/20100101 Firefox/16.0"
+        },
+        {
+          "accept": "image/png,image/*;q=0.8,*/*;q=0.5"
+        },
+        {
+          "accept-language": "en-US,en;q=0.5"
+        },
+        {
+          "accept-encoding": "gzip, deflate"
+        },
+        {
+          "connection": "keep-alive"
+        },
+        {
+          "referer": "http://www.msn.com/"
+        }
+      ],
+      "header_table_size": 4096,
+      "wire": "0189461031348230811831088e05aaf7a1fe80e7ab41c190264ac7079a5688c841cccba55a23210febabcad292be9fe83faeaf2b4a4a3f3f008dce3177b0036db626906112dd0385898b"
+    },
+    {
+      "headers": [
+        {
+          ":method": "GET"
+        },
+        {
+          ":scheme": "http"
+        },
+        {
+          ":authority": "col.stj.s-msn.com"
+        },
+        {
+          ":path": "/primedns.gif"
+        },
+        {
+          "user-agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10.8; rv:16.0) Gecko/20100101 Firefox/16.0"
+        },
+        {
+          "accept": "image/png,image/*;q=0.8,*/*;q=0.5"
+        },
+        {
+          "accept-language": "en-US,en;q=0.5"
+        },
+        {
+          "accept-encoding": "gzip, deflate"
+        },
+        {
+          "connection": "keep-alive"
+        },
+        {
+          "referer": "http://www.msn.com/"
+        }
+      ],
+      "header_table_size": 4096,
+      "wire": "048c4b56484789212e906112dd3f0489073d5a0e0c8132563f8586"
+    },
+    {
+      "headers": [
+        {
+          ":method": "GET"
+        },
+        {
+          ":scheme": "http"
+        },
+        {
+          ":authority": "blu.stc.s-msn.com"
+        },
+        {
+          ":path": "/as/wea3/i/en-us/law/39.gif"
+        },
+        {
+          "user-agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10.8; rv:16.0) Gecko/20100101 Firefox/16.0"
+        },
+        {
+          "accept": "image/png,image/*;q=0.8,*/*;q=0.5"
+        },
+        {
+          "accept-language": "en-US,en;q=0.5"
+        },
+        {
+          "accept-encoding": "gzip, deflate"
+        },
+        {
+          "connection": "keep-alive"
+        },
+        {
+          "referer": "http://www.msn.com/"
+        }
+      ],
+      "header_table_size": 4096,
+      "wire": "028cbd7a921149212e906112dd3f0291044036144c0a0164bac0168d826b0992b18384"
+    },
+    {
+      "headers": [
+        {
+          ":method": "GET"
+        },
+        {
+          ":scheme": "http"
+        },
+        {
+          ":authority": "col.stj.s-msn.com"
+        },
+        {
+          ":path": "/primedns.gif"
+        },
+        {
+          "user-agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10.8; rv:16.0) Gecko/20100101 Firefox/16.0"
+        },
+        {
+          "accept": "image/png,image/*;q=0.8,*/*;q=0.5"
+        },
+        {
+          "accept-language": "en-US,en;q=0.5"
+        },
+        {
+          "accept-encoding": "gzip, deflate"
+        },
+        {
+          "connection": "keep-alive"
+        },
+        {
+          "referer": "http://www.msn.com/"
+        }
+      ],
+      "header_table_size": 4096,
+      "wire": "84838182"
+    },
+    {
+      "headers": [
+        {
+          ":method": "GET"
+        },
+        {
+          ":scheme": "http"
+        },
+        {
+          ":authority": "col.stc.s-msn.com"
+        },
+        {
+          ":path": "/br/sc/i/ff/adchoices_gif2.gif"
+        },
+        {
+          "user-agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10.8; rv:16.0) Gecko/20100101 Firefox/16.0"
+        },
+        {
+          "accept": "image/png,image/*;q=0.8,*/*;q=0.5"
+        },
+        {
+          "accept-language": "en-US,en;q=0.5"
+        },
+        {
+          "accept-encoding": "gzip, deflate"
+        },
+        {
+          "connection": "keep-alive"
+        },
+        {
+          "referer": "http://www.msn.com/"
+        }
+      ],
+      "header_table_size": 4096,
+      "wire": "028b4b5648452484ba41844b7402940bde10482831c41182736a9230bb25627264ac7f8586"
+    },
+    {
+      "headers": [
+        {
+          ":method": "GET"
+        },
+        {
+          ":scheme": "http"
+        },
+        {
+          ":authority": "col.stb00.s-msn.com"
+        },
+        {
+          ":path": "/i/80/53CAC6A10B6248682CF221B24A92.gif"
+        },
+        {
+          "user-agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10.8; rv:16.0) Gecko/20100101 Firefox/16.0"
+        },
+        {
+          "accept": "image/png,image/*;q=0.8,*/*;q=0.5"
+        },
+        {
+          "accept-language": "en-US,en;q=0.5"
+        },
+        {
+          "accept-encoding": "gzip, deflate"
+        },
+        {
+          "connection": "keep-alive"
+        },
+        {
+          "referer": "http://www.msn.com/"
+        }
+      ],
+      "header_table_size": 4096,
+      "wire": "028d4b564846f29490974830896e9f029c0505650a26ecdfd94ef317ae93cf5d359fb381ce6eb3cfbec39325638384"
+    },
+    {
+      "headers": [
+        {
+          ":method": "GET"
+        },
+        {
+          ":scheme": "http"
+        },
+        {
+          ":authority": "col.stb01.s-msn.com"
+        },
+        {
+          ":path": "/i/E0/A6C312635EF0A355668C820EB5343.jpg"
+        },
+        {
+          "user-agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10.8; rv:16.0) Gecko/20100101 Firefox/16.0"
+        },
+        {
+          "accept": "image/png,image/*;q=0.8,*/*;q=0.5"
+        },
+        {
+          "accept-language": "en-US,en;q=0.5"
+        },
+        {
+          "accept-encoding": "gzip, deflate"
+        },
+        {
+          "connection": "keep-alive"
+        },
+        {
+          "referer": "http://www.msn.com/"
+        }
+      ],
+      "header_table_size": 4096,
+      "wire": "028d4b564846f29890974830896e9f029e050771437d3d9318f4cd477702ef9a8a29a6becace5eeeba269e6271765f8384"
+    },
+    {
+      "headers": [
+        {
+          ":method": "GET"
+        },
+        {
+          ":scheme": "http"
+        },
+        {
+          ":authority": "col.stb00.s-msn.com"
+        },
+        {
+          ":path": "/i/BB/B1F619A1AD4D4AA6B0648BDBBCDEED.jpg"
+        },
+        {
+          "user-agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10.8; rv:16.0) Gecko/20100101 Firefox/16.0"
+        },
+        {
+          "accept": "image/png,image/*;q=0.8,*/*;q=0.5"
+        },
+        {
+          "accept-language": "en-US,en;q=0.5"
+        },
+        {
+          "accept-encoding": "gzip, deflate"
+        },
+        {
+          "connection": "keep-alive"
+        },
+        {
+          "referer": "http://www.msn.com/"
+        }
+      ],
+      "header_table_size": 4096,
+      "wire": "8401a105075f58759b8526b379b7f6cfdb3efdf4f59699ebebedebebecedeeeeed2717658283"
+    }
+  ],
+  "description": "twitter/hpack 117e759",
+  "context": "request"
+}

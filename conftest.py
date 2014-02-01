@@ -11,6 +11,11 @@ story_directories = (
 story_files = (
     os.path.join(storydir, name) for storydir in story_directories
                                  for name in os.listdir(storydir)
+                                 if storydir != 'raw-data'
+)
+raw_story_files = (
+    os.path.join('test_fixtures/raw-data', name)
+    for name in os.listdir('test_fixtures/raw-data')
 )
 
 @pytest.fixture(scope="class",
@@ -18,6 +23,17 @@ story_files = (
 def story(request):
     """
     Provides a detailed HPACK story to test with.
+    """
+    path = request.param
+    with open(path, 'r', encoding='utf-8') as f:
+        details = json.loads(f.read())
+
+    return details
+
+@pytest.fixture(scope="class", params=raw_story_files)
+def raw_story(request):
+    """
+    Provides a detailed HPACK story to test the encoder with.
     """
     path = request.param
     with open(path, 'r', encoding='utf-8') as f:

@@ -1,0 +1,58 @@
+{
+  "draft": 5,
+  "cases": [
+    {
+      "headers": [
+        {
+          ":scheme": "https"
+        },
+        {
+          ":authority": "example.com"
+        },
+        {
+          ":path": "/"
+        },
+        {
+          ":method": "GET"
+        },
+        {
+          "user-agent": "hpack-test"
+        },
+        {
+          "cookie": "xxxxxxx1"
+        },
+        {
+          "x-hello": "world"
+        }
+      ],
+      "header_table_size": 4096,
+      "wire": "8702881f3468e58912dd3f86853d87cdc84f2962308f240878787878787878310085f397315adb84d9af5e1f"
+    },
+    {
+      "headers": [
+        {
+          ":scheme": "https"
+        },
+        {
+          ":authority": "example.com"
+        },
+        {
+          ":path": "/"
+        },
+        {
+          ":method": "GET"
+        },
+        {
+          "user-agent": "hpack-test"
+        },
+        {
+          "cookie": "xxxxxxx2"
+        }
+      ],
+      "header_table_size": 4096,
+      "wire": "020878787878787878328283"
+    }
+  ],
+  "description": "twitter/hpack 117e759",
+  "context": "request"
+}

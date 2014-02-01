@@ -1,0 +1,361 @@
+{
+  "cases": [
+    {
+      "headers": [
+        {
+          ":method": "GET"
+        }, 
+        {
+          ":scheme": "http"
+        }, 
+        {
+          ":authority": "amazon.com"
+        }, 
+        {
+          ":path": "/"
+        }, 
+        {
+          "user-agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10.8; rv:16.0) Gecko/20100101 Firefox/16.0"
+        }, 
+        {
+          "accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8"
+        }, 
+        {
+          "accept-language": "en-US,en;q=0.5"
+        }, 
+        {
+          "accept-encoding": "gzip, deflate"
+        }, 
+        {
+          "connection": "keep-alive"
+        }
+      ], 
+      "header_table_size": 512, 
+      "wire": "828703874688f56b0896e9873dbeef6faa96b405042f47faef4254c8b619f5747c19115f477a13d1f4f0e8fdf418a4afaba1fcfd86a485ff7d1ee14f2681ca6294c53747053c716f981a921717af88f9c4338e8be9439cb5251153581e79c745ffcf3d17d287396a4a22a6b03cf45f5795a5259d3fd07f5d5e569495ff168b164bf8f0e91675795a5251168acbd54ee9e8c0715a223f00874b58c14c54d67f87e422e950b5731f"
+    }, 
+    {
+      "headers": [
+        {
+          ":method": "GET"
+        }, 
+        {
+          ":scheme": "http"
+        }, 
+        {
+          ":authority": "g-ecx.images-amazon.com"
+        }, 
+        {
+          ":path": "/images/G/01/gno/beacon/BeaconSprite-US-01._V401903535_.png"
+        }, 
+        {
+          "user-agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10.8; rv:16.0) Gecko/20100101 Firefox/16.0"
+        }, 
+        {
+          "accept": "image/png,image/*;q=0.8,*/*;q=0.5"
+        }, 
+        {
+          "accept-language": "en-US,en;q=0.5"
+        }, 
+        {
+          "accept-encoding": "gzip, deflate"
+        }, 
+        {
+          "connection": "keep-alive"
+        }, 
+        {
+          "referer": "http://www.amazon.com/"
+        }
+      ], 
+      "header_table_size": 512, 
+      "wire": "898d0890ca514f9915a232184a8d11ead6112dd34ba905688c8601ee0298326342f1425ac0eb1425acf073d51197f1e1294c4bbf3394d6166a26a2e239997f3f01beef6faa96b405042f47faef4254c8b619f5747c19115f477a13d1f4f0e8fdf418a4afaba1fcfd86a485ff7d1ee14f2681ca6294c53747053c716f981a9217199a5688c841cccba55a23210febabcad292be9fe83faeaf2b4a4a3f178b164bf8f0e91675795a5251168acbd54ee9e8c0715a223f00874b58c14c54d67f87e422e950b5731f398fce3177b0036db6223447ab5844b740"
+    }, 
+    {
+      "headers": [
+        {
+          ":method": "GET"
+        }, 
+        {
+          ":scheme": "http"
+        }, 
+        {
+          ":authority": "g-ecx.images-amazon.com"
+        }, 
+        {
+          ":path": "/images/G/01/x-locale/common/transparent-pixel._V386942464_.gif"
+        }, 
+        {
+          "user-agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10.8; rv:16.0) Gecko/20100101 Firefox/16.0"
+        }, 
+        {
+          "accept": "image/png,image/*;q=0.8,*/*;q=0.5"
+        }, 
+        {
+          "accept-language": "en-US,en;q=0.5"
+        }, 
+        {
+          "accept-encoding": "gzip, deflate"
+        }, 
+        {
+          "connection": "keep-alive"
+        }, 
+        {
+          "referer": "http://www.amazon.com/"
+        }
+      ], 
+      "header_table_size": 512, 
+      "wire": "898d0890ca514f9915a232184a8d11ead6112dd34cab05688c8601ee02983ce55b52858825ba68d6045e8641c878b232b95e62b25df99aba6c9cf3d33dc4c958ff3f02beef6faa96b405042f47faef4254c8b619f5747c19115f477a13d1f4f0e8fdf418a4afaba1fcfd86a485ff7d1ee14f2681ca6294c53747053c716f981a92171a9a5688c841cccba55a23210febabcad292be9fe83faeaf2b4a4a3f178b164bf8f0e91675795a5251168acbd54ee9e8c0715a223f00874b58c14c54d67f87e422e950b5731f398fce3177b0036db6223447ab5844b740"
+    }, 
+    {
+      "headers": [
+        {
+          ":method": "GET"
+        }, 
+        {
+          ":scheme": "http"
+        }, 
+        {
+          ":authority": "g-ecx.images-amazon.com"
+        }, 
+        {
+          ":path": "/images/G/01/img12/other/disaster-relief/300-column/sandy-relief_300x75._V400689491_.png"
+        }, 
+        {
+          "user-agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10.8; rv:16.0) Gecko/20100101 Firefox/16.0"
+        }, 
+        {
+          "accept": "image/png,image/*;q=0.8,*/*;q=0.5"
+        }, 
+        {
+          "accept-language": "en-US,en;q=0.5"
+        }, 
+        {
+          "accept-encoding": "gzip, deflate"
+        }, 
+        {
+          "connection": "keep-alive"
+        }, 
+        {
+          "referer": "http://www.amazon.com/"
+        }
+      ], 
+      "header_table_size": 512, 
+      "wire": "898d0890ca514f9915a232184a8d11ead6112dd34cbb05688c8601ee029815a6463836398bc305411088be578ad43884c52ca96af5d18104330f495e2b50e374c52f9d5412efcce52d35d93d86b88e665f3f02beef6faa96b405042f47faef4254c8b619f5747c19115f477a13d1f4f0e8fdf418a4afaba1fcfd86a485ff7d1ee14f2681ca6294c53747053c716f981a92171a9a5688c841cccba55a23210febabcad292be9fe83faeaf2b4a4a3f178b164bf8f0e91675795a5251168acbd54ee9e8c0715a223f00874b58c14c54d67f87e422e950b5731f398fce3177b0036db6223447ab5844b740"
+    }, 
+    {
+      "headers": [
+        {
+          ":method": "GET"
+        }, 
+        {
+          ":scheme": "http"
+        }, 
+        {
+          ":authority": "www.amazon.com"
+        }, 
+        {
+          ":path": "/"
+        }, 
+        {
+          "user-agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10.8; rv:16.0) Gecko/20100101 Firefox/16.0"
+        }, 
+        {
+          "accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8"
+        }, 
+        {
+          "accept-language": "en-US,en;q=0.5"
+        }, 
+        {
+          "accept-encoding": "gzip, deflate"
+        }, 
+        {
+          "connection": "keep-alive"
+        }
+      ], 
+      "header_table_size": 512, 
+      "wire": "898d088adb6d888d11ead6112dd38c3f03beef6faa96b405042f47faef4254c8b619f5747c19115f477a13d1f4f0e8fdf418a4afaba1fcfd86a485ff7d1ee14f2681ca6294c53747053c716f981a92171aaf88f9c4338e8be9439cb5251153581e79c745ffcf3d17d287396a4a22a6b03cf45f5795a5259d3fd07f5d5e569495ff178b164bf8f0e91675795a5251168acbd54ee9e8c0715a223f00874b58c14c54d67f87e422e950b5731f"
+    }, 
+    {
+      "headers": [
+        {
+          ":method": "GET"
+        }, 
+        {
+          ":scheme": "http"
+        }, 
+        {
+          ":authority": "g-ecx.images-amazon.com"
+        }, 
+        {
+          ":path": "/images/G/01/x-locale/common/transparent-pixel._V192234675_.gif"
+        }, 
+        {
+          "user-agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10.8; rv:16.0) Gecko/20100101 Firefox/16.0"
+        }, 
+        {
+          "accept": "image/png,image/*;q=0.8,*/*;q=0.5"
+        }, 
+        {
+          "accept-language": "en-US,en;q=0.5"
+        }, 
+        {
+          "accept-encoding": "gzip, deflate"
+        }, 
+        {
+          "connection": "keep-alive"
+        }, 
+        {
+          "referer": "http://www.amazon.com/"
+        }
+      ], 
+      "header_table_size": 512, 
+      "wire": "898d0890ca514f9915a232184a8d11ead6112dd34baa05688c8601ee02983ce55b52858825ba68d6045e8641c878b232b95e62b25df935873cd3d355171325633f01beef6faa96b405042f47faef4254c8b619f5747c19115f477a13d1f4f0e8fdf418a4afaba1fcfd86a485ff7d1ee14f2681ca6294c53747053c716f981a9217199a5688c841cccba55a23210febabcad292be9fe83faeaf2b4a4a3f178b164bf8f0e91675795a5251168acbd54ee9e8c0715a223f00874b58c14c54d67f87e422e950b5731f398fce3177b0036db6223447ab5844b740"
+    }, 
+    {
+      "headers": [
+        {
+          ":method": "GET"
+        }, 
+        {
+          ":scheme": "http"
+        }, 
+        {
+          ":authority": "g-ecx.images-amazon.com"
+        }, 
+        {
+          ":path": "/images/G/01/img12/shoes/sales_events/11_nov/1030_AccessoriesPROMO_GWright._V400626950_.gif"
+        }, 
+        {
+          "user-agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10.8; rv:16.0) Gecko/20100101 Firefox/16.0"
+        }, 
+        {
+          "accept": "image/png,image/*;q=0.8,*/*;q=0.5"
+        }, 
+        {
+          "accept-language": "en-US,en;q=0.5"
+        }, 
+        {
+          "accept-encoding": "gzip, deflate"
+        }, 
+        {
+          "connection": "keep-alive"
+        }, 
+        {
+          "referer": "http://www.amazon.com/"
+        }
+      ], 
+      "header_table_size": 512, 
+      "wire": "898d0890ca514f9915a232184a8d11ead6112dd34cbf05688c8601ee029815a6463843368c020858c2e1e62c8c00c6b98de6062cc5bb7a5230835ea187d7eff4effa5deefd3d5967125df99ca5a4f4d9416e264ac73f02beef6faa96b405042f47faef4254c8b619f5747c19115f477a13d1f4f0e8fdf418a4afaba1fcfd86a485ff7d1ee14f2681ca6294c53747053c716f981a92171a9a5688c841cccba55a23210febabcad292be9fe83faeaf2b4a4a3f178b164bf8f0e91675795a5251168acbd54ee9e8c0715a223f00874b58c14c54d67f87e422e950b5731f398fce3177b0036db6223447ab5844b740"
+    }, 
+    {
+      "headers": [
+        {
+          ":method": "GET"
+        }, 
+        {
+          ":scheme": "http"
+        }, 
+        {
+          ":authority": "g-ecx.images-amazon.com"
+        }, 
+        {
+          ":path": "/images/G/01/Automotive/rotos/Duracell600_120._V192204764_.jpg"
+        }, 
+        {
+          "user-agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10.8; rv:16.0) Gecko/20100101 Firefox/16.0"
+        }, 
+        {
+          "accept": "image/png,image/*;q=0.8,*/*;q=0.5"
+        }, 
+        {
+          "accept-language": "en-US,en;q=0.5"
+        }, 
+        {
+          "accept-encoding": "gzip, deflate"
+        }, 
+        {
+          "connection": "keep-alive"
+        }, 
+        {
+          "referer": "http://www.amazon.com/"
+        }
+      ], 
+      "header_table_size": 512, 
+      "wire": "898d0890ca514f9915a232184a8d11ead6112dd34caa05688c8601ee029837eb16e8d8ab9883db16c03b757a122b5d252dc6394977e4d61ce59eaa67b89c5d973f02beef6faa96b405042f47faef4254c8b619f5747c19115f477a13d1f4f0e8fdf418a4afaba1fcfd86a485ff7d1ee14f2681ca6294c53747053c716f981a92171a9a5688c841cccba55a23210febabcad292be9fe83faeaf2b4a4a3f178b164bf8f0e91675795a5251168acbd54ee9e8c0715a223f00874b58c14c54d67f87e422e950b5731f398fce3177b0036db6223447ab5844b740"
+    }, 
+    {
+      "headers": [
+        {
+          ":method": "GET"
+        }, 
+        {
+          ":scheme": "http"
+        }, 
+        {
+          ":authority": "g-ecx.images-amazon.com"
+        }, 
+        {
+          ":path": "/images/G/01/ui/loadIndicators/loadIndicator-large._V192195480_.gif"
+        }, 
+        {
+          "user-agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10.8; rv:16.0) Gecko/20100101 Firefox/16.0"
+        }, 
+        {
+          "accept": "image/png,image/*;q=0.8,*/*;q=0.5"
+        }, 
+        {
+          "accept-language": "en-US,en;q=0.5"
+        }, 
+        {
+          "accept-encoding": "gzip, deflate"
+        }, 
+        {
+          "connection": "keep-alive"
+        }, 
+        {
+          "referer": "http://www.amazon.com/"
+        }
+      ], 
+      "header_table_size": 512, 
+      "wire": "898d0890ca514f9915a232184a8d11ead6112dd34cae05688c8601ee029835502da8c3e0cc149445af802da8c3e0cc149445af95687e424bbf26b0e6b289eb2dc4c958ff3f02beef6faa96b405042f47faef4254c8b619f5747c19115f477a13d1f4f0e8fdf418a4afaba1fcfd86a485ff7d1ee14f2681ca6294c53747053c716f981a92171a9a5688c841cccba55a23210febabcad292be9fe83faeaf2b4a4a3f178b164bf8f0e91675795a5251168acbd54ee9e8c0715a223f00874b58c14c54d67f87e422e950b5731f398fce3177b0036db6223447ab5844b740"
+    }, 
+    {
+      "headers": [
+        {
+          ":method": "GET"
+        }, 
+        {
+          ":scheme": "http"
+        }, 
+        {
+          ":authority": "ecx.images-amazon.com"
+        }, 
+        {
+          ":path": "/images/I/41HZ-ND-SUL._SL135_.jpg"
+        }, 
+        {
+          "user-agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10.8; rv:16.0) Gecko/20100101 Firefox/16.0"
+        }, 
+        {
+          "accept": "image/png,image/*;q=0.8,*/*;q=0.5"
+        }, 
+        {
+          "accept-language": "en-US,en;q=0.5"
+        }, 
+        {
+          "accept-encoding": "gzip, deflate"
+        }, 
+        {
+          "connection": "keep-alive"
+        }, 
+        {
+          "referer": "http://www.amazon.com/"
+        }
+      ], 
+      "header_table_size": 512, 
+      "wire": "898d088f14f9915a232184a8d11ead6112dd3f4c9b05688c8601f009cdefff25f9f6cbe1f8f912ef0f91a6a2e271765f3f02beef6faa96b405042f47faef4254c8b619f5747c19115f477a13d1f4f0e8fdf418a4afaba1fcfd86a485ff7d1ee14f2681ca6294c53747053c716f981a92171a9a5688c841cccba55a23210febabcad292be9fe83faeaf2b4a4a3f178b164bf8f0e91675795a5251168acbd54ee9e8c0715a223f00874b58c14c54d67f87e422e950b5731f398fce3177b0036db6223447ab5844b740"
+    }
+  ], 
+  "draft": 5, 
+  "description": "Encoded by nghttp2. The basic encoding strategy is described in http://lists.w3.org/Archives/Public/ietf-http-wg/2013JulSep/1135.html We use huffman encoding only if it produces strictly shorter byte string than original. We make some headers not indexing at all, but this does not always result in less bits on the wire.", 
+  "context": "request"
+}
