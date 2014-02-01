@@ -5,11 +5,17 @@ long time to run, so they're outside the main test suite, but they need to be
 run before every change to HPACK.
 """
 from hyper.http20.hpack import Decoder
+from hyper.http20.huffman import HuffmanDecoder
+from hyper.http20.huffman_constants import REQUEST_CODES, REQUEST_CODES_LENGTH
 from binascii import unhexlify
 
 class TestHPACKDecoderIntegration(object):
     def test_can_decode_a_story(self, story):
         d = Decoder()
+
+        if story['context'] == 'request':
+            d.huffman_coder = HuffmanDecoder(REQUEST_CODES, REQUEST_CODES_LENGTH)
+
         for case in story['cases']:
             d.header_table_size = case['header_table_size']
             decoded_headers = d.decode(unhexlify(case['wire']))
