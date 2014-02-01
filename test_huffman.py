@@ -1,5 +1,5 @@
 from hyper.http20.huffman import HuffmanDecoder, HuffmanEncoder
-from hyper.http20.huffman_constants import REQUEST_CODES,REQUEST_CODES_LENGTH,RESPONSE_CODES,RESPONSE_CODES_LENGTHS
+from hyper.http20.huffman_constants import REQUEST_CODES,REQUEST_CODES_LENGTH,RESPONSE_CODES,RESPONSE_CODES_LENGTH
 
 
 def test_request_huffman_decoder():
