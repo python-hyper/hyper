@@ -172,6 +172,10 @@ class Encoder(object):
                     32 + len(n) + len(v)
                 )
 
+                # If something is removed from the header table, it also needs
+                # to be removed from the reference set.
+                self.reference_set.discard((n, v))
+
         self._header_table_size = value
 
     def encode(self, headers, huffman=True):
@@ -353,6 +357,10 @@ class Encoder(object):
                 32 + len(n) + len(v)
             )
 
+            # If something is removed from the header table, it also needs to
+            # be removed from the reference set.
+            self.reference_set.discard((n, v))
+
     def _encode_indexed(self, index):
         """
         Encodes a header using the indexed representation.
@@ -496,6 +504,10 @@ class Decoder(object):
                 current_size -= (
                     32 + len(n) + len(v)
                 )
+
+                # If something is removed from the header table, it also needs
+                # to be removed from the reference set.
+                self.reference_set.discard((n, v))
 
         self._header_table_size = value
 
