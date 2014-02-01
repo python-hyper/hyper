@@ -5,6 +5,8 @@ from hyper.http20.frame import (
     ContinuationFrame,
 )
 from hyper.http20.hpack import Encoder, Decoder, encode_integer, decode_integer
+from hyper.http20.huffman import HuffmanDecoder
+from hyper.http20.huffman_constants import REQUEST_CODES, REQUEST_CODES_LENGTH
 import pytest
 
 
@@ -620,11 +622,12 @@ class TestHPACKDecoder(object):
             (':authority', 'www.example.com',),
             ('cache-control', 'no-cache'),
         ]
+        second_header_table = second_header_set[::-1]
         second_data = b'\x1b\x86\x63\x65\x4a\x13\x98\xff'
 
         assert d.decode(second_data) == set(second_header_set)
         assert d.header_table == [
-            (n.encode('utf-8'), v.encode('utf-8')) for n, v in first_header_table
+            (n.encode('utf-8'), v.encode('utf-8')) for n, v in second_header_table
         ]
 
         # This request has not enough headers in common with the previous
@@ -645,7 +648,7 @@ class TestHPACKDecoder(object):
         assert d.decode(third_data) == set(third_header_set)
         # Don't check the header table here, it's just too complex to be
         # reliable. Check its length though.
-        assert len(d.header_table) == 6
+        assert len(d.header_table) == 8
 
 
 class TestIntegerEncoding(object):
