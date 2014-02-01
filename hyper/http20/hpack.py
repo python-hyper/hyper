@@ -379,8 +379,8 @@ class Encoder(object):
             name = self.huffman_coder.encode(name)
             value = self.huffman_coder.encode(value)
 
-        name_len = encode_integer(len(name), 8)
-        value_len = encode_integer(len(value), 8)
+        name_len = encode_integer(len(name), 7)
+        value_len = encode_integer(len(value), 7)
 
         if huffman:
             name_len[0] |= 0x80
@@ -402,7 +402,7 @@ class Encoder(object):
         if huffman:
             value = self.huffman_coder.encode(value)
 
-        value_len = encode_integer(len(value), 8)
+        value_len = encode_integer(len(value), 7)
 
         if huffman:
             value_len[0] |= 0x80
