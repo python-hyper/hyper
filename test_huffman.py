@@ -10,7 +10,7 @@ def test_request_huffman_decoder():
     assert decoder.decode(b'\x4e\xb0\x8b\x74\x97\x9a\x17\xa8\xff') == b"custom-value"
 
 def test_response_huffman_decoder():
-    decoder = HuffmanDecoder(RESPONSE_CODES,RESPONSE_CODES_LENGTHS)
+    decoder = HuffmanDecoder(RESPONSE_CODES,RESPONSE_CODES_LENGTH)
     assert decoder.decode(b'\x40\x9f') == b"302"
     assert decoder.decode(b'\xc3\x1b\x39\xbf\x38\x7f') == b"private"
     assert decoder.decode(b'\xa2\xfb\xa2\x03\x20\xf2\xab\x30\x31\x24\x01\x8b\x49\x0d\x32\x09\xe8\x77') == b"Mon, 21 Oct 2013 20:13:21 GMT"
@@ -25,7 +25,7 @@ def test_request_huffman_encode():
     assert encoder.encode(b"custom-value") == (b'\x4e\xb0\x8b\x74\x97\x9a\x17\xa8\xff')
 
 def test_response_huffman_encode():
-    encoder = HuffmanEncoder(RESPONSE_CODES, RESPONSE_CODES_LENGTHS)
+    encoder = HuffmanEncoder(RESPONSE_CODES, RESPONSE_CODES_LENGTH)
     assert encoder.encode(b"302") == (b'\x40\x9f')
     assert encoder.encode(b"private") == (b'\xc3\x1b\x39\xbf\x38\x7f')
     assert encoder.encode(b"Mon, 21 Oct 2013 20:13:21 GMT") == (b'\xa2\xfb\xa2\x03\x20\xf2\xab\x30\x31\x24\x01\x8b\x49\x0d\x32\x09\xe8\x77')
