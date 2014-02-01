@@ -83,6 +83,10 @@ class HuffmanEncoder(object):
         Given a string of bytes, encodes them according to the HPACK Huffman
         specification.
         """
+        # If handed the empty string, just immediately return.
+        if not bytes_to_encode:
+            return b''
+
         final_num = 0
         final_int_len = 0
 
