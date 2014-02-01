@@ -9,7 +9,7 @@ Implements the version dated January 9, 2014.
 """
 from .huffman import HuffmanDecoder, HuffmanEncoder
 from hyper.http20.huffman_constants import (
-    REQUEST_CODES, REQUEST_CODES_LENGTH, RESPONSE_CODES, RESPONSE_CODES_LENGTHS
+    REQUEST_CODES, REQUEST_CODES_LENGTH, RESPONSE_CODES, RESPONSE_CODES_LENGTH
 )
 
 
@@ -477,7 +477,7 @@ class Decoder(object):
         self.reference_set = set()
         self._header_table_size = 4096  # This value set by the standard.
         self.huffman_coder = HuffmanDecoder(
-            RESPONSE_CODES, RESPONSE_CODES_LENGTHS
+            RESPONSE_CODES, RESPONSE_CODES_LENGTH
         )
 
     @property
