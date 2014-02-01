@@ -228,7 +228,7 @@ class Encoder(object):
         else:
             header_block = self.remove(to_remove)
 
-        header_block += self.add(to_add)
+        header_block += self.add(to_add, huffman)
 
         return header_block
 
@@ -266,7 +266,7 @@ class Encoder(object):
 
         return b''.join(encoded)
 
-    def add(self, to_add):
+    def add(self, to_add, huffman=False):
         """
         This function takes a set of header key-value tuples and serializes
         them for adding to the header table.
@@ -280,7 +280,7 @@ class Encoder(object):
             if match is None:
                 # Not in the header table. Encode using the literal syntax,
                 # and add it to the header table.
-                s = self._encode_literal(name, value, True)
+                s = self._encode_literal(name, value, True, huffman)
                 encoded.append(s)
                 self._add_to_header_table(name, value)
                 self.reference_set.add((name, value))
@@ -304,7 +304,7 @@ class Encoder(object):
             else:
                 # Indexed literal. Since we have a partial match, don't add to
                 # the header table, it won't help us.
-                s = self._encode_indexed_literal(index, value, False)
+                s = self._encode_indexed_literal(index, value, False, huffman)
                 encoded.append(s)
 
         return b''.join(encoded)
@@ -361,7 +361,7 @@ class Encoder(object):
         field[0] = field[0] | 0x80  # we set the top bit
         return field
 
-    def _encode_literal(self, name, value, indexing):
+    def _encode_literal(self, name, value, indexing, huffman=False):
         """
         Encodes a header with a literal name and literal value. If ``indexing``
         is True, the header will be added to the header table: otherwise it
@@ -369,14 +369,20 @@ class Encoder(object):
         """
         prefix = bytes([0x00 if indexing else 0x40])
 
-        name = name
-        value = value
+        if huffman:
+            name = self.huffman_coder.encode(name)
+            value = self.huffman_coder.encode(value)
+
         name_len = encode_integer(len(name), 8)
         value_len = encode_integer(len(value), 8)
 
+        if huffman:
+            name_len[0] |= 0x80
+            value_len[0] |= 0x80
+
         return b''.join([prefix, name_len, name, value_len, value])
 
-    def _encode_indexed_literal(self, index, value, indexing):
+    def _encode_indexed_literal(self, index, value, indexing, huffman=False):
         """
         Encodes a header with an indexed name and a literal value. If
         ``indexing`` is True, the header will be added to the header table:
@@ -387,8 +393,13 @@ class Encoder(object):
         name = encode_integer(index, 6)
         name[0] = name[0] | mask
 
-        value = value
+        if huffman:
+            value = self.huffman_coder.encode(value)
+
         value_len = encode_integer(len(value), 8)
+
+        if huffman:
+            value_len[0] |= 0x80
 
         return b''.join([name, value_len, value])
 
