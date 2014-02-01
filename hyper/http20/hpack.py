@@ -604,7 +604,7 @@ class Decoder(object):
             # Literal header name. The first byte was zero, so we need to
             # move forward.
             data = data[1:]
-            length, consumed = decode_integer(data, 8)
+            length, consumed = decode_integer(data, 7)
             name = data[consumed:consumed + length]
             total_consumed = consumed + length + 1  # Since we moved forward 1.
 
