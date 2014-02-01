@@ -1,0 +1,64 @@
+{
+    "context": "request",
+    "cases": [
+        {
+            "headers": [
+                {
+                    ":method": "GET"
+                },
+                {
+                    ":scheme": "http"
+                },
+                {
+                    ":authority": "yahoo.co.jp"
+                },
+                {
+                    ":path": "/"
+                }
+            ],
+            "wire": "804086f66831cdb87f84f77778ff4085f641398e8383ce31774088f62358e6d7aa3e9f88f4466d6912d271774084f63911cf810f",
+            "seqno": 0,
+            "header_table_size": 4096
+        },
+        {
+            "headers": [
+                {
+                    ":method": "GET"
+                },
+                {
+                    ":scheme": "http"
+                },
+                {
+                    ":authority": "www.yahoo.co.jp"
+                },
+                {
+                    ":path": "/"
+                }
+            ],
+            "wire": "804086f66831cdb87f84f77778ff4085f641398e8383ce31774088f62358e6d7aa3e9f8bdb6d89e88cdad225a4e2ef4084f63911cf810f",
+            "seqno": 1,
+            "header_table_size": 4096
+        },
+        {
+            "headers": [
+                {
+                    ":method": "GET"
+                },
+                {
+                    ":scheme": "http"
+                },
+                {
+                    ":authority": "k.yimg.jp"
+                },
+                {
+                    ":path": "/images/top/sp2/cmn/logo-ns-130528.png"
+                }
+            ],
+            "wire": "804086f66831cdb87f84f77778ff4085f641398e8383ce31774088f62358e6d7aa3e9f87e44f45699138bb4084f63911cf9905688c860116b820e38274602db9365642534c5a0f591cccbf",
+            "seqno": 2,
+            "header_table_size": 4096
+        }
+    ],
+    "description": "http2 in Haskell: NaiveH - index=no, reference set=no, huffman=yes",
+    "draft": 5
+}
