@@ -262,8 +262,7 @@ class Encoder(object):
             encoded.append(self._encode_indexed(index))
 
             # Having encoded it in the indexed form, we now remove it from the
-            # header table and the reference set.
-            del self.header_table[index]
+            # reference set.
             self.reference_set.remove((name, value))
 
         return b''.join(encoded)
