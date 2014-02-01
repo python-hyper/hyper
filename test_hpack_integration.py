@@ -13,6 +13,9 @@ class TestHPACKDecoderIntegration(object):
     def test_can_decode_a_story(self, story):
         d = Decoder()
 
+        # We support draft 5 of the HPACK spec.
+        assert story['draft'] == 5
+
         if story['context'] == 'request':
             d.huffman_coder = HuffmanDecoder(REQUEST_CODES, REQUEST_CODES_LENGTH)
 
