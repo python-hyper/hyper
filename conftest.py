@@ -11,7 +11,7 @@ story_directories = (
 story_files = (
     os.path.join(storydir, name) for storydir in story_directories
                                  for name in os.listdir(storydir)
-                                 if storydir != 'raw-data'
+                                 if 'raw-data' not in storydir
 )
 raw_story_files = (
     os.path.join('test_fixtures/raw-data', name)
