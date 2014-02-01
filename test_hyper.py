@@ -591,16 +591,19 @@ class TestHPACKDecoder(object):
         using Huffman encoding for the literal values.
         """
         d = Decoder()
+
+        # Patch the decoder to use the Request Huffman tables, not the Response
+        # ones.
+        d.huffman_coder = HuffmanDecoder(REQUEST_CODES, REQUEST_CODES_LENGTH)
         first_header_set = [
             (':method', 'GET',),
             (':scheme', 'http',),
             (':path', '/',),
             (':authority', 'www.example.com'),
         ]
-        # The first_header_table doesn't contain 'authority'
-        first_header_table = first_header_set[::-1][1:]
+        first_header_table = first_header_set[::-1]
         first_data = (
-            b'\x82\x87\x86\x44\x8b\xdb\x6d\x88\x3e\x68\xd1\xcb\x12\x25\xba\x7f'
+            b'\x82\x87\x86\x04\x8b\xdb\x6d\x88\x3e\x68\xd1\xcb\x12\x25\xba\x7f'
         )
 
         assert d.decode(first_data) == set(first_header_set)
