@@ -7,6 +7,7 @@ from hyper.http20.frame import (
 from hyper.http20.hpack import Encoder, Decoder, encode_integer, decode_integer
 from hyper.http20.huffman import HuffmanDecoder
 from hyper.http20.huffman_constants import REQUEST_CODES, REQUEST_CODES_LENGTH
+from hyper.http20.connection import HTTP20Connection
 import pytest
 
 
@@ -685,3 +686,15 @@ class TestIntegerDecoding(object):
     def test_encoding_42_with_8_bit_prefix(self):
         val = decode_integer(b'\x2a', 8)
         assert val == (42, 1)
+
+
+class TestHyperConnection(object):
+    def test_connections_accept_hosts_and_ports(self):
+        c = HTTP20Connection(host='www.google.com', port=8080)
+        assert c.host =='www.google.com'
+        assert c.port == 8080
+
+    def test_connections_can_parse_hosts_and_ports(self):
+        c = HTTP20Connection('www.google.com:8080')
+        assert c.host == 'www.google.com'
+        assert c.port == 8080
