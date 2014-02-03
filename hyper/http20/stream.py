@@ -13,6 +13,14 @@ stream is an independent, bi-directional sequence of HTTP headers and data.
 Each stream is identified by a monotonically increasing integer, assigned to
 the stream by the endpoint that initiated the stream.
 """
+# Define a set of states for a HTTP/2.0 stream.
+STATE_IDLE               = 0
+STATE_OPEN               = 1
+STATE_HALF_CLOSED_LOCAL  = 2
+STATE_HALF_CLOSED_REMOTE = 3
+STATE_CLOSED             = 4
+
+
 class Stream(object):
     """
     A single HTTP/2.0 stream.
@@ -24,3 +32,4 @@ class Stream(object):
     """
     def __init__(self, stream_id):
         self.stream_id = stream_id
+        self.state = STATE_IDLE
