@@ -8,6 +8,7 @@ from hyper.http20.hpack import Encoder, Decoder, encode_integer, decode_integer
 from hyper.http20.huffman import HuffmanDecoder
 from hyper.http20.huffman_constants import REQUEST_CODES, REQUEST_CODES_LENGTH
 from hyper.http20.connection import HTTP20Connection
+from hyper.http20.stream import Stream
 import pytest
 
 
@@ -698,3 +699,9 @@ class TestHyperConnection(object):
         c = HTTP20Connection('www.google.com:8080')
         assert c.host == 'www.google.com'
         assert c.port == 8080
+
+
+class TestHyperStream(object):
+    def test_streams_have_ids(self):
+        s = Stream(1)
+        assert s.stream_id == 1
