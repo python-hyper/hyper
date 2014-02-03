@@ -33,3 +33,10 @@ class Stream(object):
     def __init__(self, stream_id):
         self.stream_id = stream_id
         self.state = STATE_IDLE
+        self.headers = []
+
+    def add_header(self, name, value):
+        """
+        Adds a single HTTP header to the headers to be sent on the request.
+        """
+        self.headers.append((name, value))
