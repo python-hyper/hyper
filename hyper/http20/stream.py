@@ -34,9 +34,23 @@ class Stream(object):
         self.stream_id = stream_id
         self.state = STATE_IDLE
         self.headers = []
+        self._flow_control_window = 65535
 
     def add_header(self, name, value):
         """
         Adds a single HTTP header to the headers to be sent on the request.
         """
         self.headers.append((name, value))
+
+    def send_data(self, data, final):
+        """
+        Send some data on the stream. If this is the end of the data to be
+        sent, the ``final`` flag _must_ be set to True.
+        """
+        pass
+
+    def receive_frame(self, frame):
+        """
+        Handle a frame received on this stream.
+        """
+        pass
