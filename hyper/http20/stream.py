@@ -99,7 +99,7 @@ class Stream(object):
             header_frame.flags.add('END_STREAM')
 
         # Send the header frame.
-        self._data_cb([header_frame])
+        self._data_cb(header_frame)
 
         # Transition the stream state appropriately.
         self.state = STATE_HALF_CLOSED_LOCAL if end else STATE_OPEN

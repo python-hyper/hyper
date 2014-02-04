@@ -716,11 +716,7 @@ class TestHyperStream(object):
         assert s.headers == [("name", "value")]
 
     def test_stream_opening_sends_headers(self):
-        def data_callback(frames):
-            assert len(frames) == 1
-
-            frame = frames[0]
-
+        def data_callback(frame):
             assert isinstance(frame, HeadersFrame)
             assert frame.data == 'TestKeyTestVal'
             assert frame.flags == set(['END_STREAM', 'END_HEADERS'])
