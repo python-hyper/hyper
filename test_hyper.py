@@ -8,7 +8,7 @@ from hyper.http20.hpack import Encoder, Decoder, encode_integer, decode_integer
 from hyper.http20.huffman import HuffmanDecoder
 from hyper.http20.huffman_constants import REQUEST_CODES, REQUEST_CODES_LENGTH
 from hyper.http20.connection import HTTP20Connection
-from hyper.http20.stream import Stream
+from hyper.http20.stream import Stream, STATE_HALF_CLOSED_LOCAL
 import pytest
 
 
@@ -714,3 +714,25 @@ class TestHyperStream(object):
         s = Stream(1, None, None, None)
         s.add_header("name", "value")
         assert s.headers == [("name", "value")]
+
+    def test_stream_opening_sends_headers(self):
+        def data_callback(frames):
+            assert len(frames) == 1
+
+            frame = frames[0]
+
+            assert isinstance(frame, HeadersFrame)
+            assert frame.data == 'TestKeyTestVal'
+            assert frame.flags == set(['END_STREAM', 'END_HEADERS'])
+
+        s = Stream(1, data_callback, NullEncoder, None)
+        s.add_header("TestKey", "TestVal")
+        s._open(True)
+
+        assert s.state == STATE_HALF_CLOSED_LOCAL
+
+
+# Some utility classes for the tests.
+class NullEncoder(object):
+    def encode(headers):
+        return '\n'.join("%s%s" % (name, val) for name, val in headers)
