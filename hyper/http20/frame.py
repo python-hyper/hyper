@@ -9,6 +9,10 @@ socket.
 """
 import struct
 
+# The maximum length of a frame. Some frames have shorter maximum lengths.
+FRAME_MAX_LEN = (2 ** 14) - 1
+
+
 class Frame(object):
     """
     The base class for all HTTP/2.0 frames.
