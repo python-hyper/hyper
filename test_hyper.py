@@ -703,14 +703,14 @@ class TestHyperConnection(object):
 
 class TestHyperStream(object):
     def test_streams_have_ids(self):
-        s = Stream(1)
+        s = Stream(1, None, None, None)
         assert s.stream_id == 1
 
     def test_streams_initially_have_no_headers(self):
-        s = Stream(1)
+        s = Stream(1, None, None, None)
         assert s.headers == []
 
     def test_streams_can_have_headers(self):
-        s = Stream(1)
+        s = Stream(1, None, None, None)
         s.add_header("name", "value")
         assert s.headers == [("name", "value")]
