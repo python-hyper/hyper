@@ -33,6 +33,33 @@ HTTP/2.0 goodness by simply replacing your ``import httplib`` or
 ``import http.client`` line with ``import hyper as httplib`` or ``import hyper
 as http.client``. You should then be good to go.
 
+Contributing
+============
+
+``hyper`` welcomes contributions from anyone! Unlike many other projects we are
+happy to accept cosmetic contributions and small contributions, in addition to
+large feature requests and changes.
+
+Before you contribute (either by opening an issue or filing a pull request),
+please read the following guidelines:
+
+1. Check for issues, *both open and closed*, before raising a new one. It's
+   possible your idea or problem has been discussed before. GitHub has a very
+   useful search feature: I recommend using that for a few minutes.
+2. Fork the repository on GitHub.
+3. Run the tests to confirm that they all pass on your system. If they don't,
+   you will need to investigate why they fail. ``hyper`` has a substantial
+   suite of tests which should cover most failures.
+4. Write tests that demonstrate your bug or feature. Ensure that they all fail.
+5. Make your change.
+6. Run the entire test suite again, confirming that all tests pass including
+   the ones you just added.
+7. Send a pull request. GitHub pull requests are the expected method of
+   collaborating on this project.
+
+If for whatever reason you strongly object to the GitHub workflow, email the
+maintainer with a patch.
+
 License
 =======
 
