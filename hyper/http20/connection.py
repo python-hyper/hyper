@@ -28,6 +28,13 @@ class HTTP20Connection(object):
         else:
             self.host, self.port = host, port
 
+        # Streams are stored in a dictionary keyed off their stream IDs. We
+        # also save the most recent one for easy access without having to walk
+        # the dictionary.
+        self.streams = {}
+        self.recent_stream = None
+        self.next_stream_id = 1
+
     def request(self, method, url, body=None, headers={}):
         """
         This will send a request to the server using the HTTP request method
