@@ -740,6 +740,39 @@ class TestHyperConnection(object):
             ('name', 'value'),
         ]
 
+    def test_endheaders_sends_data(self):
+        frames = []
+
+        def data_callback(frame):
+            frames.append(frame)
+
+        c = HTTP20Connection('www.google.com')
+        c._send_cb = data_callback
+        c.putrequest('GET', '/')
+        c.endheaders()
+
+        assert len(frames) == 1
+        f = frames[0]
+        assert isinstance(f, HeadersFrame)
+
+    def test_we_can_send_data_using_endheaders(self):
+        frames = []
+
+        def data_callback(frame):
+            frames.append(frame)
+
+        c = HTTP20Connection('www.google.com')
+        c._send_cb = data_callback
+        c.putrequest('GET', '/')
+        c.endheaders(message_body=b'hello there', final=True)
+
+        assert len(frames) == 2
+        assert isinstance(frames[0], HeadersFrame)
+        assert frames[0].flags == set(['END_HEADERS'])
+        assert isinstance(frames[1], DataFrame)
+        assert frames[1].data == b'hello there'
+        assert frames[1].flags == set(['END_STREAM'])
+
 
 class TestHyperStream(object):
     def test_streams_have_ids(self):

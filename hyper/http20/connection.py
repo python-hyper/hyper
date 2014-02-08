@@ -142,7 +142,18 @@ class HTTP20Connection(object):
         be closed: otherwise, the stream will be left open and subsequent calls
         to ``send()`` will be required.
         """
-        pass
+        stream = (self.streams[stream_id] if stream_id is not None
+                  else self.recent_stream)
+
+        # Close this if we've been told no more data is coming and we don't
+        # have any to send.
+        stream.open(final and message_body is None)
+
+        # Send whatever data we have.
+        if message_body is not None:
+            stream.send_data(message_body, final)
+
+        return
 
     def send(self, data, final=False, stream_id=None):
         """
@@ -151,7 +162,12 @@ class HTTP20Connection(object):
         data that will be sent as part of this request, the ``final`` argument
         should be set to ``True``. This will cause the stream to be closed.
         """
-        pass
+        stream = (self.streams[stream_id] if stream_id is not None
+                  else self.recent_stream)
+
+        stream.send_data(data, final)
+
+        return
 
     def _new_stream(self):
         """
