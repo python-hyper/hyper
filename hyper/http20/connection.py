@@ -5,10 +5,7 @@ hyper/http20/connection
 
 Objects that build hyper's connection-level HTTP/2.0 abstraction.
 """
-from .huffman import HuffmanEncoder, HuffmanDecoder
-from .huffman_constants import (
-    REQUEST_CODES, REQUEST_CODES_LENGTH, RESPONSE_CODES, RESPONSE_CODES_LENGTH
-)
+from .hpack import Encoder, Decoder
 from .stream import Stream
 from .tls import wrap_socket
 
@@ -48,8 +45,8 @@ class HTTP20Connection(object):
         # Header encoding/decoding is at the connection scope, so we embed a
         # header encoder and a decoder. These get passed to child stream
         # objects.
-        self.encoder = HuffmanEncoder(REQUEST_CODES, REQUEST_CODES_LENGTH)
-        self.decoder = HuffmanDecoder(RESPONSE_CODES, RESPONSE_CODES_LENGTH)
+        self.encoder = Encoder()
+        self.decoder = Decoder()
 
         # The socket used to send data.
         self._sock = None
