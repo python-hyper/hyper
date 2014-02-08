@@ -209,3 +209,15 @@ class HTTP20Connection(object):
         data = frame.serialize()
 
         self._sock.send(data)
+
+    def _recv_cb(self):
+        """
+        This is the callback used by streams to read data from the connection.
+
+        It expects to read a single frame, and then to deserialize that frame
+        and pass it to the relevant stream. This is generally called by a
+        stream, not by the connection itself, and it's likely that streams will
+        read a frame that doesn't belong to them. That's ok: streams need to
+        make a decision to spin around again.
+        """
+        pass
