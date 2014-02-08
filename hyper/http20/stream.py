@@ -76,9 +76,7 @@ class Stream(object):
         def file_iterator(fobj):
             while True:
                 data = fobj.read(MAX_CHUNK)
-
                 yield data
-
                 if len(data) < MAX_CHUNK:
                     break
 
