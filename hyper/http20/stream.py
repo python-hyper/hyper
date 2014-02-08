@@ -39,7 +39,12 @@ class Stream(object):
     perspective, a stream _approximately_ matches a single request-response
     pair.
     """
-    def __init__(self, stream_id, data_cb, header_encoder, header_decoder):
+    def __init__(self,
+                 stream_id,
+                 data_cb,
+                 recv_cb,
+                 header_encoder,
+                 header_decoder):
         self.stream_id = stream_id
         self.state = STATE_IDLE
         self.headers = []
@@ -54,6 +59,10 @@ class Stream(object):
         # It is called when the stream wants to send data. It expects to
         # receive a list of frames that will be automatically serialized.
         self._data_cb = data_cb
+
+        # Similarly, this is a callback that reads one frame off the
+        # connection.
+        self._recv_cb = recv_cb
 
         # A reference to the header encoder and decoder objects belonging to
         # the parent connection.

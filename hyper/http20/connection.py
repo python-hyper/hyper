@@ -184,7 +184,8 @@ class HTTP20Connection(object):
         Returns a new stream object for this connection.
         """
         s = Stream(
-            self.next_stream_id, self._send_cb, self.encoder, self.decoder
+            self.next_stream_id, self._send_cb, self._recv_cb, self.encoder,
+            self.decoder
         )
         self.next_stream_id += 2
 
