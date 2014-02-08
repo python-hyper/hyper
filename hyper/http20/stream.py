@@ -165,9 +165,10 @@ class Stream(object):
         if len(data) < MAX_CHUNK and final:
             f.flags.add('END_STREAM')
 
-        # Confirm we can fit the data in the connection window.
-        if len(data) > self._out_flow_control_window:
-            raise NotImplementedError("Flow control not yet implemented.")
+        # If we don't fit in the connection window, try popping frames off the
+        # connection in hope that one might be a Window Update frame.
+        while len(data) > self._out_flow_control_window:
+            self._recv_cb()
 
         # Send the frame and decrement the flow control window.
         self._data_cb(f)
