@@ -47,6 +47,9 @@ class HTTP20Connection(object):
         self.encoder = HuffmanEncoder(REQUEST_CODES, REQUEST_CODES_LENGTH)
         self.decoder = HuffmanDecoder(RESPONSE_CODES, RESPONSE_CODES_LENGTH)
 
+        # The socket used to send data.
+        self._sock = None
+
         return
 
     def request(self, method, url, body=None, headers={}):
