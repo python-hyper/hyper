@@ -10,6 +10,9 @@ from .huffman_constants import (
     REQUEST_CODES, REQUEST_CODES_LENGTH, RESPONSE_CODES, RESPONSE_CODES_LENGTH
 )
 from .stream import Stream
+from .tls import wrap_socket
+
+import socket
 
 
 class HTTP20Connection(object):
@@ -78,9 +81,15 @@ class HTTP20Connection(object):
 
     def connect(self):
         """
-        Connect to the server specified when the object was created.
+        Connect to the server specified when the object was created. This is a
+        no-op if we're already connected.
         """
-        pass
+        if self._sock is None:
+            sock = socket.create_connection((self.host, self.port), 5)
+            sock = wrap_socket(sock, self.host)
+            self._sock = sock
+
+        return
 
     def close(self):
         """
