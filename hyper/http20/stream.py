@@ -13,7 +13,7 @@ stream is an independent, bi-directional sequence of HTTP headers and data.
 Each stream is identified by a monotonically increasing integer, assigned to
 the stream by the endpoint that initiated the stream.
 """
-from .frame import FRAME_MAX_LEN, HeadersFrame, DataFrame
+from .frame import FRAME_MAX_LEN, HeadersFrame, DataFrame, WindowUpdateFrame
 
 
 # Define a set of states for a HTTP/2.0 stream.
@@ -92,9 +92,13 @@ class Stream(object):
 
     def receive_frame(self, frame):
         """
-        Handle a frame received on this stream.
+        Handle a frame received on this stream. If this is a window update
+        frame, immediately update the window accordingly.
         """
-        self._queued_frames.append(frame)
+        if isinstance(frame, WindowUpdateFrame):
+            self._out_flow_control_window += frame.window_increment
+        else:
+            self._queued_frames.append(frame)
 
     def open(self, end):
         """

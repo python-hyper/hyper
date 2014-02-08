@@ -901,6 +901,14 @@ class TestHyperStream(object):
         assert frame_count[0] == 5
         assert s._out_flow_control_window == 65535 - len(data)
 
+    def test_windowupdate_frames_update_windows(self):
+        s = Stream(1, None, None, None)
+        f = WindowUpdateFrame(1)
+        f.window_increment = 1000
+        s.receive_frame(f)
+
+        assert s._out_flow_control_window == 65535 + 1000
+
 
 # Some utility classes for the tests.
 class NullEncoder(object):
