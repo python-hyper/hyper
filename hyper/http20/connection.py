@@ -8,6 +8,7 @@ Objects that build hyper's connection-level HTTP/2.0 abstraction.
 from .hpack import Encoder, Decoder
 from .stream import Stream
 from .tls import wrap_socket
+from .frame import DataFrame
 
 import socket
 
@@ -50,6 +51,10 @@ class HTTP20Connection(object):
 
         # The socket used to send data.
         self._sock = None
+
+        # The inbound and outbound flow control windows.
+        self._out_flow_control_window = 65535
+        self._in_flow_control_window = 65535
 
         return
 
@@ -180,8 +185,21 @@ class HTTP20Connection(object):
 
         return s
 
-    def _send_cb(self):
+    def _send_cb(self, frame):
         """
         This is the callback used by streams to send data on the connection.
+
+        It expects to receive a single frame, and then to serialize that frame
+        and send it on the connection. It does so obeying the connection-level
+        flow-control principles of HTTP/2.0.
         """
-        pass
+        # Maintain our outgoing flow-control window.
+        if isinstance(frame, DataFrame):
+            if self._out_flow_control_window < len(frame.data):
+                raise RuntimeError("Flow control not yet implemented.")
+
+            self._out_flow_control_window -= len(frame.data)
+
+        data = frame.serialize()
+
+        self._sock.send(data)

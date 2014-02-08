@@ -773,6 +773,17 @@ class TestHyperConnection(object):
         assert frames[1].data == b'hello there'
         assert frames[1].flags == set(['END_STREAM'])
 
+    def test_that_we_correctly_send_over_the_socket(self):
+        sock = DummySocket()
+        c = HTTP20Connection('www.google.com')
+        c._sock = sock
+        c.putrequest('GET', '/')
+        c.endheaders(message_body=b'hello there', final=True)
+
+        # Don't bother testing that the serialization was ok, that should be
+        # fine.
+        assert len(sock.queue) == 2
+
 
 class TestHyperStream(object):
     def test_streams_have_ids(self):
@@ -880,4 +891,8 @@ class NullEncoder(object):
         return '\n'.join("%s%s" % (name, val) for name, val in headers)
 
 class DummySocket(object):
-    pass
+    def __init__(self):
+        self.queue = []
+
+    def send(self, data):
+        self.queue.append(data)
