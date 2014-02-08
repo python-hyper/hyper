@@ -9,6 +9,7 @@ from .huffman import HuffmanEncoder, HuffmanDecoder
 from .huffman_constants import (
     REQUEST_CODES, REQUEST_CODES_LENGTH, RESPONSE_CODES, RESPONSE_CODES_LENGTH
 )
+from .stream import Stream
 
 
 class HTTP20Connection(object):
@@ -125,3 +126,14 @@ class HTTP20Connection(object):
         should be set to ``True``. This will cause the stream to be closed.
         """
         pass
+
+    def _new_stream(self):
+        """
+        Returns a new stream object for this connection.
+        """
+        s = Stream(
+            self.next_stream_id, self.encoder, self.decoder, self._send_cb
+        )
+        self.next_stream_id += 2
+
+        return s
