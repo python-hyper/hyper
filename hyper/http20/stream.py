@@ -13,7 +13,7 @@ stream is an independent, bi-directional sequence of HTTP headers and data.
 Each stream is identified by a monotonically increasing integer, assigned to
 the stream by the endpoint that initiated the stream.
 """
-from .frame import FRAME_MAX_LEN, HeadersFrame
+from .frame import FRAME_MAX_LEN, HeadersFrame, DataFrame
 
 
 # Define a set of states for a HTTP/2.0 stream.
@@ -22,6 +22,12 @@ STATE_OPEN               = 1
 STATE_HALF_CLOSED_LOCAL  = 2
 STATE_HALF_CLOSED_REMOTE = 3
 STATE_CLOSED             = 4
+
+
+# Define the largest chunk of data we'll send in one go. Realistically, we
+# should take the MSS into account but that's pretty dull, so let's just say
+# 1kB and call it a day.
+MAX_CHUNK = 1024
 
 
 class Stream(object):
@@ -66,6 +72,10 @@ class Stream(object):
         sent, the ``final`` flag _must_ be set to True. If no data is to be
         sent, set ``data`` to ``None``.
         """
+        if hasattr(data, 'read'):
+            self._send_file_object(data, final)
+        else:
+            pass
 
     def receive_frame(self, frame):
         """
@@ -108,3 +118,42 @@ class Stream(object):
         self.state = STATE_HALF_CLOSED_LOCAL if end else STATE_OPEN
 
         return
+
+    def _send_file_object(self, fobj, final):
+        """
+        Implements the sending logic for file-like objects.
+
+        Spins in a loop reading data from the file object in MAX_CHUNK
+        increments. Wraps each chunk in a DataFrame and passes it on the
+        data callback. If the window size gets too small, will start reading
+        data waiting for a WindowUpdate frame.
+        """
+        assert self.state in (STATE_OPEN, STATE_HALF_CLOSED_REMOTE)
+
+        while True:
+            data = fobj.read(MAX_CHUNK)
+            f = DataFrame(self.stream_id)
+            f.data = data
+
+            # If the length of the data is less than MAX_CHUNK, we're probably
+            # at the end of the file. If this is the end of the data, mark it
+            # as END_STREAM.
+            if len(data) < MAX_CHUNK and final:
+                f.flags.add('END_STREAM')
+
+            # Confirm we can fit the data in the connection window.
+            if len(data) > self._out_flow_control_window:
+                raise NotImplementedError("Flow control not yet implemented.")
+
+            # Send the frame and decrement the flow control window.
+            self._data_cb(f)
+            self._out_flow_control_window -= len(data)
+
+            # If we're at the end of the file, stop looping.
+            if len(data) < MAX_CHUNK:
+                break
+
+        # If no more data is to be sent on this stream, transition our state.
+        if final:
+            self.state = (STATE_HALF_CLOSED_LOCAL if self.state == STATE_OPEN
+                          else STATE_CLOSED)
