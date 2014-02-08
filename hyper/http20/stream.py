@@ -38,7 +38,11 @@ class Stream(object):
         self.state = STATE_IDLE
         self.headers = []
         self._queued_frames = []
-        self._flow_control_window = 65535
+
+        # There are two flow control windows: one for data we're sending,
+        # one for data being sent to us.
+        self._out_flow_control_window = 65535
+        self._in_flow_control_window = 65535
 
         # This is the callback handed to the stream by its parent connection.
         # It is called when the stream wants to send data. It expects to
