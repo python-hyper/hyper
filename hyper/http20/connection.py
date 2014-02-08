@@ -146,3 +146,9 @@ class HTTP20Connection(object):
         self.next_stream_id += 2
 
         return s
+
+    def _send_cb(self):
+        """
+        This is the callback used by streams to send data on the connection.
+        """
+        pass
