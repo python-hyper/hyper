@@ -62,13 +62,12 @@ class Stream(object):
         sent, the ``final`` flag _must_ be set to True. If no data is to be
         sent, set ``data`` to ``None``.
         """
-        self.open(not data)
 
     def receive_frame(self, frame):
         """
         Handle a frame received on this stream.
         """
-        pass
+        self._queued_frames.append(frame)
 
     def open(self, end):
         """

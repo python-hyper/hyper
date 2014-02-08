@@ -727,6 +727,11 @@ class TestHyperStream(object):
 
         assert s.state == STATE_HALF_CLOSED_LOCAL
 
+    def test_receiving_a_frame_queues_it(self):
+        s = Stream(1, None, None, None)
+        s.receive_frame(Frame(0))
+        assert len(s._queued_frames) == 1
+
 
 # Some utility classes for the tests.
 class NullEncoder(object):
