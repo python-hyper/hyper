@@ -783,6 +783,8 @@ class TestHyperConnection(object):
         # Don't bother testing that the serialization was ok, that should be
         # fine.
         assert len(sock.queue) == 2
+        # Confirm the window got shrunk.
+        assert c._out_flow_control_window == 65535 - len(b'hello there')
 
 
 class TestHyperStream(object):
