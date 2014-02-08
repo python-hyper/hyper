@@ -72,10 +72,25 @@ class Stream(object):
         sent, the ``final`` flag _must_ be set to True. If no data is to be
         sent, set ``data`` to ``None``.
         """
+        # Define a utility iterator for file objects.
+        def file_iterator(fobj):
+            while True:
+                data = fobj.read(MAX_CHUNK)
+
+                yield data
+
+                if len(data) < MAX_CHUNK:
+                    break
+
+        # Build the appropriate iterator for the data, in chunks of CHUNK_SIZE.
         if hasattr(data, 'read'):
-            self._send_file_object(data, final)
+            chunks = file_iterator(data)
         else:
-            pass
+            chunks = (data[i:i+MAX_CHUNK]
+                      for i in range(0, len(data), MAX_CHUNK))
+
+        for chunk in chunks:
+            self._send_chunk(chunk, final)
 
     def receive_frame(self, frame):
         """
@@ -119,41 +134,35 @@ class Stream(object):
 
         return
 
-    def _send_file_object(self, fobj, final):
+    def _send_chunk(self, data, final):
         """
-        Implements the sending logic for file-like objects.
+        Implements most of the sending logic.
 
-        Spins in a loop reading data from the file object in MAX_CHUNK
-        increments. Wraps each chunk in a DataFrame and passes it on the
-        data callback. If the window size gets too small, will start reading
-        data waiting for a WindowUpdate frame.
+        Takes a single chunk of size at most MAX_CHUNK, wraps it in a frame and
+        sends it. Optionally sets the END_STREAM flag if this is the last chunk
+        (determined by being of size less than MAX_CHUNK) and no more data is
+        to be sent.
         """
         assert self.state in (STATE_OPEN, STATE_HALF_CLOSED_REMOTE)
 
-        while True:
-            data = fobj.read(MAX_CHUNK)
-            f = DataFrame(self.stream_id)
-            f.data = data
+        f = DataFrame(self.stream_id)
+        f.data = data
 
-            # If the length of the data is less than MAX_CHUNK, we're probably
-            # at the end of the file. If this is the end of the data, mark it
-            # as END_STREAM.
-            if len(data) < MAX_CHUNK and final:
-                f.flags.add('END_STREAM')
+        # If the length of the data is less than MAX_CHUNK, we're probably
+        # at the end of the file. If this is the end of the data, mark it
+        # as END_STREAM.
+        if len(data) < MAX_CHUNK and final:
+            f.flags.add('END_STREAM')
 
-            # Confirm we can fit the data in the connection window.
-            if len(data) > self._out_flow_control_window:
-                raise NotImplementedError("Flow control not yet implemented.")
+        # Confirm we can fit the data in the connection window.
+        if len(data) > self._out_flow_control_window:
+            raise NotImplementedError("Flow control not yet implemented.")
 
-            # Send the frame and decrement the flow control window.
-            self._data_cb(f)
-            self._out_flow_control_window -= len(data)
-
-            # If we're at the end of the file, stop looping.
-            if len(data) < MAX_CHUNK:
-                break
+        # Send the frame and decrement the flow control window.
+        self._data_cb(f)
+        self._out_flow_control_window -= len(data)
 
         # If no more data is to be sent on this stream, transition our state.
-        if final:
+        if len(data) < MAX_CHUNK and final:
             self.state = (STATE_HALF_CLOSED_LOCAL if self.state == STATE_OPEN
                           else STATE_CLOSED)
