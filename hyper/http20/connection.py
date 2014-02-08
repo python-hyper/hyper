@@ -152,6 +152,8 @@ class HTTP20Connection(object):
         be closed: otherwise, the stream will be left open and subsequent calls
         to ``send()`` will be required.
         """
+        self.connect()
+
         stream = (self.streams[stream_id] if stream_id is not None
                   else self.recent_stream)
 
