@@ -8,7 +8,7 @@ Objects that build hyper's connection-level HTTP/2.0 abstraction.
 from .hpack import Encoder, Decoder
 from .stream import Stream
 from .tls import wrap_socket
-from .frame import DataFrame
+from .frame import DataFrame, HeadersFrame
 
 import socket
 
@@ -194,7 +194,8 @@ class HTTP20Connection(object):
         flow-control principles of HTTP/2.0.
         """
         # Maintain our outgoing flow-control window.
-        if isinstance(frame, DataFrame):
+        if (isinstance(frame, DataFrame) and
+            not isinstance(frame, HeadersFrame)):
             if self._out_flow_control_window < len(frame.data):
                 raise RuntimeError("Flow control not yet implemented.")
 
