@@ -723,7 +723,7 @@ class TestHyperStream(object):
 
         s = Stream(1, data_callback, NullEncoder, None)
         s.add_header("TestKey", "TestVal")
-        s._open(True)
+        s.open(True)
 
         assert s.state == STATE_HALF_CLOSED_LOCAL
 

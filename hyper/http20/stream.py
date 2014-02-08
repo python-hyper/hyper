@@ -62,7 +62,7 @@ class Stream(object):
         sent, the ``final`` flag _must_ be set to True. If no data is to be
         sent, set ``data`` to ``None``.
         """
-        self._open(not data)
+        self.open(not data)
 
     def receive_frame(self, frame):
         """
@@ -70,7 +70,7 @@ class Stream(object):
         """
         pass
 
-    def _open(self, end):
+    def open(self, end):
         """
         Open the stream. Does this by encoding and sending the headers: no more
         calls to ``add_header`` are allowed after this method is called.
