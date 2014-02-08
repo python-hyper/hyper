@@ -204,8 +204,11 @@ class HTTP20Connection(object):
         # Maintain our outgoing flow-control window.
         if (isinstance(frame, DataFrame) and
             not isinstance(frame, HeadersFrame)):
-            if self._out_flow_control_window < len(frame.data):
-                raise RuntimeError("Flow control not yet implemented.")
+
+            # If we don't have room in the flow control window, we need to look
+            # for a Window Update frame.
+            while self._out_flow_control_window < len(frame.data):
+                self._recv_cb()
 
             self._out_flow_control_window -= len(frame.data)
 
