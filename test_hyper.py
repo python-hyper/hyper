@@ -786,6 +786,21 @@ class TestHyperConnection(object):
         # Confirm the window got shrunk.
         assert c._out_flow_control_window == 65535 - len(b'hello there')
 
+    def test_we_can_read_from_the_socket(self):
+        sock = DummySocket()
+        sock.buffer = BytesIO(b'\x00\x08\x00\x01\x00\x00\x00\x01testdata')
+
+        c = HTTP20Connection('www.google.com')
+        c._sock = sock
+        c.putrequest('GET', '/')
+        c.endheaders()
+        c._recv_cb()
+
+        s = c.recent_stream
+        assert len(s._queued_frames) == 1
+        assert isinstance(s._queued_frames[0], DataFrame)
+        assert s._queued_frames[0].data == b'testdata'
+
 
 class TestHyperStream(object):
     def test_streams_have_ids(self):
@@ -895,6 +910,10 @@ class NullEncoder(object):
 class DummySocket(object):
     def __init__(self):
         self.queue = []
+        self.buffer = BytesIO()
 
     def send(self, data):
         self.queue.append(data)
+
+    def recv(self, l):
+        return self.buffer.read(l)

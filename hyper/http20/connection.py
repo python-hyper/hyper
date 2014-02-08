@@ -8,7 +8,7 @@ Objects that build hyper's connection-level HTTP/2.0 abstraction.
 from .hpack import Encoder, Decoder
 from .stream import Stream
 from .tls import wrap_socket
-from .frame import DataFrame, HeadersFrame, SettingsFrame
+from .frame import DataFrame, HeadersFrame, SettingsFrame, Frame
 
 import socket
 
@@ -220,4 +220,18 @@ class HTTP20Connection(object):
         read a frame that doesn't belong to them. That's ok: streams need to
         make a decision to spin around again.
         """
-        pass
+        # Begin by reading 8 bytes from the socket.
+        header = self._sock.recv(8)
+
+        # Parse the header.
+        frame, length = Frame.parse_frame_header(header)
+
+        # Read the remaining data from the socket.
+        data = self._sock.recv(length)
+        frame.parse_body(data)
+
+        # Work out to whom this frame should go.
+        if frame.stream_id != 0:
+            self.streams[frame.stream_id].receive_frame(frame)
+        else:
+            self.receive_frame(frame)
