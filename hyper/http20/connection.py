@@ -8,7 +8,7 @@ Objects that build hyper's connection-level HTTP/2.0 abstraction.
 from .hpack import Encoder, Decoder
 from .stream import Stream
 from .tls import wrap_socket
-from .frame import DataFrame, HeadersFrame
+from .frame import DataFrame, HeadersFrame, SettingsFrame
 
 import socket
 
@@ -90,6 +90,11 @@ class HTTP20Connection(object):
             sock = socket.create_connection((self.host, self.port), 5)
             sock = wrap_socket(sock, self.host)
             self._sock = sock
+
+            # We need to send a Settings frame immediately on this connection.
+            f = SettingsFrame(0)
+            f.settings[SettingsFrame.ENABLE_PUSH] = 0
+            self._send_cb(f)
 
         return
 
