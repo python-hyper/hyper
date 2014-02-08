@@ -129,7 +129,14 @@ class HTTP20Connection(object):
         actually send anything when called. Instead, it queues the headers up
         to be sent when you call ``endheaders``.
         """
-        pass
+        if stream_id is not None:
+            stream = self.streams[stream_id]
+        else:
+            stream = self.recent_stream
+
+        stream.add_header(header, argument)
+
+        return
 
     def endheaders(self, message_body=None, final=False, stream_id=None):
         """

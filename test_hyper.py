@@ -725,6 +725,21 @@ class TestHyperConnection(object):
             (':path', '/'),
         ]
 
+    def test_putheader_puts_headers(self):
+        c = HTTP20Connection("www.google.com")
+
+        c.putrequest('GET', '/')
+        c.putheader('name', 'value')
+        s = c.recent_stream
+
+        assert s.headers == [
+            (':method', 'GET'),
+            (':scheme', 'https'),
+            (':authority', 'www.google.com'),
+            (':path', '/'),
+            ('name', 'value'),
+        ]
+
 
 class TestHyperStream(object):
     def test_streams_have_ids(self):
