@@ -103,7 +103,22 @@ class HTTP20Connection(object):
         server. It returns a stream ID for the given connection that should be
         passed to all subsequent request building calls.
         """
-        pass
+        # Create a new stream.
+        s = self._new_stream()
+
+        # To this stream we need to immediately add a few headers that are
+        # HTTP/2.0 specific. These are: ":method", ":scheme", ":authority" and
+        # ":path". We can set all of these now.
+        s.add_header(":method", method)
+        s.add_header(":scheme", "https")  # We only support HTTPS at this time.
+        s.add_header(":authority", self.host)
+        s.add_header(":path", selector)
+
+        # Save the stream.
+        self.streams[s.stream_id] = s
+        self.recent_stream = s
+
+        return s.stream_id
 
     def putheader(self, header, argument, stream_id=None):
         """

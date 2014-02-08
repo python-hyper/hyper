@@ -703,6 +703,28 @@ class TestHyperConnection(object):
         assert c.host == 'www.google.com'
         assert c.port == 8080
 
+    def test_putrequest_establishes_new_stream(self):
+        c = HTTP20Connection("www.google.com")
+
+        stream_id = c.putrequest('GET', '/')
+        stream = c.streams[stream_id]
+
+        assert len(c.streams) == 1
+        assert c.recent_stream is stream
+
+    def test_putrequest_autosets_headers(self):
+        c = HTTP20Connection("www.google.com")
+
+        c.putrequest('GET', '/')
+        s = c.recent_stream
+
+        assert s.headers == [
+            (':method', 'GET'),
+            (':scheme', 'https'),
+            (':authority', 'www.google.com'),
+            (':path', '/'),
+        ]
+
 
 class TestHyperStream(object):
     def test_streams_have_ids(self):
@@ -808,3 +830,6 @@ class TestHyperStream(object):
 class NullEncoder(object):
     def encode(headers):
         return '\n'.join("%s%s" % (name, val) for name, val in headers)
+
+class DummySocket(object):
+    pass
