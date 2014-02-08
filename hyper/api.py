@@ -13,7 +13,7 @@ except ImportError:
     import httplib
 
 import ssl
-from .tls import wrap_socket
+from .http20.tls import wrap_socket
 
 # If there's no NPN support, we're going to drop all support for HTTP/2.0.
 try:
