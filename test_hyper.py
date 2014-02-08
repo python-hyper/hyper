@@ -769,6 +769,40 @@ class TestHyperStream(object):
         assert frame_count[0] == 5
         assert s._out_flow_control_window == 65535 - len(data)
 
+    def test_bytestrings_can_be_sent(self):
+        def data_callback(frame):
+            assert isinstance(frame, DataFrame)
+            assert frame.data == b'Hi there!'
+            assert frame.flags == set(['END_STREAM'])
+
+        s = Stream(1, data_callback, NullEncoder, None)
+        s.state = STATE_OPEN
+        s.send_data(b'Hi there!', True)
+
+        assert s.state == STATE_HALF_CLOSED_LOCAL
+        assert s._out_flow_control_window == 65535 - len(b'Hi there!')
+
+    def test_long_bytestrings_are_split(self):
+        frame_count = [0]
+        recent_frame = [None]
+
+        def data_callback(frame):
+            assert isinstance(frame, DataFrame)
+            assert len(frame.data) <= MAX_CHUNK
+            frame_count[0] += 1
+            recent_frame[0] = frame
+
+        data = b'test' * (MAX_CHUNK + 1)
+
+        s = Stream(1, data_callback, NullEncoder, None)
+        s.state = STATE_OPEN
+        s.send_data(data, True)
+
+        assert s.state == STATE_HALF_CLOSED_LOCAL
+        assert recent_frame[0].flags == set(['END_STREAM'])
+        assert frame_count[0] == 5
+        assert s._out_flow_control_window == 65535 - len(data)
+
 
 # Some utility classes for the tests.
 class NullEncoder(object):
