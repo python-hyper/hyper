@@ -14,16 +14,30 @@ class HTTP20Response(object):
     the persistent connections used in HTTP/2.0 this has no effect, and is done
     soley for compatibility).
     """
-    def __init__(self):
+    def __init__(self, stream):
         #: The reason phrase returned by the server. This is not used in
         #: HTTP/2.0, and so is always the empty string.
         self.reason = ''
+
+        # The stream this response is being sent over.
+        self._stream = stream
+
+        # We always read in one-data-frame increments from the stream, so we
+        # may need to buffer some for incomplete reads.
+        self._data_buffer = b''
 
     def read(self, amt=None):
         """
         Reads the response body, or up to the next ``amt`` bytes.
         """
-        pass
+        if amt is not None and amt <= len(self._data_buffer):
+            return self._data_buffer[:amt]
+        elif amt is not None:
+            read_amt = amt - len(self._data_buffer)
+            self._data_buffer += self._stream._read(read_amt)
+            return self._data_buffer[:amt]
+        else:
+            return b''.join([self._data_buffer, self._stream._read()])
 
     def getheader(self, name, default=None):
         """
