@@ -752,8 +752,8 @@ class TestHyperConnection(object):
         c.putrequest('GET', '/')
         c.endheaders()
 
-        assert len(frames) == 2
-        f = frames[1]
+        assert len(frames) == 1
+        f = frames[0]
         assert isinstance(f, HeadersFrame)
 
     def test_we_can_send_data_using_endheaders(self):
@@ -768,12 +768,12 @@ class TestHyperConnection(object):
         c.putrequest('GET', '/')
         c.endheaders(message_body=b'hello there', final=True)
 
-        assert len(frames) == 3
-        assert isinstance(frames[1], HeadersFrame)
-        assert frames[1].flags == set(['END_HEADERS'])
-        assert isinstance(frames[2], DataFrame)
-        assert frames[2].data == b'hello there'
-        assert frames[2].flags == set(['END_STREAM'])
+        assert len(frames) == 2
+        assert isinstance(frames[0], HeadersFrame)
+        assert frames[0].flags == set(['END_HEADERS'])
+        assert isinstance(frames[1], DataFrame)
+        assert frames[1].data == b'hello there'
+        assert frames[1].flags == set(['END_STREAM'])
 
     def test_that_we_correctly_send_over_the_socket(self):
         sock = DummySocket()
