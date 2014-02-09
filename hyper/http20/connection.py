@@ -69,7 +69,18 @@ class HTTP20Connection(object):
 
         Returns a stream ID for the request.
         """
-        pass
+        stream_id = self.putrequest(method, url)
+
+        for name, value in headers.items():
+            self.putheader(name, value, stream_id)
+
+        # Convert the body to bytes if needed.
+        if isinstance(body, str):
+            body = body.encode('utf-8')
+
+        self.endheaders(message_body=body, final=True, stream_id=stream_id)
+
+        return stream_id
 
     def getresponse(self, stream_id=None):
         """

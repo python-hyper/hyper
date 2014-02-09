@@ -803,6 +803,22 @@ class TestHyperConnection(object):
         assert isinstance(s._queued_frames[0], DataFrame)
         assert s._queued_frames[0].data == b'testdata'
 
+    def test_putrequest_sends_data(self):
+        sock = DummySocket()
+
+        c = HTTP20Connection('www.google.com')
+        c._sock = sock
+        c.request(
+            'GET',
+            '/',
+            body='hello',
+            headers={'Content-Type': 'application/json'}
+        )
+
+        # The socket should have received one headers frame and one body frame.
+        assert len(sock.queue) == 2
+        assert c._out_flow_control_window == 65535 - len(b'hello')
+
 
 class TestHyperStream(object):
     def test_streams_have_ids(self):
