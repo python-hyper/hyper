@@ -49,6 +49,11 @@ class HTTP20Connection(object):
         self.encoder = Encoder()
         self.decoder = Decoder()
 
+        # Values for the settings used on an HTTP/2.0 connection.
+        self._settings = {
+            SettingsFrame.INITIAL_WINDOW_SIZE: 65535,
+        }
+
         # The socket used to send data.
         self._sock = None
 
@@ -207,6 +212,9 @@ class HTTP20Connection(object):
         s = Stream(
             self.next_stream_id, self._send_cb, self._recv_cb, self.encoder,
             self.decoder
+        )
+        s._out_flow_control_window = (
+            self._settings[SettingsFrame.INITIAL_WINDOW_SIZE]
         )
         self.next_stream_id += 2
 
