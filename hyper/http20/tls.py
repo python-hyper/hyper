@@ -7,7 +7,11 @@ Contains the TLS/SSL logic for use in hyper.
 """
 import ssl
 
-SUPPORTED_PROTOCOLS = ['http/1.1']
+
+# Right now we support draft 9.
+SUPPORTED_PROTOCOLS = ['http/1.1', 'HTTP-draft-09/2.0']
+
+
 # We have a singleton SSLContext object. There's no reason to be creating one
 # per connection. We're using v23 right now until someone gives me a reason not
 # to.

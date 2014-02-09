@@ -102,6 +102,7 @@ class HTTP20Connection(object):
         if self._sock is None:
             sock = socket.create_connection((self.host, self.port), 5)
             sock = wrap_socket(sock, self.host)
+            assert sock.selected_npn_protocol() == 'HTTP-draft-09/2.0'
             self._sock = sock
 
             # We need to send a Settings frame immediately on this connection.
