@@ -9,7 +9,7 @@ from hyper.http20.huffman import HuffmanDecoder
 from hyper.http20.huffman_constants import REQUEST_CODES, REQUEST_CODES_LENGTH
 from hyper.http20.connection import HTTP20Connection
 from hyper.http20.stream import (
-    Stream, STATE_HALF_CLOSED_LOCAL, STATE_OPEN, MAX_CHUNK
+    Stream, STATE_HALF_CLOSED_LOCAL, STATE_OPEN, MAX_CHUNK, STATE_CLOSED
 )
 import pytest
 from io import BytesIO
@@ -927,6 +927,100 @@ class TestHyperStream(object):
 
         assert s._out_flow_control_window == 65535 + 1000
 
+    def test_stream_reading_works(self):
+        out_frames = []
+        in_frames = []
+
+        def send_cb(frame):
+            out_frames.append(frame)
+
+        def recv_cb(s):
+            def inner():
+                s.receive_frame(in_frames.pop(0))
+            return inner
+
+        s = Stream(1, send_cb, None, None, None)
+        s._recv_cb = recv_cb(s)
+        s.state = STATE_HALF_CLOSED_LOCAL
+
+        # Provide a data frame to read.
+        f = DataFrame(1)
+        f.data = b'hi there!'
+        f.flags.add('END_STREAM')
+        in_frames.append(f)
+
+        data = s._read()
+        assert data == b'hi there!'
+        assert len(out_frames) == 0
+
+    def test_can_read_multiple_frames_from_streams(self):
+        out_frames = []
+        in_frames = []
+
+        def send_cb(frame):
+            out_frames.append(frame)
+
+        def recv_cb(s):
+            def inner():
+                s.receive_frame(in_frames.pop(0))
+            return inner
+
+        s = Stream(1, send_cb, None, None, None)
+        s._recv_cb = recv_cb(s)
+        s.state = STATE_HALF_CLOSED_LOCAL
+
+        # Provide two data frames to read.
+        f = DataFrame(1)
+        f.data = b'hi there!'
+        in_frames.append(f)
+
+        f = DataFrame(1)
+        f.data = b'hi there again!'
+        f.flags.add('END_STREAM')
+        in_frames.append(f)
+
+        data = s._read()
+        assert data == b'hi there!hi there again!'
+        assert len(out_frames) == 1
+        assert isinstance(out_frames[0], WindowUpdateFrame)
+        assert out_frames[0].window_increment == len(b'hi there!')
+
+    def test_partial_reads_from_streams(self):
+        out_frames = []
+        in_frames = []
+
+        def send_cb(frame):
+            out_frames.append(frame)
+
+        def recv_cb(s):
+            def inner():
+                s.receive_frame(in_frames.pop(0))
+            return inner
+
+        s = Stream(1, send_cb, None, None, None)
+        s._recv_cb = recv_cb(s)
+        s.state = STATE_HALF_CLOSED_LOCAL
+
+        # Provide two data frames to read.
+        f = DataFrame(1)
+        f.data = b'hi there!'
+        in_frames.append(f)
+
+        f = DataFrame(1)
+        f.data = b'hi there again!'
+        f.flags.add('END_STREAM')
+        in_frames.append(f)
+
+        # We'll get the entire first frame.
+        data = s._read(4)
+        assert data == b'hi there!'
+        assert len(out_frames) == 1
+
+        # Now we'll get the entire of the second frame.
+        data = s._read(4)
+        assert data == b'hi there again!'
+        assert len(out_frames) == 1
+        assert s.state == STATE_CLOSED
 
 # Some utility classes for the tests.
 class NullEncoder(object):

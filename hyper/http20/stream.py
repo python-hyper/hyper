@@ -99,6 +99,48 @@ class Stream(object):
         for chunk in chunks:
             self._send_chunk(chunk, final)
 
+    def _read(self, amt=None):
+        """
+        Read data from the stream. Unlike a normal read behaviour, this
+        function returns _at least_ ``amt`` data, but may return more.
+        """
+        assert self.state in (STATE_OPEN, STATE_HALF_CLOSED_LOCAL)
+
+        def listlen(list):
+            return sum(map(len, list))
+
+        data = []
+
+        # Begin by processing frames off the queue.
+        while amt is None or listlen(data) < amt:
+            try:
+                frame = self._queued_frames.pop(0)
+            except IndexError:
+                # No frames on the queue. Try to read one and try again.
+                self._recv_cb()
+                continue
+
+            # All queued frames at this point should be data frames.
+            assert isinstance(frame, DataFrame)
+
+            # Append the data to the buffer.
+            data.append(frame.data)
+
+            # If that was the last frame, we're done here.
+            if 'END_STREAM' in frame.flags:
+                self.state = (
+                    STATE_HALF_CLOSED_REMOTE if self.state == STATE_OPEN
+                    else STATE_CLOSED
+                )
+                break
+
+            # Increase the window size.
+            w = WindowUpdateFrame(self.stream_id)
+            w.window_increment = len(frame.data)
+            self._data_cb(w)
+
+        return b''.join(data)
+
     def receive_frame(self, frame):
         """
         Handle a frame received on this stream. If this is a window update
