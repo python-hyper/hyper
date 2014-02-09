@@ -90,7 +90,9 @@ class HTTP20Connection(object):
         If you pass no stream_id, you will receive the oldest HTTPResponse
         still outstanding.
         """
-        pass
+        stream = (self.streams[stream_id] if stream_id is not None
+                  else self.recent_stream)
+        return stream.getresponse()
 
     def connect(self):
         """

@@ -13,7 +13,11 @@ stream is an independent, bi-directional sequence of HTTP headers and data.
 Each stream is identified by a monotonically increasing integer, assigned to
 the stream by the endpoint that initiated the stream.
 """
-from .frame import FRAME_MAX_LEN, HeadersFrame, DataFrame, WindowUpdateFrame
+from .frame import (
+    FRAME_MAX_LEN, HeadersFrame, DataFrame, WindowUpdateFrame,
+    ContinuationFrame,
+)
+from .response import HTTP20Response
 
 
 # Define a set of states for a HTTP/2.0 stream.
@@ -186,6 +190,39 @@ class Stream(object):
         self.state = STATE_HALF_CLOSED_LOCAL if end else STATE_OPEN
 
         return
+
+    def getresponse(self):
+        """
+        Once all data has been sent on this connection, returns a
+        HTTP20Response object wrapping this stream.
+        """
+        assert self.state == STATE_HALF_CLOSED_LOCAL
+        header_data = []
+
+        # At this stage, the only things in the frame queue should be HEADERS
+        # and CONTINUATION frames. Grab them all, reading more frames off the
+        # connection if necessary.
+        while True:
+            try:
+                frame = self._queued_frames.pop(0)
+            except IndexError:
+                self._recv_cb()
+                continue
+
+            assert isinstance(frame, (HeadersFrame, ContinuationFrame))
+
+            header_data.append(frame.data)
+
+            if 'END_HEADERS' in frame.flags:
+                if 'END_STREAM' in frame.flags:
+                    self.state = STATE_CLOSED
+                break
+
+        # Decode the headers.
+        headers = self.decoder.decode(b''.join(header_data))
+
+        # Create the HTTP response.
+        return HTTP20Response(headers, self)
 
     def _send_chunk(self, data, final):
         """
