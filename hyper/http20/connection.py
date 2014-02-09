@@ -113,7 +113,12 @@ class HTTP20Connection(object):
         """
         Close the connection to the server.
         """
-        pass
+        # Todo: we should actually clean ourselves up if possible by sending
+        # GoAway frames and closing all outstanding streams. For now this will
+        # do.
+        if self._sock is not None:
+            self._sock.close()
+            self._sock = None
 
     def putrequest(self, method, selector, **kwargs):
         """
