@@ -747,6 +747,7 @@ class TestHyperConnection(object):
             frames.append(frame)
 
         c = HTTP20Connection('www.google.com')
+        c._sock = DummySocket()
         c._send_cb = data_callback
         c.putrequest('GET', '/')
         c.endheaders()
@@ -762,6 +763,7 @@ class TestHyperConnection(object):
             frames.append(frame)
 
         c = HTTP20Connection('www.google.com')
+        c._sock = DummySocket()
         c._send_cb = data_callback
         c.putrequest('GET', '/')
         c.endheaders(message_body=b'hello there', final=True)
