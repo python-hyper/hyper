@@ -51,13 +51,13 @@ class HTTP20Response(object):
         is any iterable other than a single string, its elements are similarly
         returned joined by commas.
         """
-        pass
+        return self._headers.get(name, default)
 
     def getheaders(self):
         """
         Return a list of (header, value) tuples.
         """
-        pass
+        return list(self._headers.items())
 
     def fileno(self):
         """
@@ -70,4 +70,4 @@ class HTTP20Response(object):
         """
         Status code returned by the server.
         """
-        pass
+        return self._headers[':status']
