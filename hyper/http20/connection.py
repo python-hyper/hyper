@@ -110,7 +110,9 @@ class HTTP20Connection(object):
             assert sock.selected_npn_protocol() == 'HTTP-draft-09/2.0'
             self._sock = sock
 
-            # We need to send a Settings frame immediately on this connection.
+            # We need to send the connection header immediately on this
+            # connection, followed by an initial settings frame.
+            sock.send(b'PRI * HTTP/2.0\r\n\r\nSM\r\n\r\n')
             f = SettingsFrame(0)
             f.settings[SettingsFrame.ENABLE_PUSH] = 0
             self._send_cb(f)
