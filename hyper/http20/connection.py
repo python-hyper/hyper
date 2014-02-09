@@ -255,6 +255,13 @@ class HTTP20Connection(object):
         data = self._sock.recv(length)
         frame.parse_body(data)
 
+        # Maintain our flow control window. We don't care about flow control
+        # really, so increment the window by however much data was sent.
+        if (isinstance(frame, DataFrame) and
+            not isinstance(frame, HeadersFrame)):
+            outframe = WindowUpdateFrame(0)
+            outframe.window_increment = len(frame.data)
+
         # Work out to whom this frame should go.
         if frame.stream_id != 0:
             self.streams[frame.stream_id].receive_frame(frame)
