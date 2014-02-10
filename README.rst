@@ -22,7 +22,7 @@ Simple.
 Caveat Emptor!
 ==============
 
-Please be warned: ``hyper`` is in a very early alpha. You _will_ encounter bugs
+Please be warned: ``hyper`` is in a very early alpha. You *will* encounter bugs
 when using it. In addition, there are very many rough edges. With that said,
 please try it out in your applications: I need your feedback to fix the bugs
 and file down the rough edges.
