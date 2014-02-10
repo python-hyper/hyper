@@ -8,7 +8,9 @@ Objects that build hyper's connection-level HTTP/2.0 abstraction.
 from .hpack import Encoder, Decoder
 from .stream import Stream
 from .tls import wrap_socket
-from .frame import DataFrame, HeadersFrame, SettingsFrame, Frame
+from .frame import (
+    DataFrame, HeadersFrame, SettingsFrame, Frame, WindowUpdateFrame
+)
 
 import socket
 
@@ -206,6 +208,44 @@ class HTTP20Connection(object):
         stream.send_data(data, final)
 
         return
+
+    def receive_frame(self, frame):
+        """
+        Handles receiving frames intended for the stream.
+        """
+        if isinstance(frame, WindowUpdateFrame):
+            self._out_flow_control_window += frame.window_increment
+        elif isinstance(frame, SettingsFrame):
+            if 'ACK' not in frame.flags:
+                self._update_settings(frame)
+
+                # Need to return an ack.
+                f = SettingsFrame(0)
+                f.flags.add('ACK')
+                self._send_cb(f)
+        else:
+            import pdb; pdb.set_trace()
+            raise ValueError("Unexpected frame %s." % frame)
+
+    def _update_settings(self, frame):
+        """
+        Handles the data sent by a settings frame.
+        """
+        if SettingsFrame.HEADER_TABLE_SIZE in frame.settings:
+            new_size = frame.settings[SettingsFrame.HEADER_TABLE_SIZE]
+
+            self._settings[SettingsFrame.HEADER_TABLE_SIZE] = new_size
+            self.encoder.header_table_size = new_size
+
+        if SettingsFrame.INITIAL_WINDOW_SIZE in frame.settings:
+            newsize = frame.settings[SettingsFrame.INITIAL_WINDOW_SIZE]
+            oldsize = self._settings[SettingsFrame.INITIAL_WINDOW_SIZE]
+            delta = newsize - oldsize
+
+            for stream in self.streams.keys():
+                stream._out_flow_control_window += delta
+
+            self._settings[SettingsFrame.INITIAL_WINDOW_SIZE] = newsize
 
     def _new_stream(self):
         """
