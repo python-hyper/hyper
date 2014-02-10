@@ -72,4 +72,4 @@ class HTTP20Response(object):
         """
         Status code returned by the server.
         """
-        return self._headers[':status']
+        return int(self._headers[':status'])
