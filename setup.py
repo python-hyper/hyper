@@ -25,7 +25,7 @@ if sys.argv[-1] == 'publish':
     os.system('python setup.py sdist upload')
     sys.exit()
 
-packages = ['hyper']
+packages = ['hyper', 'hyper.http20']
 
 setup(
     name='hyper',
