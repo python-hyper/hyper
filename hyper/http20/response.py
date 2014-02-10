@@ -37,11 +37,15 @@ class HTTP20Response(object):
         Reads the response body, or up to the next ``amt`` bytes.
         """
         if amt is not None and amt <= len(self._data_buffer):
-            return self._data_buffer[:amt]
+            data = self._data_buffer[:amt]
+            self._data_buffer = self._data_buffer[amt:]
+            return data
         elif amt is not None:
             read_amt = amt - len(self._data_buffer)
             self._data_buffer += self._stream._read(read_amt)
-            return self._data_buffer[:amt]
+            data = self._data_buffer[:amt]
+            self._data_buffer = self._data_buffer[amt:]
+            return data
         else:
             return b''.join([self._data_buffer, self._stream._read()])
 
