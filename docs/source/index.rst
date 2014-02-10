@@ -35,6 +35,16 @@ when using it. In addition, there are very many rough edges. With that said,
 please try it out in your applications: I need your feedback to fix the bugs
 and file down the rough edges.
 
+Get Stuck In
+------------
+
+The quickstart documentation will help get you going with ``hyper``.
+
+.. toctree::
+   :maxdepth: 2
+
+   quickstart
+
 API Documentation
 -----------------
 
