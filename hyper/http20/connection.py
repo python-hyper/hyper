@@ -302,7 +302,11 @@ class HTTP20Connection(object):
         frame, length = Frame.parse_frame_header(header)
 
         # Read the remaining data from the socket.
-        data = self._sock.recv(length)
+        if length:
+            data = self._sock.recv(length)
+        else:
+            data = b''
+
         frame.parse_body(data)
 
         # Maintain our flow control window. We don't care about flow control
