@@ -223,6 +223,13 @@ class HTTP20Connection(object):
                 f = SettingsFrame(0)
                 f.flags.add('ACK')
                 self._send_cb(f)
+        elif isinstance(frame, GoAwayFrame):
+            # If we get GoAway with error code zero, we are doing a graceful
+            # shutdown and all is well. Otherwise, throw an exception.
+            self.close()
+
+            if frame.error_code != 0:
+                raise RuntimeError("Encountered error %d.", frame.error_code)
         else:
             raise ValueError("Unexpected frame %s." % frame)
 
