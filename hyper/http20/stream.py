@@ -219,7 +219,7 @@ class Stream(object):
                 break
 
         # Decode the headers.
-        headers = self.decoder.decode(b''.join(header_data))
+        headers = self._decoder.decode(b''.join(header_data))
 
         # Create the HTTP response.
         return HTTP20Response(headers, self)
