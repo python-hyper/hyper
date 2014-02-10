@@ -224,7 +224,6 @@ class HTTP20Connection(object):
                 f.flags.add('ACK')
                 self._send_cb(f)
         else:
-            import pdb; pdb.set_trace()
             raise ValueError("Unexpected frame %s." % frame)
 
     def _update_settings(self, frame):
