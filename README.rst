@@ -1,37 +1,47 @@
-==================================
-Hyper: HTTP Abstraction for Python
-==================================
+==========================
+Hyper: HTTP/2.0 for Python
+==========================
 
 HTTP is changing under our feet. HTTP/1.1, our old friend, is being
 supplemented by the brand new HTTP/2.0 standard. HTTP/2.0 provides many
 benefits: improved speed, lower bandwidth usage, better connection management,
 and more.
 
-Unfortunately, most web servers do not support HTTP/2.0 at this time. What's
-needed is to abstract the difference between HTTP/1.1 and HTTP/2.0, so that
-your application can reap the benefits of HTTP/2.0 when possible whilst
-maintaining maximum compatibility.
+``hyper`` provides these benefits to your Python code. How? Like this::
 
-Enter ``hyper``::
+    from hyper import HTTP20Connection
 
-    from hyper import HTTPConnection
+    conn = HTTP20Connection('twitter.com:443')
+    conn.request('GET', '/')
+    resp = conn.getresponse()
 
-    conn = HTTPConnection("www.python.org")
-    conn.request("GET", "/index.html")
+    print(resp.read())
 
-    r1 = conn.getresponse()
+Simple.
 
-Did that code use HTTP/1.1, or HTTP/2.0? You don't have to worry. Whatever
-``www.python.org`` supports, ``hyper`` will use.
+Caveat Emptor!
+==============
+
+Please be warned: ``hyper`` is in a very early alpha. You _will_ encounter bugs
+when using it. In addition, there are very many rough edges. With that said,
+please try it out in your applications: I need your feedback to fix the bugs
+and file down the rough edges.
+
+Versions
+========
+
+``hyper`` provides support for draft 9 of the HTTP/2.0 draft specification and
+draft 5 of the HPACK draft specification. As further drafts are released,
+``hyper`` will be updated to support them.
 
 Compatibility
 =============
 
-``hyper`` is intended to be a drop-in replacement for
-``httplib``/``http.client``, with an identical API. You can get all of the
-HTTP/2.0 goodness by simply replacing your ``import httplib`` or
-``import http.client`` line with ``import hyper as httplib`` or ``import hyper
-as http.client``. You should then be good to go.
+``hyper`` is intended to be a drop-in replacement for ``http.client``, with a
+similar API. However, ``hyper`` intentionally does not name its classes the
+same way ``http.client`` does. This is because most servers do not support
+HTTP/2.0 at this time: I don't want you accidentally using ``hyper`` when you
+wanted ``http.client``.
 
 Contributing
 ============
