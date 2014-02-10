@@ -45,6 +45,16 @@ The quickstart documentation will help get you going with ``hyper``.
 
    quickstart
 
+Frequently Asked Questions
+--------------------------
+
+Got a question? I might have answered it already! Take a look.
+
+.. toctree::
+   :maxdepth: 2
+
+   faq
+
 API Documentation
 -----------------
 
