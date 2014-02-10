@@ -1,10 +1,13 @@
 # -*- coding: utf-8 -*-
 """
-hyper/api
-~~~~~~~~~
+hyper/httplib_compat
+~~~~~~~~~~~~~~~~~~~~
 
 This file defines the publicly-accessible API for hyper. This API also
 constitutes the abstraction layer between HTTP/1.1 and HTTP/2.0.
+
+This API doesn't currently work, and is a lower priority than the HTTP/2.0
+stack at this time.
 """
 import socket
 try:
