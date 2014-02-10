@@ -34,18 +34,18 @@ setup(
     long_description=open('README.rst').read(),
     author='Cory Benfield',
     author_email='cory@lukasa.co.uk',
-    url='',
+    url='http://hyper.rtfd.org',
     packages=packages,
     package_data={'': ['LICENSE', 'README.rst', 'CONTRIBUTORS.rst']},
     package_dir={'hyper': 'hyper'},
     include_package_data=True,
-    license=open('LICENSE').read(),
-    classifiers=(
+    license='MIT License',
+    classifiers=[
         'Development Status :: 3 - Alpha',
         'Intended Audience :: Developers',
         'License :: OSI Approved :: MIT License',
         'Programming Language :: Python',
         'Programming Language :: Python :: 3',
         'Programming Language :: Python :: 3.3',
-    )
+    ]
 )
