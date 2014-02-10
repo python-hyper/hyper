@@ -9,7 +9,8 @@ from .hpack import Encoder, Decoder
 from .stream import Stream
 from .tls import wrap_socket
 from .frame import (
-    DataFrame, HeadersFrame, SettingsFrame, Frame, WindowUpdateFrame
+    DataFrame, HeadersFrame, SettingsFrame, Frame, WindowUpdateFrame,
+    GoAwayFrame
 )
 
 import socket
