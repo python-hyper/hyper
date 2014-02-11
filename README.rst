@@ -2,6 +2,8 @@
 Hyper: HTTP/2.0 for Python
 ==========================
 
+.. image:: https://travis-ci.org/Lukasa/hyper.png?branch=master   :target: https://travis-ci.org/Lukasa/hyper
+
 HTTP is changing under our feet. HTTP/1.1, our old friend, is being
 supplemented by the brand new HTTP/2.0 standard. HTTP/2.0 provides many
 benefits: improved speed, lower bandwidth usage, better connection management,
