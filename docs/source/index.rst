@@ -23,7 +23,9 @@ and more.
 
     print(resp.read())
 
-Simple.
+Simple. ``hyper`` is written in 100% pure Python, which means no C extensions.
+It is also 100% self-contained: there are no external dependencies beyong the
+Python standard library.
 
 ``hyper`` supports Python 3.3 and onward.
 
