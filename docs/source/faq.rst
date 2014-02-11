@@ -22,7 +22,9 @@ keep up with the HTTP/2.0 draft specifications as they progress.
 Does ``hyper`` support HTTP/2.0 flow control?
 ---------------------------------------------
 
-It should! If you find it doesn't, that's a bug: please report it on GitHub.
+It should! If you find it doesn't, that's a bug: please `report it on GitHub`_.
+
+.. _report it on GitHub: https://github.com/Lukasa/hyper/issues
 
 Does ``hyper`` support Server Push?
 -----------------------------------
