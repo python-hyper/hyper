@@ -120,6 +120,9 @@ class HTTP20Connection(object):
             f.settings[SettingsFrame.ENABLE_PUSH] = 0
             self._send_cb(f)
 
+            # The server will also send an initial settings frame, so get it.
+            self._recv_cb()
+
         return
 
     def close(self):
@@ -249,7 +252,7 @@ class HTTP20Connection(object):
             oldsize = self._settings[SettingsFrame.INITIAL_WINDOW_SIZE]
             delta = newsize - oldsize
 
-            for stream in self.streams.keys():
+            for stream in self.streams.values():
                 stream._out_flow_control_window += delta
 
             self._settings[SettingsFrame.INITIAL_WINDOW_SIZE] = newsize
