@@ -338,7 +338,7 @@ class TestHPACKEncoder(object):
         result = b'\x00\x0acustom-key\x0dcustom-header'
 
         assert e.encode(header_set, huffman=False) == result
-        assert e.header_table == [
+        assert list(e.header_table) == [
             (n.encode('utf-8'), v.encode('utf-8')) for n, v in header_set.items()
         ]
 
@@ -352,7 +352,7 @@ class TestHPACKEncoder(object):
         result = b'\x44\x0c/sample/path'
 
         assert e.encode(header_set, huffman=False) == result
-        assert e.header_table == []
+        assert list(e.header_table) == []
 
     def test_indexed_header_field(self):
         """
@@ -365,7 +365,7 @@ class TestHPACKEncoder(object):
         result = b'\x82'
 
         assert e.encode(header_set, huffman=False) == result
-        assert e.header_table == [
+        assert list(e.header_table) == [
             (n.encode('utf-8'), v.encode('utf-8')) for n, v in header_set.items()
         ]
 
@@ -376,7 +376,7 @@ class TestHPACKEncoder(object):
         result = b'\x82'
 
         assert e.encode(header_set, huffman=False) == result
-        assert e.header_table == []
+        assert list(e.header_table) == []
 
     def test_request_examples_without_huffman(self):
         """
@@ -395,7 +395,7 @@ class TestHPACKEncoder(object):
         first_result = b'\x82\x87\x86\x44\x0fwww.example.com'
 
         assert e.encode(first_header_set, huffman=False) == first_result
-        assert e.header_table == [
+        assert list(e.header_table) == [
             (n.encode('utf-8'), v.encode('utf-8')) for n, v in first_header_table
         ]
 
@@ -411,7 +411,7 @@ class TestHPACKEncoder(object):
         second_result = b'\x44\x0fwww.example.com\x5a\x08no-cache'
 
         assert e.encode(second_header_set, huffman=False) == second_result
-        assert e.header_table == [
+        assert list(e.header_table) == [
             (n.encode('utf-8'), v.encode('utf-8')) for n, v in first_header_table
         ]
 
@@ -454,7 +454,7 @@ class TestHPACKEncoder(object):
         )
 
         assert e.encode(first_header_set, huffman=True) == first_result
-        assert e.header_table == [
+        assert list(e.header_table) == [
             (n.encode('utf-8'), v.encode('utf-8')) for n, v in first_header_table
         ]
 
@@ -470,7 +470,7 @@ class TestHPACKEncoder(object):
         second_result = b'\x44\x8b\xdb\x6d\x88\x3e\x68\xd1\xcb\x12\x25\xba\x7f\x5a\x86\x63\x65\x4a\x13\x98\xff'
 
         assert e.encode(second_header_set, huffman=True) == second_result
-        assert e.header_table == [
+        assert list(e.header_table) == [
             (n.encode('utf-8'), v.encode('utf-8')) for n, v in first_header_table
         ]
 
@@ -507,7 +507,7 @@ class TestHPACKDecoder(object):
         data = b'\x00\x0acustom-key\x0dcustom-header'
 
         assert d.decode(data) == header_set
-        assert d.header_table == [
+        assert list(d.header_table) == [
             (n.encode('utf-8'), v.encode('utf-8')) for n, v in header_set
         ]
 
@@ -521,7 +521,7 @@ class TestHPACKDecoder(object):
         data = b'\x44\x0c/sample/path'
 
         assert d.decode(data) == header_set
-        assert d.header_table == []
+        assert list(d.header_table) == []
 
     def test_indexed_header_field(self):
         """
@@ -534,7 +534,7 @@ class TestHPACKDecoder(object):
         data = b'\x82'
 
         assert d.decode(data) == header_set
-        assert d.header_table == [
+        assert list(d.header_table) == [
             (n.encode('utf-8'), v.encode('utf-8')) for n, v in header_set
         ]
 
@@ -555,7 +555,7 @@ class TestHPACKDecoder(object):
         first_data = b'\x82\x87\x86\x44\x0fwww.example.com'
 
         assert d.decode(first_data) == set(first_header_set)
-        assert d.header_table == [
+        assert list(d.header_table) == [
             (n.encode('utf-8'), v.encode('utf-8')) for n, v in first_header_table
         ]
 
@@ -571,7 +571,7 @@ class TestHPACKDecoder(object):
         second_data = b'\x44\x0fwww.example.com\x5a\x08no-cache'
 
         assert d.decode(second_data) == set(second_header_set)
-        assert d.header_table == [
+        assert list(d.header_table) == [
             (n.encode('utf-8'), v.encode('utf-8')) for n, v in first_header_table
         ]
 
@@ -617,7 +617,7 @@ class TestHPACKDecoder(object):
         )
 
         assert d.decode(first_data) == set(first_header_set)
-        assert d.header_table == [
+        assert list(d.header_table) == [
             (n.encode('utf-8'), v.encode('utf-8')) for n, v in first_header_table
         ]
 
@@ -634,7 +634,7 @@ class TestHPACKDecoder(object):
         second_data = b'\x1b\x86\x63\x65\x4a\x13\x98\xff'
 
         assert d.decode(second_data) == set(second_header_set)
-        assert d.header_table == [
+        assert list(d.header_table) == [
             (n.encode('utf-8'), v.encode('utf-8')) for n, v in second_header_table
         ]
 
