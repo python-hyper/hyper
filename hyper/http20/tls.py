@@ -17,7 +17,6 @@ SUPPORTED_PROTOCOLS = ['http/1.1', 'HTTP-draft-09/2.0']
 # to.
 _context = None
 
-
 def wrap_socket(socket, server_hostname):
     """
     A vastly simplified SSL wrapping function. We'll probably extend this to

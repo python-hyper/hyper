@@ -17,3 +17,7 @@ if _sys.version_info[0] < 3 or _sys.version_info[1] < 3:
     raise ImportError("hyper only supports Python 3.3 or higher.")
 
 __all__ = [HTTP20Response, HTTP20Connection]
+
+# Set default logging handler.
+import logging
+logging.getLogger(__name__).addHandler(logging.NullHandler())

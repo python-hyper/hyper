@@ -8,11 +8,14 @@ Implements the HPACK header compression algorithm as detailed by the IETF.
 Implements the version dated January 9, 2014.
 """
 import collections
+import logging
 
 from .huffman import HuffmanDecoder, HuffmanEncoder
 from hyper.http20.huffman_constants import (
     REQUEST_CODES, REQUEST_CODES_LENGTH, RESPONSE_CODES, RESPONSE_CODES_LENGTH
 )
+
+log = logging.getLogger(__name__)
 
 
 def encode_integer(integer, prefix_bits):
@@ -20,6 +23,8 @@ def encode_integer(integer, prefix_bits):
     This encodes an integer according to the wacky integer encoding rules
     defined in the HPACK spec.
     """
+    log.debug("Encoding %d with %d bits.", integer, prefix_bits)
+
     max_number = (2 ** prefix_bits) - 1
 
     if (integer < max_number):
@@ -62,6 +67,8 @@ def decode_integer(data, prefix_bits):
             else:
                 number += next_byte * multiple(index)
                 break
+
+    log.debug("Decoded %d consuming %d bytes.", number, index + 1)
 
     return (number, index + 1)
 
@@ -163,6 +170,12 @@ class Encoder(object):
 
     @header_table_size.setter
     def header_table_size(self, value):
+        log.debug(
+            "Setting header table size to %d from %d",
+            value,
+            self._header_table_size
+        )
+
         # If the new value is larger than the current one, no worries!
         # Otherwise, we may need to shrink the header table.
         if value < self._header_table_size:
@@ -177,6 +190,10 @@ class Encoder(object):
                 # If something is removed from the header table, it also needs
                 # to be removed from the reference set.
                 self.reference_set.discard((n, v))
+
+                log.debug(
+                    "Removed %s: %s from the encoder header table", n, v
+                )
 
         self._header_table_size = value
 
@@ -202,6 +219,8 @@ class Encoder(object):
         Literal text values may optionally be Huffman encoded. For now we don't
         do that, because it's an extra bit of complication, but we will later.
         """
+        log.debug("HPACK encoding %s", headers)
+
         # First, turn the headers into a list of tuples if possible. This is
         # the natural way to interact with them in HPACK.
         if isinstance(headers, dict):
@@ -225,6 +244,7 @@ class Encoder(object):
         # reference set, just emit an 'empty the reference set' message.
         if (len(self.reference_set - incoming_set) >
                                                (len(self.reference_set) // 2)):
+            log.debug("Emptying the encoder reference set.")
             header_block = b'\x80'  # Indexed representation of 0.
 
             # Remove everything from the reference set.
@@ -234,6 +254,8 @@ class Encoder(object):
 
         header_block += self.add(to_add, huffman)
 
+        log.debug("Encoded header block to %s", header_block)
+
         return header_block
 
     def remove(self, to_remove):
@@ -242,6 +264,8 @@ class Encoder(object):
         them. These must be in the header table, so must be represented as
         their indexed form.
         """
+        log.debug("Removing %s from the header table", to_remove)
+
         encoded = []
 
         for name, value in to_remove:
@@ -274,6 +298,8 @@ class Encoder(object):
         This function takes a set of header key-value tuples and serializes
         them for adding to the header table.
         """
+        log.debug("Adding %s to the header table", to_add)
+
         encoded = []
 
         for name, value in to_add:
@@ -359,6 +385,8 @@ class Encoder(object):
             # If something is removed from the header table, it also needs to
             # be removed from the reference set.
             self.reference_set.discard((n, v))
+
+            log.debug("Evicted %s: %s from the header table", n, v)
 
     def _encode_indexed(self, index):
         """
@@ -493,6 +521,12 @@ class Decoder(object):
 
     @header_table_size.setter
     def header_table_size(self, value):
+        log.debug(
+            "Resizing decoder header table to %d from %d",
+            value,
+            self._header_table_size
+        )
+
         # If the new value is larger than the current one, no worries!
         # Otherwise, we may need to shrink the header table.
         if value < self._header_table_size:
@@ -508,12 +542,16 @@ class Decoder(object):
                 # to be removed from the reference set.
                 self.reference_set.discard((n, v))
 
+                log.debug("Evicting %s: %s from the header table", n, v)
+
         self._header_table_size = value
 
     def decode(self, data):
         """
         Takes an HPACK-encoded header block and decodes it into a header set.
         """
+        log.debug("Decoding %s", data)
+
         headers = set()
         data_len = len(data)
         current_index = 0
@@ -571,6 +609,8 @@ class Decoder(object):
             # be removed from the reference set.
             self.reference_set.discard((n, v))
 
+            log.debug("Evicting %s: %s from the header table", n, v)
+
     def _decode_indexed(self, data):
         """
         Decodes a header represented using the indexed representation.
@@ -598,9 +638,15 @@ class Decoder(object):
         # Since this updates the reference set, don't bother returning the
         # header.
         if header in self.reference_set:
+            log.debug(
+                "Removed %s from the reference set, consumed %d",
+                header,
+                consumed
+            )
             self.reference_set.remove(header)
             return None, consumed
         else:
+            log.debug("Decoded %s, consumed %d", header, consumed)
             self.reference_set.add(header)
             return header, consumed
 
@@ -665,5 +711,12 @@ class Decoder(object):
             self.reference_set.add((name, value))
 
         header = (name, value)
+
+        log.debug(
+            "Decoded %s, consumed %d, indexed %s",
+            header,
+            consumed,
+            should_index
+        )
 
         return header, total_consumed
