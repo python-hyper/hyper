@@ -152,7 +152,6 @@ class TestHyperIntegration(SocketLevelTest):
         assert send_event.wait(0.3)
 
         # Decode the frames.
-        print(data)
         frames = [decode_frame(d) for d in data]
 
         # We care about the last two. The first should be a data frame
