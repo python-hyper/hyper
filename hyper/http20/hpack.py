@@ -7,6 +7,8 @@ Implements the HPACK header compression algorithm as detailed by the IETF.
 
 Implements the version dated January 9, 2014.
 """
+import collections
+
 from .huffman import HuffmanDecoder, HuffmanEncoder
 from hyper.http20.huffman_constants import (
     REQUEST_CODES, REQUEST_CODES_LENGTH, RESPONSE_CODES, RESPONSE_CODES_LENGTH
@@ -148,7 +150,7 @@ class Encoder(object):
     ]
 
     def __init__(self):
-        self.header_table = []
+        self.header_table = collections.deque()
         self.reference_set = set()
         self._header_table_size = 4096  # This value set by the standard.
         self.huffman_coder = HuffmanEncoder(
@@ -342,7 +344,7 @@ class Encoder(object):
         Adds a header to the header table, evicting old ones if necessary.
         """
         # Be optimistic: add the header straight away.
-        self.header_table.insert(0, (name, value))
+        self.header_table.appendleft((name, value))
 
         # Now, work out how big the header table is.
         actual_size = header_table_size(self.header_table)
@@ -478,7 +480,7 @@ class Decoder(object):
     ]
 
     def __init__(self):
-        self.header_table = []
+        self.header_table = collections.deque()
         self.reference_set = set()
         self._header_table_size = 4096  # This value set by the standard.
         self.huffman_coder = HuffmanDecoder(
@@ -553,7 +555,7 @@ class Decoder(object):
         Adds a header to the header table, evicting old ones if necessary.
         """
         # Be optimistic: add the header straight away.
-        self.header_table.insert(0, (name, value))
+        self.header_table.appendleft((name, value))
 
         # Now, work out how big the header table is.
         actual_size = header_table_size(self.header_table)
