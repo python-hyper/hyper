@@ -13,7 +13,10 @@ from .frame import (
     GoAwayFrame
 )
 
+import logging
 import socket
+
+log = logging.getLogger(__name__)
 
 
 class HTTP20Connection(object):
@@ -293,6 +296,12 @@ class HTTP20Connection(object):
 
         data = frame.serialize()
 
+        log.info(
+            "Sending frame %s on stream %d",
+            frame.__class__.__name__,
+            frame.stream_id
+        )
+
         self._sock.send(data)
 
     def _recv_cb(self):
@@ -318,6 +327,12 @@ class HTTP20Connection(object):
             data = b''
 
         frame.parse_body(data)
+
+        log.info(
+            "Received frame %s on stream %d",
+            frame.__class__.__name__,
+            frame.stream_id
+        )
 
         # Maintain our flow control window. We don't care about flow control
         # really, so increment the window by however much data was sent.
