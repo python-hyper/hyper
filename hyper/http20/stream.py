@@ -18,6 +18,7 @@ from .frame import (
     ContinuationFrame,
 )
 from .response import HTTP20Response
+import collections
 
 
 # Define a set of states for a HTTP/2.0 stream.
@@ -52,7 +53,7 @@ class Stream(object):
         self.stream_id = stream_id
         self.state = STATE_IDLE
         self.headers = []
-        self._queued_frames = []
+        self._queued_frames = collections.deque()
 
         # There are two flow control windows: one for data we're sending,
         # one for data being sent to us.
@@ -118,7 +119,7 @@ class Stream(object):
         # Begin by processing frames off the queue.
         while amt is None or listlen(data) < amt:
             try:
-                frame = self._queued_frames.pop(0)
+                frame = self._queued_frames.popleft()
             except IndexError:
                 # No frames on the queue. Try to read one and try again.
                 self._recv_cb()
@@ -204,7 +205,7 @@ class Stream(object):
         # connection if necessary.
         while True:
             try:
-                frame = self._queued_frames.pop(0)
+                frame = self._queued_frames.popleft()
             except IndexError:
                 self._recv_cb()
                 continue
