@@ -9,7 +9,7 @@ X.X.X (XXXX-XX-XX)
 - Implemented logging. (`Issue #12`_)
 - Stopped HTTP/2.0 special headers appearing in the response headers.
   (`Issue #16`_)
-- `HTTP20Connection` objects are now context managers. (`Issue #13`)
+- `HTTP20Connection` objects are now context managers. (`Issue #13`_)
 
 
 .. _Issue #12: https://github.com/Lukasa/hyper/issues/12
