@@ -73,6 +73,13 @@ def decode_integer(data, prefix_bits):
     return (number, index + 1)
 
 
+def _to_bytes(string):
+    """
+    Convert string to bytes.
+    """
+    return string if isinstance(string, bytes) else string.encode('utf-8')
+
+
 def header_table_size(table):
     """
     Calculates the 'size' of the header table as defined by the HTTP/2.0
@@ -227,7 +234,7 @@ class Encoder(object):
             headers = headers.items()
 
         # Next, walk across the headers and turn them all into bytestrings.
-        headers = [(n.encode('utf-8'), v.encode('utf-8')) for n, v in headers]
+        headers = [(_to_bytes(n), _to_bytes(v)) for n, v in headers]
 
         incoming_set = set(headers)
 
