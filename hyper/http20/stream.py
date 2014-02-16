@@ -109,6 +109,9 @@ class Stream(object):
         Read data from the stream. Unlike a normal read behaviour, this
         function returns _at least_ ``amt`` data, but may return more.
         """
+        if self.state == STATE_CLOSED:
+            return b''
+
         assert self.state in (STATE_OPEN, STATE_HALF_CLOSED_LOCAL)
 
         def listlen(list):
