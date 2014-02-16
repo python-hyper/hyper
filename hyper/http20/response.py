@@ -19,15 +19,15 @@ class HTTP20Response(object):
         #: HTTP/2.0, and so is always the empty string.
         self.reason = ''
 
-        #: The status code returned by the server.
-        self.status = int(headers[':status'])
-        del headers[':status']
-
         # The response headers. These are determined upon creation, assigned
         # once, and never assigned again.
         # This conversion to dictionary is unwise, as there may be repeated
         # keys, but it's acceptable for an early alpha.
         self._headers = dict(headers)
+
+        #: The status code returned by the server.
+        self.status = int(self._headers[':status'])
+        del self._headers[':status']
 
         # The stream this response is being sent over.
         self._stream = stream
