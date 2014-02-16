@@ -1,0 +1,19 @@
+Release History
+---------------
+
+X.X.X (XXXX-XX-XX)
+++++++++++++++++++
+
+*This represents the current state of `master`.*
+
+
+0.0.1 (2014-02-11)
+++++++++++++++++++
+
+- Initial Release
+- Support for HTTP/2.0 draft 09.
+- Support for HPACK draft 05.
+- Support for HTTP/2.0 flow control.
+- Verifies TLS certificates.
+- Support for streaming uploads.
+- Support for streaming downloads.
