@@ -346,3 +346,13 @@ class HTTP20Connection(object):
             self.streams[frame.stream_id].receive_frame(frame)
         else:
             self.receive_frame(frame)
+
+
+    # The following two methods are the implementation of the context manager
+    # protocol.
+    def __enter__(self):
+        return self
+
+    def __exit__(self, type, value, tb):
+        self.close()
+        return False  # Never swallow exceptions.

@@ -164,3 +164,36 @@ class TestHyperIntegration(SocketLevelTest):
         assert len(frames[-1].data) == 64
 
         self.tear_down()
+
+    def test_connection_context_manager(self):
+        self.set_up()
+
+        data = []
+        send_event = threading.Event()
+
+        def socket_handler(listener):
+            sock = listener.accept()[0]
+
+            # We should get two packets: one connection header string, one
+            # SettingsFrame.
+            first = sock.recv(65535)
+            second = sock.recv(65535)
+            data.append(first)
+            data.append(second)
+
+            # We need to send back a SettingsFrame.
+            f = SettingsFrame(0)
+            sock.send(f.serialize())
+
+            send_event.set()
+            sock.close()
+
+        self._start_server(socket_handler)
+        with HTTP20Connection(self.host, self.port) as conn:
+            conn.connect()
+            send_event.wait()
+
+        # Check that we closed the connection.
+        assert conn._sock == None
+
+        self.tear_down()
