@@ -11,6 +11,7 @@ from hyper.http20.connection import HTTP20Connection
 from hyper.http20.stream import (
     Stream, STATE_HALF_CLOSED_LOCAL, STATE_OPEN, MAX_CHUNK, STATE_CLOSED
 )
+from hyper.http20.response import HTTP20Response
 import pytest
 from io import BytesIO
 
@@ -1021,6 +1022,16 @@ class TestHyperStream(object):
         assert data == b'hi there again!'
         assert len(out_frames) == 1
         assert s.state == STATE_CLOSED
+
+
+class TestResponse(object):
+    def test_status_is_stripped_from_headers(self):
+        headers = {':status': '200'}
+        resp = HTTP20Response(headers, None)
+
+        assert resp.status == 200
+        assert resp.getheaders() == []
+
 
 # Some utility classes for the tests.
 class NullEncoder(object):
