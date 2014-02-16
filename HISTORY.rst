@@ -6,6 +6,13 @@ X.X.X (XXXX-XX-XX)
 
 *This represents the current state of `master`.*
 
+- Implemented logging. (`Issue #12`_)
+- Stopped HTTP/2.0 special headers appearing in the response headers.
+  (`Issue #16`_)
+
+
+.. _Issue #12: https://github.com/Lukasa/hyper/issues/12
+.. _Issue #16: https://github.com/Lukasa/hyper/issues/16
 
 0.0.1 (2014-02-11)
 ++++++++++++++++++
