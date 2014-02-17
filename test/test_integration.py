@@ -6,12 +6,14 @@ test/integration
 This file defines integration-type tests for hyper. These are still not fully
 hitting the network, so that's alright.
 """
+import requests
 import ssl
 import threading
 import hyper
 from hyper import HTTP20Connection
+from hyper.contrib import HTTP20Adapter
 from hyper.http20.frame import (
-    Frame, SettingsFrame, WindowUpdateFrame, DataFrame
+    Frame, SettingsFrame, WindowUpdateFrame, DataFrame, HeadersFrame
 )
 from server import SocketLevelTest
 
@@ -195,5 +197,51 @@ class TestHyperIntegration(SocketLevelTest):
 
         # Check that we closed the connection.
         assert conn._sock == None
+
+        self.tear_down()
+
+
+class TestRequestsAdapter(SocketLevelTest):
+    def test_adapter_received_values(self):
+        self.set_up()
+
+        data = []
+        send_event = threading.Event()
+
+        def socket_handler(listener):
+            sock = listener.accept()[0]
+
+            # Do the handshake: conn header, settings, send settings, recv ack.
+            sock.recv(65535)
+            sock.recv(65535)
+            sock.send(SettingsFrame(0).serialize())
+            sock.recv(65535)
+
+            # Now expect some data. One headers frame.
+            data.append(sock.recv(65535))
+
+            # Respond!
+            h = HeadersFrame(1)
+            h.data = self.get_encoder().encode({':status': 200, 'Content-Type': 'not/real', 'Content-Length': 20})
+            h.flags.add('END_HEADERS')
+            sock.send(h.serialize())
+            d = DataFrame(1)
+            d.data = b'1234567890' * 2
+            d.flags.add('END_STREAM')
+            sock.send(d.serialize())
+
+            send_event.set()
+            sock.close()
+
+        self._start_server(socket_handler)
+
+        s = requests.Session()
+        s.mount('https://%s' % self.host, HTTP20Adapter())
+        r = s.get('https://%s:%s/some/path' % (self.host, self.port))
+
+        # Assert about the received values.
+        assert r.status_code == 200
+        assert r.headers['Content-Type'] == 'not/real'
+        assert r.content == b'1234567890' * 2
 
         self.tear_down()
