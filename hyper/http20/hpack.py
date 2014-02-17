@@ -77,6 +77,9 @@ def _to_bytes(string):
     """
     Convert string to bytes.
     """
+    if not isinstance(string, (str, bytes)):
+        string = str(string)
+
     return string if isinstance(string, bytes) else string.encode('utf-8')
 
 
