@@ -17,6 +17,12 @@ import socket
 import ssl
 import sys
 
+from hyper.http20.hpack import Encoder
+from hyper.http20.huffman import HuffmanEncoder
+from hyper.http20.huffman_constants import (
+    RESPONSE_CODES, RESPONSE_CODES_LENGTH
+)
+
 class SocketServerThread(threading.Thread):
     """
     This method stolen wholesale from shazow/urllib3.
@@ -81,6 +87,14 @@ class SocketLevelTest(object):
         ready_event.wait()
         self.host = self.server_thread.host
         self.port = self.server_thread.port
+
+    def get_encoder(self):
+        """
+        Returns a HPACK encoder set up for responses.
+        """
+        e = Encoder()
+        e.huffman_coder = HuffmanEncoder(RESPONSE_CODES, RESPONSE_CODES_LENGTH)
+        return e
 
     def tear_down(self):
         """
