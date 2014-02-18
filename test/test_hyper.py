@@ -13,6 +13,7 @@ from hyper.http20.stream import (
 )
 from hyper.http20.response import HTTP20Response
 import pytest
+import zlib
 from io import BytesIO
 
 
@@ -1032,6 +1033,13 @@ class TestResponse(object):
         assert resp.status == 200
         assert resp.getheaders() == []
 
+    def test_response_transparently_decrypts(self):
+        headers = {':status': '200', 'Content-Encoding': 'gzip'}
+        body = zlib.compress(b'this is test data')
+        resp = HTTP20Response(headers, DummyStream(body))
+
+        assert resp.read() == b'this is test data'
+
 
 # Some utility classes for the tests.
 class NullEncoder(object):
@@ -1048,3 +1056,10 @@ class DummySocket(object):
 
     def recv(self, l):
         return self.buffer.read(l)
+
+class DummyStream(object):
+    def __init__(self, data):
+        self.data = data
+
+    def _read(self, *args, **kwargs):
+        return self.data
