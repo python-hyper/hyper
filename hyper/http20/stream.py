@@ -78,7 +78,7 @@ class Stream(object):
         """
         Adds a single HTTP header to the headers to be sent on the request.
         """
-        self.headers.append((name, value))
+        self.headers.append((name.lower(), value))
 
     def send_data(self, data, final):
         """
