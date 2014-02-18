@@ -245,3 +245,56 @@ class TestRequestsAdapter(SocketLevelTest):
         assert r.content == b'1234567890' * 2
 
         self.tear_down()
+
+    def test_adapter_sending_values(self):
+        self.set_up()
+
+        data = []
+        send_event = threading.Event()
+
+        def socket_handler(listener):
+            sock = listener.accept()[0]
+
+            # Do the handshake: conn header, settings, send settings, recv ack.
+            sock.recv(65535)
+            sock.recv(65535)
+            sock.send(SettingsFrame(0).serialize())
+            sock.recv(65535)
+
+            # Now expect some data. One headers frame and one data frame.
+            data.append(sock.recv(65535))
+            data.append(sock.recv(65535))
+
+            # Respond!
+            h = HeadersFrame(1)
+            h.data = self.get_encoder().encode({':status': 200, 'Content-Type': 'not/real', 'Content-Length': 20})
+            h.flags.add('END_HEADERS')
+            sock.send(h.serialize())
+            d = DataFrame(1)
+            d.data = b'1234567890' * 2
+            d.flags.add('END_STREAM')
+            sock.send(d.serialize())
+
+            send_event.set()
+            sock.close()
+
+        self._start_server(socket_handler)
+
+        s = requests.Session()
+        s.mount('https://%s' % self.host, HTTP20Adapter())
+        r = s.post(
+            'https://%s:%s/some/path' % (self.host, self.port),
+            data='hi there',
+        )
+
+        # Assert about the sent values.
+        assert r.status_code == 200
+
+        f = decode_frame(data[0])
+        assert isinstance(f, HeadersFrame)
+
+        f = decode_frame(data[1])
+        assert isinstance(f, DataFrame)
+        assert f.data == b'hi there'
+
+        self.tear_down()
