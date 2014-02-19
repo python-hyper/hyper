@@ -1034,8 +1034,10 @@ class TestResponse(object):
         assert resp.getheaders() == []
 
     def test_response_transparently_decrypts(self):
-        headers = {':status': '200', 'Content-Encoding': 'gzip'}
-        body = zlib.compress(b'this is test data')
+        headers = {':status': '200', 'content-encoding': 'gzip'}
+        c = zlib.compressobj(wbits=24)
+        body = c.compress(b'this is test data')
+        body += c.flush()
         resp = HTTP20Response(headers, DummyStream(body))
 
         assert resp.read() == b'this is test data'

@@ -6,6 +6,9 @@ hyper/http20/response
 Contains the HTTP/2.0 equivalent of the HTTPResponse object defined in
 httplib/http.client.
 """
+import zlib
+
+
 class HTTP20Response(object):
     """
     An ``HTTP20Response`` wraps the HTTP/2.0 response from the server. It
@@ -36,22 +39,40 @@ class HTTP20Response(object):
         # may need to buffer some for incomplete reads.
         self._data_buffer = b''
 
-    def read(self, amt=None):
+        # This object is used for decompressing gzipped request bodies. Right
+        # now we only support gzip because that's all the RFC mandates of us.
+        # Later we'll add support for more encodings.
+        # This 16 + MAX_WBITS nonsense is to force gzip. See this
+        # Stack Overflow answer for more:
+        # http://stackoverflow.com/a/2695466/1401686
+        self._decompressobj = zlib.decompressobj(16 + zlib.MAX_WBITS)
+
+    def read(self, amt=None, decode_content=True):
         """
         Reads the response body, or up to the next ``amt`` bytes.
         """
         if amt is not None and amt <= len(self._data_buffer):
             data = self._data_buffer[:amt]
             self._data_buffer = self._data_buffer[amt:]
-            return data
+            flush_buffer = False
         elif amt is not None:
             read_amt = amt - len(self._data_buffer)
             self._data_buffer += self._stream._read(read_amt)
             data = self._data_buffer[:amt]
             self._data_buffer = self._data_buffer[amt:]
-            return data
+            flush_buffer = len(data) < amt
         else:
-            return b''.join([self._data_buffer, self._stream._read()])
+            data = b''.join([self._data_buffer, self._stream._read()])
+            flush_buffer = True
+
+        # We may need to decode the body.
+        if (decode_content and self.getheader('content-encoding', False)):
+            data = self._decompressobj.decompress(data)
+
+            if flush_buffer:
+                data += self._decompressobj.flush()
+
+        return data
 
     def getheader(self, name, default=None):
         """
