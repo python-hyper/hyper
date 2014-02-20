@@ -99,3 +99,35 @@ For example::
     >>> third_response = c.getresponse(third)
 
 ``hyper`` will ensure that each response is matched to the correct request.
+
+Requests Integration
+--------------------
+
+Do you like `requests`_? Of course you do, everyone does! It's a shame that
+requests doesn't support HTTP/2.0 though. To rectify that oversight, ``hyper``
+provides a transport adapter that can be plugged directly into Requests, giving
+it instant HTTP/2.0 support.
+
+All you have to do is identify a host that you'd like to communicate with over
+HTTP/2.0. Once you've worked that out, you can get started straight away::
+
+    >>> import requests
+    >>> from hyper.contrib import HTTP20Adapter
+    >>> s = requests.Session()
+    >>> s.mount('https://twitter.com', HTTP20Adapter())
+    >>> r = s.get('https://twitter.com')
+    >>> print(r.status_code)
+    200
+
+This transport adapter is subject to all of the limitations that apply to
+``hyper``, and provides all of the goodness of requests.
+
+A quick warning: some hosts will redirect to new hostnames, which may redirect
+you away from HTTP/2.0. Make sure you install the adapter for all the hostnames
+you're interested in::
+
+    >>> a = HTTP20Adapter()
+    >>> s.mount('https://twitter.com', a)
+    >>> s.mount('https://www.twitter.com', a)
+
+.. _requests: http://python-requests.org/
