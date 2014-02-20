@@ -12,3 +12,6 @@ This section of the documentation covers the interface portions of ``hyper``.
 
 .. autoclass:: hyper.HTTP20Response
    :inherited-members:
+
+.. autoclass:: hyper.contrib.HTTP20Adapter
+   :inherited-members:
