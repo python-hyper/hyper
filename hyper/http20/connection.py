@@ -32,6 +32,12 @@ class HTTP20Connection(object):
 
         Most of the standard library's arguments to the constructor are
         irrelevant for HTTP/2.0 or not supported by hyper.
+
+        :param host: The host to connect to. This may be an IP address or a
+            hostname, and optionally may include a port: for example,
+            ``'twitter.com'``, ``'twitter.com:443'`` or ``'127.0.0.1'``.
+        :param port: (optional) The port to connect to. If not provided and one
+            also isn't provided in the ``host`` parameter, defaults to 443.
         """
         if port is None:
             try:
@@ -78,7 +84,12 @@ class HTTP20Connection(object):
         encodings, pass a bytes object. The Content-Length header is set to the
         length of the body field.
 
-        Returns a stream ID for the request.
+        :returns: A stream ID for the request.
+        :param method: The request method, e.g. ``'GET'``.
+        :param url: The URL to contact, e.g. ``'/path/segment'``.
+        :param body: (optional) The request body to send. Must be a bytestring
+            or a file-like object.
+        :param headers: (optional) The headers to send on the request.
         """
         stream_id = self.putrequest(method, url)
 
@@ -100,6 +111,10 @@ class HTTP20Connection(object):
         the request whose response you want. Returns a HTTPResponse instance.
         If you pass no stream_id, you will receive the oldest HTTPResponse
         still outstanding.
+
+        :param stream_id: (optional) The stream ID of the request for which to
+            get a response.
+        :returns: A HTTP response object.
         """
         stream = (self.streams[stream_id] if stream_id is not None
                   else self.recent_stream)
@@ -109,6 +124,8 @@ class HTTP20Connection(object):
         """
         Connect to the server specified when the object was created. This is a
         no-op if we're already connected.
+
+        :returns: Nothing.
         """
         if self._sock is None:
             sock = socket.create_connection((self.host, self.port), 5)
@@ -131,6 +148,8 @@ class HTTP20Connection(object):
     def close(self):
         """
         Close the connection to the server.
+
+        :returns: Nothing.
         """
         # Todo: we should actually clean ourselves up if possible by sending
         # GoAway frames and closing all outstanding streams. For now this will
@@ -144,6 +163,10 @@ class HTTP20Connection(object):
         This should be the first call for sending a given HTTP request to a
         server. It returns a stream ID for the given connection that should be
         passed to all subsequent request building calls.
+
+        :param method: The request method, e.g. ``'GET'``.
+        :param selector: The path selector.
+        :returns: A stream ID for the request.
         """
         # Create a new stream.
         s = self._new_stream()
@@ -170,6 +193,12 @@ class HTTP20Connection(object):
         Unlike the httplib version of this function, this version does not
         actually send anything when called. Instead, it queues the headers up
         to be sent when you call ``endheaders``.
+
+        :param header: The name of the header.
+        :param argument: The value of the header.
+        :param stream_id: (optional) The stream ID of the request to add the
+            header to.
+        :returns: Nothing.
         """
         stream = (self.streams[stream_id] if stream_id is not None
                   else self.recent_stream)
@@ -186,6 +215,15 @@ class HTTP20Connection(object):
         ``final`` argument is set to True, the stream will also immediately
         be closed: otherwise, the stream will be left open and subsequent calls
         to ``send()`` will be required.
+
+        :param message_body: (optional) The body to send. May not be provided
+            assuming that ``send()`` will be called.
+        :param final: (optional) If the ``message_body`` parameter is provided,
+            should be set to ``True`` if no further data will be provided via
+            calls to ``send()``.
+        :param stream_id: (optional) The stream ID of the request to finish
+            sending the headers on.
+        :returns: Nothing.
         """
         self.connect()
 
@@ -208,6 +246,13 @@ class HTTP20Connection(object):
         (excluding the normal HTTP/2.0 flow control rules). If this is the last
         data that will be sent as part of this request, the ``final`` argument
         should be set to ``True``. This will cause the stream to be closed.
+
+        :param data: The data to send.
+        :param final: (optional) Whether this is the last bit of data to be
+            sent on this request.
+        :param stream_id: (optional) The stream ID of the request to send the
+            data on.
+        :returns: Nothing.
         """
         stream = (self.streams[stream_id] if stream_id is not None
                   else self.recent_stream)

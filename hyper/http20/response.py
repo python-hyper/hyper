@@ -94,6 +94,14 @@ class HTTP20Response(object):
     def read(self, amt=None, decode_content=True):
         """
         Reads the response body, or up to the next ``amt`` bytes.
+
+        :param amt: (optional) The amount of data to read. If not provided, all
+            the data will be read from the response.
+        :param decode_content: (optional) If ``True``, will transparently
+            decode the response data.
+        :returns: The read data. Note that if ``decode_content`` is set to
+            ``True``, the actual amount of data returned may be different to
+            the amount requested.
         """
         if amt is not None and amt <= len(self._data_buffer):
             data = self._data_buffer[:amt]
@@ -126,17 +134,24 @@ class HTTP20Response(object):
         value ``name``, return all of the values joined by ', '. If ``default``
         is any iterable other than a single string, its elements are similarly
         returned joined by commas.
+
+        :param name: The name of the header to get the value of.
+        :param default: (optional) The return value if the header wasn't sent.
+        :returns: The value of the header.
         """
         return self._headers.get(name, default)
 
     def getheaders(self):
         """
-        Return a list of (header, value) tuples.
+        Get all the headers sent on the response.
+
+        :returns: A list of (header, value) tuples.
         """
         return list(self._headers.items())
 
     def fileno(self):
         """
-        Return the ``fileno`` of the underlying socket.
+        Return the ``fileno`` of the underlying socket. This function is
+        currently not implemented.
         """
         pass
