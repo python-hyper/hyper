@@ -9,6 +9,45 @@ httplib/http.client.
 import zlib
 
 
+class DeflateDecoder(object):
+    """
+    This is a decoding object that wraps ``zlib`` and is used for decoding
+    deflated content.
+
+    This rationale for the existence of this object is pretty unpleasant.
+    The HTTP RFC specifies that 'deflate' is a valid content encoding. However,
+    the spec _meant_ the zlib encoding form. Unfortunately, people who didn't
+    read the RFC very carefully actually implemented a different form of
+    'deflate'. Insanely, ``zlib`` handles them using two wbits values. This is
+    such a mess it's hard to adequately articulate.
+
+    This class was lovingly borrowed from the excellent urllib3 library. If you
+    ever see @shazow, you should probably buy him a drink or something.
+    """
+    def __init__(self):
+        self._first_try = True
+        self._data = b''
+        self._obj = zlib.decompressobj(zlib.MAX_WBITS)
+
+    def __getattr__(self, name):
+        return getattr(self._obj, name)
+
+    def decompress(self, data):
+        if not self._first_try:
+            return self._obj.decompress(data)
+
+        self._data += data
+        try:
+            return self._obj.decompress(data)
+        except zlib.error:
+            self._first_try = False
+            self._obj = zlib.decompressobj(-zlib.MAX_WBITS)
+            try:
+                return self.decompress(self._data)
+            finally:
+                self._data = None
+
+
 class HTTP20Response(object):
     """
     An ``HTTP20Response`` wraps the HTTP/2.0 response from the server. It
@@ -45,7 +84,12 @@ class HTTP20Response(object):
         # This 16 + MAX_WBITS nonsense is to force gzip. See this
         # Stack Overflow answer for more:
         # http://stackoverflow.com/a/2695466/1401686
-        self._decompressobj = zlib.decompressobj(16 + zlib.MAX_WBITS)
+        if self._headers.get('content-encoding', '') == 'gzip':
+            self._decompressobj = zlib.decompressobj(16 + zlib.MAX_WBITS)
+        elif self._headers.get('content-encoding', '') == 'deflate':
+            self._decompressobj = DeflateDecoder()
+        else:
+            self._decompressobj = None
 
     def read(self, amt=None, decode_content=True):
         """
@@ -66,11 +110,12 @@ class HTTP20Response(object):
             flush_buffer = True
 
         # We may need to decode the body.
-        if (decode_content and self.getheader('content-encoding', False)):
+        if decode_content and self._decompressobj and data:
             data = self._decompressobj.decompress(data)
 
-            if flush_buffer:
-                data += self._decompressobj.flush()
+        # If we're at the end of the request, flush the buffer.
+        if decode_content and self._decompressobj and flush_buffer:
+            data += self._decompressobj.flush()
 
         return data
 
