@@ -33,3 +33,16 @@ a 'streaming' upload by providing a file-like object to the 'data' parameter.
 This will cause ``hyper`` to read the data in 1kB at a time and send it to the
 remote server. You _must_ set an accurate Content-Length header when you do
 this, as ``hyper`` won't set it for you.
+
+Content Decompression
+---------------------
+
+In HTTP/2.0 it's mandatory that user-agents support receiving responses that
+have their bodies compressed. As demonstrated in the quickstart guide,
+``hyper`` transparently implements this decompression, meaning that responses
+are automatically decompressed for you. If you don't want this to happen,
+you can turn it off by passing the ``decode_content`` parameter to
+:meth:`read() <hyper.HTTP20Response.read>`, like this::
+
+    >>> resp.read(decode_content=False)
+    b'\xc9...'

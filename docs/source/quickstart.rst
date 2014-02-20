@@ -72,13 +72,10 @@ Once you've got the data, things continue to behave exactly like
     >>> resp.status
     200
 
-Based on the ``Content-Encoding`` header, we know that the body is compressed.
-Currently, ``hyper`` doesn't support decoding that body, so you'll need to do
-it yourself::
+We know that Twitter has compressed the response body. ``hyper`` will
+automatically decompress that body for you, no input required::
 
     >>> body = resp.read()
-    >>> import zlib
-    >>> zlib.decompress(body)
     b'<!DOCTYPE html>\n<!--[if IE 8]><html clas ....
 
 That's all it takes.
