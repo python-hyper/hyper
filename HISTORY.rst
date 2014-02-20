@@ -1,10 +1,8 @@
 Release History
 ---------------
 
-X.X.X (XXXX-XX-XX)
+0.0.0 (2014-02-20)
 ++++++++++++++++++
-
-*This represents the current state of `master`.*
 
 - Implemented logging. (`Issue #12`_)
 - Stopped HTTP/2.0 special headers appearing in the response headers.
