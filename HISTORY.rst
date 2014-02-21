@@ -1,6 +1,14 @@
 Release History
 ---------------
 
+X.X.X (XXXX-XX-XX)
+++++++++++++++++++
+
+- Use bundled SSL certificates in addition to the OS ones, which have limited
+  platform availability. (`Issue #9`_)
+
+.. _Issue #9: https://github.com/Lukasa/hyper/issues/9
+
 0.0.2 (2014-02-20)
 ++++++++++++++++++
 
