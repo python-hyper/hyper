@@ -6,6 +6,7 @@ hyper/tls
 Contains the TLS/SSL logic for use in hyper.
 """
 import ssl
+import os.path as path
 
 
 # Right now we support draft 9.
@@ -16,6 +17,11 @@ SUPPORTED_PROTOCOLS = ['http/1.1', 'HTTP-draft-09/2.0']
 # per connection. We're using v23 right now until someone gives me a reason not
 # to.
 _context = None
+
+
+# Work out where our certificates are.
+cert_loc = path.join(path.dirname(__file__), '..', 'certs.pem')
+
 
 def wrap_socket(socket, server_hostname):
     """
@@ -39,6 +45,7 @@ def _init_context():
     """
     context = ssl.SSLContext(ssl.PROTOCOL_SSLv23)
     context.set_default_verify_paths()
+    context.load_verify_locations(cafile=cert_loc)
     context.verify_mode = ssl.CERT_REQUIRED
 
     try:
