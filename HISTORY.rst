@@ -6,6 +6,9 @@ X.X.X (XXXX-XX-XX)
 
 - Use bundled SSL certificates in addition to the OS ones, which have limited
   platform availability. (`Issue #9`_)
+- Connection objects reset to their basic state when they're closed, enabling
+  them to be reused. Note that they may not be reused if exceptions are thrown
+  when they're in use: you must open a new connection in that situation.
 
 .. _Issue #9: https://github.com/Lukasa/hyper/issues/9
 
