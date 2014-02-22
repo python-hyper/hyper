@@ -1,8 +1,8 @@
 Release History
----------------
+===============
 
 X.X.X (XXXX-XX-XX)
-++++++++++++++++++
+------------------
 
 - Use bundled SSL certificates in addition to the OS ones, which have limited
   platform availability. (`Issue #9`_)
@@ -13,7 +13,7 @@ X.X.X (XXXX-XX-XX)
 .. _Issue #9: https://github.com/Lukasa/hyper/issues/9
 
 0.0.2 (2014-02-20)
-++++++++++++++++++
+------------------
 
 - Implemented logging. (`Issue #12`_)
 - Stopped HTTP/2.0 special headers appearing in the response headers.
@@ -32,7 +32,7 @@ X.X.X (XXXX-XX-XX)
 .. _Issue #22: https://github.com/Lukasa/hyper/issues/22
 
 0.0.1 (2014-02-11)
-++++++++++++++++++
+------------------
 
 - Initial Release
 - Support for HTTP/2.0 draft 09.
