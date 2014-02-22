@@ -5,6 +5,27 @@ Advanced Usage
 
 This section of the documentation covers more advanced use-cases for ``hyper``.
 
+Responses as Context Managers
+-----------------------------
+
+If you're concerned about having too many TCP sockets open at any one time, you
+may want to keep your connections alive only as long as you know you'll need
+them. In HTTP/2.0 this is generally not something you should do unless you're
+very confident you won't need the connection again anytime soon. However, if
+you decide you want to avoid keeping the connection open, you can use the
+:class:`HTTP20Connection <hyper.HTTP20Connection>` as a context manager::
+
+    with HTTP20Connection('twitter.com:443') as conn:
+        conn.request('GET', '/')
+        data = conn.getresponse().read()
+
+    analyse(data)
+
+You may not use any :class:`HTTP20Response <hyper.HTTP20Response>` objects
+obtained from a connection after that connection is closed. Interacting with
+these objects when a connection has been closed is considered undefined
+behaviour.
+
 Multithreading
 --------------
 
