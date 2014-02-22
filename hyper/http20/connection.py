@@ -48,6 +48,25 @@ class HTTP20Connection(object):
         else:
             self.host, self.port = host, port
 
+        # Create the mutable state.
+        self.__init_state()
+
+        return
+
+    def __init_state(self):
+        """
+        Initializes the 'mutable state' portions of the HTTP/2.0 connection
+        object.
+
+        This method exists to enable HTTP20Connection objects to be reused if
+        they're closed, by resetting the connection object to its basic state
+        whenever it ends up closed. Any situation that needs to recreate the
+        connection can call this method and it will be done.
+
+        This is one of the only methods in hyper that is truly private, as
+        users should be strongly discouraged from messing about with connection
+        objects themselves.
+        """
         # Streams are stored in a dictionary keyed off their stream IDs. We
         # also save the most recent one for easy access without having to walk
         # the dictionary.
@@ -156,7 +175,7 @@ class HTTP20Connection(object):
         # do.
         if self._sock is not None:
             self._sock.close()
-            self._sock = None
+            self.__init_state()
 
     def putrequest(self, method, selector, **kwargs):
         """

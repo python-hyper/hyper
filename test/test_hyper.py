@@ -821,6 +821,26 @@ class TestHyperConnection(object):
         assert len(sock.queue) == 2
         assert c._out_flow_control_window == 65535 - len(b'hello')
 
+    def test_closed_connections_are_reset(self):
+        c = HTTP20Connection('www.google.com')
+        c._sock = DummySocket()
+        encoder = c.encoder
+        decoder = c.decoder
+        c.request('GET', '/')
+        c.close()
+
+        assert c._sock is None
+        assert not c.streams
+        assert c.recent_stream is None
+        assert c.next_stream_id == 1
+        assert c.encoder is not encoder
+        assert c.decoder is not decoder
+        assert c._settings == {
+            SettingsFrame.INITIAL_WINDOW_SIZE: 65535,
+        }
+        assert c._out_flow_control_window == 65535
+        assert c._in_flow_control_window == 65535
+
 
 class TestHyperStream(object):
     def test_streams_have_ids(self):
@@ -1076,6 +1096,9 @@ class DummySocket(object):
 
     def recv(self, l):
         return self.buffer.read(l)
+
+    def close(self):
+        pass
 
 class DummyStream(object):
     def __init__(self, data):
