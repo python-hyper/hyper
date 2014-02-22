@@ -300,7 +300,7 @@ class HTTP20Connection(object):
             self.close()
 
             if frame.error_code != 0:
-                raise RuntimeError("Encountered error %d.", frame.error_code)
+                raise RuntimeError("Encountered error %d, extra data %s." % (frame.error_code, frame.additional_data))
         else:
             raise ValueError("Unexpected frame %s." % frame)
 
