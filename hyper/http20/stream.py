@@ -142,10 +142,12 @@ class Stream(object):
                 )
                 break
 
-            # Increase the window size.
-            w = WindowUpdateFrame(self.stream_id)
-            w.window_increment = len(frame.data)
-            self._data_cb(w)
+            # Increase the window size. Only do this if the data frame contains
+            # actual data.
+            if len(frame.data):
+                w = WindowUpdateFrame(self.stream_id)
+                w.window_increment = len(frame.data)
+                self._data_cb(w)
 
         return b''.join(data)
 

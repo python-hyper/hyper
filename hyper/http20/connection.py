@@ -399,11 +399,14 @@ class HTTP20Connection(object):
         )
 
         # Maintain our flow control window. We don't care about flow control
-        # really, so increment the window by however much data was sent.
+        # really, so increment the window by however much data was sent unless
+        # no data was sent at all, in which case we don't need to do anything.
         if (isinstance(frame, DataFrame) and
-            not isinstance(frame, HeadersFrame)):
+            not isinstance(frame, HeadersFrame) and
+            len(frame.data)):
             outframe = WindowUpdateFrame(0)
             outframe.window_increment = len(frame.data)
+            self._send_cb(outframe)
 
         # Work out to whom this frame should go.
         if frame.stream_id != 0:

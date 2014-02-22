@@ -842,6 +842,24 @@ class TestHyperConnection(object):
         assert c._out_flow_control_window == 65535
         assert c._in_flow_control_window == 65535
 
+    def test_connection_doesnt_send_window_update_on_zero_length_data_frame(self):
+        # Prepare a socket with a data frame in it that has no length.
+        sock = DummySocket()
+        sock.buffer = BytesIO(DataFrame(1).serialize())
+        c = HTTP20Connection('www.google.com')
+        c._sock = sock
+
+        # We open a request here just to allocate a stream, but we throw away
+        # the frames it sends.
+        c.request('GET', '/')
+        sock.queue = []
+
+        # Read the frame.
+        c._recv_cb()
+
+        # No frame should have been sent on the connection.
+        assert len(sock.queue) == 0
+
 
 class TestHyperStream(object):
     def test_streams_have_ids(self):
