@@ -12,6 +12,7 @@ from hyper.http20.stream import (
     Stream, STATE_HALF_CLOSED_LOCAL, STATE_OPEN, MAX_CHUNK, STATE_CLOSED
 )
 from hyper.http20.response import HTTP20Response
+from hyper.contrib import HTTP20Adapter
 import pytest
 import zlib
 from io import BytesIO
@@ -1079,6 +1080,15 @@ class TestResponse(object):
         resp = HTTP20Response(headers, DummyStream(body))
 
         assert resp.read() == b'this is test data'
+
+
+class TestHTTP20Adapter(object):
+    def test_adapter_reuses_connections(self):
+        a = HTTP20Adapter()
+        conn1 = a.get_connection('twitter.com')
+        conn2 = a.get_connection('twitter.com')
+
+        assert conn1 is conn2
 
 
 # Some utility classes for the tests.

@@ -35,6 +35,7 @@ class HTTP20Adapter(HTTPAdapter):
             conn = self.connections[netloc]
         except KeyError:
             conn = HTTP20Connection(netloc)
+            self.connections[netloc] = conn
 
         return conn
 
