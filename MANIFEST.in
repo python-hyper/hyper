@@ -1,2 +1,2 @@
-include README.rst LICENSE CONTRIBUTORS.rst HISTORY.rst
+include README.rst LICENSE CONTRIBUTORS.rst HISTORY.rst hyper/certs.pem
 
