@@ -106,24 +106,28 @@ class HTTP20Response(object):
         if amt is not None and amt <= len(self._data_buffer):
             data = self._data_buffer[:amt]
             self._data_buffer = self._data_buffer[amt:]
-            flush_buffer = False
+            response_complete = False
         elif amt is not None:
             read_amt = amt - len(self._data_buffer)
             self._data_buffer += self._stream._read(read_amt)
             data = self._data_buffer[:amt]
             self._data_buffer = self._data_buffer[amt:]
-            flush_buffer = len(data) < amt
+            response_complete = len(data) < amt
         else:
             data = b''.join([self._data_buffer, self._stream._read()])
-            flush_buffer = True
+            response_complete = True
 
         # We may need to decode the body.
         if decode_content and self._decompressobj and data:
             data = self._decompressobj.decompress(data)
 
-        # If we're at the end of the request, flush the buffer.
-        if decode_content and self._decompressobj and flush_buffer:
-            data += self._decompressobj.flush()
+        # If we're at the end of the request, we have some cleaning up to do.
+        # Close the stream, and if necessary flush the buffer.
+        if response_complete:
+            if decode_content and self._decompressobj:
+                data += self._decompressobj.flush()
+
+            self.close()
 
         return data
 
