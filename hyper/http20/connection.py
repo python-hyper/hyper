@@ -343,7 +343,11 @@ class HTTP20Connection(object):
         """
         Called by a stream when it would like to be 'closed'.
         """
-        del self.streams[stream_id]
+        try:
+            del self.streams[stream_id]
+        except KeyError:
+            # If the stream is already missing from the dict, no-one cares.
+            pass
 
     def _send_cb(self, frame):
         """
