@@ -127,6 +127,7 @@ class HTTP20Response(object):
             if decode_content and self._decompressobj:
                 data += self._decompressobj.flush()
 
+        if not data:
             self.close()
 
         return data
