@@ -329,8 +329,8 @@ class HTTP20Connection(object):
         Returns a new stream object for this connection.
         """
         s = Stream(
-            self.next_stream_id, self._send_cb, self._recv_cb, self.encoder,
-            self.decoder
+            self.next_stream_id, self._send_cb, self._recv_cb,
+            self._close_stream, self.encoder, self.decoder
         )
         s._out_flow_control_window = (
             self._settings[SettingsFrame.INITIAL_WINDOW_SIZE]
@@ -338,6 +338,12 @@ class HTTP20Connection(object):
         self.next_stream_id += 2
 
         return s
+
+    def _close_stream(self, stream_id):
+        """
+        Called by a stream when it would like to be 'closed'.
+        """
+        del self.streams[stream_id]
 
     def _send_cb(self, frame):
         """

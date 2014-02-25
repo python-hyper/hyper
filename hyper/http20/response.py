@@ -155,3 +155,11 @@ class HTTP20Response(object):
         currently not implemented.
         """
         pass
+
+    def close(self):
+        """
+        Close the response. In effect this closes the backing HTTP/2.0 stream.
+
+        :returns: Nothing.
+        """
+        self._stream.close()

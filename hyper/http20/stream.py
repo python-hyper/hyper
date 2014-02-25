@@ -48,6 +48,7 @@ class Stream(object):
                  stream_id,
                  data_cb,
                  recv_cb,
+                 close_cb,
                  header_encoder,
                  header_decoder):
         self.stream_id = stream_id
@@ -68,6 +69,9 @@ class Stream(object):
         # Similarly, this is a callback that reads one frame off the
         # connection.
         self._recv_cb = recv_cb
+
+        # This is the callback to be called when the stream is closed.
+        self._close_cb = close_cb
 
         # A reference to the header encoder and decoder objects belonging to
         # the parent connection.
@@ -229,6 +233,17 @@ class Stream(object):
 
         # Create the HTTP response.
         return HTTP20Response(headers, self)
+
+    def close(self):
+        """
+        Closes the stream. If the stream is currently open, attempts to close
+        it as gracefully as possible.
+
+        :returns: Nothing.
+        """
+        # Right now let's not bother with grace, let's just call close on the
+        # connection.
+        self._close_cb(self.stream_id)
 
     def _send_chunk(self, data, final):
         """

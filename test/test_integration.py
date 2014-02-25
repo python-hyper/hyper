@@ -15,6 +15,11 @@ from hyper.contrib import HTTP20Adapter
 from hyper.http20.frame import (
     Frame, SettingsFrame, WindowUpdateFrame, DataFrame, HeadersFrame
 )
+from hyper.http20.hpack import Encoder
+from hyper.http20.huffman import HuffmanEncoder
+from hyper.http20.huffman_constants import (
+    RESPONSE_CODES, RESPONSE_CODES_LENGTH
+)
 from server import SocketLevelTest
 
 # Turn off certificate verification for the tests.
@@ -26,6 +31,16 @@ def decode_frame(frame_data):
     f.parse_body(frame_data[8:8 + length])
     assert 8 + length == len(frame_data)
     return f
+
+
+def build_headers_frame(headers):
+    f = HeadersFrame(1)
+    e = Encoder()
+    e.huffman_coder = HuffmanEncoder(RESPONSE_CODES, RESPONSE_CODES_LENGTH)
+    f.data = e.encode(headers)
+    f.flags.add('END_HEADERS')
+    return f
+
 
 class TestHyperIntegration(SocketLevelTest):
     def test_connection_string(self):
@@ -199,6 +214,42 @@ class TestHyperIntegration(SocketLevelTest):
         assert conn._sock == None
 
         self.tear_down()
+
+    def test_closed_responses_remove_their_streams_from_conn(self):
+        self.set_up()
+
+        recv_event = threading.Event()
+
+        def socket_handler(listener):
+            sock = listener.accept()[0]
+
+            # We're going to get the two messages for the connection open, then
+            # a headers frame.
+            sock.recv(65535)
+            sock.recv(65535)
+            sock.send(SettingsFrame(0).serialize())
+            sock.recv(65535)
+
+            # Now, send the headers for the response.
+            f = build_headers_frame([(':status', '200')])
+            f.stream_id = 1
+            sock.send(f.serialize())
+
+            # Wait for the message from the main thread.
+            recv_event.wait()
+            sock.close()
+
+        self._start_server(socket_handler)
+        conn = HTTP20Connection(self.host, self.port)
+        conn.request('GET', '/')
+        resp = conn.getresponse()
+
+        # Close the response.
+        resp.close()
+
+        recv_event.set()
+
+        assert not conn.streams
 
 
 class TestRequestsAdapter(SocketLevelTest):
