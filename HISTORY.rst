@@ -1,7 +1,7 @@
 Release History
 ===============
 
-X.X.X (XXXX-XX-XX)
+0.0.3 (2014-02-26)
 ------------------
 
 - Use bundled SSL certificates in addition to the OS ones, which have limited
@@ -9,8 +9,15 @@ X.X.X (XXXX-XX-XX)
 - Connection objects reset to their basic state when they're closed, enabling
   them to be reused. Note that they may not be reused if exceptions are thrown
   when they're in use: you must open a new connection in that situation.
+- Connection objects are now context managers. (`Issue #13`_)
+- The ``HTTP20Adapter`` correctly reuses connections.
+- Stop sending WINDOWUPDATE frames with a zero-size window increment.
+- Provide basic functionality for gracelessly closing streams.
+- Exhausted streams are now disposed of. (`Issue #14`_)
 
 .. _Issue #9: https://github.com/Lukasa/hyper/issues/9
+.. _Issue #13: https://github.com/Lukasa/hyper/issues/13
+.. _Issue #14: https://github.com/Lukasa/hyper/issues/14
 
 0.0.2 (2014-02-20)
 ------------------
