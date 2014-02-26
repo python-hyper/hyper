@@ -67,8 +67,10 @@ please read the following guidelines:
 5. Make your change.
 6. Run the entire test suite again, confirming that all tests pass including
    the ones you just added.
-7. Send a pull request. GitHub pull requests are the expected method of
-   collaborating on this project.
+7. Send a pull request to the ``development`` branch. GitHub pull requests are
+   the expected method of collaborating on this project. The `master` branch
+   is where all the documentation and releases are built from, and so is
+   required to be known-good at all times.
 
 If for whatever reason you strongly object to the GitHub workflow, email the
 maintainer with a patch.
