@@ -84,3 +84,15 @@ class BaseFlowControlManager(object):
         rc = self.increase_window_size(frame_size)
         self.window_size -= frame_size
         return rc
+
+
+class FlowControlManager(BaseFlowControlManager):
+    """
+    ``hyper``'s default flow control manager.
+
+    This implements hyper's flow control algorithms. As of the current version
+    it implements a hopelessly naive algorithm that simply sends a WINDOWUPDATE
+    frame for every DATA frame that it receives.
+    """
+    def increase_window_size(self, frame_size):
+        return frame_size

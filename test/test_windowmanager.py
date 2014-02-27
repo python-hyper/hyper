@@ -2,7 +2,7 @@
 """
 Tests the hyper window manager.
 """
-from hyper.http20.window import BaseFlowControlManager
+from hyper.http20.window import BaseFlowControlManager, FlowControlManager
 import pytest
 
 class TestBaseFCM(object):
@@ -39,3 +39,14 @@ class TestBaseFCM(object):
         assert b.initial_window_size == 10
         assert b.window_size == 5
         assert b.document_size == 10
+
+
+class TestFCM(object):
+    """
+    Test's hyper's build-in Flow-Control Manager.
+    """
+    def test_fcm_returns_whats_given(self):
+        b = FlowControlManager(100, 100)
+        assert b._handle_frame(10) == 10
+        assert b._handle_frame(30) == 30
+        assert b.window_size == 60
