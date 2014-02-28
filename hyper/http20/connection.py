@@ -327,12 +327,14 @@ class HTTP20Connection(object):
                 stream._out_flow_control_window += delta
 
             # Update our own window manager's window size. If the delta is
-            # negative this is treated like an incoming frame.
-            if delta >= 0:
-                self.window_manager.initial_window_size = newsize
-                self.window_manager.window_size += delta
-            else:
-                self._adjust_receive_window(delta)
+            # negative this is treated specially: we adjust the window size,
+            # and then call self._adjust_receive_window with a zero-sized frame.
+            # This will potentially result in the emission of a WINDOWUPDATE
+            # frame.
+            self.window_manager.initial_window_size = newsize
+            self.window_manager.window_size += delta
+            if delta < 0:
+                self._adjust_receive_window(0)
 
             self._settings[SettingsFrame.INITIAL_WINDOW_SIZE] = newsize
 
