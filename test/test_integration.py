@@ -173,7 +173,8 @@ class TestHyperIntegration(SocketLevelTest):
 
         # We care about the last two. The first should be a data frame
         # containing 32 bytes.
-        assert isinstance(frames[-2], DataFrame)
+        assert (isinstance(frames[-2], DataFrame) and
+                not isinstance(frames[-2], HeadersFrame))
         assert len(frames[-2].data) == 32
 
         # The second should be a data frame containing 64 bytes.
