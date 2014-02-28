@@ -12,6 +12,7 @@ from .frame import (
     DataFrame, HeadersFrame, SettingsFrame, Frame, WindowUpdateFrame,
     GoAwayFrame
 )
+from .window import FlowControlManager
 
 import logging
 import socket
@@ -91,6 +92,9 @@ class HTTP20Connection(object):
         # The inbound and outbound flow control windows.
         self._out_flow_control_window = 65535
         self._in_flow_control_window = 65535
+
+        # Create the window manager.
+        self.window_manager = FlowControlManager(65535)
 
         return
 
@@ -322,6 +326,10 @@ class HTTP20Connection(object):
             for stream in self.streams.values():
                 stream._out_flow_control_window += delta
 
+            # Update our own window manager's window size.
+            self.window_manager.initial_window_size = newsize
+            self.window_manager.window_size += delta
+
             self._settings[SettingsFrame.INITIAL_WINDOW_SIZE] = newsize
 
     def _new_stream(self):
@@ -404,15 +412,18 @@ class HTTP20Connection(object):
             frame.stream_id
         )
 
-        # Maintain our flow control window. We don't care about flow control
-        # really, so increment the window by however much data was sent unless
-        # no data was sent at all, in which case we don't need to do anything.
+        # Maintain our flow control window. We do this by delegating to the
+        # chosen WindowManger.
         if (isinstance(frame, DataFrame) and
-            not isinstance(frame, HeadersFrame) and
-            len(frame.data)):
-            outframe = WindowUpdateFrame(0)
-            outframe.window_increment = len(frame.data)
-            self._send_cb(outframe)
+            not isinstance(frame, HeadersFrame)):
+            # Inform the WindowManager of how much data was received. If the
+            # manager tells us to increment the window, do so.
+            increment = self.window_manager._handle_frame(len(frame.data))
+
+            if increment:
+                outframe = WindowUpdateFrame(0)
+                outframe.window_increment = increment
+                self._send_cb(outframe)
 
         # Work out to whom this frame should go.
         if frame.stream_id != 0:
