@@ -382,6 +382,20 @@ class HTTP20Connection(object):
 
         self._sock.send(data)
 
+    def _adjust_receive_window(self, frame_len):
+        """
+        Adjusts the window size in response to receiving a DATA frame of length
+        ``frame_len``. May send a WINDOWUPDATE frame if necessary.
+        """
+        increment = self.window_manager._handle_frame(frame_len)
+
+        if increment:
+            f = WindowUpdateFrame(0)
+            f.window_increment = increment
+            self._send_cb(f)
+
+        return
+
     def _recv_cb(self):
         """
         This is the callback used by streams to read data from the connection.
