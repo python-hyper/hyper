@@ -432,12 +432,7 @@ class HTTP20Connection(object):
             not isinstance(frame, HeadersFrame)):
             # Inform the WindowManager of how much data was received. If the
             # manager tells us to increment the window, do so.
-            increment = self.window_manager._handle_frame(len(frame.data))
-
-            if increment:
-                outframe = WindowUpdateFrame(0)
-                outframe.window_increment = increment
-                self._send_cb(outframe)
+            self._adjust_receive_window(len(frame.data))
 
         # Work out to whom this frame should go.
         if frame.stream_id != 0:
