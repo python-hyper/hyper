@@ -82,11 +82,7 @@ class HTTP20Adapter(HTTPAdapter):
         response.encoding = get_encoding_from_headers(response.headers)
 
         extract_cookies_to_jar(response.cookies, request, response)
-
-        if isinstance(request.url, bytes):
-            response.url = request.url.decode('utf-8')
-        else:
-            response.url = request.url
+        response.url = request.url
 
         response.request = request
         response.connection = self
