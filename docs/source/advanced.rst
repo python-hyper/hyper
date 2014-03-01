@@ -52,7 +52,7 @@ Streaming Uploads
 Just like the ever-popular ``requests`` module, ``hyper`` allows you to perform
 a 'streaming' upload by providing a file-like object to the 'data' parameter.
 This will cause ``hyper`` to read the data in 1kB at a time and send it to the
-remote server. You _must_ set an accurate Content-Length header when you do
+remote server. You *must* set an accurate Content-Length header when you do
 this, as ``hyper`` won't set it for you.
 
 Content Decompression
