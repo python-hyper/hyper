@@ -827,6 +827,7 @@ class TestHyperConnection(object):
         c._sock = DummySocket()
         encoder = c.encoder
         decoder = c.decoder
+        wm = c.window_manager
         c.request('GET', '/')
         c.close()
 
@@ -840,7 +841,7 @@ class TestHyperConnection(object):
             SettingsFrame.INITIAL_WINDOW_SIZE: 65535,
         }
         assert c._out_flow_control_window == 65535
-        assert c._in_flow_control_window == 65535
+        assert c.window_manager is not wm
 
     def test_connection_doesnt_send_window_update_on_zero_length_data_frame(self):
         # Prepare a socket with a data frame in it that has no length.
