@@ -27,7 +27,7 @@ class HTTP20Connection(object):
     This object behaves similarly to the Python standard library's
     HTTPConnection object, with a few critical differences.
     """
-    def __init__(self, host, port=None, **kwargs):
+    def __init__(self, host, port=None, *, window_manager=None, **kwargs):
         """
         Creates an HTTP/2.0 connection to a specific server.
 
@@ -39,6 +39,12 @@ class HTTP20Connection(object):
             ``'twitter.com'``, ``'twitter.com:443'`` or ``'127.0.0.1'``.
         :param port: (optional) The port to connect to. If not provided and one
             also isn't provided in the ``host`` parameter, defaults to 443.
+        :param window_manager: (optional) The class to use to manage flow
+            control windows. This needs to be a subclass of the
+            :class:`BaseFlowControlManager <hyper.http20.window.BaseFlowControlManager>.
+            If not provided,
+            :class:`FlowControlManager <hyper.http20.window.FlowControlManager>`
+            will be used.
         """
         if port is None:
             try:
@@ -50,6 +56,7 @@ class HTTP20Connection(object):
             self.host, self.port = host, port
 
         # Create the mutable state.
+        self.__wm_class = window_manager or FlowControlManager
         self.__init_state()
 
         return
@@ -93,8 +100,8 @@ class HTTP20Connection(object):
         self._out_flow_control_window = 65535
         self._in_flow_control_window = 65535
 
-        # Create the window manager.
-        self.window_manager = FlowControlManager(65535)
+        # Instantiate a window manager.
+        self.window_manager = self.__wm_class(65535)
 
         return
 
