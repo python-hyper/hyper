@@ -67,7 +67,11 @@ class BaseFlowControlManager(object):
         Note that this method is called before the window size is decremented
         as a result of the frame being handled.
 
-        :param frame_size: The size of the received frame.
+        :param frame_size: The size of the received frame. Note that this *may*
+          be zero. When this parameter is zero, it's possible that a
+          WINDOWUPDATE frame may want to be emitted anyway. A zero-length frame
+          size is usually associated with a change in the size of the receive
+          window due to a SETTINGS frame.
         :returns: The amount to increase the receive window by. Return zero if
           the window should not be increased.
         """
