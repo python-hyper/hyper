@@ -11,7 +11,7 @@ try:
     from requests.structures import CaseInsensitiveDict
     from requests.utils import get_encoding_from_headers
     from requests.cookies import extract_cookies_to_jar
-except ImportError:
+except ImportError:  # pragma: no cover
     HTTPAdapter = object
 
 from hyper import HTTP20Connection
