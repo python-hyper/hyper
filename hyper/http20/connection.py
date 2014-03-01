@@ -440,7 +440,7 @@ class HTTP20Connection(object):
         )
 
         # Maintain our flow control window. We do this by delegating to the
-        # chosen WindowManger.
+        # chosen WindowManager.
         if (isinstance(frame, DataFrame) and
             not isinstance(frame, HeadersFrame)):
             # Inform the WindowManager of how much data was received. If the
