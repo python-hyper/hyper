@@ -12,6 +12,7 @@ from hyper.http20.stream import (
     Stream, STATE_HALF_CLOSED_LOCAL, STATE_OPEN, MAX_CHUNK, STATE_CLOSED
 )
 from hyper.http20.response import HTTP20Response
+from hyper.http20.exceptions import HPACKDecodingError
 from hyper.contrib import HTTP20Adapter
 import pytest
 import zlib
@@ -327,6 +328,15 @@ class TestContinuationFrame(object):
         assert isinstance(f, ContinuationFrame)
         assert f.flags == set(['END_HEADERS'])
         assert f.data == b'hello world'
+
+
+class TestHuffmanDecoder(object):
+    def test_huffman_decoder_throws_useful_exceptions(self):
+        # Specify a HuffmanDecoder with no values in it, then attempt to decode
+        # using it.
+        d = HuffmanDecoder([], [])
+        with pytest.raises(HPACKDecodingError):
+            d.decode(b'test')
 
 
 class TestHPACKEncoder(object):

@@ -6,6 +6,8 @@ hyper/http20/huffman_decoder
 An implementation of a bitwise prefix tree specially built for decoding
 Huffman-coded content where we already know the Huffman table.
 """
+from .exceptions import HPACKDecodingError
+
 
 def _pad_binary(bin_str, req_len=8):
     """
@@ -59,13 +61,17 @@ class HuffmanDecoder(object):
         number = _hex_to_bin_str(encoded_string)
         cur_node = self.root
         decoded_message = []
-        for digit in number:
-            if digit not in cur_node.mapping:
-                break
-            cur_node = cur_node.mapping[digit]
-            if cur_node.data is not None:
-                decoded_message.append(cur_node.data)
-                cur_node = self.root
+
+        try:
+            for digit in number:
+                cur_node = cur_node.mapping[digit]
+                if cur_node.data is not None:
+                    decoded_message.append(cur_node.data)
+                    cur_node = self.root
+        except KeyError:
+            # We have a Huffman-coded string that doesn't match our trie. This
+            # is pretty bad: raise a useful exception.
+            raise HPACKDecodingError("Invalid Huffman-coded string received.")
         return bytes(decoded_message)
 
 
