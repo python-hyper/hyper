@@ -906,6 +906,26 @@ class TestHyperConnection(object):
 
         assert c._out_flow_control_window == 65535 + 1000
 
+    def test_connections_handle_resizing_header_tables_properly(self):
+        sock = DummySocket()
+        f = SettingsFrame(0)
+        f.settings[SettingsFrame.HEADER_TABLE_SIZE] = 1024
+        c = HTTP20Connection('www.google.com')
+        c._sock = sock
+
+        # 'Receive' the SETTINGS frame.
+        c.receive_frame(f)
+
+        # Confirm that the setting is stored and the header table shrunk.
+        assert c._settings[SettingsFrame.HEADER_TABLE_SIZE] == 1024
+        assert c.encoder.header_table_size == 1024
+
+        # Confirm we got a SETTINGS ACK.
+        f2 = decode_frame(sock.queue[0])
+        assert isinstance(f2, SettingsFrame)
+        assert f2.stream_id == 0
+        assert f2.flags == set(['ACK'])
+
 
 class TestHyperStream(object):
     def test_streams_have_ids(self):
