@@ -888,6 +888,17 @@ class TestHyperConnection(object):
         assert not c.streams
         assert c.next_stream_id == 3
 
+    def test_connections_increment_send_window_properly(self):
+        f = WindowUpdateFrame(0)
+        f.window_increment = 1000
+        c = HTTP20Connection('www.google.com')
+        c._sock = DummySocket()
+
+        # 'Receive' the WINDOWUPDATE frame.
+        c.receive_frame(f)
+
+        assert c._out_flow_control_window == 65535 + 1000
+
 
 class TestHyperStream(object):
     def test_streams_have_ids(self):
