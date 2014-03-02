@@ -19,6 +19,13 @@ import zlib
 from io import BytesIO
 
 
+def decode_frame(frame_data):
+    f, length = Frame.parse_frame_header(frame_data[:8])
+    f.parse_body(frame_data[8:8 + length])
+    assert 8 + length == len(frame_data)
+    return f
+
+
 class TestGeneralFrameBehaviour(object):
     def test_base_frame_ignores_flags(self):
         f = Frame(0)
