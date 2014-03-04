@@ -98,7 +98,6 @@ class HTTP20Connection(object):
 
         # The inbound and outbound flow control windows.
         self._out_flow_control_window = 65535
-        self._in_flow_control_window = 65535
 
         # Instantiate a window manager.
         self.window_manager = self.__wm_class(65535)
