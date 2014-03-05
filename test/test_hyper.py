@@ -187,6 +187,10 @@ class TestSettingsFrame(object):
             SettingsFrame.FLOW_CONTROL_OPTIONS: 1,
         }
 
+    def test_settings_frames_never_have_streams(self):
+        with pytest.raises(ValueError):
+            SettingsFrame(1)
+
 
 class TestPushPromiseFrame(object):
     def test_push_promise_unsupported(self):
