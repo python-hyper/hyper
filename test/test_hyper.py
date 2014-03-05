@@ -128,6 +128,15 @@ class TestRstStreamFrame(object):
         assert f.flags == set()
         assert f.error_code == 420
 
+    def test_rst_stream_frame_comes_on_a_stream(self):
+        with pytest.raises(ValueError):
+            RstStreamFrame(0)
+
+    def test_rst_stream_frame_must_have_body_length_four(self):
+        f = RstStreamFrame(1)
+        with pytest.raises(ValueError):
+            f.parse_body(b'\x01')
+
 
 class TestSettingsFrame(object):
     def test_settings_frame_has_only_one_flag(self):
