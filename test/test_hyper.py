@@ -231,6 +231,15 @@ class TestPingFrame(object):
         assert f.flags == set(['ACK'])
         assert f.opaque_data == b'\x01\x02\x00\x00\x00\x00\x00\x00'
 
+    def test_ping_frame_never_has_a_stream(self):
+        with pytest.raises(ValueError):
+            PingFrame(1)
+
+    def test_ping_frame_has_no_more_than_body_length_8(self):
+        f = PingFrame(0)
+        with pytest.raises(ValueError):
+            f.parse_body(b'\x01\x02\x03\x04\x05\x06\x07\x08\x09')
+
 
 class TestGoAwayFrame(object):
     def test_go_away_has_no_flags(self):
