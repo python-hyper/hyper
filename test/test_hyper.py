@@ -100,6 +100,11 @@ class TestPriorityFrame(object):
         with pytest.raises(ValueError):
             PriorityFrame(0)
 
+    def test_priority_frame_must_have_body_length_four(self):
+        f = PriorityFrame(1)
+        with pytest.raises(ValueError):
+            f.parse_body(b'\x01')
+
 class TestRstStreamFrame(object):
     def test_rst_stream_frame_has_no_flags(self):
         f = RstStreamFrame(1)
