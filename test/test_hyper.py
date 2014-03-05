@@ -68,6 +68,10 @@ class TestDataFrame(object):
         assert f.flags == set(['END_STREAM'])
         assert f.data == b'testdata'
 
+    def test_data_frame_comes_on_a_stream(self):
+        with pytest.raises(ValueError):
+            DataFrame(0)
+
 
 class TestPriorityFrame(object):
     def test_priority_frame_has_no_flags(self):
