@@ -277,6 +277,10 @@ class TestGoAwayFrame(object):
         assert f.flags == set()
         assert f.additional_data == b'hello'
 
+    def test_goaway_frame_never_has_a_stream(self):
+        with pytest.raises(ValueError):
+            GoAwayFrame(1)
+
 
 class TestWindowUpdateFrame(object):
     def test_window_update_has_no_flags(self):
