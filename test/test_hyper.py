@@ -96,6 +96,9 @@ class TestPriorityFrame(object):
         assert f.flags == set()
         assert f.priority == 0xFF
 
+    def test_priority_frame_comes_on_a_stream(self):
+        with pytest.raises(ValueError):
+            PriorityFrame(0)
 
 class TestRstStreamFrame(object):
     def test_rst_stream_frame_has_no_flags(self):
