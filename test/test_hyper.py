@@ -38,6 +38,12 @@ class TestGeneralFrameBehaviour(object):
         with pytest.raises(NotImplementedError):
             f.serialize()
 
+    def test_base_frame_cant_parse_body(self):
+        data = b''
+        f = Frame(0)
+        with pytest.raises(NotImplementedError):
+            f.parse_body(data)
+
 
 class TestDataFrame(object):
     def test_data_frame_has_only_one_flag(self):
