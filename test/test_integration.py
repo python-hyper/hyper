@@ -254,6 +254,48 @@ class TestHyperIntegration(SocketLevelTest):
 
         self.tear_down()
 
+    def test_receiving_responses_with_no_body(self):
+        self.set_up()
+
+        recv_event = threading.Event()
+
+        def socket_handler(listener):
+            sock = listener.accept()[0]
+
+            # We get two messages for the connection open and then a HEADERS
+            # frame.
+            sock.recv(65535)
+            sock.recv(65535)
+            sock.send(SettingsFrame(0).serialize())
+            sock.recv(65535)
+
+            # Now, send the headers for the response. This response has no body.
+            f = build_headers_frame([(':status', '204'), ('Content-Length', '0')])
+            f.flags.add('END_STREAM')
+            f.stream_id = 1
+            sock.send(f.serialize())
+
+            # Wait for the message from the main thread.
+            recv_event.wait()
+            sock.close()
+
+        self._start_server(socket_handler)
+        conn = HTTP20Connection(self.host, self.port)
+        conn.request('GET', '/')
+        resp = conn.getresponse()
+
+        # Confirm the status code.
+        assert resp.status == 204
+
+        # Confirm that we can read this, but it has no body.
+        assert resp.read() == b''
+
+        # Awesome, we're done now.
+        recv_event.set()
+
+        self.tear_down()
+
+
 class TestRequestsAdapter(SocketLevelTest):
     def test_adapter_received_values(self):
         self.set_up()
