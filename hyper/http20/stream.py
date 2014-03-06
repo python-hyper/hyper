@@ -176,10 +176,12 @@ class Stream(object):
         encoded_headers = self._encoder.encode(self.headers)
 
         # It's possible that there is a substantial amount of data here. The
-        # data needs to go into one HEADERS frame, followed by a nubmber of
+        # data needs to go into one HEADERS frame, followed by a number of
         # CONTINUATION frames. For now, for ease of implementation, let's just
         # assume that's never going to happen (16kB of headers is lots!).
-        if len(encoded_headers) > FRAME_MAX_LEN:
+        # Additionally, since this is so unlikely, there's no point writing a
+        # test for this: it's just so simple.
+        if len(encoded_headers) > FRAME_MAX_LEN:  # pragma: no cover
             raise ValueError("Header block too large.")
 
         header_frame = HeadersFrame(self.stream_id)
