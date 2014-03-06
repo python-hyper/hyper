@@ -42,6 +42,15 @@ def build_headers_frame(headers):
     return f
 
 
+def receive_preamble(sock):
+    # Receive the HTTP/2.0 'preamble'.
+    sock.recv(65535)
+    sock.recv(65535)
+    sock.send(SettingsFrame(0).serialize())
+    sock.recv(65535)
+    return
+
+
 class TestHyperIntegration(SocketLevelTest):
     def test_connection_string(self):
         self.set_up()
@@ -226,10 +235,7 @@ class TestHyperIntegration(SocketLevelTest):
 
             # We're going to get the two messages for the connection open, then
             # a headers frame.
-            sock.recv(65535)
-            sock.recv(65535)
-            sock.send(SettingsFrame(0).serialize())
-            sock.recv(65535)
+            receive_preamble(sock)
 
             # Now, send the headers for the response.
             f = build_headers_frame([(':status', '200')])
@@ -264,10 +270,7 @@ class TestHyperIntegration(SocketLevelTest):
 
             # We get two messages for the connection open and then a HEADERS
             # frame.
-            sock.recv(65535)
-            sock.recv(65535)
-            sock.send(SettingsFrame(0).serialize())
-            sock.recv(65535)
+            receive_preamble(sock)
 
             # Now, send the headers for the response. This response has no body.
             f = build_headers_frame([(':status', '204'), ('Content-Length', '0')])
@@ -307,10 +310,7 @@ class TestRequestsAdapter(SocketLevelTest):
             sock = listener.accept()[0]
 
             # Do the handshake: conn header, settings, send settings, recv ack.
-            sock.recv(65535)
-            sock.recv(65535)
-            sock.send(SettingsFrame(0).serialize())
-            sock.recv(65535)
+            receive_preamble(sock)
 
             # Now expect some data. One headers frame.
             data.append(sock.recv(65535))
@@ -351,10 +351,7 @@ class TestRequestsAdapter(SocketLevelTest):
             sock = listener.accept()[0]
 
             # Do the handshake: conn header, settings, send settings, recv ack.
-            sock.recv(65535)
-            sock.recv(65535)
-            sock.send(SettingsFrame(0).serialize())
-            sock.recv(65535)
+            receive_preamble(sock)
 
             # Now expect some data. One headers frame and one data frame.
             data.append(sock.recv(65535))
