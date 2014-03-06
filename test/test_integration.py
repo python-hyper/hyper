@@ -252,6 +252,7 @@ class TestHyperIntegration(SocketLevelTest):
 
         assert not conn.streams
 
+        self.tear_down()
 
 class TestRequestsAdapter(SocketLevelTest):
     def test_adapter_received_values(self):
