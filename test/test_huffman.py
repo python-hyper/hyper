@@ -32,3 +32,10 @@ def test_response_huffman_encode():
     assert encoder.encode(b"https://www.example.com") == (b'\xe3\x9e\x78\x64\xdd\x7a\xfd\x3d\x3d\x24\x87\x47\xdb\x87\x28\x49\x55\xf6\xff')
     assert encoder.encode(b"foo=ASDJKHQKBZXOQWEOPIUAXQWEOIU; max-age=3600; version=1") == (b'\xdf\x7d\xfb\x36\xd3\xd9\xe1\xfc\xfc\x3f\xaf\xe7\xab\xfc\xfe\xfc\xbf\xaf\x3e\xdf\x2f\x97\x7f\xd3\x6f\xf7\xfd\x79\xf6\xf9\x77\xfd\x3d\xe1\x6b\xfa\x46\xfe\x10\xd8\x89\x44\x7d\xe1\xce\x18\xe5\x65\xf7\x6c\x2f')
 
+def test_eos_terminates_decode_response():
+    decoder = HuffmanDecoder(RESPONSE_CODES,RESPONSE_CODES_LENGTH)
+    assert decoder.decode(b'\xff\xff\xdd\xff\xff\xff') == b''
+
+def test_eos_terminates_decode_request():
+    decoder = HuffmanDecoder(REQUEST_CODES,REQUEST_CODES_LENGTH)
+    assert decoder.decode(b'\xff\xff\xf7\x00') == b''

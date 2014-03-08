@@ -66,6 +66,10 @@ class HuffmanDecoder(object):
             for digit in number:
                 cur_node = cur_node.mapping[digit]
                 if cur_node.data is not None:
+                    # If we get EOS, everything else is padding.
+                    if cur_node.data > 255:
+                        break
+
                     decoded_message.append(cur_node.data)
                     cur_node = self.root
         except KeyError:
