@@ -1217,6 +1217,14 @@ class TestResponse(object):
 
         assert stream.closed
 
+    def test_responses_are_context_managers(self):
+        stream = DummyStream('')
+
+        with HTTP20Response({':status': '200'}, stream) as resp:
+            pass
+
+        assert stream.closed
+
 
 class TestHTTP20Adapter(object):
     def test_adapter_reuses_connections(self):

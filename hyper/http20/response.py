@@ -168,3 +168,11 @@ class HTTP20Response(object):
         :returns: Nothing.
         """
         self._stream.close()
+
+    # The following methods implement the context manager protocol.
+    def __enter__(self):
+        return self
+
+    def __exit__(self, *args):
+        self.close()
+        return False  # Never swallow exceptions.
