@@ -1,6 +1,13 @@
 Release History
 ===============
 
+X.X.X (XXXX-XX-XX)
+------------------
+
+- `HTTP20Response` objects are context managers. (`Issue #24`_)
+
+.. _Issue #24: https://github.com/Lukasa/hyper/issues/24
+
 0.0.4 (2014-03-08)
 ------------------
 
