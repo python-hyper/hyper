@@ -7,6 +7,7 @@ X.X.X (XXXX-XX-XX)
 - Add logic for pluggable objects to manage the flow-control window.
 - Raise new ``HPACKDecodingError`` when we're unable to validly map a
   Huffman-encoded string.
+- Correctly respect the HPACK EOS character.
 
 0.0.3 (2014-02-26)
 ------------------
