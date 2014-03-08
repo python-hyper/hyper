@@ -1,7 +1,7 @@
 Release History
 ===============
 
-X.X.X (XXXX-XX-XX)
+0.0.4 (2014-03-08)
 ------------------
 
 - Add logic for pluggable objects to manage the flow-control window for both
