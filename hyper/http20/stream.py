@@ -50,7 +50,8 @@ class Stream(object):
                  recv_cb,
                  close_cb,
                  header_encoder,
-                 header_decoder):
+                 header_decoder,
+                 window_manager):
         self.stream_id = stream_id
         self.state = STATE_IDLE
         self.headers = []
@@ -58,8 +59,8 @@ class Stream(object):
 
         # There are two flow control windows: one for data we're sending,
         # one for data being sent to us.
+        self._in_window_manager = window_manager
         self._out_flow_control_window = 65535
-        self._in_flow_control_window = 65535
 
         # This is the callback handed to the stream by its parent connection.
         # It is called when the stream wants to send data. It expects to
@@ -148,9 +149,10 @@ class Stream(object):
 
             # Increase the window size. Only do this if the data frame contains
             # actual data.
-            if len(frame.data):
+            increment = self._in_window_manager._handle_frame(len(frame.data))
+            if increment:
                 w = WindowUpdateFrame(self.stream_id)
-                w.window_increment = len(frame.data)
+                w.window_increment = increment
                 self._data_cb(w)
 
         return b''.join(data)

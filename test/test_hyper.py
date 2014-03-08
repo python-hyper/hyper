@@ -13,6 +13,7 @@ from hyper.http20.stream import (
 )
 from hyper.http20.response import HTTP20Response
 from hyper.http20.exceptions import HPACKDecodingError
+from hyper.http20.window import FlowControlManager
 from hyper.contrib import HTTP20Adapter
 import pytest
 import zlib
@@ -973,15 +974,15 @@ class TestHyperConnection(object):
 
 class TestHyperStream(object):
     def test_streams_have_ids(self):
-        s = Stream(1, None, None, None, None, None)
+        s = Stream(1, None, None, None, None, None, None)
         assert s.stream_id == 1
 
     def test_streams_initially_have_no_headers(self):
-        s = Stream(1, None, None, None, None, None)
+        s = Stream(1, None, None, None, None, None, None)
         assert s.headers == []
 
     def test_streams_can_have_headers(self):
-        s = Stream(1, None, None, None, None, None)
+        s = Stream(1, None, None, None, None, None, None)
         s.add_header("name", "value")
         assert s.headers == [("name", "value")]
 
@@ -991,14 +992,14 @@ class TestHyperStream(object):
             assert frame.data == 'testkeyTestVal'
             assert frame.flags == set(['END_STREAM', 'END_HEADERS'])
 
-        s = Stream(1, data_callback, None, None, NullEncoder, None)
+        s = Stream(1, data_callback, None, None, NullEncoder, None, None)
         s.add_header("TestKey", "TestVal")
         s.open(True)
 
         assert s.state == STATE_HALF_CLOSED_LOCAL
 
     def test_receiving_a_frame_queues_it(self):
-        s = Stream(1, None, None, None, None, None)
+        s = Stream(1, None, None, None, None, None, None)
         s.receive_frame(Frame(0))
         assert len(s._queued_frames) == 1
 
@@ -1008,7 +1009,7 @@ class TestHyperStream(object):
             assert frame.data == b'Hi there!'
             assert frame.flags == set(['END_STREAM'])
 
-        s = Stream(1, data_callback, None, None, NullEncoder, None)
+        s = Stream(1, data_callback, None, None, NullEncoder, None, None)
         s.state = STATE_OPEN
         s.send_data(BytesIO(b'Hi there!'), True)
 
@@ -1027,7 +1028,7 @@ class TestHyperStream(object):
 
         data = b'test' * (MAX_CHUNK + 1)
 
-        s = Stream(1, data_callback, None, None, NullEncoder, None)
+        s = Stream(1, data_callback, None, None, NullEncoder, None, None)
         s.state = STATE_OPEN
         s.send_data(BytesIO(data), True)
 
@@ -1042,7 +1043,7 @@ class TestHyperStream(object):
             assert frame.data == b'Hi there!'
             assert frame.flags == set(['END_STREAM'])
 
-        s = Stream(1, data_callback, None, None, NullEncoder, None)
+        s = Stream(1, data_callback, None, None, NullEncoder, None, None)
         s.state = STATE_OPEN
         s.send_data(b'Hi there!', True)
 
@@ -1061,7 +1062,7 @@ class TestHyperStream(object):
 
         data = b'test' * (MAX_CHUNK + 1)
 
-        s = Stream(1, data_callback, None, None, NullEncoder, None)
+        s = Stream(1, data_callback, None, None, NullEncoder, None, None)
         s.state = STATE_OPEN
         s.send_data(data, True)
 
@@ -1071,7 +1072,7 @@ class TestHyperStream(object):
         assert s._out_flow_control_window == 65535 - len(data)
 
     def test_windowupdate_frames_update_windows(self):
-        s = Stream(1, None, None, None, None, None)
+        s = Stream(1, None, None, None, None, None, None)
         f = WindowUpdateFrame(1)
         f.window_increment = 1000
         s.receive_frame(f)
@@ -1090,7 +1091,7 @@ class TestHyperStream(object):
                 s.receive_frame(in_frames.pop(0))
             return inner
 
-        s = Stream(1, send_cb, None, None, None, None)
+        s = Stream(1, send_cb, None, None, None, None, None)
         s._recv_cb = recv_cb(s)
         s.state = STATE_HALF_CLOSED_LOCAL
 
@@ -1116,7 +1117,7 @@ class TestHyperStream(object):
                 s.receive_frame(in_frames.pop(0))
             return inner
 
-        s = Stream(1, send_cb, None, None, None, None)
+        s = Stream(1, send_cb, None, None, None, None, FlowControlManager(65535))
         s._recv_cb = recv_cb(s)
         s.state = STATE_HALF_CLOSED_LOCAL
 
@@ -1148,7 +1149,7 @@ class TestHyperStream(object):
                 s.receive_frame(in_frames.pop(0))
             return inner
 
-        s = Stream(1, send_cb, None, None, None, None)
+        s = Stream(1, send_cb, None, None, None, None, FlowControlManager(65535))
         s._recv_cb = recv_cb(s)
         s.state = STATE_HALF_CLOSED_LOCAL
 

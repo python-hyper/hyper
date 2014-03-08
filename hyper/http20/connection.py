@@ -348,12 +348,11 @@ class HTTP20Connection(object):
         """
         Returns a new stream object for this connection.
         """
+        window_size = self._settings[SettingsFrame.INITIAL_WINDOW_SIZE]
         s = Stream(
             self.next_stream_id, self._send_cb, self._recv_cb,
-            self._close_stream, self.encoder, self.decoder
-        )
-        s._out_flow_control_window = (
-            self._settings[SettingsFrame.INITIAL_WINDOW_SIZE]
+            self._close_stream, self.encoder, self.decoder,
+            self.__wm_class(window_size)
         )
         self.next_stream_id += 2
 
