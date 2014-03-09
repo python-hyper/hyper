@@ -1028,6 +1028,15 @@ class TestHyperConnection(object):
         assert f2.stream_id == 0
         assert f2.flags == set(['ACK'])
 
+    def test_receive_unexpected_frame(self):
+        # RSTSTREAM frames are never defined on connections, so send one of
+        # those.
+        c = HTTP20Connection('www.google.com')
+        f = RstStreamFrame(1)
+
+        with pytest.raises(ValueError):
+            c.receive_frame(f)
+
 
 class TestHyperStream(object):
     def test_streams_have_ids(self):
