@@ -22,6 +22,15 @@ Requests Transport Adapter
 .. autoclass:: hyper.contrib.HTTP20Adapter
    :inherited-members:
 
+Flow Control
+------------
+
+.. autoclass:: hyper.http20.window.BaseFlowControlManager
+   :inherited-members:
+
+.. autoclass:: hyper.http20.window.FlowControlManager
+   :inherited-members:
+
 Exceptions
 ----------
 

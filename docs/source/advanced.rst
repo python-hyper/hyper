@@ -67,3 +67,44 @@ you can turn it off by passing the ``decode_content`` parameter to
 
     >>> resp.read(decode_content=False)
     b'\xc9...'
+
+Flow Control & Window Managers
+------------------------------
+
+HTTP/2.0 provides a facility for performing 'flow control', enabling both ends
+of a HTTP/2.0 connection to influence the rate at which data is received. When
+used correctly flow control can be a powerful tool for maximising the efficiency
+of a connection. However, when used poorly, flow control leads to severe
+inefficiency and can adversely affect the throughput of the connection.
+
+By default ``hyper`` does its best to manage the flow control window for you,
+trying to avoid severe inefficiencies. In general, though, the user has a much
+better idea of how to manage the flow control window than ``hyper`` will: you
+know your use case better than ``hyper`` possibly can.
+
+For that reason, ``hyper`` provides a facility for using pluggable *window
+managers*. A *window manager* is an object that is in control of resizing the
+flow control window. This object gets informed about every frame received on the
+connection, and can make decisions about when to increase the size of the
+receive window. This object can take advantage of knowledge from layers above
+``hyper``, in the user's code, as well as knowledge from ``hyper``'s layer.
+
+To implement one of these objects, you will want to subclass the
+:class:`BaseFlowControlManager <hyper.http20.window.BaseFlowControlManager>`
+class and implement the
+:meth:`increase_window_size() <hyper.http20.window.BaseFlowControlManager.increase_window_size>`
+method. As a simple example, we can implement a very stupid flow control manager
+that always resizes the window in response to incoming data like this::
+
+    class StupidFlowControlManager(BaseFlowControlManager):
+        def increase_window_size(self, frame_size):
+            return frame_size
+
+The *class* can then be plugged straight into a connection object::
+
+    HTTP20Connection('twitter.com:443', window_manager=StupidFlowControlManager)
+
+Note that we don't plug an instance of the class in, we plug the class itself
+in. We do this because the connection object will spawn instances of the class
+in order to manage the flow control windows of streams in addition to managing
+the window of the connection itself.
