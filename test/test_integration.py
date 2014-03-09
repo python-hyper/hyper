@@ -157,6 +157,11 @@ class TestHyperIntegration(SocketLevelTest):
             f.window_increment = 64
             sock.send(f.serialize())
 
+            # Send one that gives more room to the connection.
+            f = WindowUpdateFrame(0)
+            f.window_increment = 64
+            sock.send(f.serialize())
+
             # Reeive the remaining frame.
             data.append(sock.recv(65535))
             send_event.set()
