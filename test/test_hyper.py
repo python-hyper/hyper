@@ -587,6 +587,12 @@ class TestHPACKEncoder(object):
         with pytest.raises(HPACKEncodingError):
             e.remove([(b'no', b'val')])
 
+    def test_removing_header_not_in_table_at_all(self):
+        e = Encoder()
+
+        with pytest.raises(HPACKEncodingError):
+            e.remove([(b'not', b'present')])
+
 
 class TestHPACKDecoder(object):
     # These tests are stolen entirely from the IETF specification examples.

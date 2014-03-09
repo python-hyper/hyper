@@ -280,7 +280,12 @@ class Encoder(object):
         encoded = []
 
         for name, value in to_remove:
-            index, perfect = self.matching_header(name, value)
+            try:
+                index, perfect = self.matching_header(name, value)
+            except TypeError:
+                raise HPACKEncodingError(
+                    '"%s: %s" not present in the header table' % (name, value)
+                )
 
             # The header must be in the header block. That means that:
             # - perfect must be True
