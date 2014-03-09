@@ -13,7 +13,8 @@ import hyper
 from hyper import HTTP20Connection
 from hyper.contrib import HTTP20Adapter
 from hyper.http20.frame import (
-    Frame, SettingsFrame, WindowUpdateFrame, DataFrame, HeadersFrame
+    Frame, SettingsFrame, WindowUpdateFrame, DataFrame, HeadersFrame,
+    GoAwayFrame,
 )
 from hyper.http20.hpack import Encoder
 from hyper.http20.huffman import HuffmanEncoder
@@ -292,6 +293,41 @@ class TestHyperIntegration(SocketLevelTest):
 
         # Confirm that we can read this, but it has no body.
         assert resp.read() == b''
+
+        # Awesome, we're done now.
+        recv_event.set()
+
+        self.tear_down()
+
+    def test_clean_shut_down(self):
+        self.set_up()
+
+        recv_event = threading.Event()
+
+        def socket_handler(listener):
+            sock = listener.accept()[0]
+
+            # We should get two packets: one connection header string, one
+            # SettingsFrame. Rather than respond to the packets, send a GOAWAY
+            # frame with error code 0 indicating clean shutdown.
+            first = sock.recv(65535)
+            second = sock.recv(65535)
+
+            # Now, send the headers for the response. This response has no body.
+            f = GoAwayFrame(0)
+            f.error_code = 0
+            sock.send(f.serialize())
+
+            # Wait for the message from the main thread.
+            recv_event.wait()
+            sock.close()
+
+        self._start_server(socket_handler)
+        conn = HTTP20Connection(self.host, self.port)
+        conn.connect()
+
+        # Confirm the connection is closed.
+        assert conn._sock is None
 
         # Awesome, we're done now.
         recv_event.set()
