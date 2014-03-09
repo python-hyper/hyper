@@ -1291,7 +1291,7 @@ class TestResponse(object):
         for chunk in chunks:
             assert resp.read(2) == chunk
 
-        assert len(resp.read()) == 0
+        assert resp.read() == b''
 
     def test_read_buffered(self):
         headers = {':status': '200'}
