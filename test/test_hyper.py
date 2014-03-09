@@ -559,6 +559,27 @@ class TestHPACKEncoder(object):
         # reliable. Check its length though.
         assert len(e.header_table) == 6
 
+    # These tests are custom, for hyper.
+    def test_resizing_header_table(self):
+        # We need to encode a substantial number of headers, to populate the
+        # header table.
+        e = Encoder()
+        header_set = [
+            (':method', 'GET'),
+            (':scheme', 'https'),
+            (':path', '/some/path'),
+            (':authority', 'www.example.com'),
+            ('custom-key', 'custom-value'),
+            ("user-agent", "Mozilla/5.0 (Macintosh; Intel Mac OS X 10.8; rv:16.0) Gecko/20100101 Firefox/16.0"),
+            ("accept", "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8"),
+            ('X-Lukasa-Test', '88989'),
+        ]
+        e.encode(header_set, huffman=True)
+
+        # Resize the header table to a size so small that nothing can be in it.
+        e.header_table_size = 40
+        assert len(e.header_table) == 0
+
 
 class TestHPACKDecoder(object):
     # These tests are stolen entirely from the IETF specification examples.
