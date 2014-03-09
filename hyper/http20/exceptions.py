@@ -12,6 +12,13 @@ class HTTP20Error(Exception):
     pass
 
 
+class HPACKEncodingError(HTTP20Error):
+    """
+    An error has been encountered while performing HPACK encoding.
+    """
+    pass
+
+
 class HPACKDecodingError(HTTP20Error):
     """
     An error has been encountered while performing HPACK decoding.
