@@ -57,6 +57,17 @@ More advanced topics are covered here.
 
    advanced
 
+Contributing
+------------
+
+Want to contribute? Awesome! This guide goes into detail about how to
+contribute, and provides guidelines for project contributions.
+
+.. toctree::
+   :maxdepth: 2
+
+   contributing
+
 Frequently Asked Questions
 --------------------------
 
