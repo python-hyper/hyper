@@ -1293,6 +1293,18 @@ class TestResponse(object):
 
         assert len(resp.read()) == 0
 
+    def test_read_buffered(self):
+        headers = {':status': '200'}
+        stream = DummyStream(b'1234567890')
+        chunks = [b'12', b'34', b'56', b'78', b'90'] * 2
+        resp = HTTP20Response(headers, stream)
+        resp._data_buffer = b'1234567890'
+
+        for chunk in chunks:
+            assert resp.read(2) == chunk
+
+        assert resp.read() == b''
+
 
 class TestHTTP20Adapter(object):
     def test_adapter_reuses_connections(self):
