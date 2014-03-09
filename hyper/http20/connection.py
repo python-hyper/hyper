@@ -13,6 +13,7 @@ from .frame import (
     GoAwayFrame
 )
 from .window import FlowControlManager
+from .exceptions import ConnectionError
 
 import logging
 import socket
@@ -310,7 +311,10 @@ class HTTP20Connection(object):
             self.close()
 
             if frame.error_code != 0:
-                raise RuntimeError("Encountered error %d, extra data %s." % (frame.error_code, frame.additional_data))
+                raise ConnectionError(
+                    "Encountered error %d, extra data %s." %
+                    (frame.error_code, frame.additional_data)
+                )
         else:
             raise ValueError("Unexpected frame %s." % frame)
 

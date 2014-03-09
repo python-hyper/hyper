@@ -10,6 +10,7 @@ import requests
 import ssl
 import threading
 import hyper
+import pytest
 from hyper import HTTP20Connection
 from hyper.contrib import HTTP20Adapter
 from hyper.http20.frame import (
@@ -21,6 +22,7 @@ from hyper.http20.huffman import HuffmanEncoder
 from hyper.http20.huffman_constants import (
     RESPONSE_CODES, RESPONSE_CODES_LENGTH
 )
+from hyper.http20.exceptions import ConnectionError
 from server import SocketLevelTest
 
 # Turn off certificate verification for the tests.
@@ -313,7 +315,7 @@ class TestHyperIntegration(SocketLevelTest):
             first = sock.recv(65535)
             second = sock.recv(65535)
 
-            # Now, send the headers for the response. This response has no body.
+            # Now, send the shut down.
             f = GoAwayFrame(0)
             f.error_code = 0
             sock.send(f.serialize())
@@ -325,6 +327,43 @@ class TestHyperIntegration(SocketLevelTest):
         self._start_server(socket_handler)
         conn = HTTP20Connection(self.host, self.port)
         conn.connect()
+
+        # Confirm the connection is closed.
+        assert conn._sock is None
+
+        # Awesome, we're done now.
+        recv_event.set()
+
+        self.tear_down()
+
+    def test_unexpected_shut_down(self):
+        self.set_up()
+
+        recv_event = threading.Event()
+
+        def socket_handler(listener):
+            sock = listener.accept()[0]
+
+            # We should get two packets: one connection header string, one
+            # SettingsFrame. Rather than respond to the packets, send a GOAWAY
+            # frame with error code 0 indicating clean shutdown.
+            first = sock.recv(65535)
+            second = sock.recv(65535)
+
+            # Now, send the shut down.
+            f = GoAwayFrame(0)
+            f.error_code = 1
+            sock.send(f.serialize())
+
+            # Wait for the message from the main thread.
+            sock.close()
+            recv_event.wait()
+
+        self._start_server(socket_handler)
+        conn = HTTP20Connection(self.host, self.port)
+
+        with pytest.raises(ConnectionError):
+            conn.connect()
 
         # Confirm the connection is closed.
         assert conn._sock is None
