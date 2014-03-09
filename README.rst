@@ -54,9 +54,9 @@ happy to accept cosmetic contributions and small contributions, in addition to
 large feature requests and changes.
 
 Before you contribute (either by opening an issue or filing a pull request),
-please `read the contibutor's guidelines`_.
+please `read the contribution guidelines`_.
 
-.. _read the contributor's guidelines: http://hyper.readthedocs.org/en/development/contributing.html
+.. _read the contribution guidelines: http://hyper.readthedocs.org/en/development/contributing.html
 
 License
 =======
