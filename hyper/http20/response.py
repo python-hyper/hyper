@@ -159,7 +159,7 @@ class HTTP20Response(object):
         Return the ``fileno`` of the underlying socket. This function is
         currently not implemented.
         """
-        pass
+        raise NotImplementedError("Not currently implemented.")
 
     def close(self):
         """

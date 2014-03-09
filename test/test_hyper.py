@@ -1319,6 +1319,12 @@ class TestResponse(object):
 
         assert resp.getheader('content-type', 'text/html') == 'text/html'
 
+    def test_fileno_not_implemented(self):
+        resp = HTTP20Response({':status': '200'}, DummyStream(b''))
+
+        with pytest.raises(NotImplementedError):
+            resp.fileno()
+
 
 class TestHTTP20Adapter(object):
     def test_adapter_reuses_connections(self):
