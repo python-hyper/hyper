@@ -279,10 +279,7 @@ class Encoder(object):
         encoded = []
 
         for name, value in to_remove:
-            try:
-                index, perfect = self.matching_header(name, value)
-            except TypeError:
-                index, perfect = -1, False
+            index, perfect = self.matching_header(name, value)
 
             # The header must be in the header block. That means that:
             # - perfect must be True
