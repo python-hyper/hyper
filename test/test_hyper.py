@@ -1317,7 +1317,14 @@ class DummyStream(object):
         self.closed = False
 
     def _read(self, *args, **kwargs):
-        return self.data
+        try:
+            read_len = min(args[0], len(self.data))
+        except IndexError:
+            read_len = len(self.data)
+
+        d = self.data[:read_len]
+        self.data = self.data[read_len:]
+        return d
 
     def close(self):
         if not self.closed:
