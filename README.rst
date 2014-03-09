@@ -54,26 +54,9 @@ happy to accept cosmetic contributions and small contributions, in addition to
 large feature requests and changes.
 
 Before you contribute (either by opening an issue or filing a pull request),
-please read the following guidelines:
+please `read the contibutor's guidelines`_.
 
-1. Check for issues, *both open and closed*, before raising a new one. It's
-   possible your idea or problem has been discussed before. GitHub has a very
-   useful search feature: I recommend using that for a few minutes.
-2. Fork the repository on GitHub.
-3. Run the tests to confirm that they all pass on your system. If they don't,
-   you will need to investigate why they fail. ``hyper`` has a substantial
-   suite of tests which should cover most failures.
-4. Write tests that demonstrate your bug or feature. Ensure that they all fail.
-5. Make your change.
-6. Run the entire test suite again, confirming that all tests pass including
-   the ones you just added.
-7. Send a pull request to the ``development`` branch. GitHub pull requests are
-   the expected method of collaborating on this project. The `master` branch
-   is where all the documentation and releases are built from, and so is
-   required to be known-good at all times.
-
-If for whatever reason you strongly object to the GitHub workflow, email the
-maintainer with a patch.
+.. _read the contributor's guidelines: http://hyper.readthedocs.org/en/development/contributing.html
 
 License
 =======
