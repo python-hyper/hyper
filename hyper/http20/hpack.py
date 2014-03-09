@@ -14,6 +14,7 @@ from .huffman import HuffmanDecoder, HuffmanEncoder
 from hyper.http20.huffman_constants import (
     REQUEST_CODES, REQUEST_CODES_LENGTH, RESPONSE_CODES, RESPONSE_CODES_LENGTH
 )
+from .exceptions import HPACKEncodingError
 
 log = logging.getLogger(__name__)
 
@@ -287,7 +288,7 @@ class Encoder(object):
             max_index = len(self.header_table)
 
             if (not perfect) or (index > max_index):
-                raise ValueError(
+                raise HPACKEncodingError(
                     '"%s: %s" not present in the header table' % (name, value)
                 )
 

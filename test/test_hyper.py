@@ -12,7 +12,7 @@ from hyper.http20.stream import (
     Stream, STATE_HALF_CLOSED_LOCAL, STATE_OPEN, MAX_CHUNK, STATE_CLOSED
 )
 from hyper.http20.response import HTTP20Response
-from hyper.http20.exceptions import HPACKDecodingError
+from hyper.http20.exceptions import HPACKDecodingError, HPACKEncodingError
 from hyper.http20.window import FlowControlManager
 from hyper.contrib import HTTP20Adapter
 import pytest
@@ -579,6 +579,13 @@ class TestHPACKEncoder(object):
         # Resize the header table to a size so small that nothing can be in it.
         e.header_table_size = 40
         assert len(e.header_table) == 0
+
+    def test_removing_header_partially_in_table(self):
+        e = Encoder()
+        e.encode([('no', 'value')])
+
+        with pytest.raises(HPACKEncodingError):
+            e.remove([(b'no', b'val')])
 
 
 class TestHPACKDecoder(object):
