@@ -757,6 +757,29 @@ class TestHPACKDecoder(object):
         # reliable. Check its length though.
         assert len(d.header_table) == 8
 
+    # These tests are custom, for hyper.
+    def test_resizing_header_table(self):
+        # We need to decode a substantial number of headers, to populate the
+        # header table. This string isn't magic: it's the output from the
+        # equivalent test for the Encoder.
+        d = Decoder()
+        data = (
+            b'\x82\x88F\x87\x087A\x07"9\xffC\x8b\xdbm\x88>h\xd1\xcb\x12%' +
+            b'\xba\x7f\x00\x88N\xb0\x8bt\x97\x90\xfa\x7f\x89N\xb0\x8bt\x97\x9a' +
+            b'\x17\xa8\xff|\xbe\xefo\xaa\x96\xb4\x05\x04/G\xfa\xefBT\xc8\xb6' +
+            b'\x19\xf5t|\x19\x11_Gz\x13\xd1\xf4\xf0\xe8\xfd\xf4\x18\xa4\xaf' +
+            b'\xab\xa1\xfc\xfd\x86\xa4\x85\xff}\x1e\xe1O&\x81\xcab\x94\xc57G' +
+            b'\x05<qo\x98\x1a\x92\x17U\xaf\x88\xf9\xc43\x8e\x8b\xe9C\x9c\xb5' +
+            b'%\x11SX\x1ey\xc7E\xff\xcf=\x17\xd2\x879jJ"\xa6\xb0<\xf4_W\x95' +
+            b'\xa5%\x9d?\xd0\x7f]^V\x94\x95\xff\x00\x8a\xfd\xcb\xf2\xd7\x92 ' +
+            b'\x89|F\x11\x84\xae\xbb+\xb3'
+        )
+        d.decode(data)
+
+        # Resize the header table to a size so small that nothing can be in it.
+        d.header_table_size = 40
+        assert len(d.header_table) == 0
+
 
 class TestIntegerEncoding(object):
     # These tests are stolen from the HPACK spec.
