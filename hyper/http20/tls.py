@@ -30,13 +30,13 @@ def wrap_socket(socket, server_hostname):
     """
     global _context
 
-    if _context is None:
+    if _context is None:  # pragma: no cover
         _context = _init_context()
 
     if ssl.HAS_SNI:
         return _context.wrap_socket(socket, server_hostname=server_hostname)
 
-    return _context.wrap_socket(socket)
+    return _context.wrap_socket(socket)  # pragma: no cover
 
 
 def _init_context():
@@ -50,18 +50,18 @@ def _init_context():
 
     try:
         context.set_npn_protocols(SUPPORTED_PROTOCOLS)
-    except (AttributeError, NotImplementedError):
+    except (AttributeError, NotImplementedError):  # pragma: no cover
         pass
 
     # We do our best to do better security
     try:
         context.options |= ssl.OP_NO_SSLv2
-    except AttributeError:
+    except AttributeError:  # pragma: no cover
         pass
 
     try:
         context.options |= ssl.OP_NO_COMPRESSION
-    except AttributeError:
+    except AttributeError:  # pragma: no cover
         pass
 
     return context
