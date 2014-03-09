@@ -1305,6 +1305,20 @@ class TestResponse(object):
 
         assert resp.read() == b''
 
+    def test_getheader(self):
+        headers = {':status': '200', 'content-type': 'application/json'}
+        stream = DummyStream(b'')
+        resp = HTTP20Response(headers, stream)
+
+        assert resp.getheader('content-type') == 'application/json'
+
+    def test_getheader_default(self):
+        headers = {':status': '200'}
+        stream = DummyStream(b'')
+        resp = HTTP20Response(headers, stream)
+
+        assert resp.getheader('content-type', 'text/html') == 'text/html'
+
 
 class TestHTTP20Adapter(object):
     def test_adapter_reuses_connections(self):
