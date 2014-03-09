@@ -1282,6 +1282,17 @@ class TestResponse(object):
 
         assert stream.closed
 
+    def test_read_small_chunks(self):
+        headers = {':status': '200'}
+        stream = DummyStream(b'1234567890')
+        chunks = [b'12', b'34', b'56', b'78', b'90']
+        resp = HTTP20Response(headers, stream)
+
+        for chunk in chunks:
+            assert resp.read(2) == chunk
+
+        assert len(resp.read()) == 0
+
 
 class TestHTTP20Adapter(object):
     def test_adapter_reuses_connections(self):
