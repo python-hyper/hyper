@@ -281,7 +281,7 @@ class TestHyperIntegration(SocketLevelTest):
             receive_preamble(sock)
 
             # Now, send the headers for the response. This response has no body.
-            f = build_headers_frame([(':status', '204'), ('Content-Length', '0')])
+            f = build_headers_frame([(':status', '204'), ('content-length', '0')])
             f.flags.add('END_STREAM')
             f.stream_id = 1
             sock.send(f.serialize())
@@ -300,6 +300,7 @@ class TestHyperIntegration(SocketLevelTest):
 
         # Confirm that we can read this, but it has no body.
         assert resp.read() == b''
+        assert resp._stream._in_window_manager.document_size == 0
 
         # Awesome, we're done now.
         recv_event.set()

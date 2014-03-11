@@ -18,6 +18,7 @@ from .frame import (
     ContinuationFrame,
 )
 from .response import HTTP20Response
+from .util import get_from_key_value_set
 import collections
 
 
@@ -234,6 +235,11 @@ class Stream(object):
 
         # Decode the headers.
         headers = self._decoder.decode(b''.join(header_data))
+
+        # Find the Content-Length header if present.
+        self._in_window_manager.document_size = (
+            int(get_from_key_value_set(headers, 'content-length', 0))
+        )
 
         # Create the HTTP response.
         return HTTP20Response(headers, self)
