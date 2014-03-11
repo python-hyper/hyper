@@ -5,8 +5,11 @@ X.X.X (XXXX-XX-XX)
 ------------------
 
 - `HTTP20Response` objects are context managers. (`Issue #24`_)
+- Pluggable window managers are now correctly informed about the document size.
+  (`Issue #26`_)
 
 .. _Issue #24: https://github.com/Lukasa/hyper/issues/24
+.. _Issue #26: https://github.com/Lukasa/hyper/issues/26
 
 0.0.4 (2014-03-08)
 ------------------
