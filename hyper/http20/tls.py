@@ -10,8 +10,8 @@ import os.path as path
 from ..compat import handle_missing, ssl
 
 
-# Right now we support draft 9.
-SUPPORTED_PROTOCOLS = ['http/1.1', 'HTTP-draft-09/2.0']
+NPN_PROTOCOL = 'h2-10'
+SUPPORTED_NPN_PROTOCOLS = ['http/1.1', NPN_PROTOCOL]
 
 
 # We have a singleton SSLContext object. There's no reason to be creating one
@@ -37,7 +37,7 @@ def wrap_socket(sock, server_hostname):
 
     ssl_sock = _context.wrap_socket(sock, server_hostname=server_hostname)
     with handle_missing():
-        assert ssl_sock.selected_npn_protocol() == 'HTTP-draft-09/2.0'
+        assert ssl_sock.selected_npn_protocol() == NPN_PROTOCOL
     return ssl_sock
 
 
@@ -51,7 +51,7 @@ def _init_context():
     context.verify_mode = ssl.CERT_REQUIRED
 
     with handle_missing():
-        context.set_npn_protocols(SUPPORTED_PROTOCOLS)
+        context.set_npn_protocols(SUPPORTED_NPN_PROTOCOLS)
 
     # We do our best to do better security
     for option in ['OP_NO_SSLv2', 'OP_NO_COMPRESSION']:

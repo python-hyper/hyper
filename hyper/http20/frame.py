@@ -12,6 +12,9 @@ import struct
 # The maximum length of a frame. Some frames have shorter maximum lengths.
 FRAME_MAX_LEN = (2 ** 14) - 1
 
+def _total_padding(high, low):
+    return high * 256 + low
+
 
 class Frame(object):
     """
@@ -82,7 +85,8 @@ class DataFrame(Frame):
     associated with a stream. One or more DATA frames are used, for instance,
     to carry HTTP request or response payloads.
     """
-    defined_flags = [('END_STREAM', 0x01)]
+    defined_flags = [('END_STREAM', 0x01), ('END_SEGMENT', 0x02),
+                     ('PAD_LOW', 0x10), ('PAD_HIGH', 0x20)]
 
     type = 0
 
@@ -90,18 +94,42 @@ class DataFrame(Frame):
         super(DataFrame, self).__init__(stream_id)
 
         self.data = b''
+        self.low_padding = 0
+        self.high_padding = 0
 
         # Data frames may not be stream 0.
         if not self.stream_id:
             raise ValueError()
 
     def serialize(self):
-        data = self.build_frame_header(len(self.data))
+        padding_length = _total_padding(self.high_padding, self.low_padding)
+        data = self.build_frame_header(len(self.data) + self._padding_lengths + padding_length)
+        if 'PAD_LOW' in self.flags:
+            if 'PAD_HIGH' in self.flags:
+                data += struct.pack('!BB', self.high_padding, self.low_padding)
+            else:
+                data += struct.pack('!B', self.low_padding)
         data += self.data
+        data += b'\0' * padding_length
         return data
 
     def parse_body(self, data):
-        self.data = data
+        padding_length = 0
+        if 'PAD_LOW' in self.flags:
+            if 'PAD_HIGH' in self.flags:
+                self.high_padding, self.low_padding = struct.unpack('!BB', data[:2])
+                padding_length = _total_padding(self.high_padding, self.low_padding)
+            else:
+                padding_length = self.low_padding = struct.unpack('!B', data[:1])[0]
+        self.data = data[self._padding_lengths:len(data)-padding_length]
+
+    @property
+    def _padding_lengths(self):
+        if 'PAD_LOW' in self.flags:
+            if 'PAD_HIGH' in self.flags:
+                return 2
+            return 1
+        return 0
 
 
 class PriorityFrame(Frame):
@@ -187,9 +215,8 @@ class SettingsFrame(Frame):
     # attributes.
     HEADER_TABLE_SIZE      = 0x01
     ENABLE_PUSH            = 0x02
-    MAX_CONCURRENT_STREAMS = 0x04
-    INITIAL_WINDOW_SIZE    = 0x07
-    FLOW_CONTROL_OPTIONS   = 0x0A
+    MAX_CONCURRENT_STREAMS = 0x03
+    INITIAL_WINDOW_SIZE    = 0x04
 
     def __init__(self, stream_id):
         super(SettingsFrame, self).__init__(stream_id)
@@ -202,18 +229,18 @@ class SettingsFrame(Frame):
 
     def serialize(self):
         # Each setting consumes 8 bytes.
-        length = len(self.settings) * 8
+        length = len(self.settings) * 5
 
         data = self.build_frame_header(length)
 
         for setting, value in self.settings.items():
-            data += struct.pack("!LL", setting & 0x00FFFFFF, value)
+            data += struct.pack("!BL", setting & 0xFF, value)
 
         return data
 
     def parse_body(self, data):
-        for i in range(0, len(data), 8):
-            name, value = struct.unpack("!LL", data[i:i+8])
+        for i in range(0, len(data), 5):
+            name, value = struct.unpack("!BL", data[i:i+5])
             self.settings[name] = value
 
 
@@ -315,7 +342,7 @@ class WindowUpdateFrame(Frame):
     can indirectly cause the propagation of flow control information toward the
     original sender.
     """
-    type = 0x09
+    type = 0x08
 
     def __init__(self, stream_id):
         super(WindowUpdateFrame, self).__init__(stream_id)
@@ -386,21 +413,22 @@ class ContinuationFrame(DataFrame):
     Much like the HEADERS frame, hyper treats this as an opaque data frame with
     different flags and a different type.
     """
-    type = 0x0A
+    type = 0x09
 
     defined_flags = [('END_HEADERS', 0x04)]
 
 
 # A map of type byte to frame class.
-FRAMES = {
-    0x00: DataFrame,
-    0x01: HeadersFrame,
-    0x02: PriorityFrame,
-    0x03: RstStreamFrame,
-    0x04: SettingsFrame,
-    0x05: PushPromiseFrame,
-    0x06: PingFrame,
-    0x07: GoAwayFrame,
-    0x09: WindowUpdateFrame,
-    0x0A: ContinuationFrame
-}
+_FRAME_CLASSES = [
+    DataFrame,
+    HeadersFrame,
+    PriorityFrame,
+    RstStreamFrame,
+    SettingsFrame,
+    PushPromiseFrame,
+    PingFrame,
+    GoAwayFrame,
+    WindowUpdateFrame,
+    ContinuationFrame,
+]
+FRAMES = {cls.type: cls for cls in _FRAME_CLASSES}

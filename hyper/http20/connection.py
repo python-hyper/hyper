@@ -7,7 +7,7 @@ Objects that build hyper's connection-level HTTP/2.0 abstraction.
 """
 from .hpack import Encoder, Decoder
 from .stream import Stream
-from .tls import wrap_socket
+from .tls import NPN_PROTOCOL, wrap_socket
 from .frame import (
     DataFrame, HeadersFrame, SettingsFrame, Frame, WindowUpdateFrame,
     GoAwayFrame
