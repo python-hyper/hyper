@@ -6,22 +6,8 @@ hyper/http20/huffman_decoder
 An implementation of a bitwise prefix tree specially built for decoding
 Huffman-coded content where we already know the Huffman table.
 """
+from ..compat import to_byte, decode_hex
 from .exceptions import HPACKDecodingError
-from .util import IS_PY3
-
-if IS_PY3:
-    def _get_byte(b, idx):
-        return b[idx]
-
-    def _decode_hex(b):
-        return bytes.fromhex(b)
-else:
-    def _get_byte(b, idx):
-        return ord(b[idx])
-
-    def _decode_hex(b):
-        return b.decode('hex')
-
 
 def _pad_binary(bin_str, req_len=8):
     """
@@ -35,7 +21,7 @@ def _hex_to_bin_str(hex_string):
     Given a Python bytestring, returns a string representing those bytes in
     unicode form.
     """
-    unpadded_bin_string_list = (bin(_get_byte(hex_string, i)) for i in range(len(hex_string)))
+    unpadded_bin_string_list = (bin(to_byte(c)) for c in hex_string)
     padded_bin_string_list = map(_pad_binary, unpadded_bin_string_list)
     bitwise_message = "".join(padded_bin_string_list)
     return bitwise_message
@@ -117,10 +103,10 @@ class HuffmanEncoder(object):
         # Turn each byte into its huffman code. These codes aren't necessarily
         # octet aligned, so keep track of how far through an octet we are. To
         # handle this cleanly, just use a single giant integer.
-        for i in range(len(bytes_to_encode)):
-            letter = _get_byte(bytes_to_encode, i)
-            bin_int_len = self.huffman_code_list_lengths[letter]
-            bin_int = self.huffman_code_list[letter] & (2 ** (bin_int_len + 1) - 1)
+        for char in bytes_to_encode:
+            byte = to_byte(char)
+            bin_int_len = self.huffman_code_list_lengths[byte]
+            bin_int = self.huffman_code_list[byte] & (2 ** (bin_int_len + 1) - 1)
             final_num <<= bin_int_len
             final_num |= bin_int
             final_int_len += bin_int_len
@@ -130,10 +116,11 @@ class HuffmanEncoder(object):
         final_num <<= bits_to_be_padded
         final_num |= (1 << (bits_to_be_padded)) - 1
 
-        # Convert the number to hex and strip off the leading '0x'
+        # Convert the number to hex and strip off the leading '0x' and the
+        # trailing 'L', if present.
         final_num = hex(final_num)[2:].rstrip('L')
 
         # If this is odd, prepend a zero.
         final_num = '0' + final_num if len(final_num) % 2 != 0 else final_num
 
-        return _decode_hex(final_num)
+        return decode_hex(final_num)

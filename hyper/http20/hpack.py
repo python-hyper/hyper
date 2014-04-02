@@ -10,7 +10,8 @@ Implements the version dated January 9, 2014.
 import collections
 import logging
 
-from .huffman import _get_byte, HuffmanDecoder, HuffmanEncoder
+from ..compat import to_byte
+from .huffman import HuffmanDecoder, HuffmanEncoder
 from hyper.http20.huffman_constants import (
     REQUEST_CODES, REQUEST_CODES_LENGTH, RESPONSE_CODES, RESPONSE_CODES_LENGTH
 )
@@ -55,13 +56,13 @@ def decode_integer(data, prefix_bits):
     mask = 0xFF >> (8 - prefix_bits)
     index = 0
 
-    number = _get_byte(data, index) & mask
+    number = to_byte(data[index]) & mask
 
     if (number == max_number):
 
         while True:
             index += 1
-            next_byte = _get_byte(data, index)
+            next_byte = to_byte(data[index])
 
             if next_byte >= 128:
                 number += (next_byte - 128) * multiple(index)
@@ -572,7 +573,7 @@ class Decoder(object):
         while current_index < data_len:
             # Work out what kind of header we're decoding.
             # If the high bit is 1, it's an indexed field.
-            current = _get_byte(data, current_index)
+            current = to_byte(data[current_index])
             indexed = bool(current & 0x80)
 
             # Otherwise, if the second-highest bit is 1 it's a field that
@@ -679,7 +680,7 @@ class Decoder(object):
 
         # If the low six bits of the first byte are nonzero, the header
         # name is indexed.
-        first_byte = _get_byte(data, 0)
+        first_byte = to_byte(data[0])
 
         if first_byte & 0x3F:
             # Indexed header name.
@@ -702,7 +703,7 @@ class Decoder(object):
             length, consumed = decode_integer(data, 7)
             name = data[consumed:consumed + length]
 
-            if _get_byte(data, 0) & 0x80:
+            if to_byte(data[0]) & 0x80:
                 name = self.huffman_coder.decode(name)
             total_consumed = consumed + length + 1  # Since we moved forward 1.
 
@@ -712,7 +713,7 @@ class Decoder(object):
         length, consumed = decode_integer(data, 7)
         value = data[consumed:consumed + length]
 
-        if _get_byte(data, 0) & 0x80:
+        if to_byte(data[0]) & 0x80:
             value = self.huffman_coder.decode(value)
 
         # Updated the total consumed length.

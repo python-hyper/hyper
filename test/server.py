@@ -17,12 +17,12 @@ import socket
 import ssl
 import sys
 
+from hyper.compat import is_py3
 from hyper.http20.hpack import Encoder
 from hyper.http20.huffman import HuffmanEncoder
 from hyper.http20.huffman_constants import (
     RESPONSE_CODES, RESPONSE_CODES_LENGTH
 )
-from hyper.http20.util import IS_PY3
 
 class _SocketServerThreadBase(threading.Thread):
     """
@@ -83,7 +83,7 @@ class _SocketServerThreadPy3(_SocketServerThreadBase):
         return self.cxt.wrap_socket(sock, server_side=True)
 
 
-if IS_PY3:
+if is_py3:
     SocketServerThread = _SocketServerThreadPy3
 else:
     SocketServerThread = _SocketServerThreadPy2

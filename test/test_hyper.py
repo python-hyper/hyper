@@ -14,6 +14,7 @@ from hyper.http20.stream import (
 from hyper.http20.response import HTTP20Response
 from hyper.http20.exceptions import HPACKDecodingError, HPACKEncodingError
 from hyper.http20.window import FlowControlManager
+from hyper.compat import zlib_compressobj
 from hyper.contrib import HTTP20Adapter
 import pytest
 import zlib
@@ -25,11 +26,6 @@ def decode_frame(frame_data):
     f.parse_body(frame_data[8:8 + length])
     assert 8 + length == len(frame_data)
     return f
-
-
-def zlib_compressobj(level=6, method=zlib.DEFLATED, wbits=15, memlevel=8,
-                     strategy=zlib.Z_DEFAULT_STRATEGY):
-    return zlib.compressobj(level, method, wbits, memlevel, strategy)
 
 
 class TestGeneralFrameBehaviour(object):

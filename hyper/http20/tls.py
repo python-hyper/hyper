@@ -8,7 +8,7 @@ Contains the TLS/SSL logic for use in hyper.
 import ssl
 import os.path as path
 
-from .util import IS_PY3
+from ..compat import is_py3
 
 
 # Right now we support draft 9.
@@ -25,7 +25,7 @@ _context = None
 cert_loc = path.join(path.dirname(__file__), '..', 'certs.pem')
 
 
-if IS_PY3:
+if is_py3:
     def wrap_socket(socket, server_hostname):
         """
         A vastly simplified SSL wrapping function. We'll probably extend this to
