@@ -10,7 +10,7 @@ Implements the version dated January 9, 2014.
 import collections
 import logging
 
-from .huffman import HuffmanDecoder, HuffmanEncoder
+from .huffman import _get_byte, HuffmanDecoder, HuffmanEncoder
 from hyper.http20.huffman_constants import (
     REQUEST_CODES, REQUEST_CODES_LENGTH, RESPONSE_CODES, RESPONSE_CODES_LENGTH
 )
@@ -55,13 +55,13 @@ def decode_integer(data, prefix_bits):
     mask = 0xFF >> (8 - prefix_bits)
     index = 0
 
-    number = data[index] & mask
+    number = _get_byte(data, index) & mask
 
     if (number == max_number):
 
         while True:
             index += 1
-            next_byte = data[index]
+            next_byte = _get_byte(data, index)
 
             if next_byte >= 128:
                 number += (next_byte - 128) * multiple(index)
@@ -407,7 +407,7 @@ class Encoder(object):
         """
         field = encode_integer(index, 7)
         field[0] = field[0] | 0x80  # we set the top bit
-        return field
+        return bytes(field)
 
     def _encode_literal(self, name, value, indexing, huffman=False):
         """
@@ -415,7 +415,7 @@ class Encoder(object):
         is True, the header will be added to the header table: otherwise it
         will not.
         """
-        prefix = bytes([0x00 if indexing else 0x40])
+        prefix = b'\x00' if indexing else b'\x40'
 
         if huffman:
             name = self.huffman_coder.encode(name)
@@ -428,7 +428,7 @@ class Encoder(object):
             name_len[0] |= 0x80
             value_len[0] |= 0x80
 
-        return b''.join([prefix, name_len, name, value_len, value])
+        return b''.join([prefix, bytes(name_len), name, bytes(value_len), value])
 
     def _encode_indexed_literal(self, index, value, indexing, huffman=False):
         """
@@ -449,7 +449,7 @@ class Encoder(object):
         if huffman:
             value_len[0] |= 0x80
 
-        return b''.join([name, value_len, value])
+        return b''.join([bytes(name), bytes(value_len), value])
 
 
 class Decoder(object):
@@ -572,11 +572,12 @@ class Decoder(object):
         while current_index < data_len:
             # Work out what kind of header we're decoding.
             # If the high bit is 1, it's an indexed field.
-            indexed = bool(data[current_index] & 0x80)
+            current = _get_byte(data, current_index)
+            indexed = bool(current & 0x80)
 
             # Otherwise, if the second-highest bit is 1 it's a field that
             # doesn't alter the header table.
-            literal_no_index = bool(data[current_index] & 0x40)
+            literal_no_index = bool(current & 0x40)
 
             if indexed:
                 header, consumed = self._decode_indexed(data[current_index:])
@@ -678,7 +679,7 @@ class Decoder(object):
 
         # If the low six bits of the first byte are nonzero, the header
         # name is indexed.
-        first_byte = data[0]
+        first_byte = _get_byte(data, 0)
 
         if first_byte & 0x3F:
             # Indexed header name.
@@ -701,7 +702,7 @@ class Decoder(object):
             length, consumed = decode_integer(data, 7)
             name = data[consumed:consumed + length]
 
-            if data[0] & 0x80:
+            if _get_byte(data, 0) & 0x80:
                 name = self.huffman_coder.decode(name)
             total_consumed = consumed + length + 1  # Since we moved forward 1.
 
@@ -711,7 +712,7 @@ class Decoder(object):
         length, consumed = decode_integer(data, 7)
         value = data[consumed:consumed + length]
 
-        if data[0] & 0x80:
+        if _get_byte(data, 0) & 0x80:
             value = self.huffman_coder.decode(value)
 
         # Updated the total consumed length.

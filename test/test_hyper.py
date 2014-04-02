@@ -27,6 +27,11 @@ def decode_frame(frame_data):
     return f
 
 
+def zlib_compressobj(level=6, method=zlib.DEFLATED, wbits=15, memlevel=8,
+                     strategy=zlib.Z_DEFAULT_STRATEGY):
+    return zlib.compressobj(level, method, wbits, memlevel, strategy)
+
+
 class TestGeneralFrameBehaviour(object):
     def test_base_frame_ignores_flags(self):
         f = Frame(0)
@@ -1251,7 +1256,7 @@ class TestResponse(object):
 
     def test_response_transparently_decrypts_gzip(self):
         headers = {':status': '200', 'content-encoding': 'gzip'}
-        c = zlib.compressobj(wbits=24)
+        c = zlib_compressobj(wbits=24)
         body = c.compress(b'this is test data')
         body += c.flush()
         resp = HTTP20Response(headers, DummyStream(body))
@@ -1260,7 +1265,7 @@ class TestResponse(object):
 
     def test_response_transparently_decrypts_real_deflate(self):
         headers = {':status': '200', 'content-encoding': 'deflate'}
-        c = zlib.compressobj(wbits=zlib.MAX_WBITS)
+        c = zlib_compressobj(wbits=zlib.MAX_WBITS)
         body = c.compress(b'this is test data')
         body += c.flush()
         resp = HTTP20Response(headers, DummyStream(body))
@@ -1269,7 +1274,7 @@ class TestResponse(object):
 
     def test_response_transparently_decrypts_wrong_deflate(self):
         headers = {':status': '200', 'content-encoding': 'deflate'}
-        c = zlib.compressobj(wbits=-zlib.MAX_WBITS)
+        c = zlib_compressobj(wbits=-zlib.MAX_WBITS)
         body = c.compress(b'this is test data')
         body += c.flush()
         resp = HTTP20Response(headers, DummyStream(body))
@@ -1346,6 +1351,7 @@ class TestHTTP20Adapter(object):
 
 # Some utility classes for the tests.
 class NullEncoder(object):
+    @staticmethod
     def encode(headers):
         return '\n'.join("%s%s" % (name, val) for name, val in headers)
 

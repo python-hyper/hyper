@@ -15,7 +15,12 @@ except ImportError:  # pragma: no cover
     HTTPAdapter = object
 
 from hyper import HTTP20Connection
-from urllib.parse import urlparse
+from hyper.http20.util import IS_PY3
+
+if IS_PY3:
+    from urllib.parse import urlparse
+else:
+    from urlparse import urlparse
 
 class HTTP20Adapter(HTTPAdapter):
     """

@@ -43,7 +43,7 @@ class HTTP20Connection(object):
         :class:`FlowControlManager <hyper.http20.window.FlowControlManager>`
         will be used.
     """
-    def __init__(self, host, port=None, *, window_manager=None, **kwargs):
+    def __init__(self, host, port=None, window_manager=None, **kwargs):
         """
         Creates an HTTP/2.0 connection to a specific server.
         """
@@ -160,7 +160,6 @@ class HTTP20Connection(object):
         if self._sock is None:
             sock = socket.create_connection((self.host, self.port), 5)
             sock = wrap_socket(sock, self.host)
-            assert sock.selected_npn_protocol() == 'HTTP-draft-09/2.0'
             self._sock = sock
 
             # We need to send the connection header immediately on this

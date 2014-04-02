@@ -3,6 +3,11 @@ import pytest
 import os
 import json
 
+import hyper
+
+if not hyper.http20.util.IS_PY3:
+    from codecs import open
+
 # This pair of generator expressions are pretty lame, but building lists is a
 # bad idea as I plan to have a substantial number of tests here.
 story_directories = (

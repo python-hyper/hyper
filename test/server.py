@@ -22,8 +22,9 @@ from hyper.http20.huffman import HuffmanEncoder
 from hyper.http20.huffman_constants import (
     RESPONSE_CODES, RESPONSE_CODES_LENGTH
 )
+from hyper.http20.util import IS_PY3
 
-class SocketServerThread(threading.Thread):
+class _SocketServerThreadBase(threading.Thread):
     """
     This method stolen wholesale from shazow/urllib3.
 
@@ -32,22 +33,18 @@ class SocketServerThread(threading.Thread):
     :param ready_event: Event which gets set when the socket handler is
         ready to receive requests.
     """
-    def __init__(self, socket_handler, host='localhost', port=8081,
-                 ready_event=None):
+    def __init__(self, socket_handler, host='localhost', ready_event=None):
         threading.Thread.__init__(self)
 
         self.socket_handler = socket_handler
         self.host = host
         self.ready_event = ready_event
-        self.cxt = ssl.SSLContext(ssl.PROTOCOL_SSLv23)
-        self.cxt.set_npn_protocols(['HTTP-draft-09/2.0'])
-        self.cxt.load_cert_chain(certfile='test/certs/server.crt', keyfile='test/certs/server.key')
 
     def _start_server(self):
         sock = socket.socket(socket.AF_INET6)
         if sys.platform != 'win32':
             sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-        sock = self.cxt.wrap_socket(sock, server_side=True)
+        sock = self._wrap_socket(sock)
         sock.bind((self.host, 0))
         self.port = sock.getsockname()[1]
 
@@ -60,8 +57,36 @@ class SocketServerThread(threading.Thread):
         self.socket_handler(sock)
         sock.close()
 
+    def _wrap_socket(self, sock):
+        raise NotImplementedError()
+
     def run(self):
         self.server = self._start_server()
+
+
+class _SocketServerThreadPy2(_SocketServerThreadBase):
+    def _wrap_socket(self, sock):
+        return ssl.wrap_socket(sock, server_side=True,
+                               certfile='test/certs/server.crt',
+                               keyfile='test/certs/server.key')
+
+
+class _SocketServerThreadPy3(_SocketServerThreadBase):
+    def __init__(self, socket_handler, host='localhost', ready_event=None):
+        super().__init__(socket_handler, host, ready_event)
+        self.cxt = ssl.SSLContext(ssl.PROTOCOL_SSLv23)
+        self.cxt.set_npn_protocols(['HTTP-draft-09/2.0'])
+        self.cxt.load_cert_chain(certfile='test/certs/server.crt',
+                                 keyfile='test/certs/server.key')
+
+    def _wrap_socket(self, sock):
+        return self.cxt.wrap_socket(sock, server_side=True)
+
+
+if IS_PY3:
+    SocketServerThread = _SocketServerThreadPy3
+else:
+    SocketServerThread = _SocketServerThreadPy2
 
 
 class SocketLevelTest(object):
@@ -101,4 +126,3 @@ class SocketLevelTest(object):
         Tears down the testing thread.
         """
         self.server_thread.join(0.1)
-
