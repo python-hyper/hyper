@@ -20,6 +20,9 @@ SUPPORTED_PROTOCOLS = ['http/1.1', 'HTTP-draft-09/2.0']
 # to.
 _context = None
 
+# Exposed here so it can be monkey-patched in integration tests.
+_verify_mode = ssl.CERT_REQUIRED
+
 
 # Work out where our certificates are.
 cert_loc = path.join(path.dirname(__file__), '..', 'certs.pem')
@@ -45,7 +48,7 @@ if is_py3:
 else:
     def wrap_socket(socket, server_hostname):
         return ssl.wrap_socket(socket, ssl_version=ssl.PROTOCOL_SSLv23,
-            ca_certs=cert_loc, cert_reqs=ssl.CERT_NONE) # FIXME CERT_REQUIRED
+            ca_certs=cert_loc, cert_reqs=_verify_mode)
 
 
 def _init_context():
@@ -55,7 +58,7 @@ def _init_context():
     context = ssl.SSLContext(ssl.PROTOCOL_SSLv23)
     context.set_default_verify_paths()
     context.load_verify_locations(cafile=cert_loc)
-    context.verify_mode = ssl.CERT_REQUIRED
+    context.verify_mode = _verify_mode
 
     try:
         context.set_npn_protocols(SUPPORTED_PROTOCOLS)

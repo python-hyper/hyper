@@ -8,11 +8,11 @@ hitting the network, so that's alright.
 """
 import requests
 import ssl
-import sys
 import threading
 import hyper
 import pytest
 from hyper import HTTP20Connection
+from hyper.compat import is_py3
 from hyper.contrib import HTTP20Adapter
 from hyper.http20.frame import (
     Frame, SettingsFrame, WindowUpdateFrame, DataFrame, HeadersFrame,
@@ -27,9 +27,9 @@ from hyper.http20.exceptions import ConnectionError
 from server import SocketLevelTest
 
 # Turn off certificate verification for the tests.
-if sys.version_info[0] == 3:
+hyper.http20.tls._verify_mode = ssl.CERT_NONE
+if is_py3:
     hyper.http20.tls._context = hyper.http20.tls._init_context()
-    hyper.http20.tls._context.verify_mode = ssl.CERT_NONE
 
 def decode_frame(frame_data):
     f, length = Frame.parse_frame_header(frame_data[:8])
