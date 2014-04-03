@@ -34,7 +34,7 @@ Versions
 ========
 
 ``hyper`` provides support for draft 9 of the HTTP/2.0 draft specification and
-draft 5 of the HPACK draft specification. As further drafts are released,
+draft 6 of the HPACK draft specification. As further drafts are released,
 ``hyper`` will be updated to support them.
 
 Compatibility
