@@ -1179,6 +1179,34 @@ class TestHyperStream(object):
 
         assert s._out_flow_control_window == 65535 + 1000
 
+    def test_flow_control_manager_update_includes_padding(self):
+        out_frames = []
+        in_frames = []
+
+        def send_cb(frame):
+            out_frames.append(frame)
+
+        def recv_cb(s):
+            def inner():
+                s.receive_frame(in_frames.pop(0))
+            return inner
+
+        start_window = 65535
+        s = Stream(1, send_cb, None, None, None, None, FlowControlManager(start_window))
+        s._recv_cb = recv_cb(s)
+        s.state = STATE_HALF_CLOSED_LOCAL
+
+        # Provide two data frames to read.
+        f = DataFrame(1)
+        f.data = b'hi there!'
+        f.low_padding = 10
+        f.flags.add('END_STREAM')
+        in_frames.append(f)
+
+        data = s._read()
+        assert data == b'hi there!'
+        assert s._in_window_manager.window_size == start_window - f.low_padding - len(data)
+
     def test_stream_reading_works(self):
         out_frames = []
         in_frames = []
@@ -1191,7 +1219,7 @@ class TestHyperStream(object):
                 s.receive_frame(in_frames.pop(0))
             return inner
 
-        s = Stream(1, send_cb, None, None, None, None, None)
+        s = Stream(1, send_cb, None, None, None, None, FlowControlManager(65535))
         s._recv_cb = recv_cb(s)
         s.state = STATE_HALF_CLOSED_LOCAL
 
