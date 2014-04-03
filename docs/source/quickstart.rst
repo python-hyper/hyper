@@ -31,10 +31,8 @@ If that fails, download the library from its GitHub page and install it using:
 Installation Requirements
 ~~~~~~~~~~~~~~~~~~~~~~~~~
 
-Due to limitations in the Python standard library, ``hyper`` supports a very
-limited range of Python versions. Currently, that means you'll need to be using
-Python 3.3 or higher to use ``hyper``. Other than that, there are no other
-requirements for using ``hyper``.
+There are no specific requirements for using `hyper`, beyond the fact that it
+supports Python versions 2.7, 3.3 and onward.
 
 Making Your First Request
 -------------------------
