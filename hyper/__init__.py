@@ -11,10 +11,10 @@ __version__ = '0.0.4'
 from .http20.connection import HTTP20Connection
 from .http20.response import HTTP20Response
 
-# Throw import errors on Python 2.
+# Throw import errors on Python <2.7 and 3.0-3.2.
 import sys as _sys
-if _sys.version_info[0] < 3 or _sys.version_info[1] < 3:
-    raise ImportError("hyper only supports Python 3.3 or higher.")
+if _sys.version_info < (2,7) or (3,0) <= _sys.version_info < (3,3):
+    raise ImportError("hyper only supports Python 2.7 and Python 3.3 or higher.")
 
 __all__ = [HTTP20Response, HTTP20Connection]
 

@@ -14,6 +14,7 @@ from hyper.http20.stream import (
 from hyper.http20.response import HTTP20Response
 from hyper.http20.exceptions import HPACKDecodingError, HPACKEncodingError
 from hyper.http20.window import FlowControlManager
+from hyper.compat import zlib_compressobj
 from hyper.contrib import HTTP20Adapter
 import pytest
 import zlib
@@ -1251,7 +1252,7 @@ class TestResponse(object):
 
     def test_response_transparently_decrypts_gzip(self):
         headers = {':status': '200', 'content-encoding': 'gzip'}
-        c = zlib.compressobj(wbits=24)
+        c = zlib_compressobj(wbits=24)
         body = c.compress(b'this is test data')
         body += c.flush()
         resp = HTTP20Response(headers, DummyStream(body))
@@ -1260,7 +1261,7 @@ class TestResponse(object):
 
     def test_response_transparently_decrypts_real_deflate(self):
         headers = {':status': '200', 'content-encoding': 'deflate'}
-        c = zlib.compressobj(wbits=zlib.MAX_WBITS)
+        c = zlib_compressobj(wbits=zlib.MAX_WBITS)
         body = c.compress(b'this is test data')
         body += c.flush()
         resp = HTTP20Response(headers, DummyStream(body))
@@ -1269,7 +1270,7 @@ class TestResponse(object):
 
     def test_response_transparently_decrypts_wrong_deflate(self):
         headers = {':status': '200', 'content-encoding': 'deflate'}
-        c = zlib.compressobj(wbits=-zlib.MAX_WBITS)
+        c = zlib_compressobj(wbits=-zlib.MAX_WBITS)
         body = c.compress(b'this is test data')
         body += c.flush()
         resp = HTTP20Response(headers, DummyStream(body))
@@ -1346,6 +1347,7 @@ class TestHTTP20Adapter(object):
 
 # Some utility classes for the tests.
 class NullEncoder(object):
+    @staticmethod
     def encode(headers):
         return '\n'.join("%s%s" % (name, val) for name, val in headers)
 

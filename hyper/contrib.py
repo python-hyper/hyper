@@ -15,7 +15,7 @@ except ImportError:  # pragma: no cover
     HTTPAdapter = object
 
 from hyper import HTTP20Connection
-from urllib.parse import urlparse
+from hyper.compat import urlparse
 
 class HTTP20Adapter(HTTPAdapter):
     """

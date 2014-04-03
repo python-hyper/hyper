@@ -13,3 +13,7 @@ In chronological order:
 - Sriram Ganesan (@elricL)
 
   - Implemented the Huffman encoding/decoding logic.
+
+- Alek Storm (@alekstorm)
+
+  - Implemented Python 2.7 support.

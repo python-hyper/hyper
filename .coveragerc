@@ -1,2 +1,4 @@
 [run]
-omit=hyper/httplib_compat.py
+omit =
+    hyper/compat.py
+    hyper/httplib_compat.py

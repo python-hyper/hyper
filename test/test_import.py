@@ -6,7 +6,7 @@ import sys
 
 class TestImportPython2(object):
     def test_cannot_import_python_2(self, monkeypatch):
-        monkeypatch.setattr(sys, 'version_info', (2, 7, 7, 'final', 0))
+        monkeypatch.setattr(sys, 'version_info', (2, 6, 5, 'final', 0))
         with pytest.raises(ImportError):
             imp.reload(hyper)
 

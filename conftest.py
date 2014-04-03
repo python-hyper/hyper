@@ -2,6 +2,10 @@
 import pytest
 import os
 import json
+import sys
+
+if sys.version_info[0] == 2:
+    from codecs import open
 
 # This pair of generator expressions are pretty lame, but building lists is a
 # bad idea as I plan to have a substantial number of tests here.
