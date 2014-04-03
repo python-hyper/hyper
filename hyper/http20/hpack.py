@@ -256,7 +256,7 @@ class Encoder(object):
         if (len(self.reference_set - incoming_set) >
                                                (len(self.reference_set) // 2)):
             log.debug("Emptying the encoder reference set.")
-            header_block = b'\x80'  # Indexed representation of 0.
+            header_block = b'\x80\x80'  # Indexed representation of 0.
 
             # Remove everything from the reference set.
             self.reference_set = set()
@@ -630,9 +630,21 @@ class Decoder(object):
         """
         index, consumed = decode_integer(data, 7)
 
-        # If we get an indexed representation of zero, empty the reference set.
+        # If we get an indexed representation of zero, check the next octet.
+        # If the next octet is has its high bit set to 1, empty the reference
+        # set. Otherwise, decode it as an integer with a 7-bit prefix: that's
+        # our new header table max size.
         if not index:
-            self.reference_set = set()
+            next_byte = data[consumed]
+
+            if next_byte & 0x80:
+                self.reference_set = set()
+                consumed += 1
+            else:
+                size, additional_consumed = decode_integer(data[consumed:])
+                consumed += additional_consumed
+                self.header_table_size = size
+
             return None, consumed
 
         index -= 1  # Because this idiot table is 1-indexed. Ugh.
