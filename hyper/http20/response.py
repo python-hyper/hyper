@@ -62,10 +62,12 @@ class HTTP20Response(object):
         self.reason = ''
 
         # The response headers. These are determined upon creation, assigned
-        # once, and never assigned again.
-        # This conversion to dictionary is unwise, as there may be repeated
-        # keys, but it's acceptable for an early alpha.
-        self._headers = dict(headers)
+        # once, and never assigned again. If a header name is repeated, its
+        # values are concatenated with ``,``.
+        list_headers = {}
+        for name, value in headers:
+            list_headers.setdefault(name, []).append(value)
+        self._headers = {name: ','.join(value) for name, value in list_headers.items()}
 
         #: The status code returned by the server.
         self.status = int(self._headers[':status'])
