@@ -15,8 +15,7 @@ SUPPORTED_NPN_PROTOCOLS = ['http/1.1', NPN_PROTOCOL]
 
 
 # We have a singleton SSLContext object. There's no reason to be creating one
-# per connection. We're using v23 right now until someone gives me a reason not
-# to.
+# per connection.
 _context = None
 
 # Work out where our certificates are.
@@ -32,9 +31,7 @@ def wrap_socket(sock, server_hostname):
     if _context is None:  # pragma: no cover
         _context = _init_context()
 
-    if not ssl.HAS_SNI:  # pragma: no cover
-        server_hostname = None
-
+    # the spec requires SNI support
     ssl_sock = _context.wrap_socket(sock, server_hostname=server_hostname)
     with handle_missing():
         assert ssl_sock.selected_npn_protocol() == NPN_PROTOCOL
@@ -45,16 +42,19 @@ def _init_context():
     """
     Creates the singleton SSLContext we use.
     """
-    context = ssl.SSLContext(ssl.PROTOCOL_SSLv23)
+    context = ssl.SSLContext(ssl.PROTOCOL_TLSv1_2)
     context.set_default_verify_paths()
     context.load_verify_locations(cafile=cert_loc)
     context.verify_mode = ssl.CERT_REQUIRED
+    # TODO This just verifies that the post-handshake servername matches the
+    # certificate, right? We need to also check that the returned servername
+    # matches the requested one... right?
+    context.check_hostname = True
 
     with handle_missing():
         context.set_npn_protocols(SUPPORTED_NPN_PROTOCOLS)
 
-    # We do our best to do better security
-    for option in ['OP_NO_SSLv2', 'OP_NO_COMPRESSION']:
-        context.options |= getattr(ssl, option, 0)
+    # required by the spec
+    context.options |= ssl.OP_NO_COMPRESSION
 
     return context
