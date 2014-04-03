@@ -346,11 +346,12 @@ class TestHeadersFrame(object):
         f = HeadersFrame(1)
         flags = f.parse_flags(0xFF)
 
-        assert flags == set(['END_STREAM', 'END_HEADERS', 'PRIORITY'])
+        assert flags == set(['END_STREAM', 'END_SEGMENT', 'END_HEADERS',
+                             'PRIORITY', 'PAD_LOW', 'PAD_HIGH'])
 
     def test_headers_frame_serialize_with_priority_properly(self):
         f = HeadersFrame(1)
-        f.parse_flags(0xFF)
+        f.parse_flags(0x0D)
         f.priority = (2 ** 30) + 1
         f.data = b'hello world'
 
@@ -363,7 +364,7 @@ class TestHeadersFrame(object):
 
     def test_headers_frame_serialize_without_priority_properly(self):
         f = HeadersFrame(1)
-        f.parse_flags(0xFF)
+        f.parse_flags(0x0D)
         f.data = b'hello world'
 
         s = f.serialize()
@@ -392,11 +393,11 @@ class TestContinuationFrame(object):
         f = ContinuationFrame(1)
         flags = f.parse_flags(0xFF)
 
-        assert flags == set(['END_HEADERS'])
+        assert flags == set(['END_HEADERS', 'PAD_LOW', 'PAD_HIGH'])
 
     def test_continuation_frame_serializes(self):
         f = ContinuationFrame(1)
-        f.parse_flags(0xFF)
+        f.parse_flags(0x04)
         f.data = b'hello world'
 
         s = f.serialize()

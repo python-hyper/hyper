@@ -369,8 +369,11 @@ class HeadersFrame(DataFrame):
 
     defined_flags = [
         ('END_STREAM', 0x01),
+        ('END_SEGMENT', 0x02),
         ('END_HEADERS', 0x04),
-        ('PRIORITY', 0x08)
+        ('PRIORITY', 0x08),
+        ('PAD_LOW', 0x10),
+        ('PAD_HIGH', 0x20),
     ]
 
     def __init__(self, stream_id):
@@ -409,7 +412,7 @@ class ContinuationFrame(DataFrame):
     """
     type = 0x09
 
-    defined_flags = [('END_HEADERS', 0x04)]
+    defined_flags = [('END_HEADERS', 0x04), ('PAD_LOW', 0x10), ('PAD_HIGH', 0x20)]
 
 
 # A map of type byte to frame class.
