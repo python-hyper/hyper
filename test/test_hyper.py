@@ -491,7 +491,7 @@ class TestHPACKEncoder(object):
             ('custom-key', 'custom-value'),
         ]
         third_result = (
-            b'\x80\x83\x8a\x89\x46\x0fwww.example.com' +
+            b'\x80\x80\x83\x8a\x89\x46\x0fwww.example.com' +
             b'\x00\x0acustom-key\x0ccustom-value'
         )
 
@@ -550,8 +550,8 @@ class TestHPACKEncoder(object):
             ('custom-key', 'custom-value'),
         ]
         third_result = (
-            b'\x80\x83\x8a\x89F\x8b\xdbm\x88>h\xd1\xcb\x12%\xba\x7f\x00\x88N'
-            b'\xb0\x8bt\x97\x90\xfa\x7f\x89N\xb0\x8bt\x97\x9a\x17\xa8\xff'
+            b'\x80\x80\x83\x8a\x89F\x8b\xdbm\x88>h\xd1\xcb\x12%\xba\x7f\x00\x88'
+            b'N\xb0\x8bt\x97\x90\xfa\x7f\x89N\xb0\x8bt\x97\x9a\x17\xa8\xff'
         )
 
         assert e.encode(third_header_set, huffman=True) == third_result
@@ -685,7 +685,7 @@ class TestHPACKDecoder(object):
             ('custom-key', 'custom-value'),
         ]
         third_data = (
-            b'\x80\x83\x8a\x89\x46\x0fwww.example.com' +
+            b'\x80\x80\x83\x8a\x89\x46\x0fwww.example.com' +
             b'\x00\x0acustom-key\x0ccustom-value'
         )
 
@@ -748,7 +748,7 @@ class TestHPACKDecoder(object):
             ('custom-key', 'custom-value'),
         ]
         third_data = (
-            b'\x80\x85\x8c\x8b\x84\x00\x88\x4e\xb0\x8b\x74\x97\x90\xfa\x7f\x89'
+            b'\x80\x80\x85\x8c\x8b\x84\x00\x88\x4e\xb0\x8b\x74\x97\x90\xfa\x7f\x89'
             b'\x4e\xb0\x8b\x74\x97\x9a\x17\xa8\xff'
         )
 
