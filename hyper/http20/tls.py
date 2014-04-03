@@ -28,7 +28,7 @@ _verify_mode = ssl.CERT_REQUIRED
 cert_loc = path.join(path.dirname(__file__), '..', 'certs.pem')
 
 
-if is_py3:
+if is_py3: # pragma: no cover
     def wrap_socket(socket, server_hostname):
         """
         A vastly simplified SSL wrapping function. We'll probably extend this to
@@ -45,13 +45,13 @@ if is_py3:
         wrapped = _context.wrap_socket(socket)  # pragma: no cover
         assert wrapped.selected_npn_protocol() == 'HTTP-draft-09/2.0'
         return wrapped
-else:
+else: # pragma: no cover
     def wrap_socket(socket, server_hostname):
         return ssl.wrap_socket(socket, ssl_version=ssl.PROTOCOL_SSLv23,
             ca_certs=cert_loc, cert_reqs=_verify_mode)
 
 
-def _init_context():
+def _init_context(): # pragma: no cover
     """
     Creates the singleton SSLContext we use.
     """

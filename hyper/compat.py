@@ -18,7 +18,6 @@ is_py2 = (_ver[0] == 2)
 is_py3 = (_ver[0] == 3)
 
 if is_py2:
-    from codecs import open
     from urlparse import urlparse
 
     def to_byte(char):
@@ -41,5 +40,4 @@ elif is_py3:
     def decode_hex(b):
         return bytes.fromhex(b)
 
-    open = open
     zlib_compressobj = zlib.compressobj
