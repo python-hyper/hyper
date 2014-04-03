@@ -7,7 +7,7 @@ run before every change to HPACK.
 from hyper.http20.hpack import Decoder, Encoder
 from hyper.http20.huffman import HuffmanDecoder, HuffmanEncoder
 from hyper.http20.huffman_constants import (
-    REQUEST_CODES, REQUEST_CODES_LENGTH, RESPONSE_CODES, RESPONSE_CODES_LENGTH
+    REQUEST_CODES, REQUEST_CODES_LENGTH, REQUEST_CODES, REQUEST_CODES_LENGTH
 )
 from binascii import unhexlify
 
@@ -36,7 +36,7 @@ class TestHPACKDecoderIntegration(object):
         if raw_story['context'] == 'request':
             d.huffman_coder = HuffmanDecoder(REQUEST_CODES, REQUEST_CODES_LENGTH)
         else:
-            e.huffman_coder = HuffmanEncoder(RESPONSE_CODES, RESPONSE_CODES_LENGTH)
+            e.huffman_coder = HuffmanEncoder(REQUEST_CODES, REQUEST_CODES_LENGTH)
 
         for case in raw_story['cases']:
             # The input headers are a list of dicts, which is annoying.
@@ -54,7 +54,7 @@ class TestHPACKDecoderIntegration(object):
         if raw_story['context'] == 'request':
             d.huffman_coder = HuffmanDecoder(REQUEST_CODES, REQUEST_CODES_LENGTH)
         else:
-            e.huffman_coder = HuffmanEncoder(RESPONSE_CODES, RESPONSE_CODES_LENGTH)
+            e.huffman_coder = HuffmanEncoder(REQUEST_CODES, REQUEST_CODES_LENGTH)
 
         for case in raw_story['cases']:
             # The input headers are a list of dicts, which is annoying.

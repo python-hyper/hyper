@@ -20,7 +20,7 @@ import sys
 from hyper.http20.hpack import Encoder
 from hyper.http20.huffman import HuffmanEncoder
 from hyper.http20.huffman_constants import (
-    RESPONSE_CODES, RESPONSE_CODES_LENGTH
+    REQUEST_CODES, REQUEST_CODES_LENGTH
 )
 
 class SocketServerThread(threading.Thread):
@@ -93,7 +93,7 @@ class SocketLevelTest(object):
         Returns a HPACK encoder set up for responses.
         """
         e = Encoder()
-        e.huffman_coder = HuffmanEncoder(RESPONSE_CODES, RESPONSE_CODES_LENGTH)
+        e.huffman_coder = HuffmanEncoder(REQUEST_CODES, REQUEST_CODES_LENGTH)
         return e
 
     def tear_down(self):

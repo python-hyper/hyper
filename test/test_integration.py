@@ -20,7 +20,7 @@ from hyper.http20.frame import (
 from hyper.http20.hpack import Encoder
 from hyper.http20.huffman import HuffmanEncoder
 from hyper.http20.huffman_constants import (
-    RESPONSE_CODES, RESPONSE_CODES_LENGTH
+    REQUEST_CODES, REQUEST_CODES_LENGTH
 )
 from hyper.http20.exceptions import ConnectionError
 from server import SocketLevelTest
@@ -39,7 +39,7 @@ def decode_frame(frame_data):
 def build_headers_frame(headers):
     f = HeadersFrame(1)
     e = Encoder()
-    e.huffman_coder = HuffmanEncoder(RESPONSE_CODES, RESPONSE_CODES_LENGTH)
+    e.huffman_coder = HuffmanEncoder(REQUEST_CODES, REQUEST_CODES_LENGTH)
     f.data = e.encode(headers)
     f.flags.add('END_HEADERS')
     return f

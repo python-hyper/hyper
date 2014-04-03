@@ -12,7 +12,7 @@ import logging
 
 from .huffman import HuffmanDecoder, HuffmanEncoder
 from hyper.http20.huffman_constants import (
-    REQUEST_CODES, REQUEST_CODES_LENGTH, RESPONSE_CODES, RESPONSE_CODES_LENGTH
+    REQUEST_CODES, REQUEST_CODES_LENGTH, REQUEST_CODES, REQUEST_CODES_LENGTH
 )
 from .exceptions import HPACKEncodingError
 
@@ -525,7 +525,7 @@ class Decoder(object):
         self.reference_set = set()
         self._header_table_size = 4096  # This value set by the standard.
         self.huffman_coder = HuffmanDecoder(
-            RESPONSE_CODES, RESPONSE_CODES_LENGTH
+            REQUEST_CODES, REQUEST_CODES_LENGTH
         )
 
     @property
@@ -641,7 +641,7 @@ class Decoder(object):
                 self.reference_set = set()
                 consumed += 1
             else:
-                size, additional_consumed = decode_integer(data[consumed:])
+                size, additional_consumed = decode_integer(data[consumed:], 7)
                 consumed += additional_consumed
                 self.header_table_size = size
 
