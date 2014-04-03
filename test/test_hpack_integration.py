@@ -18,11 +18,11 @@ class TestHPACKDecoderIntegration(object):
         # We support draft 5 of the HPACK spec.
         assert story['draft'] == 6
 
-        if story['context'] == 'request':
-            d.huffman_coder = HuffmanDecoder(REQUEST_CODES, REQUEST_CODES_LENGTH)
-
         for case in story['cases']:
-            d.header_table_size = case['header_table_size']
+            try:
+                d.header_table_size = case['header_table_size']
+            except KeyError:
+                pass
             decoded_headers = d.decode(unhexlify(case['wire']))
 
             # The correct headers are a list of dicts, which is annoying.
@@ -32,11 +32,6 @@ class TestHPACKDecoderIntegration(object):
     def test_can_encode_a_story_no_huffman(self, raw_story):
         d = Decoder()
         e = Encoder()
-
-        if raw_story['context'] == 'request':
-            d.huffman_coder = HuffmanDecoder(REQUEST_CODES, REQUEST_CODES_LENGTH)
-        else:
-            e.huffman_coder = HuffmanEncoder(REQUEST_CODES, REQUEST_CODES_LENGTH)
 
         for case in raw_story['cases']:
             # The input headers are a list of dicts, which is annoying.
@@ -50,11 +45,6 @@ class TestHPACKDecoderIntegration(object):
     def test_can_encode_a_story_with_huffman(self, raw_story):
         d = Decoder()
         e = Encoder()
-
-        if raw_story['context'] == 'request':
-            d.huffman_coder = HuffmanDecoder(REQUEST_CODES, REQUEST_CODES_LENGTH)
-        else:
-            e.huffman_coder = HuffmanEncoder(REQUEST_CODES, REQUEST_CODES_LENGTH)
 
         for case in raw_story['cases']:
             # The input headers are a list of dicts, which is annoying.
