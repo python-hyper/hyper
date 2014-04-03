@@ -12,10 +12,6 @@ import struct
 # The maximum length of a frame. Some frames have shorter maximum lengths.
 FRAME_MAX_LEN = (2 ** 14) - 1
 
-def _total_padding(high, low):
-    return high * 256 + low
-
-
 class Frame(object):
     """
     The base class for all HTTP/2.0 frames.
@@ -102,34 +98,32 @@ class DataFrame(Frame):
             raise ValueError()
 
     def serialize(self):
-        padding_length = _total_padding(self.high_padding, self.low_padding)
-        data = self.build_frame_header(len(self.data) + self._padding_lengths + padding_length)
+        padding_data = b''
         if 'PAD_LOW' in self.flags:
             if 'PAD_HIGH' in self.flags:
-                data += struct.pack('!BB', self.high_padding, self.low_padding)
+                padding_data = struct.pack('!BB', self.high_padding, self.low_padding)
             else:
-                data += struct.pack('!B', self.low_padding)
-        data += self.data
-        data += b'\0' * padding_length
-        return data
+                padding_data = struct.pack('!B', self.low_padding)
+        padding = b'\0' * self.total_padding
+        body = b''.join([padding_data, self.data, padding])
+        header = self.build_frame_header(len(body))
+        return header + body
 
     def parse_body(self, data):
-        padding_length = 0
+        padding_data_length = 0
         if 'PAD_LOW' in self.flags:
             if 'PAD_HIGH' in self.flags:
                 self.high_padding, self.low_padding = struct.unpack('!BB', data[:2])
-                padding_length = _total_padding(self.high_padding, self.low_padding)
+                padding_data_length = 2
             else:
-                padding_length = self.low_padding = struct.unpack('!B', data[:1])[0]
-        self.data = data[self._padding_lengths:len(data)-padding_length]
+                self.low_padding = struct.unpack('!B', data[:1])[0]
+                padding_data_length = 1
+        self.data = data[padding_data_length:len(data)-self.total_padding]
 
     @property
-    def _padding_lengths(self):
-        if 'PAD_LOW' in self.flags:
-            if 'PAD_HIGH' in self.flags:
-                return 2
-            return 1
-        return 0
+    def total_padding(self):
+        """Return the total length of the padding, if any."""
+        return (self.high_padding << 8) + self.low_padding
 
 
 class PriorityFrame(Frame):
@@ -228,7 +222,7 @@ class SettingsFrame(Frame):
             raise ValueError()
 
     def serialize(self):
-        # Each setting consumes 8 bytes.
+        # Each setting consumes 5 bytes.
         length = len(self.settings) * 5
 
         data = self.build_frame_header(length)

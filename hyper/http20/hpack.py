@@ -637,7 +637,7 @@ class Decoder(object):
         # set. Otherwise, decode it as an integer with a 7-bit prefix: that's
         # our new header table max size.
         if not index:
-            next_byte = data[consumed]
+            next_byte = to_byte(data[consumed])
 
             if next_byte & 0x80:
                 self.reference_set = set()
