@@ -162,15 +162,20 @@ class SSLSocket(object):
                 self._conn.set_tlsext_host_name(server_hostname)
             self._conn.set_connect_state() # FIXME does this override do_handshake_on_connect=False?
 
+        if self.connected and self._do_handshake_on_connect:
+            self.do_handshake()
+
+    @property
+    def connected(self):
         try:
             self._conn.getpeername()
         except socket.error as e:
             if e.errno != errno.ENOTCONN:
+                # It's an exception other than the one we expected if we're not
+                # connected.
                 raise
-        else:
-            # The socket is already connected, so do the handshake.
-            if self._do_handshake_on_connect:
-                self.do_handshake()
+            return False
+        return True
 
     # Lovingly stolen from CherryPy (http://svn.cherrypy.org/tags/cherrypy-3.2.1/cherrypy/wsgiserver/ssl_pyopenssl.py).
     def _safe_ssl_call(self, suppress_ragged_eofs, call, *args, **kwargs):
@@ -189,8 +194,6 @@ class SSLSocket(object):
                 if suppress_ragged_eofs and e.args == (-1, 'Unexpected EOF'):
                     return b''
                 raise socket.error(e.args[0])
-            except:
-                raise
 
             if time.time() - start > self.SSL_TIMEOUT:
                 raise socket.timeout('timed out')
