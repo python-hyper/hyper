@@ -33,6 +33,10 @@ def wrap_socket(sock, server_hostname):
 
     # the spec requires SNI support
     ssl_sock = _context.wrap_socket(sock, server_hostname=server_hostname)
+    # Setting SSLContext.check_hostname to True only verifies that the
+    # post-handshake servername matches that of the certificate. We also need to
+    # check that it matches the requested one.
+    ssl.match_hostname(ssl_sock.getpeercert(), server_hostname)
     with ignore_missing():
         assert ssl_sock.selected_npn_protocol() == NPN_PROTOCOL
     return ssl_sock
@@ -46,9 +50,6 @@ def _init_context():
     context.set_default_verify_paths()
     context.load_verify_locations(cafile=cert_loc)
     context.verify_mode = ssl.CERT_REQUIRED
-    # TODO This just verifies that the post-handshake servername matches the
-    # certificate, right? We need to also check that the returned servername
-    # matches the requested one... right?
     context.check_hostname = True
 
     with ignore_missing():
