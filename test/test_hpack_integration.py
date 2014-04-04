@@ -15,7 +15,7 @@ class TestHPACKDecoderIntegration(object):
     def test_can_decode_a_story(self, story):
         d = Decoder()
 
-        # We support draft 5 of the HPACK spec.
+        # We support draft 6 of the HPACK spec.
         assert story['draft'] == 6
 
         for case in story['cases']:
