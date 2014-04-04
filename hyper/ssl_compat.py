@@ -48,9 +48,10 @@ class CertificateError(SSLError):
 
 # lifted from the Python 3.4 stdlib
 def _dnsname_match(dn, hostname, max_wildcards=1):
-    """Matching according to RFC 6125, section 6.4.3
+    """
+    Matching according to RFC 6125, section 6.4.3.
 
-    http://tools.ietf.org/html/rfc6125#section-6.4.3
+    See http://tools.ietf.org/html/rfc6125#section-6.4.3
     """
     pats = []
     if not dn:
@@ -100,12 +101,13 @@ def _dnsname_match(dn, hostname, max_wildcards=1):
 
 # lifted from the Python 3.4 stdlib
 def match_hostname(cert, hostname):
-    """Verify that *cert* (in decoded format as returned by
-    SSLSocket.getpeercert()) matches the *hostname*.  RFC 2818 and RFC 6125
-    rules are followed, but IP addresses are not accepted for *hostname*.
+    """
+    Verify that ``cert`` (in decoded format as returned by
+    ``SSLSocket.getpeercert())`` matches the ``hostname``.  RFC 2818 and RFC
+    6125 rules are followed, but IP addresses are not accepted for ``hostname``.
 
-    CertificateError is raised on failure. On success, the function
-    returns nothing.
+    ``CertificateError`` is raised on failure. On success, the function returns
+    nothing.
     """
     if not cert:
         raise ValueError("empty or no certificate, match_hostname needs a "
