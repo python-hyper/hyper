@@ -19,12 +19,15 @@ from OpenSSL import SSL as ossl
 CERT_NONE = ossl.VERIFY_NONE
 CERT_REQUIRED = ossl.VERIFY_PEER | ossl.VERIFY_FAIL_IF_NO_PEER_CERT
 
-PROTOCOL_TLSv1_2 = ossl.TLSv1_2_METHOD
+_OPENSSL_ATTRS = dict(
+    OP_NO_COMPRESSION='OP_NO_COMPRESSION',
+    PROTOCOL_TLSv1_2='TLSv1_2_METHOD',
+)
 
-for name in ['OP_NO_COMPRESSION']:
-    value = getattr(ossl, name, None)
+for external, internal in _OPENSSL_ATTRS.items():
+    value = getattr(ossl, internal, None)
     if value:
-        locals()[name] = value
+        locals()[external] = value
 
 OP_ALL = 0
 for bit in [31] + list(range(10)): # TODO figure out the names of these other flags
