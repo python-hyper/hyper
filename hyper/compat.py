@@ -21,7 +21,7 @@ is_py3 = _ver[0] == 3
 is_py3_3 = is_py3 and _ver[1] == 3
 
 @contextmanager
-def handle_missing():
+def ignore_missing():
     try:
         yield
     except (AttributeError, NotImplementedError):  # pragma: no cover

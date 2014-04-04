@@ -7,7 +7,7 @@ Contains the TLS/SSL logic for use in hyper.
 """
 import os.path as path
 
-from ..compat import handle_missing, ssl
+from ..compat import ignore_missing, ssl
 
 
 NPN_PROTOCOL = 'h2-10'
@@ -33,7 +33,7 @@ def wrap_socket(sock, server_hostname):
 
     # the spec requires SNI support
     ssl_sock = _context.wrap_socket(sock, server_hostname=server_hostname)
-    with handle_missing():
+    with ignore_missing():
         assert ssl_sock.selected_npn_protocol() == NPN_PROTOCOL
     return ssl_sock
 
@@ -51,7 +51,7 @@ def _init_context():
     # matches the requested one... right?
     context.check_hostname = True
 
-    with handle_missing():
+    with ignore_missing():
         context.set_npn_protocols(SUPPORTED_NPN_PROTOCOLS)
 
     # required by the spec
