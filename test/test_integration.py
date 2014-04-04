@@ -7,11 +7,11 @@ This file defines integration-type tests for hyper. These are still not fully
 hitting the network, so that's alright.
 """
 import requests
-import ssl
 import threading
 import hyper
 import pytest
 from hyper import HTTP20Connection
+from hyper.compat import ssl
 from hyper.contrib import HTTP20Adapter
 from hyper.http20.frame import (
     Frame, SettingsFrame, WindowUpdateFrame, DataFrame, HeadersFrame,
@@ -26,8 +26,9 @@ from hyper.http20.exceptions import ConnectionError
 from server import SocketLevelTest
 
 # Turn off certificate verification for the tests.
-hyper.http20.tls._context = hyper.http20.tls._init_context()
-hyper.http20.tls._context.verify_mode = ssl.CERT_NONE
+if ssl is not None:
+    hyper.http20.tls._context = hyper.http20.tls._init_context()
+    hyper.http20.tls._context.verify_mode = ssl.CERT_NONE
 
 def decode_frame(frame_data):
     f, length = Frame.parse_frame_header(frame_data[:8])
@@ -55,7 +56,10 @@ def receive_preamble(sock):
 
 
 class TestHyperIntegration(SocketLevelTest):
-    def test_connection_string(self):
+    def get_connection(self, use_tls=False):
+        return HTTP20Connection(self.host, self.port, use_tls=use_tls)
+
+    def run_test_connection_string(self, use_tls):
         self.set_up()
 
         # Confirm that we send the connection upgrade string and the initial
@@ -80,14 +84,22 @@ class TestHyperIntegration(SocketLevelTest):
             send_event.set()
             sock.close()
 
-        self._start_server(socket_handler)
-        conn = HTTP20Connection(self.host, self.port)
+        self._start_server(socket_handler, use_tls)
+        conn = self.get_connection(use_tls)
         conn.connect()
         send_event.wait()
 
         assert data[0] == b'PRI * HTTP/2.0\r\n\r\nSM\r\n\r\n'
 
         self.tear_down()
+
+    # We could use a fixture instead, but this is dead simple.
+    def test_connection_string_without_tls(self):
+        self.run_test_connection_string(False)
+
+    @pytest.mark.skipif(ssl is None, reason='requires TLS support')
+    def test_connection_string_with_tls(self):
+        self.run_test_connection_string(True)
 
     def test_initial_settings(self):
         self.set_up()
@@ -115,7 +127,7 @@ class TestHyperIntegration(SocketLevelTest):
             sock.close()
 
         self._start_server(socket_handler)
-        conn = HTTP20Connection(self.host, self.port)
+        conn = self.get_connection()
         conn.connect()
         send_event.wait()
 
@@ -170,7 +182,7 @@ class TestHyperIntegration(SocketLevelTest):
             sock.close()
 
         self._start_server(socket_handler)
-        conn = HTTP20Connection(self.host, self.port)
+        conn = self.get_connection()
 
         conn.putrequest('GET', '/')
         conn.endheaders()
@@ -224,7 +236,7 @@ class TestHyperIntegration(SocketLevelTest):
             sock.close()
 
         self._start_server(socket_handler)
-        with HTTP20Connection(self.host, self.port) as conn:
+        with self.get_connection() as conn:
             conn.connect()
             send_event.wait()
 
@@ -255,7 +267,7 @@ class TestHyperIntegration(SocketLevelTest):
             sock.close()
 
         self._start_server(socket_handler)
-        conn = HTTP20Connection(self.host, self.port)
+        conn = self.get_connection()
         conn.request('GET', '/')
         resp = conn.getresponse()
 
@@ -291,7 +303,7 @@ class TestHyperIntegration(SocketLevelTest):
             sock.close()
 
         self._start_server(socket_handler)
-        conn = HTTP20Connection(self.host, self.port)
+        conn = self.get_connection()
         conn.request('GET', '/')
         resp = conn.getresponse()
 
@@ -331,7 +343,7 @@ class TestHyperIntegration(SocketLevelTest):
             sock.close()
 
         self._start_server(socket_handler)
-        conn = HTTP20Connection(self.host, self.port)
+        conn = self.get_connection()
         conn.connect()
 
         # Confirm the connection is closed.
@@ -366,7 +378,7 @@ class TestHyperIntegration(SocketLevelTest):
             recv_event.wait()
 
         self._start_server(socket_handler)
-        conn = HTTP20Connection(self.host, self.port)
+        conn = self.get_connection()
 
         with pytest.raises(ConnectionError):
             conn.connect()
@@ -381,7 +393,7 @@ class TestHyperIntegration(SocketLevelTest):
 
 
 class TestRequestsAdapter(SocketLevelTest):
-    def test_adapter_received_values(self):
+    def run_test_adapter_received_values(self, use_tls):
         self.set_up()
 
         data = []
@@ -409,11 +421,12 @@ class TestRequestsAdapter(SocketLevelTest):
             send_event.set()
             sock.close()
 
-        self._start_server(socket_handler)
+        self._start_server(socket_handler, use_tls)
 
+        scheme = 'https' if use_tls else 'http'
         s = requests.Session()
-        s.mount('https://%s' % self.host, HTTP20Adapter())
-        r = s.get('https://%s:%s/some/path' % (self.host, self.port))
+        s.mount('%s://%s' % (scheme, self.host), HTTP20Adapter())
+        r = s.get('%s://%s:%s/some/path' % (scheme, self.host, self.port))
 
         # Assert about the received values.
         assert r.status_code == 200
@@ -421,6 +434,13 @@ class TestRequestsAdapter(SocketLevelTest):
         assert r.content == b'1234567890' * 2
 
         self.tear_down()
+
+    def test_adapter_received_values_without_tls(self):
+        self.run_test_adapter_received_values(False)
+
+    @pytest.mark.skipif(ssl is None, reason='requires TLS support')
+    def test_adapter_received_values_with_tls(self):
+        self.run_test_adapter_received_values(True)
 
     def test_adapter_sending_values(self):
         self.set_up()
@@ -454,9 +474,9 @@ class TestRequestsAdapter(SocketLevelTest):
         self._start_server(socket_handler)
 
         s = requests.Session()
-        s.mount('https://%s' % self.host, HTTP20Adapter())
+        s.mount('http://%s' % self.host, HTTP20Adapter())
         r = s.post(
-            'https://%s:%s/some/path' % (self.host, self.port),
+            'http://%s:%s/some/path' % (self.host, self.port),
             data='hi there',
         )
 

@@ -9,14 +9,16 @@ from contextlib import contextmanager
 import sys
 import zlib
 
-# Syntax sugar.
+try:
+    import ssl_compat
+except ImportError:
+    # TODO log?
+    ssl_compat = None
+
 _ver = sys.version_info
-
-#: Python 2.x?
-is_py2 = (_ver[0] == 2)
-
-#: Python 3.x?
-is_py3 = (_ver[0] == 3)
+is_py2 = _ver[0] == 2
+is_py3 = _ver[0] == 3
+is_py3_3 = is_py3 and _ver[1] == 3
 
 @contextmanager
 def handle_missing():
@@ -26,7 +28,7 @@ def handle_missing():
         pass
 
 if is_py2:
-    import ssl_compat as ssl
+    ssl = ssl_compat
     from urlparse import urlparse
 
     def to_byte(char):
@@ -41,7 +43,6 @@ if is_py2:
         return zlib.compressobj(level, method, wbits, memlevel, strategy)
 
 elif is_py3:
-    import ssl
     from urllib.parse import urlparse
 
     def to_byte(char):
@@ -51,3 +52,8 @@ elif is_py3:
         return bytes.fromhex(b)
 
     zlib_compressobj = zlib.compressobj
+
+    if is_py3_3:
+        ssl = ssl_compat
+    else:
+        import ssl

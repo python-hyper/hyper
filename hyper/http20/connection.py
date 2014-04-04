@@ -7,7 +7,7 @@ Objects that build hyper's connection-level HTTP/2.0 abstraction.
 """
 from .hpack import Encoder, Decoder
 from .stream import Stream
-from .tls import NPN_PROTOCOL, wrap_socket
+from .tls import wrap_socket
 from .frame import (
     DataFrame, HeadersFrame, SettingsFrame, Frame, WindowUpdateFrame,
     GoAwayFrame
@@ -43,7 +43,8 @@ class HTTP20Connection(object):
         :class:`FlowControlManager <hyper.http20.window.FlowControlManager>`
         will be used.
     """
-    def __init__(self, host, port=None, window_manager=None, **kwargs):
+    def __init__(self, host, port=None, use_tls=True, window_manager=None,
+                 **kwargs):
         """
         Creates an HTTP/2.0 connection to a specific server.
         """
@@ -55,6 +56,8 @@ class HTTP20Connection(object):
                 self.host, self.port = host, 443
         else:
             self.host, self.port = host, port
+
+        self.use_tls = use_tls
 
         # Create the mutable state.
         self.__wm_class = window_manager or FlowControlManager
@@ -159,7 +162,8 @@ class HTTP20Connection(object):
         """
         if self._sock is None:
             sock = socket.create_connection((self.host, self.port), 5)
-            sock = wrap_socket(sock, self.host)
+            if self.use_tls:
+                sock = wrap_socket(sock, self.host)
             self._sock = sock
 
             # We need to send the connection header immediately on this

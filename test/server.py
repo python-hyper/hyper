@@ -33,24 +33,28 @@ class SocketServerThread(threading.Thread):
     :param ready_event: Event which gets set when the socket handler is
         ready to receive requests.
     """
-    def __init__(self, socket_handler, host='localhost', ready_event=None):
+    def __init__(self, socket_handler, host='localhost', ready_event=None,
+                 use_tls=False):
         threading.Thread.__init__(self)
 
         self.socket_handler = socket_handler
         self.host = host
         self.ready_event = ready_event
+        self.use_tls = use_tls
 
-        self.cxt = ssl.SSLContext(ssl.PROTOCOL_TLSv1_2)
-        if ssl.HAS_NPN:
-            self.cxt.set_npn_protocols([NPN_PROTOCOL])
-        self.cxt.load_cert_chain(certfile='test/certs/server.crt',
-                                 keyfile='test/certs/server.key')
+        if self.use_tls:
+            self.cxt = ssl.SSLContext(ssl.PROTOCOL_TLSv1_2)
+            if ssl.HAS_NPN:
+                self.cxt.set_npn_protocols([NPN_PROTOCOL])
+            self.cxt.load_cert_chain(certfile='test/certs/server.crt',
+                                     keyfile='test/certs/server.key')
 
     def _start_server(self):
         sock = socket.socket(socket.AF_INET6)
         if sys.platform != 'win32':
             sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-        sock = self.cxt.wrap_socket(sock, server_side=True)
+        if self.use_tls:
+            sock = self.cxt.wrap_socket(sock, server_side=True)
         sock.bind((self.host, 0))
         self.port = sock.getsockname()[1]
 
@@ -80,14 +84,15 @@ class SocketLevelTest(object):
         self.port = None
         self.server_thread = None
 
-    def _start_server(self, socket_handler):
+    def _start_server(self, socket_handler, use_tls=False):
         """
         Starts a background thread that runs the given socket handler.
         """
         ready_event = threading.Event()
         self.server_thread = SocketServerThread(
             socket_handler=socket_handler,
-            ready_event=ready_event
+            ready_event=ready_event,
+            use_tls=use_tls,
         )
         self.server_thread.start()
         ready_event.wait()

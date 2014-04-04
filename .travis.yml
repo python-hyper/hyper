@@ -4,7 +4,11 @@ python:
   - "3.3"
 
 install:
-  - "pip install ."
+  - "pip install -e .[$EXTRAS]" # pip doesn't like this if it's missing -e
   - "pip install -r test_requirements.txt"
 script:
   - "py.test -n 4 --cov hyper test/ && coverage report -m --fail-under 100"
+
+env:
+  - EXTRAS=TLS
+  - EXTRAS=_ # pip currently barfs on `install -e .[]`, but is fine with nonexistent extra dependencies
