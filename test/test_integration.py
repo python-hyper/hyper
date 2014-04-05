@@ -7,12 +7,10 @@ This file defines integration-type tests for hyper. These are still not fully
 hitting the network, so that's alright.
 """
 import requests
-import ssl
 import threading
 import hyper
 import pytest
-from hyper import HTTP20Connection
-from hyper.compat import is_py3
+from hyper.compat import ssl
 from hyper.contrib import HTTP20Adapter
 from hyper.http20.frame import (
     Frame, SettingsFrame, WindowUpdateFrame, DataFrame, HeadersFrame,
@@ -27,9 +25,9 @@ from hyper.http20.exceptions import ConnectionError
 from server import SocketLevelTest
 
 # Turn off certificate verification for the tests.
-hyper.http20.tls._verify_mode = ssl.CERT_NONE
-if is_py3:
+if ssl is not None:
     hyper.http20.tls._context = hyper.http20.tls._init_context()
+    hyper.http20.tls._context.verify_mode = ssl.CERT_NONE
 
 def decode_frame(frame_data):
     f, length = Frame.parse_frame_header(frame_data[:8])
@@ -83,7 +81,7 @@ class TestHyperIntegration(SocketLevelTest):
             sock.close()
 
         self._start_server(socket_handler)
-        conn = HTTP20Connection(self.host, self.port)
+        conn = self.get_connection()
         conn.connect()
         send_event.wait()
 
@@ -117,7 +115,7 @@ class TestHyperIntegration(SocketLevelTest):
             sock.close()
 
         self._start_server(socket_handler)
-        conn = HTTP20Connection(self.host, self.port)
+        conn = self.get_connection()
         conn.connect()
         send_event.wait()
 
@@ -172,7 +170,7 @@ class TestHyperIntegration(SocketLevelTest):
             sock.close()
 
         self._start_server(socket_handler)
-        conn = HTTP20Connection(self.host, self.port)
+        conn = self.get_connection()
 
         conn.putrequest('GET', '/')
         conn.endheaders()
@@ -226,7 +224,7 @@ class TestHyperIntegration(SocketLevelTest):
             sock.close()
 
         self._start_server(socket_handler)
-        with HTTP20Connection(self.host, self.port) as conn:
+        with self.get_connection() as conn:
             conn.connect()
             send_event.wait()
 
@@ -257,7 +255,7 @@ class TestHyperIntegration(SocketLevelTest):
             sock.close()
 
         self._start_server(socket_handler)
-        conn = HTTP20Connection(self.host, self.port)
+        conn = self.get_connection()
         conn.request('GET', '/')
         resp = conn.getresponse()
 
@@ -293,7 +291,7 @@ class TestHyperIntegration(SocketLevelTest):
             sock.close()
 
         self._start_server(socket_handler)
-        conn = HTTP20Connection(self.host, self.port)
+        conn = self.get_connection()
         conn.request('GET', '/')
         resp = conn.getresponse()
 
@@ -333,7 +331,7 @@ class TestHyperIntegration(SocketLevelTest):
             sock.close()
 
         self._start_server(socket_handler)
-        conn = HTTP20Connection(self.host, self.port)
+        conn = self.get_connection()
         conn.connect()
 
         # Confirm the connection is closed.
@@ -368,7 +366,7 @@ class TestHyperIntegration(SocketLevelTest):
             recv_event.wait()
 
         self._start_server(socket_handler)
-        conn = HTTP20Connection(self.host, self.port)
+        conn = self.get_connection()
 
         with pytest.raises(ConnectionError):
             conn.connect()
@@ -456,9 +454,9 @@ class TestRequestsAdapter(SocketLevelTest):
         self._start_server(socket_handler)
 
         s = requests.Session()
-        s.mount('https://%s' % self.host, HTTP20Adapter())
+        s.mount('http://%s' % self.host, HTTP20Adapter())
         r = s.post(
-            'https://%s:%s/some/path' % (self.host, self.port),
+            'http://%s:%s/some/path' % (self.host, self.port),
             data='hi there',
         )
 

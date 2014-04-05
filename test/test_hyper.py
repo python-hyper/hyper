@@ -48,10 +48,14 @@ class TestGeneralFrameBehaviour(object):
 
 
 class TestDataFrame(object):
-    def test_data_frame_has_only_one_flag(self):
+    payload = b'\x00\x08\x00\x01\x00\x00\x00\x01testdata'
+    payload_with_low_padding = b'\x00\x13\x00\x11\x00\x00\x00\x01\x0Atestdata' + b'\0' * 10
+    payload_with_high_and_low_padding = b'\x06\x14\x00\x31\x00\x00\x00\x01\x06\x0Atestdata' + b'\0' * (6 * 256 + 10)
+
+    def test_data_frame_has_correct_flags(self):
         f = DataFrame(1)
         flags = f.parse_flags(0xFF)
-        assert flags == set(['END_STREAM'])
+        assert flags == set(['END_STREAM', 'END_SEGMENT', 'PAD_LOW', 'PAD_HIGH'])
 
     def test_data_frame_serializes_properly(self):
         f = DataFrame(1)
@@ -59,15 +63,55 @@ class TestDataFrame(object):
         f.data = b'testdata'
 
         s = f.serialize()
-        assert s == b'\x00\x08\x00\x01\x00\x00\x00\x01testdata'
+        assert s == self.payload
+
+    def test_data_frame_with_low_padding_serializes_properly(self):
+        f = DataFrame(1)
+        f.flags = set(['END_STREAM', 'PAD_LOW'])
+        f.data = b'testdata'
+        f.low_padding = 10
+
+        s = f.serialize()
+        assert s == self.payload_with_low_padding
+
+    def test_data_frame_with_high_and_low_padding_serializes_properly(self):
+        f = DataFrame(1)
+        f.flags = set(['END_STREAM', 'PAD_LOW', 'PAD_HIGH'])
+        f.data = b'testdata'
+        f.high_padding = 6
+        f.low_padding = 10
+
+        s = f.serialize()
+        assert s == self.payload_with_high_and_low_padding
 
     def test_data_frame_parses_properly(self):
-        s = b'\x00\x08\x00\x01\x00\x00\x00\x01testdata'
-        f, length = Frame.parse_frame_header(s[:8])
-        f.parse_body(s[8:8 + length])
+        f, length = Frame.parse_frame_header(self.payload[:8])
+        f.parse_body(self.payload[8:8 + length])
 
         assert isinstance(f, DataFrame)
         assert f.flags == set(['END_STREAM'])
+        assert f.low_padding == 0
+        assert f.high_padding == 0
+        assert f.data == b'testdata'
+
+    def test_data_frame_with_low_padding_parses_properly(self):
+        f, length = Frame.parse_frame_header(self.payload_with_low_padding[:8])
+        f.parse_body(self.payload_with_low_padding[8:8 + length])
+
+        assert isinstance(f, DataFrame)
+        assert f.flags == set(['END_STREAM', 'PAD_LOW'])
+        assert f.low_padding == 10
+        assert f.high_padding == 0
+        assert f.data == b'testdata'
+
+    def test_data_frame_with_high_and_low_padding_parses_properly(self):
+        f, length = Frame.parse_frame_header(self.payload_with_high_and_low_padding[:8])
+        f.parse_body(self.payload_with_high_and_low_padding[8:8 + length])
+
+        assert isinstance(f, DataFrame)
+        assert f.flags == set(['END_STREAM', 'PAD_LOW', 'PAD_HIGH'])
+        assert f.low_padding == 10
+        assert f.high_padding == 6
         assert f.data == b'testdata'
 
     def test_data_frame_comes_on_a_stream(self):
@@ -141,6 +185,21 @@ class TestRstStreamFrame(object):
 
 
 class TestSettingsFrame(object):
+    serialized = (
+        b'\x00\x14\x04\x01\x00\x00\x00\x00' +  # Frame header
+        b'\x01\x00\x00\x10\x00'             +  # HEADER_TABLE_SIZE
+        b'\x02\x00\x00\x00\x00'             +  # ENABLE_PUSH
+        b'\x03\x00\x00\x00\x64'             +  # MAX_CONCURRENT_STREAMS
+        b'\x04\x00\x00\xFF\xFF'                # INITIAL_WINDOW_SIZE
+    )
+
+    settings = {
+        SettingsFrame.HEADER_TABLE_SIZE: 4096,
+        SettingsFrame.ENABLE_PUSH: 0,
+        SettingsFrame.MAX_CONCURRENT_STREAMS: 100,
+        SettingsFrame.INITIAL_WINDOW_SIZE: 65535,
+    }
+
     def test_settings_frame_has_only_one_flag(self):
         f = SettingsFrame(0)
         flags = f.parse_flags(0xFF)
@@ -149,45 +208,18 @@ class TestSettingsFrame(object):
     def test_settings_frame_serializes_properly(self):
         f = SettingsFrame(0)
         f.parse_flags(0xFF)
-        f.settings = {
-            SettingsFrame.HEADER_TABLE_SIZE: 4096,
-            SettingsFrame.ENABLE_PUSH: 0,
-            SettingsFrame.MAX_CONCURRENT_STREAMS: 100,
-            SettingsFrame.INITIAL_WINDOW_SIZE: 65535,
-            SettingsFrame.FLOW_CONTROL_OPTIONS: 1,
-        }
+        f.settings = self.settings
 
         s = f.serialize()
-        assert s == (
-            b'\x00\x28\x04\x01\x00\x00\x00\x00' +  # Frame header
-            b'\x00\x00\x00\x01\x00\x00\x10\x00' +  # HEADER_TABLE_SIZE
-            b'\x00\x00\x00\x02\x00\x00\x00\x00' +  # ENABLE_PUSH
-            b'\x00\x00\x00\x04\x00\x00\x00\x64' +  # MAX_CONCURRENT_STREAMS
-            b'\x00\x00\x00\x0A\x00\x00\x00\x01' +  # FLOW_CONTROL_OPTIONS
-            b'\x00\x00\x00\x07\x00\x00\xFF\xFF'    # INITIAL_WINDOW_SIZE
-        )
+        assert s == self.serialized
 
     def test_settings_frame_parses_properly(self):
-        s = (
-            b'\x00\x28\x04\x01\x00\x00\x00\x00' +  # Frame header
-            b'\x00\x00\x00\x01\x00\x00\x10\x00' +  # HEADER_TABLE_SIZE
-            b'\x00\x00\x00\x02\x00\x00\x00\x00' +  # ENABLE_PUSH
-            b'\x00\x00\x00\x04\x00\x00\x00\x64' +  # MAX_CONCURRENT_STREAMS
-            b'\x00\x00\x00\x0A\x00\x00\x00\x01' +  # FLOW_CONTROL_OPTIONS
-            b'\x00\x00\x00\x07\x00\x00\xFF\xFF'    # INITIAL_WINDOW_SIZE
-        )
-        f, length = Frame.parse_frame_header(s[:8])
-        f.parse_body(s[8:8 + length])
+        f, length = Frame.parse_frame_header(self.serialized[:8])
+        f.parse_body(self.serialized[8:8 + length])
 
         assert isinstance(f, SettingsFrame)
         assert f.flags == set(['ACK'])
-        assert f.settings == {
-            SettingsFrame.HEADER_TABLE_SIZE: 4096,
-            SettingsFrame.ENABLE_PUSH: 0,
-            SettingsFrame.MAX_CONCURRENT_STREAMS: 100,
-            SettingsFrame.INITIAL_WINDOW_SIZE: 65535,
-            SettingsFrame.FLOW_CONTROL_OPTIONS: 1,
-        }
+        assert f.settings == self.settings
 
     def test_settings_frames_never_have_streams(self):
         with pytest.raises(ValueError):
@@ -297,10 +329,10 @@ class TestWindowUpdateFrame(object):
         f.window_increment = 512
 
         s = f.serialize()
-        assert s == b'\x00\x04\x09\x00\x00\x00\x00\x00\x00\x00\x02\x00'
+        assert s == b'\x00\x04\x08\x00\x00\x00\x00\x00\x00\x00\x02\x00'
 
     def test_windowupdate_frame_parses_properly(self):
-        s = b'\x00\x04\x09\x00\x00\x00\x00\x00\x00\x00\x02\x00'
+        s = b'\x00\x04\x08\x00\x00\x00\x00\x00\x00\x00\x02\x00'
         f, length = Frame.parse_frame_header(s[:8])
         f.parse_body(s[8:8 + length])
 
@@ -314,11 +346,12 @@ class TestHeadersFrame(object):
         f = HeadersFrame(1)
         flags = f.parse_flags(0xFF)
 
-        assert flags == set(['END_STREAM', 'END_HEADERS', 'PRIORITY'])
+        assert flags == set(['END_STREAM', 'END_SEGMENT', 'END_HEADERS',
+                             'PRIORITY', 'PAD_LOW', 'PAD_HIGH'])
 
     def test_headers_frame_serialize_with_priority_properly(self):
         f = HeadersFrame(1)
-        f.parse_flags(0xFF)
+        f.parse_flags(0x0D)
         f.priority = (2 ** 30) + 1
         f.data = b'hello world'
 
@@ -331,7 +364,7 @@ class TestHeadersFrame(object):
 
     def test_headers_frame_serialize_without_priority_properly(self):
         f = HeadersFrame(1)
-        f.parse_flags(0xFF)
+        f.parse_flags(0x0D)
         f.data = b'hello world'
 
         s = f.serialize()
@@ -360,21 +393,21 @@ class TestContinuationFrame(object):
         f = ContinuationFrame(1)
         flags = f.parse_flags(0xFF)
 
-        assert flags == set(['END_HEADERS'])
+        assert flags == set(['END_HEADERS', 'PAD_LOW', 'PAD_HIGH'])
 
     def test_continuation_frame_serializes(self):
         f = ContinuationFrame(1)
-        f.parse_flags(0xFF)
+        f.parse_flags(0x04)
         f.data = b'hello world'
 
         s = f.serialize()
         assert s == (
-            b'\x00\x0B\x0A\x04\x00\x00\x00\x01' +
+            b'\x00\x0B\x09\x04\x00\x00\x00\x01' +
             b'hello world'
         )
 
     def test_continuation_frame_parses_properly(self):
-        s = b'\x00\x0B\x0A\x04\x00\x00\x00\x01hello world'
+        s = b'\x00\x0B\x09\x04\x00\x00\x00\x01hello world'
         f, length = Frame.parse_frame_header(s[:8])
         f.parse_body(s[8:8 + length])
 
@@ -1146,6 +1179,34 @@ class TestHyperStream(object):
 
         assert s._out_flow_control_window == 65535 + 1000
 
+    def test_flow_control_manager_update_includes_padding(self):
+        out_frames = []
+        in_frames = []
+
+        def send_cb(frame):
+            out_frames.append(frame)
+
+        def recv_cb(s):
+            def inner():
+                s.receive_frame(in_frames.pop(0))
+            return inner
+
+        start_window = 65535
+        s = Stream(1, send_cb, None, None, None, None, FlowControlManager(start_window))
+        s._recv_cb = recv_cb(s)
+        s.state = STATE_HALF_CLOSED_LOCAL
+
+        # Provide two data frames to read.
+        f = DataFrame(1)
+        f.data = b'hi there!'
+        f.low_padding = 10
+        f.flags.add('END_STREAM')
+        in_frames.append(f)
+
+        data = s._read()
+        assert data == b'hi there!'
+        assert s._in_window_manager.window_size == start_window - f.low_padding - len(data)
+
     def test_stream_reading_works(self):
         out_frames = []
         in_frames = []
@@ -1158,7 +1219,7 @@ class TestHyperStream(object):
                 s.receive_frame(in_frames.pop(0))
             return inner
 
-        s = Stream(1, send_cb, None, None, None, None, None)
+        s = Stream(1, send_cb, None, None, None, None, FlowControlManager(65535))
         s._recv_cb = recv_cb(s)
         s.state = STATE_HALF_CLOSED_LOCAL
 

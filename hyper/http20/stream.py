@@ -140,6 +140,11 @@ class Stream(object):
             # Append the data to the buffer.
             data.append(frame.data)
 
+            # Increase the window size. Only do this if the data frame contains
+            # actual data.
+            size = len(frame.data) + frame.total_padding
+            increment = self._in_window_manager._handle_frame(size)
+
             # If that was the last frame, we're done here.
             if 'END_STREAM' in frame.flags:
                 self.state = (
@@ -148,9 +153,6 @@ class Stream(object):
                 )
                 break
 
-            # Increase the window size. Only do this if the data frame contains
-            # actual data.
-            increment = self._in_window_manager._handle_frame(len(frame.data))
             if increment:
                 w = WindowUpdateFrame(self.stream_id)
                 w.window_increment = increment

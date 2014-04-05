@@ -1,5 +1,5 @@
 py==1.4.19
 pytest==2.5.1
-requests
 pytest-xdist
 pytest-cov
+requests
