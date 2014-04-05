@@ -27,16 +27,15 @@ class HTTP20Adapter(HTTPAdapter):
         #: A mapping between HTTP netlocs and `HTTP20Connection` objects.
         self.connections = {}
 
-    def get_connection(self, scheme, netloc):
+    def get_connection(self, netloc):
         """
         Gets an appropriate HTTP/2.0 connection object based on netloc.
         """
-        key = (scheme, netloc)
         try:
-            conn = self.connections[key]
+            conn = self.connections[netloc]
         except KeyError:
             conn = HTTP20Connection(netloc)
-            self.connections[key] = conn
+            self.connections[netloc] = conn
 
         return conn
 
@@ -46,7 +45,7 @@ class HTTP20Adapter(HTTPAdapter):
         """
         parsed = urlparse(request.url)
 
-        conn = self.get_connection(parsed.scheme, parsed.netloc)
+        conn = self.get_connection(parsed.netloc)
 
         # Build the selector.
         selector = parsed.path
