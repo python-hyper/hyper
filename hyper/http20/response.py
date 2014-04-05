@@ -21,8 +21,9 @@ class DeflateDecoder(object):
     'deflate'. Insanely, ``zlib`` handles them using two wbits values. This is
     such a mess it's hard to adequately articulate.
 
-    This class was lovingly borrowed from the excellent urllib3 library. If you
-    ever see @shazow, you should probably buy him a drink or something.
+    This class was lovingly borrowed from the excellent urllib3 library under
+    license: see NOTICES. If you ever see @shazow, you should probably buy him
+    a drink or something.
     """
     def __init__(self):
         self._first_try = True

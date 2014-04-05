@@ -9,7 +9,7 @@ that run test-defined logic while listening to a background thread.
 
 This very-clever idea and most of its implementation are ripped off from
 Andrey Petrov's excellent urllib3 project. I owe him a substantial debt in
-ingenuity and about a million beers.
+ingenuity and about a million beers. The license is available in NOTICES.
 """
 
 import threading
@@ -26,7 +26,7 @@ from hyper.http20.huffman_constants import (
 
 class _SocketServerThreadBase(threading.Thread):
     """
-    This method stolen wholesale from shazow/urllib3.
+    This method stolen wholesale from shazow/urllib3 under license. See NOTICES.
 
     :param socket_handler: Callable which receives a socket argument for one
         request.

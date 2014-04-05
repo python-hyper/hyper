@@ -36,7 +36,7 @@ setup(
     author_email='cory@lukasa.co.uk',
     url='http://hyper.rtfd.org',
     packages=packages,
-    package_data={'': ['LICENSE', 'README.rst', 'CONTRIBUTORS.rst', 'HISTORY.rst']},
+    package_data={'': ['LICENSE', 'README.rst', 'CONTRIBUTORS.rst', 'HISTORY.rst', 'NOTICES']},
     package_dir={'hyper': 'hyper'},
     include_package_data=True,
     license='MIT License',
