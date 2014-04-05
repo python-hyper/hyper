@@ -10,7 +10,7 @@ import sys
 import zlib
 
 try:
-    import ssl_compat
+    from . import ssl_compat
 except ImportError:
     # TODO log?
     ssl_compat = None

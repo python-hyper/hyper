@@ -9,7 +9,10 @@ Currently exposes exactly those attributes, classes, and methods that we
 actually use in hyper (all method signatures are complete, however). May be
 expanded to something more general-purpose in the future.
 """
-import StringIO
+try:
+    import StringIO as BytesIO
+except ImportError:
+    from io import BytesIO
 import errno
 import socket
 import time
@@ -159,7 +162,7 @@ class SSLSocket(object):
             self._conn.set_accept_state()
         else:
             if server_hostname:
-                self._conn.set_tlsext_host_name(server_hostname)
+                self._conn.set_tlsext_host_name(server_hostname.encode('utf-8'))
             self._conn.set_connect_state() # FIXME does this override do_handshake_on_connect=False?
 
         if self.connected and self._do_handshake_on_connect:
@@ -206,7 +209,7 @@ class SSLSocket(object):
     def do_handshake(self):
         self._safe_ssl_call(False, self._conn.do_handshake)
         if self._check_hostname:
-            match_hostname(self.getpeercert(), self._conn.get_servername())
+            match_hostname(self.getpeercert(), self._conn.get_servername().decode('utf-8'))
 
     def recv(self, bufsize, flags=None):
         return self._safe_ssl_call(self._suppress_ragged_eofs, self._conn.recv,
@@ -232,7 +235,7 @@ class SSLSocket(object):
         def to_components(name):
             # TODO Verify that these are actually *supposed* to all be single-element
             # tuples, and that's not just a quirk of the examples I've seen.
-            return tuple([((resolve_alias(name), value),) for name, value in name.get_components()])
+            return tuple([((resolve_alias(name.decode('utf-8')), value.decode('utf-8')),) for name, value in name.get_components()])
 
         # The standard getpeercert() takes the nice X509 object tree returned
         # by OpenSSL and turns it into a dict according to some format it seems
@@ -283,9 +286,14 @@ class SSLContext(object):
         self._ctx.set_default_verify_paths()
 
     def load_verify_locations(self, cafile=None, capath=None, cadata=None):
+        # TODO factor out common code
+        if cafile is not None:
+            cafile = cafile.encode('utf-8')
+        if capath is not None:
+            capath = capath.encode('utf-8')
         self._ctx.load_verify_locations(cafile, capath)
         if cadata is not None:
-            self._ctx.load_verify_locations(StringIO(cadata))
+            self._ctx.load_verify_locations(BytesIO(cadata))
 
     def load_cert_chain(self, certfile, keyfile=None, password=None):
         self._ctx.use_certificate_file(certfile)
