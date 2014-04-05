@@ -31,8 +31,20 @@ If that fails, download the library from its GitHub page and install it using:
 Installation Requirements
 ~~~~~~~~~~~~~~~~~~~~~~~~~
 
-There are no specific requirements for using `hyper`, beyond the fact that it
-supports Python versions 2.7, 3.3 and onward.
+The HTTP/2 specification requires very modern TLS support from any complaint
+implementation. When using Python 3.4 and later this is automatically provided
+by the standard library. For earlier releases of Python, we use PyOpenSSL to
+provide the TLS support we need.
+
+Unfortunately, this is not always totally trivial. You will need to build
+PyOpenSSL against a version of OpenSSL that is at least 1.0.1, and to do that
+you'll actually need to obtain that version of OpenSSL.
+
+To install against the relevant version of OpenSSL for your system, follow the
+instructions from the `cryptography`_ project, replacing references to
+``cryptography`` with ``hyper``.
+
+.. _cryptography: https://cryptography.io/en/latest/installation/#installation
 
 Making Your First Request
 -------------------------
