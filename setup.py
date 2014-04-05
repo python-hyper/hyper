@@ -26,19 +26,12 @@ if sys.argv[-1] == 'publish':
     os.system('python setup.py sdist upload')
     sys.exit()
 
-def resolve_extras():
-    py_version = sys.version_info[:2]
+py_version = sys.version_info[:2]
+
+def resolve_install_requires():
     if py_version in [(2,7), (3,3)]:
-        extras = dict(
-            TLS=['pyOpenSSL>=0.14'],
-            # TODO NPN=['pyOpenSSL>=0.15'],
-        )
-    else:
-        extras = dict(
-            TLS=[],
-        )
-    extras['all'] = itertools.chain(*extras.values())
-    return extras
+        return ['pyOpenSSL>=0.14']
+    return []
 
 packages = ['hyper', 'hyper.http20']
 
@@ -63,5 +56,5 @@ setup(
         'Programming Language :: Python :: 3',
         'Programming Language :: Python :: 3.3',
     ],
-    extras_require=resolve_extras(),
+    install_requires=resolve_install_requires(),
 )

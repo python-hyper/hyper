@@ -10,7 +10,6 @@ import requests
 import threading
 import hyper
 import pytest
-from hyper import HTTP20Connection
 from hyper.compat import ssl
 from hyper.contrib import HTTP20Adapter
 from hyper.http20.frame import (
@@ -56,10 +55,7 @@ def receive_preamble(sock):
 
 
 class TestHyperIntegration(SocketLevelTest):
-    def get_connection(self, use_tls=False):
-        return HTTP20Connection(self.host, self.port, use_tls=use_tls)
-
-    def run_test_connection_string(self, use_tls):
+    def test_connection_string(self):
         self.set_up()
 
         # Confirm that we send the connection upgrade string and the initial
@@ -84,22 +80,14 @@ class TestHyperIntegration(SocketLevelTest):
             send_event.set()
             sock.close()
 
-        self._start_server(socket_handler, use_tls)
-        conn = self.get_connection(use_tls)
+        self._start_server(socket_handler)
+        conn = self.get_connection()
         conn.connect()
         send_event.wait()
 
         assert data[0] == b'PRI * HTTP/2.0\r\n\r\nSM\r\n\r\n'
 
         self.tear_down()
-
-    # We could use a fixture instead, but this is dead simple.
-    def test_connection_string_without_tls(self):
-        self.run_test_connection_string(False)
-
-    @pytest.mark.skipif(ssl is None, reason='requires TLS support')
-    def test_connection_string_with_tls(self):
-        self.run_test_connection_string(True)
 
     def test_initial_settings(self):
         self.set_up()
@@ -393,7 +381,7 @@ class TestHyperIntegration(SocketLevelTest):
 
 
 class TestRequestsAdapter(SocketLevelTest):
-    def run_test_adapter_received_values(self, use_tls):
+    def test_adapter_received_values(self):
         self.set_up()
 
         data = []
@@ -421,12 +409,11 @@ class TestRequestsAdapter(SocketLevelTest):
             send_event.set()
             sock.close()
 
-        self._start_server(socket_handler, use_tls)
+        self._start_server(socket_handler)
 
-        scheme = 'https' if use_tls else 'http'
         s = requests.Session()
-        s.mount('%s://%s' % (scheme, self.host), HTTP20Adapter())
-        r = s.get('%s://%s:%s/some/path' % (scheme, self.host, self.port))
+        s.mount('https://%s' % self.host, HTTP20Adapter())
+        r = s.get('https://%s:%s/some/path' % (self.host, self.port))
 
         # Assert about the received values.
         assert r.status_code == 200
@@ -434,13 +421,6 @@ class TestRequestsAdapter(SocketLevelTest):
         assert r.content == b'1234567890' * 2
 
         self.tear_down()
-
-    def test_adapter_received_values_without_tls(self):
-        self.run_test_adapter_received_values(False)
-
-    @pytest.mark.skipif(ssl is None, reason='requires TLS support')
-    def test_adapter_received_values_with_tls(self):
-        self.run_test_adapter_received_values(True)
 
     def test_adapter_sending_values(self):
         self.set_up()

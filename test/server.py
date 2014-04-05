@@ -16,6 +16,7 @@ import threading
 import socket
 import sys
 
+from hyper import HTTP20Connection
 from hyper.compat import ssl
 from hyper.http20.hpack import Encoder
 from hyper.http20.huffman import HuffmanEncoder
@@ -33,28 +34,24 @@ class SocketServerThread(threading.Thread):
     :param ready_event: Event which gets set when the socket handler is
         ready to receive requests.
     """
-    def __init__(self, socket_handler, host='localhost', ready_event=None,
-                 use_tls=False):
+    def __init__(self, socket_handler, host='localhost', ready_event=None):
         threading.Thread.__init__(self)
 
         self.socket_handler = socket_handler
         self.host = host
         self.ready_event = ready_event
-        self.use_tls = use_tls
 
-        if self.use_tls:
-            self.cxt = ssl.SSLContext(ssl.PROTOCOL_TLSv1_2)
-            if ssl.HAS_NPN:
-                self.cxt.set_npn_protocols([NPN_PROTOCOL])
-            self.cxt.load_cert_chain(certfile='test/certs/server.crt',
-                                     keyfile='test/certs/server.key')
+        self.cxt = ssl.SSLContext(ssl.PROTOCOL_TLSv1_2)
+        if ssl.HAS_NPN:
+            self.cxt.set_npn_protocols([NPN_PROTOCOL])
+        self.cxt.load_cert_chain(certfile='test/certs/server.crt',
+                                 keyfile='test/certs/server.key')
 
     def _start_server(self):
         sock = socket.socket(socket.AF_INET6)
         if sys.platform != 'win32':
             sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-        if self.use_tls:
-            sock = self.cxt.wrap_socket(sock, server_side=True)
+        sock = self.cxt.wrap_socket(sock, server_side=True)
         sock.bind((self.host, 0))
         self.port = sock.getsockname()[1]
 
@@ -84,7 +81,7 @@ class SocketLevelTest(object):
         self.port = None
         self.server_thread = None
 
-    def _start_server(self, socket_handler, use_tls=False):
+    def _start_server(self, socket_handler):
         """
         Starts a background thread that runs the given socket handler.
         """
@@ -92,12 +89,14 @@ class SocketLevelTest(object):
         self.server_thread = SocketServerThread(
             socket_handler=socket_handler,
             ready_event=ready_event,
-            use_tls=use_tls,
         )
         self.server_thread.start()
         ready_event.wait()
         self.host = self.server_thread.host
         self.port = self.server_thread.port
+
+    def get_connection(self):
+        return HTTP20Connection(self.host, self.port)
 
     def get_encoder(self):
         """
