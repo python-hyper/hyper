@@ -105,14 +105,8 @@ Tests & Code Coverage
 tests, and has 100% code coverage. Whenever you contribute, you must write tests
 that exercise your contributed code, and you must not regress the code coverage.
 
-The tests rely on some third-party Python packages that will need to be
-installed first. You can install the packages via ``pip`` by running
-``pip install -r test_requirements.txt``.
-
-Once you have the dependencies, the easiest way to run the tests on a Unix-based
-operating system is to use the included ``Makefile``, by running ``make test``.
-On Windows, simply run the command that ``make test`` would normally run. This
-ensures you're running the tests in the same way as everyone else.
+To run the tests, you need to install `tox`_. Once you have, you can run the
+tests against all supported platforms by simply executing ``tox``.
 
 If you're having trouble running the tests, please consider raising a bug report
 using the guidelines in the :ref:`bug-reports` section.
@@ -124,6 +118,8 @@ main ``hyper`` repository. The continuous integration system treats a regression
 in code coverage as a failure of the test suite.
 
 Before a contribution is merged it must have a green run through the CI system.
+
+.. _tox: http://tox.readthedocs.org/en/latest/
 
 Code Review
 ~~~~~~~~~~~
