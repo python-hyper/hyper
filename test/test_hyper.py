@@ -1256,6 +1256,14 @@ class TestHyperStream(object):
         assert len(out_frames) == 1
         assert s.state == STATE_CLOSED
 
+    def test_receive_unexpected_frame(self):
+        # SETTINGS frames are never defined on streams, so send one of those.
+        s = Stream(1, None, None, None, None, None, None)
+        f = SettingsFrame(0)
+
+        with pytest.raises(ValueError):
+            s.receive_frame(f)
+
 
 class TestResponse(object):
     def test_status_is_stripped_from_headers(self):

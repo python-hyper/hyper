@@ -184,7 +184,7 @@ class Stream(object):
                 w = WindowUpdateFrame(self.stream_id)
                 w.window_increment = increment
                 self._data_cb(w)
-        else: # pragma: no cover
+        else:
             raise ValueError('Unexpected frame type: %i' % frame.type)
 
         if 'END_HEADERS' in frame.flags:
