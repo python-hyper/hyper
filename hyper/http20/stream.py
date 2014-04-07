@@ -14,10 +14,9 @@ Each stream is identified by a monotonically increasing integer, assigned to
 the stream by the endpoint that initiated the stream.
 """
 from .frame import (
-    FRAME_MAX_LEN, HeadersFrame, DataFrame, WindowUpdateFrame,
+    FRAME_MAX_LEN, HeadersFrame, DataFrame, PushPromiseFrame, WindowUpdateFrame,
     ContinuationFrame,
 )
-from .response import HTTP20Response
 from .util import get_from_key_value_set
 import collections
 
@@ -52,12 +51,14 @@ class Stream(object):
                  close_cb,
                  header_encoder,
                  header_decoder,
-                 window_manager):
+                 window_manager,
+                 local_closed=False):
         self.stream_id = stream_id
-        self.state = STATE_IDLE
+        self.state = STATE_HALF_CLOSED_LOCAL if local_closed else STATE_IDLE
         self.headers = []
 
         self.response_headers = None
+        self.promised_headers = {}
         self.header_data = []
         self.data = []
 
@@ -171,7 +172,13 @@ class Stream(object):
 
         if isinstance(frame, WindowUpdateFrame):
             self._out_flow_control_window += frame.window_increment
-        elif isinstance(frame, (HeadersFrame, ContinuationFrame)):
+        elif isinstance(frame, HeadersFrame):
+            self.promised_stream_id = None
+            self.header_data = [frame.data]
+        elif isinstance(frame, PushPromiseFrame):
+            self.promised_stream_id = frame.promised_stream_id
+            self.header_data = [frame.data]
+        elif isinstance(frame, ContinuationFrame):
             self.header_data.append(frame.data)
         elif isinstance(frame, DataFrame):
             # Append the data to the buffer.
@@ -183,12 +190,16 @@ class Stream(object):
             if increment and not self._remote_closed:
                 w = WindowUpdateFrame(self.stream_id)
                 w.window_increment = increment
-                self._data_cb(w)
+                self._data_cb(w, True)
         else:
             raise ValueError('Unexpected frame type: %i' % frame.type)
 
-        if 'END_HEADERS' in frame.flags:
-            self.response_headers = self._decoder.decode(b''.join(self.header_data))
+        if 'END_HEADERS' in frame.flags or 'END_PUSH_PROMISE' in frame.flags:
+            headers = self._decoder.decode(b''.join(self.header_data))
+            if self.promised_stream_id is None:
+                self.response_headers = headers
+            else:
+                self.promised_headers[self.promised_stream_id] = headers
 
     def open(self, end):
         """
@@ -228,7 +239,7 @@ class Stream(object):
 
         return
 
-    def getresponse(self):
+    def getheaders(self):
         """
         Once all data has been sent on this connection, returns a
         HTTP20Response object wrapping this stream.
@@ -244,8 +255,7 @@ class Stream(object):
             int(get_from_key_value_set(self.response_headers, 'content-length', 0))
         )
 
-        # Create the HTTP response.
-        return HTTP20Response(self.response_headers, self)
+        return self.response_headers, self.promised_headers
 
     def close(self):
         """

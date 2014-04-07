@@ -195,9 +195,38 @@ class TestSettingsFrame(object):
 
 
 class TestPushPromiseFrame(object):
-    def test_push_promise_unsupported(self):
-        with pytest.raises(NotImplementedError):
-            f = PushPromiseFrame(1)
+    def test_push_promise_frame_flags(self):
+        f = PushPromiseFrame(1)
+        flags = f.parse_flags(0xFF)
+
+        assert flags == set(['END_PUSH_PROMISE'])
+
+    def test_push_promise_frame_serialize_with_priority_properly(self):
+        f = PushPromiseFrame(1)
+        f.parse_flags(0xFF)
+        f.promised_stream_id = 4
+        f.data = b'hello world'
+
+        s = f.serialize()
+        assert s == (
+            b'\x00\x0F\x05\x01\x00\x00\x00\x01' +
+            b'\x00\x00\x00\x04' +
+            b'hello world'
+        )
+
+    def test_push_promise_frame_parses_properly(self):
+        s = (
+            b'\x00\x0F\x05\x0D\x00\x00\x00\x01' +
+            b'\x00\x00\x00\x04' +
+            b'hello world'
+        )
+        f, length = Frame.parse_frame_header(s[:8])
+        f.parse_body(s[8:8 + length])
+
+        assert isinstance(f, PushPromiseFrame)
+        assert f.flags == set(['END_PUSH_PROMISE'])
+        assert f.promised_stream_id == 4
+        assert f.data == b'hello world'
 
 
 class TestPingFrame(object):
@@ -940,6 +969,48 @@ class TestHyperConnection(object):
         assert len(sock.queue) == 2
         assert c._out_flow_control_window == 65535 - len(b'hello')
 
+    def test_server_push(self):
+        sock = DummySocket()
+        e = Encoder()
+        push_frame = PushPromiseFrame(1)
+        push_frame.flags.add('END_PUSH_PROMISE')
+        push_frame.promised_stream_id = 2
+        # TODO same-origin policy
+        push_frame.data = e.encode([(':method', 'GET'), (':path', '/'), (':authority', 'www.google.com'), (':scheme', 'https'), ('accept-encoding', 'gzip')])
+        headers_frame = HeadersFrame(1)
+        headers_frame.flags.add('END_HEADERS')
+        headers_frame.data = e.encode([(':status', '200'), ('content-type', 'text/html')])
+        data_frame = DataFrame(1)
+        data_frame.flags.add('END_STREAM')
+        data_frame.data = b'foo'
+        push_headers_frame = HeadersFrame(2)
+        push_headers_frame.flags.add('END_HEADERS')
+        push_headers_frame.data = e.encode([(':status', '200'), ('content-type', 'application/javascript')])
+        push_data_frame = DataFrame(2)
+        push_data_frame.flags.add('END_STREAM')
+        push_data_frame.data = b'bar'
+        frames = [push_frame, headers_frame, data_frame, push_headers_frame, push_data_frame]
+        sock.buffer = BytesIO(b''.join([frame.serialize() for frame in frames]))
+
+        c = HTTP20Connection('www.google.com')
+        c._sock = sock
+        c.request('GET', '/')
+        response = c.getresponse()
+        assert response.status == 200
+        assert dict(response.getheaders()) == {'content-type': 'text/html'}
+        assert response.read() == b'foo'
+        pushes = response.getpushes()
+        assert len(pushes) == 1
+        assert pushes[0].method == 'GET'
+        assert pushes[0].scheme == 'https'
+        assert pushes[0].authority == 'www.google.com'
+        assert pushes[0].path == '/'
+        assert dict(pushes[0].getrequestheaders()) == {'accept-encoding': 'gzip'}
+        push_response = pushes[0].getresponse()
+        assert push_response.status == 200
+        assert dict(push_response.getheaders()) == {'content-type': 'application/javascript'}
+        assert push_response.read() == b'bar'
+
     def test_closed_connections_are_reset(self):
         c = HTTP20Connection('www.google.com')
         c._sock = DummySocket()
@@ -1165,7 +1236,7 @@ class TestHyperStream(object):
         out_frames = []
         in_frames = []
 
-        def send_cb(frame):
+        def send_cb(frame, tolerate_peer_gone=False):
             out_frames.append(frame)
 
         def recv_cb(s):
@@ -1191,7 +1262,7 @@ class TestHyperStream(object):
         out_frames = []
         in_frames = []
 
-        def send_cb(frame):
+        def send_cb(frame, tolerate_peer_gone=False):
             out_frames.append(frame)
 
         def recv_cb(s):
@@ -1223,7 +1294,7 @@ class TestHyperStream(object):
         out_frames = []
         in_frames = []
 
-        def send_cb(frame):
+        def send_cb(frame, tolerate_peer_gone=False):
             out_frames.append(frame)
 
         def recv_cb(s):
@@ -1267,42 +1338,42 @@ class TestHyperStream(object):
 
 class TestResponse(object):
     def test_status_is_stripped_from_headers(self):
-        headers = {':status': '200'}
-        resp = HTTP20Response(headers, None)
+        headers = [(':status', '200')]
+        resp = HTTP20Response(headers, {}, None)
 
         assert resp.status == 200
         assert resp.getheaders() == []
 
     def test_response_transparently_decrypts_gzip(self):
-        headers = {':status': '200', 'content-encoding': 'gzip'}
+        headers = [(':status', '200'), ('content-encoding', 'gzip')]
         c = zlib_compressobj(wbits=24)
         body = c.compress(b'this is test data')
         body += c.flush()
-        resp = HTTP20Response(headers, DummyStream(body))
+        resp = HTTP20Response(headers, {}, DummyStream(body))
 
         assert resp.read() == b'this is test data'
 
     def test_response_transparently_decrypts_real_deflate(self):
-        headers = {':status': '200', 'content-encoding': 'deflate'}
+        headers = [(':status', '200'), ('content-encoding', 'deflate')]
         c = zlib_compressobj(wbits=zlib.MAX_WBITS)
         body = c.compress(b'this is test data')
         body += c.flush()
-        resp = HTTP20Response(headers, DummyStream(body))
+        resp = HTTP20Response(headers, {}, DummyStream(body))
 
         assert resp.read() == b'this is test data'
 
     def test_response_transparently_decrypts_wrong_deflate(self):
-        headers = {':status': '200', 'content-encoding': 'deflate'}
+        headers = [(':status', '200'), ('content-encoding', 'deflate')]
         c = zlib_compressobj(wbits=-zlib.MAX_WBITS)
         body = c.compress(b'this is test data')
         body += c.flush()
-        resp = HTTP20Response(headers, DummyStream(body))
+        resp = HTTP20Response(headers, {}, DummyStream(body))
 
         assert resp.read() == b'this is test data'
 
     def test_response_calls_stream_close(self):
         stream = DummyStream('')
-        resp = HTTP20Response({':status': '200'}, stream)
+        resp = HTTP20Response([(':status', '200')], {}, stream)
         resp.close()
 
         assert stream.closed
@@ -1310,16 +1381,16 @@ class TestResponse(object):
     def test_responses_are_context_managers(self):
         stream = DummyStream('')
 
-        with HTTP20Response({':status': '200'}, stream) as resp:
+        with HTTP20Response([(':status', '200')], {}, stream) as resp:
             pass
 
         assert stream.closed
 
     def test_read_small_chunks(self):
-        headers = {':status': '200'}
+        headers = [(':status', '200')]
         stream = DummyStream(b'1234567890')
         chunks = [b'12', b'34', b'56', b'78', b'90']
-        resp = HTTP20Response(headers, stream)
+        resp = HTTP20Response(headers, {}, stream)
 
         for chunk in chunks:
             assert resp.read(2) == chunk
@@ -1327,10 +1398,10 @@ class TestResponse(object):
         assert resp.read() == b''
 
     def test_read_buffered(self):
-        headers = {':status': '200'}
+        headers = [(':status', '200')]
         stream = DummyStream(b'1234567890')
         chunks = [b'12', b'34', b'56', b'78', b'90'] * 2
-        resp = HTTP20Response(headers, stream)
+        resp = HTTP20Response(headers, {}, stream)
         resp._data_buffer = b'1234567890'
 
         for chunk in chunks:
@@ -1339,21 +1410,21 @@ class TestResponse(object):
         assert resp.read() == b''
 
     def test_getheader(self):
-        headers = {':status': '200', 'content-type': 'application/json'}
+        headers = [(':status', '200'), ('content-type', 'application/json')]
         stream = DummyStream(b'')
-        resp = HTTP20Response(headers, stream)
+        resp = HTTP20Response(headers, {}, stream)
 
         assert resp.getheader('content-type') == 'application/json'
 
     def test_getheader_default(self):
-        headers = {':status': '200'}
+        headers = [(':status', '200')]
         stream = DummyStream(b'')
-        resp = HTTP20Response(headers, stream)
+        resp = HTTP20Response(headers, {}, stream)
 
         assert resp.getheader('content-type', 'text/html') == 'text/html'
 
     def test_fileno_not_implemented(self):
-        resp = HTTP20Response({':status': '200'}, DummyStream(b''))
+        resp = HTTP20Response([(':status', '200')], {}, DummyStream(b''))
 
         with pytest.raises(NotImplementedError):
             resp.fileno()

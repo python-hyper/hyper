@@ -29,15 +29,7 @@ It should! If you find it doesn't, that's a bug: please `report it on GitHub`_.
 Does ``hyper`` support Server Push?
 -----------------------------------
 
-No, and I don't think it ever will directly. Support for Server Push
-effectively *mandates* a multithreaded or event-loop based programming style,
-which is incompatible with most current Python HTTP code. For that reason,
-``hyper``'s default API is unlikely to ever allow Server Push.
-
-However, there's no reason the underlying framing and stream layers couldn't
-support it. If ``hyper`` ever grows a server implementation or a fully
-event-loop based implementation, I'll revisit the decision not to support
-Server Push.
+Yes! See :ref:`advanced`.
 
 I hit a bug! What should I do?
 ------------------------------

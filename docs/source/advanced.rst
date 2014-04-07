@@ -108,3 +108,38 @@ Note that we don't plug an instance of the class in, we plug the class itself
 in. We do this because the connection object will spawn instances of the class
 in order to manage the flow control windows of streams in addition to managing
 the window of the connection itself.
+
+Server Push
+-----------
+
+HTTP/2.0 provides servers with the ability to "push" additional resources to
+clients in response to a request, as if the client had requested the resources
+themselves. When minimizing round trips is more critical than maximizing
+bandwidth usage, this can be a significant performance improvement.
+
+Pushed resources are available through the
+:attr:`HTTP20Response.pushes <hyper.HTTP20Response.pushes>` attribute, which
+exposes the headers of the simulated request through its
+:meth:`getrequestheaders() <hyper.HTTP20Push.getrequestheaders>` method, and a
+response object through :meth:`getresponse() <hyper.HTTP20Push.getresponse>`::
+
+    for push in response.pushes:
+        print('{}: {}'.format(push.path, push.getresponse().read()))
+
+It is important to remember that because the server may interleave frames from
+different streams as it sees fit, a call to
+:meth:`read() <hyper.HTTP20PushedResponse.read>` on an
+:class:`HTTP20PushedResponse <hyper.HTTP20PushedResponse>` object may terminate
+*after* a simultaneous call to :meth:`read() <hyper.HTTP20Response.read>` on the
+original :class:`HTTP20Response <hyper.HTTP20Response>` object would
+(although it is safe to call them in any order). Users are advised to read the
+body of the original response first, unless they know beforehand that it cannot
+be processed at all without the pushed resources.
+
+``hyper`` does not currently provide any way to limit the number of pushed
+streams, disable them altogether, or cancel in-progress pushed streams, although
+HTTP/2.0 allows all of these actions.
+
+``hyper`` does not currently verify that pushed resources comply with the
+Same-Origin Policy, so users must take care that they do not treat pushed
+resources as authoritative without performing this check themselves.

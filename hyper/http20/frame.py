@@ -221,14 +221,19 @@ class PushPromiseFrame(Frame):
     """
     The PUSH_PROMISE frame is used to notify the peer endpoint in advance of
     streams the sender intends to initiate.
-
-    Right now hyper doesn't support these, so we treat the body data as totally
-    opaque, along with the flags.
     """
+    defined_flags = [('END_PUSH_PROMISE', 0x01)]
+
     type = 0x05
 
-    def __init__(self, stream_id):
-        raise NotImplementedError("hyper doesn't support server push")
+    def serialize(self):
+        data = self.build_frame_header(len(self.data) + 4)
+        data += struct.pack("!L", self.promised_stream_id)
+        return b''.join([data, self.data])
+
+    def parse_body(self, data):
+        self.promised_stream_id, = struct.unpack("!L", data[:4])
+        self.data = data[4:]
 
 
 class PingFrame(Frame):

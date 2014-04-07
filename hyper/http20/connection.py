@@ -9,12 +9,14 @@ from .hpack import Encoder, Decoder
 from .stream import Stream
 from .tls import wrap_socket
 from .frame import (
-    DataFrame, HeadersFrame, SettingsFrame, Frame, WindowUpdateFrame,
-    GoAwayFrame
+    DataFrame, HeadersFrame, PushPromiseFrame, SettingsFrame, Frame,
+    WindowUpdateFrame, GoAwayFrame
 )
+from .response import HTTP20Response
 from .window import FlowControlManager
 from .exceptions import ConnectionError
 
+import errno
 import logging
 import socket
 
@@ -148,7 +150,9 @@ class HTTP20Connection(object):
         """
         stream = (self.streams[stream_id] if stream_id is not None
                   else self.recent_stream)
-        return stream.getresponse()
+        headers, promised_headers = stream.getheaders()
+        promised_streams_headers = {self.streams[stream_id]: headers for stream_id, headers in promised_headers.items()}
+        return HTTP20Response(headers, promised_streams_headers, stream)
 
     def connect(self):
         """
@@ -209,7 +213,6 @@ class HTTP20Connection(object):
         s.add_header(":path", selector)
 
         # Save the stream.
-        self.streams[s.stream_id] = s
         self.recent_stream = s
 
         return s.stream_id
@@ -340,16 +343,17 @@ class HTTP20Connection(object):
 
             self._settings[SettingsFrame.INITIAL_WINDOW_SIZE] = newsize
 
-    def _new_stream(self):
+    def _new_stream(self, stream_id=None, local_closed=False):
         """
         Returns a new stream object for this connection.
         """
         window_size = self._settings[SettingsFrame.INITIAL_WINDOW_SIZE]
         s = Stream(
-            self.next_stream_id, self._send_cb, self._recv_cb,
+            stream_id or self.next_stream_id, self._send_cb, self._recv_cb,
             self._close_stream, self.encoder, self.decoder,
-            self.__wm_class(window_size)
+            self.__wm_class(window_size), local_closed
         )
+        self.streams[s.stream_id] = s
         self.next_stream_id += 2
 
         return s
@@ -360,7 +364,7 @@ class HTTP20Connection(object):
         """
         del self.streams[stream_id]
 
-    def _send_cb(self, frame):
+    def _send_cb(self, frame, tolerate_peer_gone=False):
         """
         This is the callback used by streams to send data on the connection.
 
@@ -387,7 +391,11 @@ class HTTP20Connection(object):
             frame.stream_id
         )
 
-        self._sock.send(data)
+        try:
+            self._sock.send(data)
+        except socket.error as e:
+            if not tolerate_peer_gone or e.errno not in (errno.EPIPE, errno.ECONNRESET):
+                raise
 
     def _adjust_receive_window(self, frame_len):
         """
@@ -399,7 +407,7 @@ class HTTP20Connection(object):
         if increment:
             f = WindowUpdateFrame(0)
             f.window_increment = increment
-            self._send_cb(f)
+            self._send_cb(f, True)
 
         return
 
@@ -440,6 +448,8 @@ class HTTP20Connection(object):
             # Inform the WindowManager of how much data was received. If the
             # manager tells us to increment the window, do so.
             self._adjust_receive_window(len(frame.data))
+        elif isinstance(frame, PushPromiseFrame):
+            s = self._new_stream(frame.promised_stream_id, local_closed=True)
 
         # Work out to whom this frame should go.
         if frame.stream_id != 0:

@@ -64,6 +64,8 @@ class HTTP20Adapter(HTTPAdapter):
 
         if not stream:
             r.content
+            for push in r.pushed:
+                push.content
 
         return r
 
@@ -83,6 +85,8 @@ class HTTP20Adapter(HTTPAdapter):
 
         extract_cookies_to_jar(response.cookies, request, response)
         response.url = request.url
+
+        response.pushed = [self.build_response(request, push.getresponse()) for push in resp.getpushes()]
 
         response.request = request
         response.connection = self
