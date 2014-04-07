@@ -922,9 +922,7 @@ class TestHyperConnection(object):
         c._recv_cb()
 
         s = c.recent_stream
-        assert len(s._queued_frames) == 1
-        assert isinstance(s._queued_frames[0], DataFrame)
-        assert s._queued_frames[0].data == b'testdata'
+        assert s.data == [b'testdata']
 
     def test_putrequest_sends_data(self):
         sock = DummySocket()
@@ -1029,6 +1027,28 @@ class TestHyperConnection(object):
         assert f2.stream_id == 0
         assert f2.flags == set(['ACK'])
 
+    def test_read_headers_out_of_order(self):
+        # If header blocks aren't decoded in the same order they're received,
+        # regardless of the stream they belong to, the decoder state will become
+        # corrupted.
+        e = Encoder()
+        h1 = HeadersFrame(1)
+        h1.data = e.encode({':status': 200, 'content-type': 'foo/bar'})
+        h1.flags |= set(['END_HEADERS', 'END_STREAM'])
+        h3 = HeadersFrame(3)
+        h3.data = e.encode({':status': 200, 'content-type': 'baz/qux'})
+        h3.flags |= set(['END_HEADERS', 'END_STREAM'])
+        sock = DummySocket()
+        sock.buffer = BytesIO(h1.serialize() + h3.serialize())
+
+        c = HTTP20Connection('www.google.com')
+        c._sock = sock
+        r1 = c.request('GET', '/a')
+        r3 = c.request('GET', '/b')
+
+        assert c.getresponse(r3).getheaders() == [('content-type', 'baz/qux')]
+        assert c.getresponse(r1).getheaders() == [('content-type', 'foo/bar')]
+
     def test_receive_unexpected_frame(self):
         # RSTSTREAM frames are never defined on connections, so send one of
         # those.
@@ -1064,11 +1084,6 @@ class TestHyperStream(object):
         s.open(True)
 
         assert s.state == STATE_HALF_CLOSED_LOCAL
-
-    def test_receiving_a_frame_queues_it(self):
-        s = Stream(1, None, None, None, None, None, None)
-        s.receive_frame(Frame(0))
-        assert len(s._queued_frames) == 1
 
     def test_file_objects_can_be_sent(self):
         def data_callback(frame):
@@ -1158,7 +1173,7 @@ class TestHyperStream(object):
                 s.receive_frame(in_frames.pop(0))
             return inner
 
-        s = Stream(1, send_cb, None, None, None, None, None)
+        s = Stream(1, send_cb, None, None, None, None, FlowControlManager(65535))
         s._recv_cb = recv_cb(s)
         s.state = STATE_HALF_CLOSED_LOCAL
 
@@ -1240,6 +1255,14 @@ class TestHyperStream(object):
         assert data == b'hi there again!'
         assert len(out_frames) == 1
         assert s.state == STATE_CLOSED
+
+    def test_receive_unexpected_frame(self):
+        # SETTINGS frames are never defined on streams, so send one of those.
+        s = Stream(1, None, None, None, None, None, None)
+        f = SettingsFrame(0)
+
+        with pytest.raises(ValueError):
+            s.receive_frame(f)
 
 
 class TestResponse(object):

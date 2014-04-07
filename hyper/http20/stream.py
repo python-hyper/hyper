@@ -56,7 +56,10 @@ class Stream(object):
         self.stream_id = stream_id
         self.state = STATE_IDLE
         self.headers = []
-        self._queued_frames = collections.deque()
+
+        self.response_headers = None
+        self.header_data = []
+        self.data = []
 
         # There are two flow control windows: one for data we're sending,
         # one for data being sent to us.
@@ -110,6 +113,34 @@ class Stream(object):
         for chunk in chunks:
             self._send_chunk(chunk, final)
 
+    @property
+    def _local_closed(self):
+        return self.state in (STATE_CLOSED, STATE_HALF_CLOSED_LOCAL)
+
+    @property
+    def _remote_closed(self):
+        return self.state in (STATE_CLOSED, STATE_HALF_CLOSED_REMOTE)
+
+    @property
+    def _local_open(self):
+        return self.state in (STATE_OPEN, STATE_HALF_CLOSED_REMOTE)
+
+    @property
+    def _remote_open(self):
+        return self.state in (STATE_OPEN, STATE_HALF_CLOSED_LOCAL)
+
+    def _close_local(self):
+        self.state = (
+            STATE_HALF_CLOSED_LOCAL if self.state == STATE_OPEN
+            else STATE_CLOSED
+        )
+
+    def _close_remote(self):
+        self.state = (
+            STATE_HALF_CLOSED_REMOTE if self.state == STATE_OPEN
+            else STATE_CLOSED
+        )
+
     def _read(self, amt=None):
         """
         Read data from the stream. Unlike a normal read behaviour, this
@@ -118,55 +149,46 @@ class Stream(object):
         if self.state == STATE_CLOSED:
             return b''
 
-        assert self.state in (STATE_OPEN, STATE_HALF_CLOSED_LOCAL)
+        assert self._remote_open
 
         def listlen(list):
             return sum(map(len, list))
 
-        data = []
+        # Keep reading until the stream is closed or we get enough data.
+        while not self._remote_closed and (amt is None or listlen(self.data) < amt):
+            self._recv_cb()
 
-        # Begin by processing frames off the queue.
-        while amt is None or listlen(data) < amt:
-            try:
-                frame = self._queued_frames.popleft()
-            except IndexError:
-                # No frames on the queue. Try to read one and try again.
-                self._recv_cb()
-                continue
+        result = b''.join(self.data)
+        self.data = []
+        return result
 
-            # All queued frames at this point should be data frames.
-            assert isinstance(frame, DataFrame)
+    def receive_frame(self, frame):
+        """
+        Handle a frame received on this stream.
+        """
+        if 'END_STREAM' in frame.flags:
+            self._close_remote()
 
+        if isinstance(frame, WindowUpdateFrame):
+            self._out_flow_control_window += frame.window_increment
+        elif isinstance(frame, (HeadersFrame, ContinuationFrame)):
+            self.header_data.append(frame.data)
+        elif isinstance(frame, DataFrame):
             # Append the data to the buffer.
-            data.append(frame.data)
-
-            # If that was the last frame, we're done here.
-            if 'END_STREAM' in frame.flags:
-                self.state = (
-                    STATE_HALF_CLOSED_REMOTE if self.state == STATE_OPEN
-                    else STATE_CLOSED
-                )
-                break
+            self.data.append(frame.data)
 
             # Increase the window size. Only do this if the data frame contains
             # actual data.
             increment = self._in_window_manager._handle_frame(len(frame.data))
-            if increment:
+            if increment and not self._remote_closed:
                 w = WindowUpdateFrame(self.stream_id)
                 w.window_increment = increment
                 self._data_cb(w)
-
-        return b''.join(data)
-
-    def receive_frame(self, frame):
-        """
-        Handle a frame received on this stream. If this is a window update
-        frame, immediately update the window accordingly.
-        """
-        if isinstance(frame, WindowUpdateFrame):
-            self._out_flow_control_window += frame.window_increment
         else:
-            self._queued_frames.append(frame)
+            raise ValueError('Unexpected frame type: %i' % frame.type)
+
+        if 'END_HEADERS' in frame.flags:
+            self.response_headers = self._decoder.decode(b''.join(self.header_data))
 
     def open(self, end):
         """
@@ -211,38 +233,19 @@ class Stream(object):
         Once all data has been sent on this connection, returns a
         HTTP20Response object wrapping this stream.
         """
-        assert self.state == STATE_HALF_CLOSED_LOCAL
-        header_data = []
+        assert self._local_closed
 
-        # At this stage, the only things in the frame queue should be HEADERS
-        # and CONTINUATION frames. Grab them all, reading more frames off the
-        # connection if necessary.
-        while True:
-            try:
-                frame = self._queued_frames.popleft()
-            except IndexError:
-                self._recv_cb()
-                continue
-
-            assert isinstance(frame, (HeadersFrame, ContinuationFrame))
-
-            header_data.append(frame.data)
-
-            if 'END_HEADERS' in frame.flags:
-                if 'END_STREAM' in frame.flags:
-                    self.state = STATE_CLOSED
-                break
-
-        # Decode the headers.
-        headers = self._decoder.decode(b''.join(header_data))
+        # Keep reading until all headers are received.
+        while self.response_headers is None:
+            self._recv_cb()
 
         # Find the Content-Length header if present.
         self._in_window_manager.document_size = (
-            int(get_from_key_value_set(headers, 'content-length', 0))
+            int(get_from_key_value_set(self.response_headers, 'content-length', 0))
         )
 
         # Create the HTTP response.
-        return HTTP20Response(headers, self)
+        return HTTP20Response(self.response_headers, self)
 
     def close(self):
         """
@@ -264,7 +267,7 @@ class Stream(object):
         (determined by being of size less than MAX_CHUNK) and no more data is
         to be sent.
         """
-        assert self.state in (STATE_OPEN, STATE_HALF_CLOSED_REMOTE)
+        assert self._local_open
 
         f = DataFrame(self.stream_id)
         f.data = data
@@ -286,5 +289,4 @@ class Stream(object):
 
         # If no more data is to be sent on this stream, transition our state.
         if len(data) < MAX_CHUNK and final:
-            self.state = (STATE_HALF_CLOSED_LOCAL if self.state == STATE_OPEN
-                          else STATE_CLOSED)
+            self._close_local()
