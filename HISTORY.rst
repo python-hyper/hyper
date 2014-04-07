@@ -12,10 +12,13 @@ X.X.X (XXXX-XX-XX)
 - `HTTP20Response` objects are context managers. (`Issue #24`_)
 - Pluggable window managers are now correctly informed about the document size.
   (`Issue #26`_)
+- Header blocks can no longer be corrupted if read in a different order to the
+  one in which they were sent. (`Issue #39`_)
 
 .. _Issue #24: https://github.com/Lukasa/hyper/issues/24
 .. _Issue #26: https://github.com/Lukasa/hyper/issues/26
 .. _Issue #33: https://github.com/Lukasa/hyper/issues/33
+.. _Issue #39: https://github.com/Lukasa/hyper/issues/39
 
 0.0.4 (2014-03-08)
 ------------------
