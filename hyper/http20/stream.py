@@ -166,6 +166,9 @@ class Stream(object):
         """
         Handle a frame received on this stream.
         """
+        if 'END_STREAM' in frame.flags:
+            self._close_remote()
+
         if isinstance(frame, WindowUpdateFrame):
             self._out_flow_control_window += frame.window_increment
         elif isinstance(frame, (HeadersFrame, ContinuationFrame)):
@@ -177,7 +180,7 @@ class Stream(object):
             # Increase the window size. Only do this if the data frame contains
             # actual data.
             increment = self._in_window_manager._handle_frame(len(frame.data))
-            if increment:
+            if increment and not self._remote_closed:
                 w = WindowUpdateFrame(self.stream_id)
                 w.window_increment = increment
                 self._data_cb(w)
@@ -186,9 +189,6 @@ class Stream(object):
 
         if 'END_HEADERS' in frame.flags:
             self.response_headers = self._decoder.decode(b''.join(self.header_data))
-
-        if 'END_STREAM' in frame.flags:
-            self._close_remote()
 
     def open(self, end):
         """

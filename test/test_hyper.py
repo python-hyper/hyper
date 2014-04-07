@@ -1185,9 +1185,7 @@ class TestHyperStream(object):
 
         data = s._read()
         assert data == b'hi there!'
-        assert len(out_frames) == 1
-        assert isinstance(out_frames[0], WindowUpdateFrame)
-        assert out_frames[0].window_increment == len(b'hi there!')
+        assert len(out_frames) == 0
 
     def test_can_read_multiple_frames_from_streams(self):
         out_frames = []
@@ -1217,10 +1215,9 @@ class TestHyperStream(object):
 
         data = s._read()
         assert data == b'hi there!hi there again!'
-        assert len(out_frames) == 2
-        for frame, data in zip(out_frames, [b'hi there!', b'hi there again!']):
-            assert isinstance(frame, WindowUpdateFrame)
-            assert frame.window_increment == len(data)
+        assert len(out_frames) == 1
+        assert isinstance(out_frames[0], WindowUpdateFrame)
+        assert out_frames[0].window_increment == len(b'hi there!')
 
     def test_partial_reads_from_streams(self):
         out_frames = []
@@ -1256,7 +1253,7 @@ class TestHyperStream(object):
         # Now we'll get the entire of the second frame.
         data = s._read(4)
         assert data == b'hi there again!'
-        assert len(out_frames) == 2
+        assert len(out_frames) == 1
         assert s.state == STATE_CLOSED
 
 
