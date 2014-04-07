@@ -57,9 +57,21 @@ class Stream(object):
         self.state = STATE_HALF_CLOSED_LOCAL if local_closed else STATE_IDLE
         self.headers = []
 
+        # Set to a key-value set of the response headers once their
+        # HEADERS..CONTINUATION frame sequence finishes.
         self.response_headers = None
+        # A dict mapping the promised stream ID of a pushed resource to a
+        # key-value set of its request headers. Entries are added once their
+        # PUSH_PROMISE..CONTINUATION frame sequence finishes.
         self.promised_headers = {}
+        # Chunks of encoded header data from the current
+        # (HEADERS|PUSH_PROMISE)..CONTINUATION frame sequence. Since sending any
+        # frame other than a CONTINUATION is disallowed while a header block is
+        # being transmitted, this and ``promised_stream_id`` are the only pieces
+        # of state we have to track.
         self.header_data = []
+        self.promised_stream_id = None
+        # Unconsumed response data chunks. Empties after every call to _read().
         self.data = []
 
         # There are two flow control windows: one for data we're sending,
@@ -173,12 +185,15 @@ class Stream(object):
         if isinstance(frame, WindowUpdateFrame):
             self._out_flow_control_window += frame.window_increment
         elif isinstance(frame, HeadersFrame):
+            # Begin the header block for the response headers.
             self.promised_stream_id = None
             self.header_data = [frame.data]
         elif isinstance(frame, PushPromiseFrame):
+            # Begin a header block for the request headers of a pushed resource.
             self.promised_stream_id = frame.promised_stream_id
             self.header_data = [frame.data]
         elif isinstance(frame, ContinuationFrame):
+            # Continue a header block begun with either HEADERS or PUSH_PROMISE.
             self.header_data.append(frame.data)
         elif isinstance(frame, DataFrame):
             # Append the data to the buffer.
@@ -241,8 +256,11 @@ class Stream(object):
 
     def getheaders(self):
         """
-        Once all data has been sent on this connection, returns a
-        HTTP20Response object wrapping this stream.
+        Once all data has been sent on this connection, returns a tuple
+        ``(response_headers, promised_headers)``, where ``response_headers``
+        is a key-value set of the headers of the response to the original
+        request, and ``promised_headers`` is a dict mapping promised stream IDs
+        to key-value sets of the reuqest headers for their pushed resources.
         """
         assert self._local_closed
 
