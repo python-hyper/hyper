@@ -8,7 +8,7 @@ httplib/http.client.
 """
 import zlib
 
-from .util import extract_from_key_value_set
+from .util import pop_from_key_value_set
 
 
 class DeflateDecoder(object):
@@ -76,14 +76,14 @@ class BaseHTTP20Response(object):
         #: HTTP/2.0, and so is always the empty string.
         self.reason = ''
 
-        http_headers, status = extract_from_key_value_set(headers, ':status')
+        status, = pop_from_key_value_set(headers, ':status')
 
         #: The status code returned by the server.
         self.status = int(status)
 
         # The response headers. These are determined upon creation, assigned
         # once, and never assigned again.
-        self._headers = Headers(http_headers)
+        self._headers = Headers(headers)
 
         # The stream this response is being sent over.
         self._stream = stream
@@ -219,9 +219,9 @@ class HTTP20Push(object):
     push mechanism.
     """
     def __init__(self, request_headers, stream):
-        http_request_headers, scheme, method, authority, path = (
-            extract_from_key_value_set(request_headers,
-                             ':scheme', ':method', ':authority', ':path')
+        scheme, method, authority, path = (
+            pop_from_key_value_set(request_headers,
+                                   ':scheme', ':method', ':authority', ':path')
         )
         #: The scheme of the simulated request
         self.scheme = scheme
@@ -232,7 +232,7 @@ class HTTP20Push(object):
         #: The path of the simulated request
         self.path = path
 
-        self._request_headers = Headers(http_request_headers)
+        self._request_headers = Headers(request_headers)
         self._stream = stream
 
     def getrequestheader(self, name, default=None):

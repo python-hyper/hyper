@@ -10,24 +10,26 @@ def get_from_key_value_set(kvset, key, default=None):
     Returns a value from a key-value set, or the default if the value isn't
     present.
     """
-    _, value = extract_from_key_value_set(kvset, key)
+    value, = pop_from_key_value_set(kvset, key)
     return value if value is not None else default
 
-def extract_from_key_value_set(kvset, *keys):
+def pop_from_key_value_set(kvset, *keys):
     """
-    Extracts the values of ``keys`` from ``kvset`` and returns a tuple
-    ``(rest, value1, value2, ...)``, where ``rest`` is the set of key-value
-    pairs not specified in ``keys``. If a key is not found in ``kvset``,
-    ``None`` is returned in its place.
+    Pops the values of ``keys`` from ``kvset`` and returns them as a tuple. If a
+    key is not found in ``kvset``, ``None`` is used instead.
 
-    >>> extract_from_key_value_set([('a',0),('b',1),('c',2)], 'a', 'foo', 'c')
-    ([('b', 1)], 0, None, 2)
+    >>> kvset = [('a',0), ('b',1), ('c',2)]
+    >>> pop_from_key_value_set(kvset, 'a', 'foo', 'c')
+    (0, None, 2)
+    >>> kvset
+    [('b', 1)]
     """
     extracted = [None] * len(keys)
-    rest = []
+    rest = set()
     for key, value in kvset:
-        if key in keys:
+        try:
             extracted[keys.index(key)] = value
-        else:
-            rest.append((key, value))
-    return tuple([rest] + extracted)
+        except ValueError:
+            rest.add((key, value))
+    kvset.intersection_update(rest)
+    return tuple(extracted)
