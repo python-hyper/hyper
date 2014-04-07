@@ -5,10 +5,12 @@ X.X.X (XXXX-XX-XX)
 ------------------
 
 *Major Changes*
+
 - Support for HPACK draft 06.
 - Support for Python 2.7, thanks to the inimitable @alekstorm! (`Issue #33`_)
 
 *Bugfixes*
+
 - `HTTP20Response` objects are context managers. (`Issue #24`_)
 - Pluggable window managers are now correctly informed about the document size.
   (`Issue #26`_)
