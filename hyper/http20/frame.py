@@ -21,7 +21,7 @@ class Frame(object):
     defined_flags = []
 
     # The type of the frame.
-    type = 0
+    type = -1
 
     def __init__(self, stream_id):
         self.stream_id = stream_id

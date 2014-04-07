@@ -12,6 +12,7 @@ from .frame import (
     DataFrame, HeadersFrame, SettingsFrame, Frame, WindowUpdateFrame,
     GoAwayFrame
 )
+from .response import HTTP20Response
 from .window import FlowControlManager
 from .exceptions import ConnectionError
 
