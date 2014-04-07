@@ -70,8 +70,15 @@ class Headers(object):
         return self._headers.items()
 
 
-class BaseHTTP20Response(object):
-    def __init__(self, headers, stream):
+class HTTP20Response(object):
+    """
+    An ``HTTP20Response`` wraps the HTTP/2.0 response from the server. It
+    provides access to the response headers and the entity body. The response
+    is an iterable object and can be used in a with statement (though due to
+    the persistent connections used in HTTP/2.0 this has no effect, and is done
+    soley for compatibility).
+    """
+    def __init__(self, headers, promised_headers, stream):
         #: The reason phrase returned by the server. This is not used in
         #: HTTP/2.0, and so is always the empty string.
         self.reason = ''
@@ -84,6 +91,9 @@ class BaseHTTP20Response(object):
         # The response headers. These are determined upon creation, assigned
         # once, and never assigned again.
         self._headers = Headers(headers)
+
+        # A dict mapping promised stream IDs to their request headers.
+        self._promised_headers = promised_headers
 
         # The stream this response is being sent over.
         self._stream = stream
@@ -168,6 +178,9 @@ class BaseHTTP20Response(object):
         """
         return list(self._headers.items())
 
+    def getpushes(self):
+        return [HTTP20Push(headers, stream) for stream, headers in self._promised_headers.items()]
+
     def fileno(self):
         """
         Return the ``fileno`` of the underlying socket. This function is
@@ -190,27 +203,6 @@ class BaseHTTP20Response(object):
     def __exit__(self, *args):
         self.close()
         return False  # Never swallow exceptions.
-
-
-class HTTP20Response(BaseHTTP20Response):
-    """
-    An ``HTTP20Response`` wraps the HTTP/2.0 response from the server. It
-    provides access to the response headers and the entity body. The response
-    is an iterable object and can be used in a with statement (though due to
-    the persistent connections used in HTTP/2.0 this has no effect, and is done
-    soley for compatibility).
-    """
-    def __init__(self, headers, promised_headers, stream):
-        super(HTTP20Response, self).__init__(headers, stream)
-        self._promised_headers = promised_headers
-
-    def getpushes(self):
-        return [HTTP20Push(headers, stream) for stream, headers in self._promised_headers.items()]
-
-
-class HTTP20PushedResponse(BaseHTTP20Response):
-    def getpushes(self):
-        return []
 
 
 class HTTP20Push(object):
@@ -259,8 +251,8 @@ class HTTP20Push(object):
 
     def getresponse(self):
         """
-        Returns an :class:`HTTP20PushedResponse` object representing the pushed
+        Returns an :class:`HTTP20Response` object representing the pushed
         response.
         """
         response_headers, _ = self._stream.getheaders()
-        return HTTP20PushedResponse(response_headers, self._stream)
+        return HTTP20Response(response_headers, {}, self._stream)

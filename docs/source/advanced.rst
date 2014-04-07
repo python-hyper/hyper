@@ -128,10 +128,9 @@ response object through :meth:`getresponse() <hyper.HTTP20Push.getresponse>`::
 
 It is important to remember that because the server may interleave frames from
 different streams as it sees fit, a call to
-:meth:`read() <hyper.HTTP20PushedResponse.read>` on an
-:class:`HTTP20PushedResponse <hyper.HTTP20PushedResponse>` object may terminate
-*after* a simultaneous call to :meth:`read() <hyper.HTTP20Response.read>` on the
-original :class:`HTTP20Response <hyper.HTTP20Response>` object would
+:meth:`HTTP20Response.read() <hyper.HTTP20Response.read>` on a pushed response
+may terminate *after* a simultaneous call to
+:meth:`read() <hyper.HTTP20Response.read>` on the original response object would
 (although it is safe to call them in any order). Users are advised to read the
 body of the original response first, unless they know beforehand that it cannot
 be processed at all without the pushed resources.

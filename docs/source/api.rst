@@ -14,10 +14,6 @@ Primary HTTP/2.0 Interface
    :inherited-members:
 
 .. autoclass:: hyper.HTTP20Response
-   :members:
-   :inherited-members:
-
-.. autoclass:: hyper.HTTP20PushedResponse
    :inherited-members:
 
 .. autoclass:: hyper.HTTP20Push
