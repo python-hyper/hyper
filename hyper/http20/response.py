@@ -83,7 +83,7 @@ class HTTP20Response(object):
         #: HTTP/2.0, and so is always the empty string.
         self.reason = ''
 
-        status, = pop_from_key_value_set(headers, ':status')
+        status = pop_from_key_value_set(headers, ':status')[0]
 
         #: The status code returned by the server.
         self.status = int(status)
