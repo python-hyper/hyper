@@ -57,9 +57,6 @@ class Headers(object):
         # keys, but it's acceptable for an early alpha.
         self._headers = dict(pairs)
 
-    def __getitem__(self, name):
-        return self.getheader(name)
-
     def getheader(self, name, default=None):
         return self._headers.get(name, default)
 

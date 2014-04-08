@@ -16,7 +16,9 @@ from hyper.http20.exceptions import HPACKDecodingError, HPACKEncodingError
 from hyper.http20.window import FlowControlManager
 from hyper.compat import zlib_compressobj
 from hyper.contrib import HTTP20Adapter
+import errno
 import pytest
+import socket
 import zlib
 from io import BytesIO
 
@@ -1078,14 +1080,43 @@ class TestHyperConnection(object):
         assert c.getresponse(r3).getheaders() == [('content-type', 'baz/qux')]
         assert c.getresponse(r1).getheaders() == [('content-type', 'foo/bar')]
 
+    def test_headers_with_continuation(self):
+        e = Encoder()
+        h = HeadersFrame(1)
+        h.data = e.encode({':status': 200, 'content-type': 'foo/bar'})
+        c = ContinuationFrame(1)
+        c.data = e.encode({'content-length': '0'})
+        c.flags |= set(['END_HEADERS', 'END_STREAM'])
+        sock = DummySocket()
+        sock.buffer = BytesIO(h.serialize() + c.serialize())
+
+        c = HTTP20Connection('www.google.com')
+        c._sock = sock
+        r = c.request('GET', '/')
+
+        assert set(c.getresponse(r).getheaders()) == set([('content-type', 'foo/bar'), ('content-length', '0')])
+
     def test_receive_unexpected_frame(self):
-        # RSTSTREAM frames are never defined on connections, so send one of
+        # RST_STREAM frames are never defined on connections, so send one of
         # those.
         c = HTTP20Connection('www.google.com')
         f = RstStreamFrame(1)
 
         with pytest.raises(ValueError):
             c.receive_frame(f)
+
+    def test_send_tolerate_peer_gone(self):
+        class ErrorSocket(DummySocket):
+            def send(self, data):
+                raise socket.error(errno.EPIPE)
+
+        c = HTTP20Connection('www.google.com')
+        c._sock = ErrorSocket()
+        f = SettingsFrame(0)
+        with pytest.raises(socket.error):
+            c._send_cb(f, False)
+        c._sock = DummySocket()
+        c._send_cb(f, True) # shouldn't raise an error
 
 
 class TestServerPush(object):
@@ -1136,7 +1167,10 @@ class TestServerPush(object):
         assert self.pushes[0].scheme == 'https'
         assert self.pushes[0].authority == 'www.google.com'
         assert self.pushes[0].path == '/'
-        assert dict(self.pushes[0].getrequestheaders()) == {'accept-encoding': 'gzip'}
+        expected_headers = {'accept-encoding': 'gzip'}
+        for name, value in expected_headers.items():
+            assert self.pushes[0].getrequestheader(name) == value
+        assert dict(self.pushes[0].getrequestheaders()) == expected_headers
 
     def assert_push_response(self):
         push_response = self.pushes[0].getresponse()
@@ -1209,6 +1243,30 @@ class TestServerPush(object):
         assert pushes[1].getresponse().read() == b'two'
         self.assert_response()
         assert self.response.read() == b'foo'
+
+    def test_cancel_push(self):
+        self.add_push_frame(1, 2, [(':method', 'GET'), (':path', '/'), (':authority', 'www.google.com'), (':scheme', 'https'), ('accept-encoding', 'gzip')])
+        self.add_headers_frame(1, [(':status', '200'), ('content-type', 'text/html')])
+
+        self.request()
+        self.conn.getresponse()
+        list(self.conn.getpushes())[0].cancel()
+
+        f = RstStreamFrame(2)
+        f.error_code = 8
+        assert self.conn._sock.queue[-1] == f.serialize()
+
+    def test_reset_pushed_streams_when_push_disabled(self):
+        self.add_push_frame(1, 2, [(':method', 'GET'), (':path', '/'), (':authority', 'www.google.com'), (':scheme', 'https'), ('accept-encoding', 'gzip')])
+        self.add_headers_frame(1, [(':status', '200'), ('content-type', 'text/html')])
+
+        self.request()
+        self.conn._enable_push = False
+        self.conn.getresponse()
+
+        f = RstStreamFrame(2)
+        f.error_code = 7
+        assert self.conn._sock.queue[-1] == f.serialize()
 
 
 class TestHyperStream(object):

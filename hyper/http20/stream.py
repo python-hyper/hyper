@@ -138,10 +138,6 @@ class Stream(object):
     def _local_open(self):
         return self.state in (STATE_OPEN, STATE_HALF_CLOSED_REMOTE)
 
-    @property
-    def _remote_open(self):
-        return self.state in (STATE_OPEN, STATE_HALF_CLOSED_LOCAL)
-
     def _close_local(self):
         self.state = (
             STATE_HALF_CLOSED_LOCAL if self.state == STATE_OPEN
