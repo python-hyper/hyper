@@ -17,3 +17,4 @@ In chronological order:
 - Alek Storm (@alekstorm)
 
   - Implemented Python 2.7 support.
+  - Implemented server push.

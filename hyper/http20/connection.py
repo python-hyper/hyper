@@ -12,7 +12,7 @@ from .frame import (
     DataFrame, HeadersFrame, PushPromiseFrame, SettingsFrame, Frame,
     WindowUpdateFrame, GoAwayFrame
 )
-from .response import HTTP20Response
+from .response import HTTP20Response, HTTP20Push
 from .window import FlowControlManager
 from .exceptions import ConnectionError
 
@@ -136,6 +136,10 @@ class HTTP20Connection(object):
 
         return stream_id
 
+    def _get_stream(self, stream_id):
+        return (self.streams[stream_id] if stream_id is not None
+                else self.recent_stream)
+
     def getresponse(self, stream_id=None):
         """
         Should be called after a request is sent to get a response from the
@@ -148,11 +152,25 @@ class HTTP20Connection(object):
             get a response.
         :returns: A HTTP response object.
         """
-        stream = (self.streams[stream_id] if stream_id is not None
-                  else self.recent_stream)
-        headers, promised_headers = stream.getheaders()
-        promised_streams_headers = {self.streams[stream_id]: headers for stream_id, headers in promised_headers.items()}
-        return HTTP20Response(headers, promised_streams_headers, stream)
+        stream = self._get_stream(stream_id)
+        return HTTP20Response(stream.getheaders(), stream)
+
+    def getpushes(self, stream_id=None, capture_all=False):
+        """
+        Yield a sequence of push promises from the server. Note that this method
+        is not idempotent; promises returned in one call will not be returned in
+        subsequent calls.
+
+        :param stream_id: (optional) The stream ID of the request for which to
+            get a response.
+        :param capture_all: If ``False``, this method does not block. If
+            ``True``, this method returns a generator that first yields all
+            buffered push promises, then yields additional ones as they arrive,
+            and terminates when the original stream closes.
+        """
+        stream = self._get_stream(stream_id)
+        for promised_stream_id, headers in stream.getpushes(capture_all):
+            yield HTTP20Push(headers, self.streams[promised_stream_id])
 
     def connect(self):
         """

@@ -114,26 +114,36 @@ Server Push
 
 HTTP/2.0 provides servers with the ability to "push" additional resources to
 clients in response to a request, as if the client had requested the resources
-themselves. When minimizing round trips is more critical than maximizing
-bandwidth usage, this can be a significant performance improvement.
+themselves. When minimizing the number of round trips is more critical than
+maximizing bandwidth usage, this can be a significant performance improvement.
 
-Pushed resources are available through the
-:attr:`HTTP20Response.pushes <hyper.HTTP20Response.pushes>` attribute, which
-exposes the headers of the simulated request through its
-:meth:`getrequestheaders() <hyper.HTTP20Push.getrequestheaders>` method, and a
-response object through :meth:`getresponse() <hyper.HTTP20Push.getresponse>`::
+Servers may declare their intention to push a given resource by sending the
+headers and other metadata of a request that would return that resource - this
+is referred to as a "push promise". They may do this before sending the response
+headers for the original request, after, or in the middle of sending the
+response body.
 
-    for push in response.pushes:
-        print('{}: {}'.format(push.path, push.getresponse().read()))
+You may retrieve the push promises that the server has sent *so far* by calling
+:meth:`getpushes() <hyper.HTTP20Connection.getpushes>` (like
+:meth:`getresponse() <hyper.HTTP20Connection.getresponse>`, this will return the
+promises pushed on the given stream, or the most recent stream if one isn't
+passed). Note that this method is not idempotent; promises returned in one call
+will not be returned in subsequent calls. If ``capture_all=False`` is passed,
+this method does not block. However, if ``capture_all=True`` is passed, this
+method returns a generator that first yields all buffered push promises, then
+yields additional ones as they arrive, and terminates when the original stream
+closes. Using this parameter is only recommended when it is known that all
+pushed streams, or a specific one, are of higher priority than the original
+response, or when also processing the original response in a separate thread
+(N.B. do not do this; ``hyper`` is not yet thread-safe)::
 
-It is important to remember that because the server may interleave frames from
-different streams as it sees fit, a call to
-:meth:`HTTP20Response.read() <hyper.HTTP20Response.read>` on a pushed response
-may terminate *after* a simultaneous call to
-:meth:`read() <hyper.HTTP20Response.read>` on the original response object would
-(although it is safe to call them in any order). Users are advised to read the
-body of the original response first, unless they know beforehand that it cannot
-be processed at all without the pushed resources.
+    conn.request('GET', '/')
+    response = conn.getheaders()
+    for push in conn.getpushes(): # all pushes promised before response headers
+        print(push.path)
+    conn.read()
+    for push in conn.getpushes(): # all other pushes
+        print(push.path)
 
 ``hyper`` does not currently provide any way to limit the number of pushed
 streams, disable them altogether, or cancel in-progress pushed streams, although
@@ -141,4 +151,7 @@ HTTP/2.0 allows all of these actions.
 
 ``hyper`` does not currently verify that pushed resources comply with the
 Same-Origin Policy, so users must take care that they do not treat pushed
-resources as authoritative without performing this check themselves.
+resources as authoritative without performing this check themselves (since
+the server push mechanism is only an optimization, and clients are free to
+issue requests for any pushed resources manually, there is little downside to
+simply ignoring suspicious ones).

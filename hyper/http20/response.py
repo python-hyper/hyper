@@ -78,7 +78,7 @@ class HTTP20Response(object):
     the persistent connections used in HTTP/2.0 this has no effect, and is done
     soley for compatibility).
     """
-    def __init__(self, headers, promised_headers, stream):
+    def __init__(self, headers, stream):
         #: The reason phrase returned by the server. This is not used in
         #: HTTP/2.0, and so is always the empty string.
         self.reason = ''
@@ -91,9 +91,6 @@ class HTTP20Response(object):
         # The response headers. These are determined upon creation, assigned
         # once, and never assigned again.
         self._headers = Headers(headers)
-
-        # A dict mapping promised stream IDs to their request headers.
-        self._promised_headers = promised_headers
 
         # The stream this response is being sent over.
         self._stream = stream
@@ -178,9 +175,6 @@ class HTTP20Response(object):
         """
         return list(self._headers.items())
 
-    def getpushes(self):
-        return [HTTP20Push(headers, stream) for stream, headers in self._promised_headers.items()]
-
     def fileno(self):
         """
         Return the ``fileno`` of the underlying socket. This function is
@@ -254,5 +248,4 @@ class HTTP20Push(object):
         Returns an :class:`HTTP20Response` object representing the pushed
         response.
         """
-        response_headers, _ = self._stream.getheaders()
-        return HTTP20Response(response_headers, {}, self._stream)
+        return HTTP20Response(self._stream.getheaders(), self._stream)

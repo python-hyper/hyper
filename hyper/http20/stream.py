@@ -159,11 +159,6 @@ class Stream(object):
         Read data from the stream. Unlike a normal read behaviour, this
         function returns _at least_ ``amt`` data, but may return more.
         """
-        if self.state == STATE_CLOSED:
-            return b''
-
-        assert self._remote_open
-
         def listlen(list):
             return sum(map(len, list))
 
@@ -256,11 +251,8 @@ class Stream(object):
 
     def getheaders(self):
         """
-        Once all data has been sent on this connection, returns a tuple
-        ``(response_headers, promised_headers)``, where ``response_headers``
-        is a key-value set of the headers of the response to the original
-        request, and ``promised_headers`` is a dict mapping promised stream IDs
-        to key-value sets of the reuqest headers for their pushed resources.
+        Once all data has been sent on this connection, returns a key-value set
+        of the headers of the response to the original request.
         """
         assert self._local_closed
 
@@ -273,7 +265,16 @@ class Stream(object):
             int(get_from_key_value_set(self.response_headers, 'content-length', 0))
         )
 
-        return self.response_headers, self.promised_headers
+        return self.response_headers
+
+    def getpushes(self, capture_all=False):
+        while True:
+            for pair in self.promised_headers.items():
+                yield pair
+            self.promised_headers = {}
+            if not capture_all or self._remote_closed:
+                break
+            self._recv_cb()
 
     def close(self):
         """
