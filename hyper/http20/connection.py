@@ -257,9 +257,7 @@ class HTTP20Connection(object):
             header to.
         :returns: Nothing.
         """
-        stream = (self.streams[stream_id] if stream_id is not None
-                  else self.recent_stream)
-
+        stream = self._get_stream(stream_id)
         stream.add_header(header, argument)
 
         return
@@ -284,8 +282,7 @@ class HTTP20Connection(object):
         """
         self.connect()
 
-        stream = (self.streams[stream_id] if stream_id is not None
-                  else self.recent_stream)
+        stream = self._get_stream(stream_id)
 
         # Close this if we've been told no more data is coming and we don't
         # have any to send.
@@ -311,9 +308,7 @@ class HTTP20Connection(object):
             data on.
         :returns: Nothing.
         """
-        stream = (self.streams[stream_id] if stream_id is not None
-                  else self.recent_stream)
-
+        stream = self._get_stream(stream_id)
         stream.send_data(data, final)
 
         return
