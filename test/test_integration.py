@@ -16,7 +16,7 @@ from hyper.compat import is_py3
 from hyper.contrib import HTTP20Adapter
 from hyper.http20.frame import (
     Frame, SettingsFrame, WindowUpdateFrame, DataFrame, HeadersFrame,
-    GoAwayFrame, PushPromiseFrame,
+    GoAwayFrame,
 )
 from hyper.http20.hpack import Encoder
 from hyper.http20.huffman import HuffmanEncoder
@@ -386,6 +386,7 @@ class TestRequestsAdapter(SocketLevelTest):
     def test_adapter_received_values(self):
         self.set_up()
 
+        data = []
         send_event = threading.Event()
 
         def socket_handler(listener):
@@ -395,16 +396,16 @@ class TestRequestsAdapter(SocketLevelTest):
             receive_preamble(sock)
 
             # Now expect some data. One headers frame.
-            sock.recv(65535)
+            data.append(sock.recv(65535))
 
             # Respond!
             h = HeadersFrame(1)
-            h.data = self.get_encoder().encode([(':status', '200'), ('content-type', 'not/real'), ('content-length', '0')])
+            h.data = self.get_encoder().encode({':status': 200, 'Content-Type': 'not/real', 'Content-Length': 20})
             h.flags.add('END_HEADERS')
             sock.send(h.serialize())
             d = DataFrame(1)
-            d.flags.add('END_STREAM')
             d.data = b'1234567890' * 2
+            d.flags.add('END_STREAM')
             sock.send(d.serialize())
 
             send_event.set()
@@ -441,7 +442,7 @@ class TestRequestsAdapter(SocketLevelTest):
 
             # Respond!
             h = HeadersFrame(1)
-            h.data = self.get_encoder().encode([(':status', '200'), ('content-type', 'not/real'), ('content-length', '20')])
+            h.data = self.get_encoder().encode({':status': 200, 'Content-Type': 'not/real', 'Content-Length': 20})
             h.flags.add('END_HEADERS')
             sock.send(h.serialize())
             d = DataFrame(1)
