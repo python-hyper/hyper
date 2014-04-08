@@ -9,8 +9,8 @@ from .hpack import Encoder, Decoder
 from .stream import Stream
 from .tls import wrap_socket
 from .frame import (
-    DataFrame, HeadersFrame, PushPromiseFrame, SettingsFrame, Frame,
-    WindowUpdateFrame, GoAwayFrame
+    DataFrame, HeadersFrame, PushPromiseFrame, RstStreamFrame, SettingsFrame,
+    Frame, WindowUpdateFrame, GoAwayFrame
 )
 from .response import HTTP20Response, HTTP20Push
 from .window import FlowControlManager
@@ -44,8 +44,11 @@ class HTTP20Connection(object):
         If not provided,
         :class:`FlowControlManager <hyper.http20.window.FlowControlManager>`
         will be used.
+    :param enable_push: Whether the server is allowed to push resources to the
+        client (see :meth:`getpushes() <hyper.HTTP20Connection.getpushes>`).
     """
-    def __init__(self, host, port=None, window_manager=None, **kwargs):
+    def __init__(self, host, port=None, window_manager=None, enable_push=False,
+                 **kwargs):
         """
         Creates an HTTP/2.0 connection to a specific server.
         """
@@ -57,6 +60,8 @@ class HTTP20Connection(object):
                 self.host, self.port = host, 443
         else:
             self.host, self.port = host, port
+
+        self._enable_push = enable_push
 
         # Create the mutable state.
         self.__wm_class = window_manager or FlowControlManager
@@ -188,7 +193,7 @@ class HTTP20Connection(object):
             # connection, followed by an initial settings frame.
             sock.send(b'PRI * HTTP/2.0\r\n\r\nSM\r\n\r\n')
             f = SettingsFrame(0)
-            f.settings[SettingsFrame.ENABLE_PUSH] = 0
+            f.settings[SettingsFrame.ENABLE_PUSH] = int(self._enable_push)
             self._send_cb(f)
 
             # The server will also send an initial settings frame, so get it.
@@ -376,10 +381,15 @@ class HTTP20Connection(object):
 
         return s
 
-    def _close_stream(self, stream_id):
+    def _close_stream(self, stream_id, error_code=None):
         """
         Called by a stream when it would like to be 'closed'.
         """
+        if error_code is not None:
+            f = RstStreamFrame(stream_id)
+            f.error_code = error_code
+            self._send_cb(f)
+
         del self.streams[stream_id]
 
     def _send_cb(self, frame, tolerate_peer_gone=False):
@@ -467,7 +477,16 @@ class HTTP20Connection(object):
             # manager tells us to increment the window, do so.
             self._adjust_receive_window(len(frame.data))
         elif isinstance(frame, PushPromiseFrame):
-            s = self._new_stream(frame.promised_stream_id, local_closed=True)
+            if self._enable_push:
+                self._new_stream(frame.promised_stream_id, local_closed=True)
+            else:
+                # Servers are forbidden from sending push promises when
+                # the ENABLE_PUSH setting is 0, but the spec leaves the client
+                # action undefined when they do it anyway. So we just refuse
+                # the stream and go about our business.
+                f = RstStreamFrame(frame.promised_stream_id)
+                f.error_code = 7 # REFUSED_STREAM
+                self._send_cb(f)
 
         # Work out to whom this frame should go.
         if frame.stream_id != 0:

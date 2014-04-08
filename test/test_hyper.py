@@ -1119,7 +1119,7 @@ class TestServerPush(object):
         self.frames.append(frame)
 
     def request(self):
-        self.conn = HTTP20Connection('www.google.com')
+        self.conn = HTTP20Connection('www.google.com', enable_push=True)
         self.conn._sock = DummySocket()
         self.conn._sock.buffer = BytesIO(b''.join([frame.serialize() for frame in self.frames]))
         self.conn.request('GET', '/')

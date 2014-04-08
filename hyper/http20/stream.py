@@ -276,16 +276,17 @@ class Stream(object):
                 break
             self._recv_cb()
 
-    def close(self):
+    def close(self, error_code=None):
         """
         Closes the stream. If the stream is currently open, attempts to close
         it as gracefully as possible.
 
+        :param error_code: (optional) The error code to reset the stream with.
         :returns: Nothing.
         """
         # Right now let's not bother with grace, let's just call close on the
         # connection.
-        self._close_cb(self.stream_id)
+        self._close_cb(self.stream_id, error_code)
 
     def _send_chunk(self, data, final):
         """

@@ -145,9 +145,9 @@ response, or when also processing the original response in a separate thread
     for push in conn.getpushes(): # all other pushes
         print(push.path)
 
-``hyper`` does not currently provide any way to limit the number of pushed
-streams, disable them altogether, or cancel in-progress pushed streams, although
-HTTP/2.0 allows all of these actions.
+To cancel an in-progress pushed stream (for example, if the user already has
+the given path in cache), call
+:meth:`HTTP20Push.cancel() <hyper.HTTP20Push.cancel>`.
 
 ``hyper`` does not currently verify that pushed resources comply with the
 Same-Origin Policy, so users must take care that they do not treat pushed

@@ -249,3 +249,9 @@ class HTTP20Push(object):
         response.
         """
         return HTTP20Response(self._stream.getheaders(), self._stream)
+
+    def cancel(self):
+        """
+        Cancel the pushed response and close the stream.
+        """
+        self._stream.close(8) # CANCEL
