@@ -29,7 +29,7 @@ It should! If you find it doesn't, that's a bug: please `report it on GitHub`_.
 Does ``hyper`` support Server Push?
 -----------------------------------
 
-Yes! See :ref:`advanced`.
+Yes! See :ref:`server-push`.
 
 I hit a bug! What should I do?
 ------------------------------

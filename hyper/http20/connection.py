@@ -162,16 +162,18 @@ class HTTP20Connection(object):
 
     def getpushes(self, stream_id=None, capture_all=False):
         """
-        Yield a sequence of push promises from the server. Note that this method
-        is not idempotent; promises returned in one call will not be returned in
-        subsequent calls.
+        Returns a generator that yields push promises from the server. Note that
+        this method is not idempotent; promises returned in one call will not be
+        returned in subsequent calls. Iterating through generators returned by
+        multiple calls to this method simultaneously results in undefined
+        behavior.
 
         :param stream_id: (optional) The stream ID of the request for which to
-            get a response.
-        :param capture_all: If ``False``, this method does not block. If
-            ``True``, this method returns a generator that first yields all
-            buffered push promises, then yields additional ones as they arrive,
-            and terminates when the original stream closes.
+            get push promises.
+        :param capture_all: If ``False``, the generator will yield all buffered
+            push promises without blocking. If ``True``, the generator will
+            first yield all buffered push promises, then yield additional ones
+            as they arrive, and terminate when the original stream closes.
         """
         stream = self._get_stream(stream_id)
         for promised_stream_id, headers in stream.getpushes(capture_all):

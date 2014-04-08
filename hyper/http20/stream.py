@@ -268,6 +268,18 @@ class Stream(object):
         return self.response_headers
 
     def getpushes(self, capture_all=False):
+        """
+        Returns a generator that yields push promises from the server. Note that
+        this method is not idempotent; promises returned in one call will not be
+        returned in subsequent calls. Iterating through generators returned by
+        multiple calls to this method simultaneously results in undefined
+        behavior.
+
+        :param capture_all: If ``False``, the generator will yield all buffered
+            push promises without blocking. If ``True``, the generator will
+            first yield all buffered push promises, then yield additional ones
+            as they arrive, and terminate when the original stream closes.
+        """
         while True:
             for pair in self.promised_headers.items():
                 yield pair

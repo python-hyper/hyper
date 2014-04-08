@@ -109,6 +109,8 @@ in. We do this because the connection object will spawn instances of the class
 in order to manage the flow control windows of streams in addition to managing
 the window of the connection itself.
 
+.. _server-push:
+
 Server Push
 -----------
 
@@ -123,19 +125,22 @@ is referred to as a "push promise". They may do this before sending the response
 headers for the original request, after, or in the middle of sending the
 response body.
 
+In order to receive pushed resources, the
+:class:`HTTP20Connection <hyper.HTTP20Connection>` object must be constructed
+with ``enable_push=True``.
+
 You may retrieve the push promises that the server has sent *so far* by calling
-:meth:`getpushes() <hyper.HTTP20Connection.getpushes>` (like
-:meth:`getresponse() <hyper.HTTP20Connection.getresponse>`, this will return the
-promises pushed on the given stream, or the most recent stream if one isn't
-passed). Note that this method is not idempotent; promises returned in one call
-will not be returned in subsequent calls. If ``capture_all=False`` is passed,
-this method does not block. However, if ``capture_all=True`` is passed, this
-method returns a generator that first yields all buffered push promises, then
-yields additional ones as they arrive, and terminates when the original stream
-closes. Using this parameter is only recommended when it is known that all
-pushed streams, or a specific one, are of higher priority than the original
-response, or when also processing the original response in a separate thread
-(N.B. do not do this; ``hyper`` is not yet thread-safe)::
+:meth:`getpushes() <hyper.HTTP20Connection.getpushes>`, which returns a
+generator that yields :class:`HTTP20Push <hyper.HTTP20Push>` objects. Note that
+this method is not idempotent; promises returned in one call will not be
+returned in subsequent calls. If ``capture_all=False`` is passed (the default),
+the generator will yield all buffered push promises without blocking. However,
+if ``capture_all=True`` is passed, the generator will first yield all buffered
+push promises, then yield additional ones as they arrive, and terminate when the
+original stream closes. Using this parameter is only recommended when it is
+known that all pushed streams, or a specific one, are of higher priority than
+the original response, or when also processing the original response in a
+separate thread (N.B. do not do this; ``hyper`` is not yet thread-safe)::
 
     conn.request('GET', '/')
     response = conn.getheaders()
