@@ -44,8 +44,9 @@ class HTTP20Connection(object):
         If not provided,
         :class:`FlowControlManager <hyper.http20.window.FlowControlManager>`
         will be used.
-    :param enable_push: Whether the server is allowed to push resources to the
-        client (see :meth:`getpushes() <hyper.HTTP20Connection.getpushes>`).
+    :param enable_push: (optional) Whether the server is allowed to push
+        resources to the client (see
+        :meth:`getpushes() <hyper.HTTP20Connection.getpushes>`).
     """
     def __init__(self, host, port=None, window_manager=None, enable_push=False,
                  **kwargs):
@@ -170,10 +171,11 @@ class HTTP20Connection(object):
 
         :param stream_id: (optional) The stream ID of the request for which to
             get push promises.
-        :param capture_all: If ``False``, the generator will yield all buffered
-            push promises without blocking. If ``True``, the generator will
-            first yield all buffered push promises, then yield additional ones
-            as they arrive, and terminate when the original stream closes.
+        :param capture_all: (optional) If ``False``, the generator will yield
+            all buffered push promises without blocking. If ``True``, the
+            generator will first yield all buffered push promises, then yield
+            additional ones as they arrive, and terminate when the original
+            stream closes.
         """
         stream = self._get_stream(stream_id)
         for promised_stream_id, headers in stream.getpushes(capture_all):

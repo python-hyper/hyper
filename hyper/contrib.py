@@ -24,7 +24,7 @@ class HTTP20Adapter(HTTPAdapter):
     HTTP/2.0 gain.
     """
     def __init__(self, *args, **kwargs):
-        #: A mapping between HTTP netlocs and `HTTP20Connection` objects.
+        #: A mapping between HTTP netlocs and ``HTTP20Connection`` objects.
         self.connections = {}
 
     def get_connection(self, netloc):

@@ -38,13 +38,9 @@ Exceptions
 ----------
 
 .. autoclass:: hyper.http20.exceptions.HTTP20Error
-   :inherited-members:
 
 .. autoclass:: hyper.http20.exceptions.HPACKEncodingError
-   :inherited-members:
 
 .. autoclass:: hyper.http20.exceptions.HPACKDecodingError
-   :inherited-members:
 
 .. autoclass:: hyper.http20.exceptions.ConnectionError
-   :inherited-members:
