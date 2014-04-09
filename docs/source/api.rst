@@ -16,6 +16,9 @@ Primary HTTP/2.0 Interface
 .. autoclass:: hyper.HTTP20Response
    :inherited-members:
 
+.. autoclass:: hyper.HTTP20Push
+   :inherited-members:
+
 Requests Transport Adapter
 --------------------------
 

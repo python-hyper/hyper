@@ -14,10 +14,9 @@ Each stream is identified by a monotonically increasing integer, assigned to
 the stream by the endpoint that initiated the stream.
 """
 from .frame import (
-    FRAME_MAX_LEN, HeadersFrame, DataFrame, WindowUpdateFrame,
+    FRAME_MAX_LEN, HeadersFrame, DataFrame, PushPromiseFrame, WindowUpdateFrame,
     ContinuationFrame,
 )
-from .response import HTTP20Response
 from .util import get_from_key_value_set
 import collections
 
@@ -52,13 +51,27 @@ class Stream(object):
                  close_cb,
                  header_encoder,
                  header_decoder,
-                 window_manager):
+                 window_manager,
+                 local_closed=False):
         self.stream_id = stream_id
-        self.state = STATE_IDLE
+        self.state = STATE_HALF_CLOSED_LOCAL if local_closed else STATE_IDLE
         self.headers = []
 
+        # Set to a key-value set of the response headers once their
+        # HEADERS..CONTINUATION frame sequence finishes.
         self.response_headers = None
+        # A dict mapping the promised stream ID of a pushed resource to a
+        # key-value set of its request headers. Entries are added once their
+        # PUSH_PROMISE..CONTINUATION frame sequence finishes.
+        self.promised_headers = {}
+        # Chunks of encoded header data from the current
+        # (HEADERS|PUSH_PROMISE)..CONTINUATION frame sequence. Since sending any
+        # frame other than a CONTINUATION is disallowed while a header block is
+        # being transmitted, this and ``promised_stream_id`` are the only pieces
+        # of state we have to track.
         self.header_data = []
+        self.promised_stream_id = None
+        # Unconsumed response data chunks. Empties after every call to _read().
         self.data = []
 
         # There are two flow control windows: one for data we're sending,
@@ -125,10 +138,6 @@ class Stream(object):
     def _local_open(self):
         return self.state in (STATE_OPEN, STATE_HALF_CLOSED_REMOTE)
 
-    @property
-    def _remote_open(self):
-        return self.state in (STATE_OPEN, STATE_HALF_CLOSED_LOCAL)
-
     def _close_local(self):
         self.state = (
             STATE_HALF_CLOSED_LOCAL if self.state == STATE_OPEN
@@ -146,11 +155,6 @@ class Stream(object):
         Read data from the stream. Unlike a normal read behaviour, this
         function returns _at least_ ``amt`` data, but may return more.
         """
-        if self.state == STATE_CLOSED:
-            return b''
-
-        assert self._remote_open
-
         def listlen(list):
             return sum(map(len, list))
 
@@ -171,7 +175,16 @@ class Stream(object):
 
         if isinstance(frame, WindowUpdateFrame):
             self._out_flow_control_window += frame.window_increment
-        elif isinstance(frame, (HeadersFrame, ContinuationFrame)):
+        elif isinstance(frame, HeadersFrame):
+            # Begin the header block for the response headers.
+            self.promised_stream_id = None
+            self.header_data = [frame.data]
+        elif isinstance(frame, PushPromiseFrame):
+            # Begin a header block for the request headers of a pushed resource.
+            self.promised_stream_id = frame.promised_stream_id
+            self.header_data = [frame.data]
+        elif isinstance(frame, ContinuationFrame):
+            # Continue a header block begun with either HEADERS or PUSH_PROMISE.
             self.header_data.append(frame.data)
         elif isinstance(frame, DataFrame):
             # Append the data to the buffer.
@@ -183,12 +196,16 @@ class Stream(object):
             if increment and not self._remote_closed:
                 w = WindowUpdateFrame(self.stream_id)
                 w.window_increment = increment
-                self._data_cb(w)
+                self._data_cb(w, True)
         else:
             raise ValueError('Unexpected frame type: %i' % frame.type)
 
-        if 'END_HEADERS' in frame.flags:
-            self.response_headers = self._decoder.decode(b''.join(self.header_data))
+        if 'END_HEADERS' in frame.flags or 'END_PUSH_PROMISE' in frame.flags:
+            headers = self._decoder.decode(b''.join(self.header_data))
+            if self.promised_stream_id is None:
+                self.response_headers = headers
+            else:
+                self.promised_headers[self.promised_stream_id] = headers
 
     def open(self, end):
         """
@@ -228,10 +245,10 @@ class Stream(object):
 
         return
 
-    def getresponse(self):
+    def getheaders(self):
         """
-        Once all data has been sent on this connection, returns a
-        HTTP20Response object wrapping this stream.
+        Once all data has been sent on this connection, returns a key-value set
+        of the headers of the response to the original request.
         """
         assert self._local_closed
 
@@ -244,19 +261,40 @@ class Stream(object):
             int(get_from_key_value_set(self.response_headers, 'content-length', 0))
         )
 
-        # Create the HTTP response.
-        return HTTP20Response(self.response_headers, self)
+        return self.response_headers
 
-    def close(self):
+    def getpushes(self, capture_all=False):
+        """
+        Returns a generator that yields push promises from the server. Note that
+        this method is not idempotent; promises returned in one call will not be
+        returned in subsequent calls. Iterating through generators returned by
+        multiple calls to this method simultaneously results in undefined
+        behavior.
+
+        :param capture_all: If ``False``, the generator will yield all buffered
+            push promises without blocking. If ``True``, the generator will
+            first yield all buffered push promises, then yield additional ones
+            as they arrive, and terminate when the original stream closes.
+        """
+        while True:
+            for pair in self.promised_headers.items():
+                yield pair
+            self.promised_headers = {}
+            if not capture_all or self._remote_closed:
+                break
+            self._recv_cb()
+
+    def close(self, error_code=None):
         """
         Closes the stream. If the stream is currently open, attempts to close
         it as gracefully as possible.
 
+        :param error_code: (optional) The error code to reset the stream with.
         :returns: Nothing.
         """
         # Right now let's not bother with grace, let's just call close on the
         # connection.
-        self._close_cb(self.stream_id)
+        self._close_cb(self.stream_id, error_code)
 
     def _send_chunk(self, data, final):
         """
