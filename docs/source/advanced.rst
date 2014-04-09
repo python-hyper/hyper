@@ -42,8 +42,8 @@ sending requests and returning responses. The stream identifiers provided by
 SSL/TLS Certificate Verification
 --------------------------------
 
-By default, all HTTP/2.0 connections are made over TLS, and ``hyper`` uses the
-system certificate authorities to verify the offered TLS certificates.
+By default, all HTTP/2.0 connections are made over TLS, and ``hyper`` bundles
+certificate authorities that it uses to verify the offered TLS certificates.
 Currently certificate verification cannot be disabled.
 
 Streaming Uploads
