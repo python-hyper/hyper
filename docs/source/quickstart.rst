@@ -32,7 +32,7 @@ Installation Requirements
 ~~~~~~~~~~~~~~~~~~~~~~~~~
 
 There are no specific requirements for using `hyper`, beyond the fact that it
-supports Python versions 2.7, 3.3 and onward.
+supports Python versions 2.7 and 3.3+ on CPython and PyPy.
 
 Making Your First Request
 -------------------------
