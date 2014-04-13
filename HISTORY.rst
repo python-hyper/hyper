@@ -16,11 +16,14 @@ X.X.X (XXXX-XX-XX)
   (`Issue #26`_)
 - Header blocks can no longer be corrupted if read in a different order to the
   one in which they were sent. (`Issue #39`_)
+- Default window manager is now smarter about sending WINDOWUPDATE frames.
+  (`Issue #41`_)
 
 .. _Issue #24: https://github.com/Lukasa/hyper/issues/24
 .. _Issue #26: https://github.com/Lukasa/hyper/issues/26
 .. _Issue #33: https://github.com/Lukasa/hyper/issues/33
 .. _Issue #39: https://github.com/Lukasa/hyper/issues/39
+.. _Issue #41: https://github.com/Lukasa/hyper/issues/41
 
 0.0.4 (2014-03-08)
 ------------------
