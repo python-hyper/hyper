@@ -8,4 +8,10 @@ install:
   - "pip install ."
   - "pip install -r test_requirements.txt"
 script:
-  - "py.test -n 4 --cov hyper test/ && coverage report -m --fail-under 100"
+  - >
+      if [[ $TRAVIS_PYTHON_VERSION == pypy ]]; then
+        py.test test/
+      else
+        py.test -n 4 --cov hyper test/
+        coverage report -m --fail-under 100
+      fi
