@@ -45,8 +45,24 @@ class TestFCM(object):
     """
     Test's hyper's build-in Flow-Control Manager.
     """
-    def test_fcm_returns_whats_given(self):
-        b = FlowControlManager(100, 100)
-        assert b._handle_frame(10) == 10
-        assert b._handle_frame(30) == 30
-        assert b.window_size == 100
+    def test_fcm_emits_when_window_drops_below_one_quarter(self):
+        b = FlowControlManager(65535)
+
+        # Receive a frame slightly smaller than 3/4 of the size of the window.
+        assert b._handle_frame(49000) == 0
+        assert b.window_size == 65535 - 49000
+
+        # Now push us over to 3/4.
+        assert b._handle_frame(1000) == 50000
+        assert b.window_size == 65535
+
+    def test_fcm_emits_when_window_drops_below_1k(self):
+        b = FlowControlManager(1500)
+
+        # Receive a frame slightly smaller than 500 bytes.
+        assert b._handle_frame(499) == 0
+        assert b.window_size == 1001
+
+        # Push us over to 1k.
+        assert b._handle_frame(2) == 501
+        assert b.window_size == 1500

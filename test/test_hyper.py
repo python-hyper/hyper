@@ -1118,6 +1118,34 @@ class TestHyperConnection(object):
         c._sock = DummySocket()
         c._send_cb(f, True) # shouldn't raise an error
 
+    def test_window_increments_appropriately(self):
+        e = Encoder()
+        h = HeadersFrame(1)
+        h.data = e.encode({':status': 200, 'content-type': 'foo/bar'})
+        h.flags = set(['END_HEADERS'])
+        d = DataFrame(1)
+        d.data = b'hi there sir'
+        d2 = DataFrame(1)
+        d2.data = b'hi there sir again'
+        d2.flags = set(['END_STREAM'])
+        sock = DummySocket()
+        sock.buffer = BytesIO(h.serialize() + d.serialize() + d2.serialize())
+
+        c = HTTP20Connection('www.google.com')
+        c._sock = sock
+        c.window_manager.window_size = 1000
+        c.window_manager.initial_window_size = 1000
+        c.request('GET', '/')
+        resp = c.getresponse()
+        resp.read()
+
+        queue = list(map(decode_frame, sock.queue))
+        assert len(queue) == 3  # one headers frame, two window update frames.
+        assert isinstance(queue[1], WindowUpdateFrame)
+        assert queue[1].window_increment == len(b'hi there sir')
+        assert isinstance(queue[2], WindowUpdateFrame)
+        assert queue[2].window_increment == len(b'hi there sir again')
+
 
 class TestServerPush(object):
     def setup_method(self, method):
@@ -1409,7 +1437,7 @@ class TestHyperStream(object):
                 s.receive_frame(in_frames.pop(0))
             return inner
 
-        s = Stream(1, send_cb, None, None, None, None, FlowControlManager(65535))
+        s = Stream(1, send_cb, None, None, None, None, FlowControlManager(800))
         s._recv_cb = recv_cb(s)
         s.state = STATE_HALF_CLOSED_LOCAL
 
@@ -1441,7 +1469,7 @@ class TestHyperStream(object):
                 s.receive_frame(in_frames.pop(0))
             return inner
 
-        s = Stream(1, send_cb, None, None, None, None, FlowControlManager(65535))
+        s = Stream(1, send_cb, None, None, None, None, FlowControlManager(800))
         s._recv_cb = recv_cb(s)
         s.state = STATE_HALF_CLOSED_LOCAL
 
