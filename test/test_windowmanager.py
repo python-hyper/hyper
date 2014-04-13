@@ -32,7 +32,7 @@ class TestBaseFCM(object):
     def test_base_manager_decrements_window_size(self):
         class TestFCM(BaseFlowControlManager):
             def increase_window_size(self, frame_size):
-                pass
+                return 0
 
         b = TestFCM(10, 10)
         b._handle_frame(5)
@@ -49,4 +49,4 @@ class TestFCM(object):
         b = FlowControlManager(100, 100)
         assert b._handle_frame(10) == 10
         assert b._handle_frame(30) == 30
-        assert b.window_size == 60
+        assert b.window_size == 100

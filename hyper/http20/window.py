@@ -87,6 +87,7 @@ class BaseFlowControlManager(object):
         """
         rc = self.increase_window_size(frame_size)
         self.window_size -= frame_size
+        self.window_size += rc
         return rc
 
 
