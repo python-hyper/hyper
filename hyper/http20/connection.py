@@ -373,8 +373,9 @@ class HTTP20Connection(object):
         s = Stream(
             stream_id or self.next_stream_id, self._send_cb, self._recv_cb,
             self._close_stream, self.encoder, self.decoder,
-            self.__wm_class(window_size), local_closed
+            self.__wm_class(65535), local_closed
         )
+        s._out_flow_control_window = self._out_flow_control_window
         self.streams[s.stream_id] = s
         self.next_stream_id += 2
 
