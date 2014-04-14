@@ -18,3 +18,4 @@ In chronological order:
 
   - Implemented Python 2.7 support.
   - Implemented HTTP/2 draft 10 support.
+  - Implemented server push.
