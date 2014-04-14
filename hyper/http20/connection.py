@@ -319,16 +319,16 @@ class HTTP20Connection(object):
         """
         Handles receiving frames intended for the stream.
         """
-        if isinstance(frame, WindowUpdateFrame):
+        if frame.type == WindowUpdateFrame.type:
             self._out_flow_control_window += frame.window_increment
-        elif isinstance(frame, PingFrame):
+        elif frame.type == PingFrame.type:
             if 'ACK' not in frame.flags:
                 # The spec requires us to reply with PING+ACK and identical data.
                 p = PingFrame(0)
                 p.flags.add('ACK')
                 p.opaque_data = frame.opaque_data
                 self._data_cb(p, True)
-        elif isinstance(frame, SettingsFrame):
+        elif frame.type == SettingsFrame.type:
             if 'ACK' not in frame.flags:
                 self._update_settings(frame)
 
@@ -336,7 +336,7 @@ class HTTP20Connection(object):
                 f = SettingsFrame(0)
                 f.flags.add('ACK')
                 self._send_cb(f)
-        elif isinstance(frame, GoAwayFrame):
+        elif frame.type == GoAwayFrame.type:
             # If we get GoAway with error code zero, we are doing a graceful
             # shutdown and all is well. Otherwise, throw an exception.
             self.close()
@@ -408,9 +408,7 @@ class HTTP20Connection(object):
         flow-control principles of HTTP/2.0.
         """
         # Maintain our outgoing flow-control window.
-        if (isinstance(frame, DataFrame) and
-            not isinstance(frame, HeadersFrame)):
-
+        if frame.type == DataFrame.type:
             # If we don't have room in the flow control window, we need to look
             # for a Window Update frame.
             while self._out_flow_control_window < len(frame.data):
@@ -478,12 +476,11 @@ class HTTP20Connection(object):
 
         # Maintain our flow control window. We do this by delegating to the
         # chosen WindowManager.
-        if (isinstance(frame, DataFrame) and
-            not isinstance(frame, HeadersFrame)):
+        if frame.type == DataFrame.type:
             # Inform the WindowManager of how much data was received. If the
             # manager tells us to increment the window, do so.
             self._adjust_receive_window(len(frame.data))
-        elif isinstance(frame, PushPromiseFrame):
+        elif frame.type == PushPromiseFrame.type:
             if self._enable_push:
                 self._new_stream(frame.promised_stream_id, local_closed=True)
             else:
