@@ -42,8 +42,8 @@ sending requests and returning responses. The stream identifiers provided by
 SSL/TLS Certificate Verification
 --------------------------------
 
-By default, all HTTP/2.0 connections are made over TLS, and ``hyper`` uses the
-system certificate authorities to verify the offered TLS certificates.
+By default, all HTTP/2.0 connections are made over TLS, and ``hyper`` bundles
+certificate authorities that it uses to verify the offered TLS certificates.
 Currently certificate verification cannot be disabled.
 
 Streaming Uploads
@@ -108,3 +108,55 @@ Note that we don't plug an instance of the class in, we plug the class itself
 in. We do this because the connection object will spawn instances of the class
 in order to manage the flow control windows of streams in addition to managing
 the window of the connection itself.
+
+.. _server-push:
+
+Server Push
+-----------
+
+HTTP/2.0 provides servers with the ability to "push" additional resources to
+clients in response to a request, as if the client had requested the resources
+themselves. When minimizing the number of round trips is more critical than
+maximizing bandwidth usage, this can be a significant performance improvement.
+
+Servers may declare their intention to push a given resource by sending the
+headers and other metadata of a request that would return that resource - this
+is referred to as a "push promise". They may do this before sending the response
+headers for the original request, after, or in the middle of sending the
+response body.
+
+In order to receive pushed resources, the
+:class:`HTTP20Connection <hyper.HTTP20Connection>` object must be constructed
+with ``enable_push=True``.
+
+You may retrieve the push promises that the server has sent *so far* by calling
+:meth:`getpushes() <hyper.HTTP20Connection.getpushes>`, which returns a
+generator that yields :class:`HTTP20Push <hyper.HTTP20Push>` objects. Note that
+this method is not idempotent; promises returned in one call will not be
+returned in subsequent calls. If ``capture_all=False`` is passed (the default),
+the generator will yield all buffered push promises without blocking. However,
+if ``capture_all=True`` is passed, the generator will first yield all buffered
+push promises, then yield additional ones as they arrive, and terminate when the
+original stream closes. Using this parameter is only recommended when it is
+known that all pushed streams, or a specific one, are of higher priority than
+the original response, or when also processing the original response in a
+separate thread (N.B. do not do this; ``hyper`` is not yet thread-safe)::
+
+    conn.request('GET', '/')
+    response = conn.getheaders()
+    for push in conn.getpushes(): # all pushes promised before response headers
+        print(push.path)
+    conn.read()
+    for push in conn.getpushes(): # all other pushes
+        print(push.path)
+
+To cancel an in-progress pushed stream (for example, if the user already has
+the given path in cache), call
+:meth:`HTTP20Push.cancel() <hyper.HTTP20Push.cancel>`.
+
+``hyper`` does not currently verify that pushed resources comply with the
+Same-Origin Policy, so users must take care that they do not treat pushed
+resources as authoritative without performing this check themselves (since
+the server push mechanism is only an optimization, and clients are free to
+issue requests for any pushed resources manually, there is little downside to
+simply ignoring suspicious ones).

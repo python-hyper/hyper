@@ -31,7 +31,7 @@ If that fails, download the library from its GitHub page and install it using:
 Installation Requirements
 ~~~~~~~~~~~~~~~~~~~~~~~~~
 
-The HTTP/2 specification requires very modern TLS support from any complaint
+The HTTP/2 specification requires very modern TLS support from any compliant
 implementation. When using Python 3.4 and later this is automatically provided
 by the standard library. For earlier releases of Python, we use PyOpenSSL to
 provide the TLS support we need.

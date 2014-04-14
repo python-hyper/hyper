@@ -28,7 +28,7 @@ For recent versions of Python (3.4 and onward) it's entirely self-contained
 with no external dependencies. With older versions, we depend on `PyOpenSSL`_
 to work around the standard library's anaemic TLS support.
 
-``hyper`` supports Python 2.7, Python 3.3 and onward.
+``hyper`` supports Python 2.7 and 3.3+ on CPython and PyPy.
 
 .. _PyOpenSSL: http://pyopenssl.readthedocs.org/en/latest/
 

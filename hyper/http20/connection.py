@@ -9,12 +9,14 @@ from .hpack import Encoder, Decoder
 from .stream import Stream
 from .tls import wrap_socket
 from .frame import (
-    DataFrame, HeadersFrame, SettingsFrame, Frame, WindowUpdateFrame,
-    GoAwayFrame
+    DataFrame, HeadersFrame, PushPromiseFrame, RstStreamFrame, SettingsFrame,
+    Frame, WindowUpdateFrame, GoAwayFrame
 )
+from .response import HTTP20Response, HTTP20Push
 from .window import FlowControlManager
 from .exceptions import ConnectionError
 
+import errno
 import logging
 import socket
 
@@ -42,8 +44,12 @@ class HTTP20Connection(object):
         If not provided,
         :class:`FlowControlManager <hyper.http20.window.FlowControlManager>`
         will be used.
+    :param enable_push: (optional) Whether the server is allowed to push
+        resources to the client (see
+        :meth:`getpushes() <hyper.HTTP20Connection.getpushes>`).
     """
-    def __init__(self, host, port=None, window_manager=None, **kwargs):
+    def __init__(self, host, port=None, window_manager=None, enable_push=False,
+                 **kwargs):
         """
         Creates an HTTP/2.0 connection to a specific server.
         """
@@ -55,6 +61,8 @@ class HTTP20Connection(object):
                 self.host, self.port = host, 443
         else:
             self.host, self.port = host, port
+
+        self._enable_push = enable_push
 
         # Create the mutable state.
         self.__wm_class = window_manager or FlowControlManager
@@ -134,6 +142,10 @@ class HTTP20Connection(object):
 
         return stream_id
 
+    def _get_stream(self, stream_id):
+        return (self.streams[stream_id] if stream_id is not None
+                else self.recent_stream)
+
     def getresponse(self, stream_id=None):
         """
         Should be called after a request is sent to get a response from the
@@ -146,9 +158,28 @@ class HTTP20Connection(object):
             get a response.
         :returns: A HTTP response object.
         """
-        stream = (self.streams[stream_id] if stream_id is not None
-                  else self.recent_stream)
-        return stream.getresponse()
+        stream = self._get_stream(stream_id)
+        return HTTP20Response(stream.getheaders(), stream)
+
+    def getpushes(self, stream_id=None, capture_all=False):
+        """
+        Returns a generator that yields push promises from the server. Note that
+        this method is not idempotent; promises returned in one call will not be
+        returned in subsequent calls. Iterating through generators returned by
+        multiple calls to this method simultaneously results in undefined
+        behavior.
+
+        :param stream_id: (optional) The stream ID of the request for which to
+            get push promises.
+        :param capture_all: (optional) If ``False``, the generator will yield
+            all buffered push promises without blocking. If ``True``, the
+            generator will first yield all buffered push promises, then yield
+            additional ones as they arrive, and terminate when the original
+            stream closes.
+        """
+        stream = self._get_stream(stream_id)
+        for promised_stream_id, headers in stream.getpushes(capture_all):
+            yield HTTP20Push(headers, self.streams[promised_stream_id])
 
     def connect(self):
         """
@@ -166,7 +197,7 @@ class HTTP20Connection(object):
             # connection, followed by an initial settings frame.
             sock.send(b'PRI * HTTP/2.0\r\n\r\nSM\r\n\r\n')
             f = SettingsFrame(0)
-            f.settings[SettingsFrame.ENABLE_PUSH] = 0
+            f.settings[SettingsFrame.ENABLE_PUSH] = int(self._enable_push)
             self._send_cb(f)
 
             # The server will also send an initial settings frame, so get it.
@@ -209,7 +240,6 @@ class HTTP20Connection(object):
         s.add_header(":path", selector)
 
         # Save the stream.
-        self.streams[s.stream_id] = s
         self.recent_stream = s
 
         return s.stream_id
@@ -229,9 +259,7 @@ class HTTP20Connection(object):
             header to.
         :returns: Nothing.
         """
-        stream = (self.streams[stream_id] if stream_id is not None
-                  else self.recent_stream)
-
+        stream = self._get_stream(stream_id)
         stream.add_header(header, argument)
 
         return
@@ -256,8 +284,7 @@ class HTTP20Connection(object):
         """
         self.connect()
 
-        stream = (self.streams[stream_id] if stream_id is not None
-                  else self.recent_stream)
+        stream = self._get_stream(stream_id)
 
         # Close this if we've been told no more data is coming and we don't
         # have any to send.
@@ -283,9 +310,7 @@ class HTTP20Connection(object):
             data on.
         :returns: Nothing.
         """
-        stream = (self.streams[stream_id] if stream_id is not None
-                  else self.recent_stream)
-
+        stream = self._get_stream(stream_id)
         stream.send_data(data, final)
 
         return
@@ -340,27 +365,33 @@ class HTTP20Connection(object):
 
             self._settings[SettingsFrame.INITIAL_WINDOW_SIZE] = newsize
 
-    def _new_stream(self):
+    def _new_stream(self, stream_id=None, local_closed=False):
         """
         Returns a new stream object for this connection.
         """
         window_size = self._settings[SettingsFrame.INITIAL_WINDOW_SIZE]
         s = Stream(
-            self.next_stream_id, self._send_cb, self._recv_cb,
+            stream_id or self.next_stream_id, self._send_cb, self._recv_cb,
             self._close_stream, self.encoder, self.decoder,
-            self.__wm_class(window_size)
+            self.__wm_class(window_size), local_closed
         )
+        self.streams[s.stream_id] = s
         self.next_stream_id += 2
 
         return s
 
-    def _close_stream(self, stream_id):
+    def _close_stream(self, stream_id, error_code=None):
         """
         Called by a stream when it would like to be 'closed'.
         """
+        if error_code is not None:
+            f = RstStreamFrame(stream_id)
+            f.error_code = error_code
+            self._send_cb(f)
+
         del self.streams[stream_id]
 
-    def _send_cb(self, frame):
+    def _send_cb(self, frame, tolerate_peer_gone=False):
         """
         This is the callback used by streams to send data on the connection.
 
@@ -387,7 +418,11 @@ class HTTP20Connection(object):
             frame.stream_id
         )
 
-        self._sock.send(data)
+        try:
+            self._sock.send(data)
+        except socket.error as e:
+            if not tolerate_peer_gone or e.errno not in (errno.EPIPE, errno.ECONNRESET):
+                raise
 
     def _adjust_receive_window(self, frame_len):
         """
@@ -399,7 +434,7 @@ class HTTP20Connection(object):
         if increment:
             f = WindowUpdateFrame(0)
             f.window_increment = increment
-            self._send_cb(f)
+            self._send_cb(f, True)
 
         return
 
@@ -440,6 +475,17 @@ class HTTP20Connection(object):
             # Inform the WindowManager of how much data was received. If the
             # manager tells us to increment the window, do so.
             self._adjust_receive_window(len(frame.data))
+        elif isinstance(frame, PushPromiseFrame):
+            if self._enable_push:
+                self._new_stream(frame.promised_stream_id, local_closed=True)
+            else:
+                # Servers are forbidden from sending push promises when
+                # the ENABLE_PUSH setting is 0, but the spec leaves the client
+                # action undefined when they do it anyway. So we just refuse
+                # the stream and go about our business.
+                f = RstStreamFrame(frame.promised_stream_id)
+                f.error_code = 7 # REFUSED_STREAM
+                self._send_cb(f)
 
         # Work out to whom this frame should go.
         if frame.stream_id != 0:

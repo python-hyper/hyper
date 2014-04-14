@@ -16,6 +16,9 @@ Primary HTTP/2.0 Interface
 .. autoclass:: hyper.HTTP20Response
    :inherited-members:
 
+.. autoclass:: hyper.HTTP20Push
+   :inherited-members:
+
 Requests Transport Adapter
 --------------------------
 
@@ -35,13 +38,9 @@ Exceptions
 ----------
 
 .. autoclass:: hyper.http20.exceptions.HTTP20Error
-   :inherited-members:
 
 .. autoclass:: hyper.http20.exceptions.HPACKEncodingError
-   :inherited-members:
 
 .. autoclass:: hyper.http20.exceptions.HPACKDecodingError
-   :inherited-members:
 
 .. autoclass:: hyper.http20.exceptions.ConnectionError
-   :inherited-members:

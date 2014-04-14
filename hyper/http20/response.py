@@ -8,6 +8,8 @@ httplib/http.client.
 """
 import zlib
 
+from .util import pop_from_key_value_set
+
 
 class DeflateDecoder(object):
     """
@@ -49,6 +51,22 @@ class DeflateDecoder(object):
                 self._data = None
 
 
+class Headers(object):
+    def __init__(self, pairs):
+        # This conversion to dictionary is unwise, as there may be repeated
+        # keys, but it's acceptable for an early alpha.
+        self._headers = dict(pairs)
+
+    def getheader(self, name, default=None):
+        return self._headers.get(name, default)
+
+    def getheaders(self):
+        return list(self._headers.items())
+
+    def items(self):
+        return self._headers.items()
+
+
 class HTTP20Response(object):
     """
     An ``HTTP20Response`` wraps the HTTP/2.0 response from the server. It
@@ -62,15 +80,14 @@ class HTTP20Response(object):
         #: HTTP/2.0, and so is always the empty string.
         self.reason = ''
 
-        # The response headers. These are determined upon creation, assigned
-        # once, and never assigned again.
-        # This conversion to dictionary is unwise, as there may be repeated
-        # keys, but it's acceptable for an early alpha.
-        self._headers = dict(headers)
+        status = pop_from_key_value_set(headers, ':status')[0]
 
         #: The status code returned by the server.
-        self.status = int(self._headers[':status'])
-        del self._headers[':status']
+        self.status = int(status)
+
+        # The response headers. These are determined upon creation, assigned
+        # once, and never assigned again.
+        self._headers = Headers(headers)
 
         # The stream this response is being sent over.
         self._stream = stream
@@ -85,9 +102,9 @@ class HTTP20Response(object):
         # This 16 + MAX_WBITS nonsense is to force gzip. See this
         # Stack Overflow answer for more:
         # http://stackoverflow.com/a/2695466/1401686
-        if self._headers.get('content-encoding', '') == 'gzip':
+        if self._headers.getheader('content-encoding') == 'gzip':
             self._decompressobj = zlib.decompressobj(16 + zlib.MAX_WBITS)
-        elif self._headers.get('content-encoding', '') == 'deflate':
+        elif self._headers.getheader('content-encoding') == 'deflate':
             self._decompressobj = DeflateDecoder()
         else:
             self._decompressobj = None
@@ -145,7 +162,7 @@ class HTTP20Response(object):
         :param default: (optional) The return value if the header wasn't sent.
         :returns: The value of the header.
         """
-        return self._headers.get(name, default)
+        return self._headers.getheader(name, default)
 
     def getheaders(self):
         """
@@ -177,3 +194,61 @@ class HTTP20Response(object):
     def __exit__(self, *args):
         self.close()
         return False  # Never swallow exceptions.
+
+
+class HTTP20Push(object):
+    """
+    Represents a request-response pair sent by the server through the server
+    push mechanism.
+    """
+    def __init__(self, request_headers, stream):
+        scheme, method, authority, path = (
+            pop_from_key_value_set(request_headers,
+                                   ':scheme', ':method', ':authority', ':path')
+        )
+        #: The scheme of the simulated request
+        self.scheme = scheme
+        #: The method of the simulated request (must be safe and cacheable, e.g. GET)
+        self.method = method
+        #: The authority of the simulated request (usually host:port)
+        self.authority = authority
+        #: The path of the simulated request
+        self.path = path
+
+        self._request_headers = Headers(request_headers)
+        self._stream = stream
+
+    def getrequestheader(self, name, default=None):
+        """
+        Return the value of the simulated request header ``name``, or ``default``
+        if there is no header matching ``name``. If there is more than one header
+        with the value ``name``, return all of the values joined by ', '. If
+        ``default`` is any iterable other than a single string, its elements are
+        similarly returned joined by commas.
+
+        :param name: The name of the header to get the value of.
+        :param default: (optional) The return value if the header wasn't sent.
+        :returns: The value of the header.
+        """
+        return self._request_headers.getheader(name, default)
+
+    def getrequestheaders(self):
+        """
+        Get all the simulated request headers.
+
+        :returns: A list of (header, value) tuples.
+        """
+        return self._request_headers.getheaders()
+
+    def getresponse(self):
+        """
+        Returns an :class:`HTTP20Response` object representing the pushed
+        response.
+        """
+        return HTTP20Response(self._stream.getheaders(), self._stream)
+
+    def cancel(self):
+        """
+        Cancel the pushed response and close the stream.
+        """
+        self._stream.close(8) # CANCEL
