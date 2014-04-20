@@ -10,13 +10,15 @@ from hyper.http20.huffman_constants import (
     REQUEST_CODES, REQUEST_CODES_LENGTH, REQUEST_CODES, REQUEST_CODES_LENGTH
 )
 from binascii import unhexlify
+from pytest import skip
 
 class TestHPACKDecoderIntegration(object):
     def test_can_decode_a_story(self, story):
         d = Decoder()
 
-        # We support draft 6 of the HPACK spec.
-        assert story['draft'] == 6
+        # We support draft 7 of the HPACK spec.
+        if story['draft'] != 7:
+            skip("We support draft 7, not draft %d" % story['draft'])
 
         for case in story['cases']:
             try:
