@@ -114,11 +114,12 @@ class Encoder(object):
         (b':scheme', b'http'),
         (b':scheme', b'https'),
         (b':status', b'200'),
-        (b':status', b'500'),
-        (b':status', b'404'),
-        (b':status', b'403'),
+        (b':status', b'204'),
+        (b':status', b'206'),
+        (b':status', b'304'),
         (b':status', b'400'),
-        (b':status', b'401'),
+        (b':status', b'404'),
+        (b':status', b'500'),
         (b'accept-charset', b''),
         (b'accept-encoding', b''),
         (b'accept-language', b''),
@@ -462,7 +463,6 @@ class Decoder(object):
     """
     An HPACK decoder object.
     """
-    static_table = []    # This is the static table of header fields.
     static_table = [
         (b':authority', b''),
         (b':method', b'GET'),
@@ -472,11 +472,12 @@ class Decoder(object):
         (b':scheme', b'http'),
         (b':scheme', b'https'),
         (b':status', b'200'),
-        (b':status', b'500'),
-        (b':status', b'404'),
-        (b':status', b'403'),
+        (b':status', b'204'),
+        (b':status', b'206'),
+        (b':status', b'304'),
         (b':status', b'400'),
-        (b':status', b'401'),
+        (b':status', b'404'),
+        (b':status', b'500'),
         (b'accept-charset', b''),
         (b'accept-encoding', b''),
         (b'accept-language', b''),
