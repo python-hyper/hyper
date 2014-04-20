@@ -416,7 +416,7 @@ class Encoder(object):
         is True, the header will be added to the header table: otherwise it
         will not.
         """
-        prefix = b'\x00' if indexing else b'\x40'
+        prefix = b'\x40' if indexing else b'\x00'
 
         if huffman:
             name = self.huffman_coder.encode(name)
@@ -437,9 +437,14 @@ class Encoder(object):
         ``indexing`` is True, the header will be added to the header table:
         otherwise it will not.
         """
-        mask = 0x00 if indexing else 0x40
+        if indexing:
+            mask = 0x40
+            remaining_len = 6
+        else:
+            mask = 0x00
+            remaining_len = 4
 
-        name = encode_integer(index, 6)
+        name = encode_integer(index, remaining_len)
         name[0] = name[0] | mask
 
         if huffman:
@@ -576,9 +581,9 @@ class Decoder(object):
             current = to_byte(data[current_index])
             indexed = bool(current & 0x80)
 
-            # Otherwise, if the second-highest bit is 1 it's a field that
-            # doesn't alter the header table.
-            literal_no_index = bool(current & 0x40)
+            # Otherwise, if the second-highest bit is 1 it's a field that does
+            # alter the header table.
+            literal_no_index = not bool(current & 0x40)
 
             if indexed:
                 header, consumed = self._decode_indexed(data[current_index:])
@@ -690,13 +695,20 @@ class Decoder(object):
         """
         total_consumed = 0
 
-        # If the low six bits of the first byte are nonzero, the header
-        # name is indexed.
-        first_byte = to_byte(data[0])
+        # When should_index is true, if the low six bits of the first byte are
+        # nonzero, the header name is indexed.
+        # When should_index is false, if the first byte is nonzero the header
+        # name is indexed.
+        if should_index
+            indexed_name = to_byte(data[0]) & 0x3F
+            name_len = 6
+        else:
+            indexed_name = to_byte(data[0])
+            name_len = 4
 
-        if first_byte & 0x3F:
+        if indexed_name:
             # Indexed header name.
-            index, consumed = decode_integer(data, 6)
+            index, consumed = decode_integer(data, name_len)
             index -= 1
 
             if index >= len(self.header_table):
@@ -708,7 +720,7 @@ class Decoder(object):
             total_consumed = consumed
             length = 0
         else:
-            # Literal header name. The first byte was zero, so we need to
+            # Literal header name. The first byte was consumed, so we need to
             # move forward.
             data = data[1:]
 
