@@ -257,7 +257,7 @@ class Encoder(object):
         if (len(self.reference_set - incoming_set) >
                                                (len(self.reference_set) // 2)):
             log.debug("Emptying the encoder reference set.")
-            header_block = b'\x80\x80'  # Indexed representation of 0.
+            header_block = b'\x30'  # 'Empty the reference set' message.
 
             # Remove everything from the reference set.
             self.reference_set = set()
@@ -583,17 +583,25 @@ class Decoder(object):
 
             # Otherwise, if the second-highest bit is 1 it's a field that does
             # alter the header table.
-            literal_no_index = not bool(current & 0x40)
+            literal_index = bool(current & 0x40)
+
+            # Otherwise, if the third-highest bit is 1 it's an encoding context
+            # update.
+            encoding_update = bool(current & 0x20)
 
             if indexed:
                 header, consumed = self._decode_indexed(data[current_index:])
-            elif literal_no_index:
-                header, consumed = self._decode_literal_no_index(
-                    data[current_index:]
-                )
-            else:
+            elif literal_index:
                 # It's a literal header that does affect the header table.
                 header, consumed = self._decode_literal_index(
+                    data[current_index:]
+                )
+            elif encoding_update:
+                # It's an update to the encoding context.
+                consumed = self._update_encoding_context(data)
+            else:
+                # It's a literal header that does not affect the header table.
+                header, consumed = self._decode_literal_no_index(
                     data[current_index:]
                 )
 
@@ -631,29 +639,25 @@ class Decoder(object):
 
             log.debug("Evicting %s: %s from the header table", n, v)
 
+    def _update_encoding_context(self, data):
+        """
+        Handles a byte that updates the encoding context.
+        """
+        # If the byte is 0x30, this empties the reference set.
+        if to_byte(data[0]) == 0x30:
+            self.reference_set = set()
+            consumed = 1
+        else:
+            # We've been asked to resize the header table.
+            new_size, consumed = decode_integer(data, 4)
+            self.header_table_size = new_size
+        return consumed
+
     def _decode_indexed(self, data):
         """
         Decodes a header represented using the indexed representation.
         """
         index, consumed = decode_integer(data, 7)
-
-        # If we get an indexed representation of zero, check the next octet.
-        # If the next octet is has its high bit set to 1, empty the reference
-        # set. Otherwise, decode it as an integer with a 7-bit prefix: that's
-        # our new header table max size.
-        if not index:
-            next_byte = to_byte(data[consumed])
-
-            if next_byte & 0x80:
-                self.reference_set = set()
-                consumed += 1
-            else:
-                size, additional_consumed = decode_integer(data[consumed:], 7)
-                consumed += additional_consumed
-                self.header_table_size = size
-
-            return None, consumed
-
         index -= 1  # Because this idiot table is 1-indexed. Ugh.
 
         if index > len(self.header_table):
