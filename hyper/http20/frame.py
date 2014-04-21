@@ -91,10 +91,12 @@ class Padding(object):
     """
     Mixin for frames that contain padding.
     """
-    def __init__(self):
+    def __init__(self, stream_id):
         self.data = b''
         self.low_padding = 0
         self.high_padding = 0
+
+        super(Padding, self).__init__(stream_id)
 
     def serialize_padding_data(self):
         if 'PAD_LOW' in self.flags:
@@ -122,11 +124,13 @@ class Priority(object):
     """
     Mixin for frames that contain priority data.
     """
-    def __init__(self):
+    def __init__(self, stream_id):
         self.priority_group_id = None
         self.priority_group_weight = None
         self.stream_dependency_id = None
         self.stream_dependency_exclusive = None
+
+        super(Priority, self).__init__(stream_id)
 
     def serialize_priority_data(self):
         if 'PRIORITY_GROUP' in self.flags:
@@ -150,7 +154,7 @@ class Priority(object):
         return 0
 
 
-class DataFrame(Frame, Padding):
+class DataFrame(Padding, Frame):
     """
     DATA frames convey arbitrary, variable-length sequences of octets
     associated with a stream. One or more DATA frames are used, for instance,
@@ -179,7 +183,7 @@ class DataFrame(Frame, Padding):
         self.data = data[padding_data_length:len(data)-self.total_padding]
 
 
-class PriorityFrame(Frame, Priority):
+class PriorityFrame(Priority, Frame):
     """
     The PRIORITY frame specifies the sender-advised priority of a stream. It
     can be sent at any time for an existing stream. This enables
@@ -270,7 +274,7 @@ class SettingsFrame(Frame):
             self.settings[name] = value
 
 
-class PushPromiseFrame(Frame, Padding):
+class PushPromiseFrame(Padding, Frame):
     """
     The PUSH_PROMISE frame is used to notify the peer endpoint in advance of
     streams the sender intends to initiate.
@@ -390,7 +394,7 @@ class WindowUpdateFrame(Frame):
         self.window_increment = struct.unpack("!L", data)[0]
 
 
-class HeadersFrame(Frame, Padding, Priority):
+class HeadersFrame(Padding, Priority, Frame):
     """
     The HEADERS frame carries name-value pairs. It is used to open a stream.
     HEADERS frames can be sent on a stream in the "open" or "half closed
@@ -416,11 +420,6 @@ class HeadersFrame(Frame, Padding, Priority):
         ('PRIORITY_DEPENDENCY', 0x40),
     ]
 
-    def __init__(self, stream_id):
-        super(HeadersFrame, self).__init__(stream_id)
-        Padding.__init__(self)
-        Priority.__init__(self)
-
     def serialize_body(self):
         padding_data = self.serialize_padding_data()
         padding = b'\0' * self.total_padding
@@ -436,7 +435,7 @@ class HeadersFrame(Frame, Padding, Priority):
         self.data = data[priority_data_length:len(data)-self.total_padding]
 
 
-class ContinuationFrame(Frame, Padding):
+class ContinuationFrame(Padding, Frame):
     """
     The CONTINUATION frame is used to continue a sequence of header block
     fragments. Any number of CONTINUATION frames can be sent on an existing
@@ -451,10 +450,6 @@ class ContinuationFrame(Frame, Padding):
     stream_association = 'has-stream'
 
     defined_flags = [('END_HEADERS', 0x04), ('PAD_LOW', 0x08), ('PAD_HIGH', 0x10)]
-
-    def __init__(self, stream_id):
-        super(ContinuationFrame, self).__init__(stream_id)
-        Padding.__init__(self)
 
     def serialize_body(self):
         padding_data = self.serialize_padding_data()
