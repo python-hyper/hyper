@@ -293,9 +293,8 @@ class PushPromiseFrame(Padding, Frame):
 
     def parse_body(self, data):
         padding_data_length = self.parse_padding_data(data)
-        data = data[padding_data_length:]
-        self.promised_stream_id = struct.unpack("!L", data[:4])[0]
-        self.data = data[4:]
+        self.promised_stream_id = struct.unpack("!L", data[padding_data_length:padding_data_length + 4])[0]
+        self.data = data[padding_data_length + 4:]
 
 
 class PingFrame(Frame):
