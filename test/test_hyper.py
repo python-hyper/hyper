@@ -1122,10 +1122,13 @@ class TestHyperConnection(object):
 
     def test_headers_with_continuation(self):
         e = Encoder()
+        header_data = e.encode(
+            {':status': 200, 'content-type': 'foo/bar', 'content-length': '0'}
+        )
         h = HeadersFrame(1)
-        h.data = e.encode({':status': 200, 'content-type': 'foo/bar'})
+        h.data = header_data[0:int(len(header_data)/2)]
         c = ContinuationFrame(1)
-        c.data = e.encode({'content-length': '0'})
+        c.data = header_data[int(len(header_data)/2):]
         c.flags |= set(['END_HEADERS', 'END_STREAM'])
         sock = DummySocket()
         sock.buffer = BytesIO(h.serialize() + c.serialize())
