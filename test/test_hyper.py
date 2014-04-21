@@ -465,7 +465,7 @@ class TestHPACKEncoder(object):
         """
         e = Encoder()
         header_set = {'custom-key': 'custom-header'}
-        result = b'\x00\x0acustom-key\x0dcustom-header'
+        result = b'\x40\x0acustom-key\x0dcustom-header'
 
         assert e.encode(header_set, huffman=False) == result
         assert list(e.header_table) == [
@@ -479,7 +479,7 @@ class TestHPACKEncoder(object):
         """
         e = Encoder()
         header_set = {':path': '/sample/path'}
-        result = b'\x44\x0c/sample/path'
+        result = b'\x04\x0c/sample/path'
 
         assert e.encode(header_set, huffman=False) == result
         assert list(e.header_table) == []
@@ -668,7 +668,7 @@ class TestHPACKDecoder(object):
         """
         d = Decoder()
         header_set = set([('custom-key', 'custom-header')])
-        data = b'\x00\x0acustom-key\x0dcustom-header'
+        data = b'\x40\x0acustom-key\x0dcustom-header'
 
         assert d.decode(data) == header_set
         assert list(d.header_table) == [
@@ -682,7 +682,7 @@ class TestHPACKDecoder(object):
         """
         d = Decoder()
         header_set = set([(':path', '/sample/path')])
-        data = b'\x44\x0c/sample/path'
+        data = b'\x04\x0c/sample/path'
 
         assert d.decode(data) == header_set
         assert list(d.header_table) == []
