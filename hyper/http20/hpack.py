@@ -348,7 +348,7 @@ class Encoder(object):
             else:
                 # Indexed literal. Since we have a partial match, don't add to
                 # the header table, it won't help us.
-                s = self._encode_indexed_literal(index, value, False, huffman)
+                s = self._encode_indexed_literal(index, value, huffman)
                 encoded.append(s)
 
         return b''.join(encoded)
@@ -432,21 +432,11 @@ class Encoder(object):
 
         return b''.join([prefix, bytes(name_len), name, bytes(value_len), value])
 
-    def _encode_indexed_literal(self, index, value, indexing, huffman=False):
+    def _encode_indexed_literal(self, index, value, huffman=False):
         """
-        Encodes a header with an indexed name and a literal value. If
-        ``indexing`` is True, the header will be added to the header table:
-        otherwise it will not.
+        Encodes a header with an indexed name and a literal value.
         """
-        if indexing:
-            mask = 0x40
-            remaining_len = 6
-        else:
-            mask = 0x00
-            remaining_len = 4
-
-        name = encode_integer(index, remaining_len)
-        name[0] = name[0] | mask
+        name = encode_integer(index, 4)
 
         if huffman:
             value = self.huffman_coder.encode(value)
