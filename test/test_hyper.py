@@ -274,7 +274,7 @@ class TestPushPromiseFrame(object):
 
         assert flags == set(['END_HEADERS', 'PAD_HIGH', 'PAD_LOW'])
 
-    def test_push_promise_frame_serialize_with_priority_properly(self):
+    def test_push_promise_frame_serializes_properly(self):
         f = PushPromiseFrame(1)
         f.flags = set(['END_HEADERS'])
         f.promised_stream_id = 4
@@ -532,6 +532,12 @@ class TestAltsvcFrame(object):
         assert f.protocol_id == b'h2'
         assert f.max_age == 29
         assert f.origin is None
+
+    def test_altsvc_frame_serialize_origin_without_port(self):
+        f = AltsvcFrame(0)
+        f.origin = Origin(scheme=b'https', host=b'yahoo.com', port=None)
+
+        assert f.serialize_origin() == 'https://yahoo.com'
 
     def test_altsvc_frame_never_has_a_stream(self):
         with pytest.raises(ValueError):

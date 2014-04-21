@@ -480,14 +480,27 @@ class AltsvcFrame(Frame):
         self.max_age = None
         self.origin = None
 
+    def serialize_origin(self):
+        if self.origin is not None:
+            if self.origin.port is None:
+                hostport = self.origin.host
+            else:
+                hostport = self.origin.host + b':' + str(self.origin.port).encode('ascii')
+            return self.origin.scheme + b'://' + hostport
+        return b''
+
+    def parse_origin(self, data):
+        if len(data) > 0:
+            scheme, hostport = data.split(b'://')
+            host, _, port = hostport.partition(b':')
+            self.origin = Origin(scheme=scheme, host=host,
+                                 port=int(port) if len(port) > 0 else None)
+
     def serialize_body(self):
         first = struct.pack("!LHxB", self.max_age, self.port, len(self.protocol_id))
         host_length = struct.pack("!B", len(self.host))
-        origin = b''
-        if self.origin is not None:
-            hostport = self.origin.host + b':' + str(self.origin.port).encode('ascii') if self.origin.port is not None else self.origin.host
-            origin = self.origin.scheme + b'://' + hostport
-        return b''.join([first, self.protocol_id, host_length, self.host, origin])
+        return b''.join([first, self.protocol_id, host_length, self.host,
+                         self.serialize_origin()])
 
     def parse_body(self, data):
         self.max_age, self.port, protocol_id_length = struct.unpack("!LHxB", data[:8])
@@ -498,12 +511,7 @@ class AltsvcFrame(Frame):
         pos += 1
         self.host = data[pos:pos+host_length]
         pos += host_length
-        if pos != len(data):
-            origin = data[pos:]
-            scheme, hostport = origin.split(b'://')
-            host, _, port = hostport.partition(b':')
-            self.origin = Origin(scheme=scheme, host=host,
-                                 port=int(port) if len(port) > 0 else None)
+        self.parse_origin(data[pos:])
 
 
 # A map of type byte to frame class.
