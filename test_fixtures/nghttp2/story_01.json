@@ -1,56 +1,56 @@
 {
-  "draft": 6,
-  "description": "Encoded by nghttp2. The basic encoding strategy is described in http://lists.w3.org/Archives/Public/ietf-http-wg/2013JulSep/1135.html We use huffman encoding only if it produces strictly shorter byte string than original. We make some headers not indexing at all, but this does not always result in less bits on the wire.",
   "cases": [
     {
+      "header_table_size": 4096, 
       "headers": [
         {
           ":scheme": "https"
-        },
+        }, 
         {
           ":authority": "example.com"
-        },
+        }, 
         {
           ":path": "/"
-        },
+        }, 
         {
           ":method": "GET"
-        },
+        }, 
         {
           "user-agent": "hpack-test"
-        },
+        }, 
         {
           "cookie": "xxxxxxx1"
-        },
+        }, 
         {
           "x-hello": "world"
         }
-      ],
-      "header_table_size": 4096,
-      "wire": "8702881f3468e58912dd3f86853d87cdc84f2962308f240878787878787878310085f397315adb84d9af5e1f"
-    },
+      ], 
+      "wire": "8742885f44db7d8b7d4db786857e88aef4abdb33978bbf6587e9d3a74e9d3a0f4086e99ab5d9637f84e6dc2ca7"
+    }, 
     {
       "headers": [
         {
           ":scheme": "https"
-        },
+        }, 
         {
           ":authority": "example.com"
-        },
+        }, 
         {
           ":path": "/"
-        },
+        }, 
         {
           ":method": "GET"
-        },
+        }, 
         {
           "user-agent": "hpack-test"
-        },
+        }, 
         {
           "cookie": "xxxxxxx2"
         }
-      ],
-      "wire": "020878787878787878328283"
+      ], 
+      "wire": "4287e9d3a74e9d3a178283"
     }
-  ]
+  ], 
+  "draft": 7, 
+  "description": "Encoded by nghttp2. The basic encoding strategy is described in http://lists.w3.org/Archives/Public/ietf-http-wg/2013JulSep/1135.html We use huffman encoding only if it produces strictly shorter byte string than original. We make some headers not indexing at all, but this does not always result in less bits on the wire."
 }

@@ -1,348 +1,348 @@
 {
-  "draft": 6,
   "cases": [
     {
-      "wire": "807f811f828703878a1b7a1a44b74f873dbeef6faa96b405042f47faef4254c8b619f5747c19115f477a13d1f4f0e8fdf418a4afaba1fcfd86a485ff7d1ee14f2681ca6294c53747053c716f981a921717af88f9c4338e8be9439cb5251153581e79c745ffcf3d17d287396a4a22a6b03cf45f5795a5259d3fd07f5d5e569495ff168b164bf8f0e91675795a5251168acbd54ee9e8c0715a223f00874b58c14c54d67f87e422e950b5731f",
+      "header_table_size": 16384, 
       "headers": [
         {
           ":method": "GET"
-        },
+        }, 
         {
           ":scheme": "http"
-        },
+        }, 
         {
           ":authority": "taobao.com"
-        },
+        }, 
         {
           ":path": "/"
-        },
+        }, 
         {
           "user-agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10.8; rv:16.0) Gecko/20100101 Firefox/16.0"
-        },
+        }, 
         {
           "accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8"
-        },
+        }, 
         {
           "accept-language": "en-US,en;q=0.5"
-        },
+        }, 
         {
           "accept-encoding": "gzip, deflate"
-        },
+        }, 
         {
           "connection": "keep-alive"
         }
-      ],
-      "header_table_size": 16384
-    },
+      ], 
+      "wire": "2ff11f82874387725bbd2d7d4db7877eb9d6df7659624f0be06feb5a54cb9cdc6bec3785ce5d86d6951bc769bd0c20fc9d86c394c313e1f136a5abd9a720100101369660be0de87189f058b072fa38f5badb32a6fbec6292e636e3f4add6d9fe74b6cca9befb18a4b98db8fd2db3b3f9383f2e5fecffdf67f2707e4f578c5dd9bcf6e55ddd9fc9c1f87f578aabdd97e5352be1625cbf4087536eb96a731b7788f65aefcc9b19c97f"
+    }, 
     {
-      "wire": "078adb6d891436f434896e9f88",
       "headers": [
         {
           ":method": "GET"
-        },
+        }, 
         {
           ":scheme": "http"
-        },
+        }, 
         {
           ":authority": "www.taobao.com"
-        },
+        }, 
         {
           ":path": "/"
-        },
+        }, 
         {
           "user-agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10.8; rv:16.0) Gecko/20100101 Firefox/16.0"
-        },
+        }, 
         {
           "accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8"
-        },
+        }, 
         {
           "accept-language": "en-US,en;q=0.5"
-        },
+        }, 
         {
           "accept-encoding": "gzip, deflate"
-        },
+        }, 
         {
           "connection": "keep-alive"
         }
-      ]
-    },
+      ], 
+      "wire": "478be7cf9bee4b77a5afa9b6ff88"
+    }, 
     {
-      "wire": "478c053301f3bb25b6f42c8ecddf87",
       "headers": [
         {
           ":method": "GET"
-        },
+        }, 
         {
           ":scheme": "http"
-        },
+        }, 
         {
           ":authority": "www.taobao.com"
-        },
+        }, 
         {
           ":path": "/index_global.php"
-        },
+        }, 
         {
           "user-agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10.8; rv:16.0) Gecko/20100101 Firefox/16.0"
-        },
+        }, 
         {
           "accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8"
-        },
+        }, 
         {
           "accept-language": "en-US,en;q=0.5"
-        },
+        }, 
         {
           "accept-encoding": "gzip, deflate"
-        },
+        }, 
         {
           "connection": "keep-alive"
         }
-      ]
-    },
+      ], 
+      "wire": "078d3b2ea57d37556377a6c7efaeff87"
+    }, 
     {
-      "wire": "018741237a706112cf489107062e0394c640221018c020e4244992b1069a5688c841cccba55a23210febabcad292be9fe83faeaf2b4a4a3f3e9ace3177b0036db62450dbd0d225ba029980f9dd92db7a164766ef8488",
       "headers": [
         {
           ":method": "GET"
-        },
+        }, 
         {
           ":scheme": "http"
-        },
+        }, 
         {
           ":authority": "a.tbcdn.cn"
-        },
+        }, 
         {
           ":path": "/p/fp/2011a/assets/space.gif"
-        },
+        }, 
         {
           "user-agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10.8; rv:16.0) Gecko/20100101 Firefox/16.0"
-        },
+        }, 
         {
           "accept": "image/png,image/*;q=0.8,*/*;q=0.5"
-        },
+        }, 
         {
           "accept-language": "en-US,en;q=0.5"
-        },
+        }, 
         {
           "accept-encoding": "gzip, deflate"
-        },
+        }, 
         {
           "connection": "keep-alive"
-        },
+        }, 
         {
           "referer": "http://www.taobao.com/index_global.php"
         }
-      ]
-    },
+      ], 
+      "wire": "41884beedeaa6e7d577f08933de7e179c8045274e38add89f1bd2a5bf53387469b65a9a967beeab2b2d4d4b3ff7d9fc9c1f932ff67fefb3f9383f0ff7f009cadcebe639f9f3e6fb92dde96bea6da765d4afa6eaac6ef4d8fdf5dff8488"
+    }, 
     {
-      "wire": "8a028e88f9c4130874ff41fd75795a521b83",
       "headers": [
         {
           ":method": "GET"
-        },
+        }, 
         {
           ":scheme": "http"
-        },
+        }, 
         {
           ":authority": "a.tbcdn.cn"
-        },
+        }, 
         {
           ":path": "/"
-        },
+        }, 
         {
           "user-agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10.8; rv:16.0) Gecko/20100101 Firefox/16.0"
-        },
+        }, 
         {
           "accept": "text/css,*/*;q=0.1"
-        },
+        }, 
         {
           "accept-language": "en-US,en;q=0.5"
-        },
+        }, 
         {
           "accept-encoding": "gzip, deflate"
-        },
+        }, 
         {
           "connection": "keep-alive"
-        },
+        }, 
         {
           "referer": "http://www.taobao.com/index_global.php"
         }
-      ]
-    },
+      ], 
+      "wire": "8a428f72fa38eac71cbfd9ffbecfe4e0f8ff83"
+    }, 
     {
-      "wire": "4b8907062e0394c6cf907f8b",
       "headers": [
         {
           ":method": "GET"
-        },
+        }, 
         {
           ":scheme": "http"
-        },
+        }, 
         {
           ":authority": "a.tbcdn.cn"
-        },
+        }, 
         {
           ":path": "/p/fp/2011hk/"
-        },
+        }, 
         {
           "user-agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10.8; rv:16.0) Gecko/20100101 Firefox/16.0"
-        },
+        }, 
         {
           "accept": "text/css,*/*;q=0.1"
-        },
+        }, 
         {
           "accept-language": "en-US,en;q=0.5"
-        },
+        }, 
         {
           "accept-encoding": "gzip, deflate"
-        },
+        }, 
         {
           "connection": "keep-alive"
-        },
+        }, 
         {
           "referer": "http://www.taobao.com/index_global.php"
         }
-      ]
-    },
+      ], 
+      "wire": "0b893de7e179c8046bf63f8b"
+    }, 
     {
-      "wire": "8b01032a2f2a82",
       "headers": [
         {
           ":method": "GET"
-        },
+        }, 
         {
           ":scheme": "http"
-        },
+        }, 
         {
           ":authority": "a.tbcdn.cn"
-        },
+        }, 
         {
           ":path": "/"
-        },
+        }, 
         {
           "user-agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10.8; rv:16.0) Gecko/20100101 Firefox/16.0"
-        },
+        }, 
         {
           "accept": "*/*"
-        },
+        }, 
         {
           "accept-language": "en-US,en;q=0.5"
-        },
+        }, 
         {
           "accept-encoding": "gzip, deflate"
-        },
+        }, 
         {
           "connection": "keep-alive"
-        },
+        }, 
         {
           "referer": "http://www.taobao.com/index_global.php"
         }
-      ]
-    },
+      ], 
+      "wire": "8b41032a2f2a82"
+    }, 
     {
-      "wire": "4c9807062e0394c548718062e97053c53195cf6e8d9745309c618c",
       "headers": [
         {
           ":method": "GET"
-        },
+        }, 
         {
           ":scheme": "http"
-        },
+        }, 
         {
           ":authority": "a.tbcdn.cn"
-        },
+        }, 
         {
           ":path": "/p/fp/2010c/js/fp-direct-promo-min.js"
-        },
+        }, 
         {
           "user-agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10.8; rv:16.0) Gecko/20100101 Firefox/16.0"
-        },
+        }, 
         {
           "accept": "*/*"
-        },
+        }, 
         {
           "accept-language": "en-US,en;q=0.5"
-        },
+        }, 
         {
           "accept-encoding": "gzip, deflate"
-        },
+        }, 
         {
           "connection": "keep-alive"
-        },
+        }, 
         {
           "referer": "http://www.taobao.com/index_global.php"
         }
-      ]
-    },
+      ], 
+      "wire": "0c9b3de7e179c804147f5c4fc2fcd4b305a9d9afc1b6b735acb9ff5c7f8c"
+    }, 
     {
-      "wire": "058d569914c48a1b7a1a9c1844b74f4d9c08ba00a30789b1f2fe1ff6a5e3fbfda3387e724ca6294b2ce5271765858286",
       "headers": [
         {
           ":method": "GET"
-        },
+        }, 
         {
           ":scheme": "http"
-        },
+        }, 
         {
           ":authority": "img01.taobaocdn.com"
-        },
+        }, 
         {
           ":path": "/tps/i1/T1fqY2XilfXXahsVgc-1000-40.jpg"
-        },
+        }, 
         {
           "user-agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10.8; rv:16.0) Gecko/20100101 Firefox/16.0"
-        },
+        }, 
         {
           "accept": "image/png,image/*;q=0.8,*/*;q=0.5"
-        },
+        }, 
         {
           "accept-language": "en-US,en;q=0.5"
-        },
+        }, 
         {
           "accept-encoding": "gzip, deflate"
-        },
+        }, 
         {
           "connection": "keep-alive"
-        },
+        }, 
         {
           "referer": "http://www.taobao.com/index_global.php"
         }
-      ]
-    },
+      ], 
+      "wire": "458d65b500bee4b77a5aaa6e7d4db70d9d3bafc4ec13d03c3f9fa2f4659c3d3d135e3f8a959840033400ffadf57f858286"
+    }, 
     {
-      "wire": "4d9e08ba00a307899ffe2b6fde51c7f7fbfdfeff7fbfdfee5318b29a6a08e665",
       "headers": [
         {
           ":method": "GET"
-        },
+        }, 
         {
           ":scheme": "http"
-        },
+        }, 
         {
           ":authority": "img01.taobaocdn.com"
-        },
+        }, 
         {
           ":path": "/tps/i1/T1rZiwXgtfXXXXXXXX-110-135.png"
-        },
+        }, 
         {
           "user-agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10.8; rv:16.0) Gecko/20100101 Firefox/16.0"
-        },
+        }, 
         {
           "accept": "image/png,image/*;q=0.8,*/*;q=0.5"
-        },
+        }, 
         {
           "accept-language": "en-US,en;q=0.5"
-        },
+        }, 
         {
           "accept-encoding": "gzip, deflate"
-        },
+        }, 
         {
           "connection": "keep-alive"
-        },
+        }, 
         {
           "referer": "http://www.taobao.com/index_global.php"
         }
-      ]
+      ], 
+      "wire": "0d9e3bafc4ec13d0387ed9cfd2a770f4f4f4f4f4f4f4f4cc22198510bf7dd57f"
     }
-  ],
+  ], 
+  "draft": 7, 
   "description": "Encoded by nghttp2. The basic encoding strategy is described in http://lists.w3.org/Archives/Public/ietf-http-wg/2013JulSep/1135.html We use huffman encoding only if it produces strictly shorter byte string than original. We make some headers not indexing at all, but this does not always result in less bits on the wire."
 }

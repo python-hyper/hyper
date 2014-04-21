@@ -1,378 +1,378 @@
 {
-  "draft": 6,
   "cases": [
     {
-      "wire": "807f811f8287038cc85a44bd0aca0b542246bf2f873dbeef6faa96b405042f47faef4254c8b619f5747c19115f477a13d1f4f0e8fdf418a4afaba1fcfd86a485ff7d1ee14f2681ca6294c53747053c716f981a921717af88f9c4338e8be9439cb5251153581e79c745ffcf3d17d287396a4a22a6b03cf45f5795a5259d3fd07f5d5e569495ff168b164bf8f0e91675795a5251168acbd54ee9e8c0715a223f00874b58c14c54d67f87e422e950b5731f289c4aeebeddfd67ebfeef82e7cfdddf577cecf7d1f5fe7eb2cfc7be8dff",
+      "header_table_size": 16384, 
       "headers": [
         {
           ":method": "GET"
-        },
+        }, 
         {
           ":scheme": "http"
-        },
+        }, 
         {
           ":authority": "geo.craigslist.org"
-        },
+        }, 
         {
           ":path": "/"
-        },
+        }, 
         {
           "user-agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10.8; rv:16.0) Gecko/20100101 Firefox/16.0"
-        },
+        }, 
         {
           "accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8"
-        },
+        }, 
         {
           "accept-language": "en-US,en;q=0.5"
-        },
+        }, 
         {
           "accept-encoding": "gzip, deflate"
-        },
+        }, 
         {
           "connection": "keep-alive"
-        },
+        }, 
         {
           "cookie": "cl_b=AB2BKbsl4hGM7M4nH5PYWghTM5A"
         }
-      ],
-      "header_table_size": 16384
-    },
+      ], 
+      "wire": "2ff11f8287438da96d7d58259563633173edc2af877eb9d6df7659624f0be06feb5a54cb9cdc6bec3785ce5d86d6951bc769bd0c20fc9d86c394c313e1f136a5abd9a720100101369660be0de87189f058b072fa38f5badb32a6fbec6292e636e3f4add6d9fe74b6cca9befb18a4b98db8fd2db3b3f9383f2e5fecffdf67f2707e4f578c5dd9bcf6e55ddd9fc9c1f87f578aabdd97e5352be1625cbf4087536eb96a731b7788f65aefcc9b19c97f699b559bb7cf9fb4bb7e9bf1b20af56b8f5c177ca1f2fd7e6aae8d70e7"
+    }, 
     {
-      "wire": "088cdb6d8897a159416a8448d7e54888045edd62105446018889",
       "headers": [
         {
           ":method": "GET"
-        },
+        }, 
         {
           ":scheme": "http"
-        },
+        }, 
         {
           ":authority": "www.craigslist.org"
-        },
+        }, 
         {
           ":path": "/about/sites/"
-        },
+        }, 
         {
           "user-agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10.8; rv:16.0) Gecko/20100101 Firefox/16.0"
-        },
+        }, 
         {
           "accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8"
-        },
+        }, 
         {
           "accept-language": "en-US,en;q=0.5"
-        },
+        }, 
         {
           "accept-encoding": "gzip, deflate"
-        },
+        }, 
         {
           "connection": "keep-alive"
-        },
+        }, 
         {
           "cookie": "cl_b=AB2BKbsl4hGM7M4nH5PYWghTM5A"
         }
-      ]
-    },
+      ], 
+      "wire": "488ee7cf9beac12cab1b198b9f6e157f08893a77b78b8f8b1cbc4f8889"
+    }, 
     {
-      "wire": "488e0847d163004b75645ea18113087f068e88f9c4130874ff41fd75795a521b3e99ce3177b0036db6225e856505aa11235f9022f6eb1082a2300f88",
       "headers": [
         {
           ":method": "GET"
-        },
+        }, 
         {
           ":scheme": "http"
-        },
+        }, 
         {
           ":authority": "www.craigslist.org"
-        },
+        }, 
         {
           ":path": "/styles/countries.css"
-        },
+        }, 
         {
           "user-agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10.8; rv:16.0) Gecko/20100101 Firefox/16.0"
-        },
+        }, 
         {
           "accept": "text/css,*/*;q=0.1"
-        },
+        }, 
         {
           "accept-language": "en-US,en;q=0.5"
-        },
+        }, 
         {
           "accept-encoding": "gzip, deflate"
-        },
+        }, 
         {
           "connection": "keep-alive"
-        },
+        }, 
         {
           "referer": "http://www.craigslist.org/about/sites/"
-        },
+        }, 
         {
           "cookie": "cl_b=AB2BKbsl4hGM7M4nH5PYWghTM5A"
         }
-      ]
-    },
+      ], 
+      "wire": "088f3e2eeb62f13a9bc6e760c5e2fab1c7468f72fa38eac71cbfd9ffbecfe4e0f8ff7f009badcebe639f9f3e6fab04b2ac6c662e7db85474ef6f171f1639789f88"
+    }, 
     {
-      "wire": "4a8a0e300c5afd1118138c3f02032a2f2a83",
       "headers": [
         {
           ":method": "GET"
-        },
+        }, 
         {
           ":scheme": "http"
-        },
+        }, 
         {
           ":authority": "www.craigslist.org"
-        },
+        }, 
         {
           ":path": "/js/formats.js"
-        },
+        }, 
         {
           "user-agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10.8; rv:16.0) Gecko/20100101 Firefox/16.0"
-        },
+        }, 
         {
           "accept": "*/*"
-        },
+        }, 
         {
           "accept-language": "en-US,en;q=0.5"
-        },
+        }, 
         {
           "accept-encoding": "gzip, deflate"
-        },
+        }, 
         {
           "connection": "keep-alive"
-        },
+        }, 
         {
           "referer": "http://www.craigslist.org/about/sites/"
-        },
+        }, 
         {
           "cookie": "cl_b=AB2BKbsl4hGM7M4nH5PYWghTM5A"
         }
-      ]
-    },
+      ], 
+      "wire": "0a8b3fae27e0dc2d4bb17fd71f42032a2f2a83"
+    }, 
     {
-      "wire": "4b8e0e300e3e5a8bfd25312721c9c61f",
       "headers": [
         {
           ":method": "GET"
-        },
+        }, 
         {
           ":scheme": "http"
-        },
+        }, 
         {
           ":authority": "www.craigslist.org"
-        },
+        }, 
         {
           ":path": "/js/jquery-1.4.2.js"
-        },
+        }, 
         {
           "user-agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10.8; rv:16.0) Gecko/20100101 Firefox/16.0"
-        },
+        }, 
         {
           "accept": "*/*"
-        },
+        }, 
         {
           "accept-language": "en-US,en;q=0.5"
-        },
+        }, 
         {
           "accept-encoding": "gzip, deflate"
-        },
+        }, 
         {
           "connection": "keep-alive"
-        },
+        }, 
         {
           "referer": "http://www.craigslist.org/about/sites/"
-        },
+        }, 
         {
           "cookie": "cl_b=AB2BKbsl4hGM7M4nH5PYWghTM5A"
         }
-      ]
-    },
+      ], 
+      "wire": "0b8f3fae27f5fe715e1d730bf03e4ffae3"
+    }, 
     {
-      "wire": "4b880c51cd496b08a4b7019a5688c841cccba55a23210febabcad292be9fe83faeaf2b4a4a3f8283",
       "headers": [
         {
           ":method": "GET"
-        },
+        }, 
         {
           ":scheme": "http"
-        },
+        }, 
         {
           ":authority": "www.craigslist.org"
-        },
+        }, 
         {
           ":path": "/favicon.ico"
-        },
+        }, 
         {
           "user-agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10.8; rv:16.0) Gecko/20100101 Firefox/16.0"
-        },
+        }, 
         {
           "accept": "image/png,image/*;q=0.8,*/*;q=0.5"
-        },
+        }, 
         {
           "accept-language": "en-US,en;q=0.5"
-        },
+        }, 
         {
           "accept-encoding": "gzip, deflate"
-        },
+        }, 
         {
           "connection": "keep-alive"
-        },
+        }, 
         {
           "cookie": "cl_b=AB2BKbsl4hGM7M4nH5PYWghTM5A"
         }
-      ]
-    },
+      ], 
+      "wire": "0b893f04f2629b73ec537f419b65a9a967beeab2b2d4d4b3ff7d9fc9c1f932ff67fefb3f9383f0ff8283"
+    }, 
     {
-      "wire": "058e866d42e044bd0aca0b542246bf2f8d8b848286",
       "headers": [
         {
           ":method": "GET"
-        },
+        }, 
         {
           ":scheme": "http"
-        },
+        }, 
         {
           ":authority": "shoals.craigslist.org"
-        },
+        }, 
         {
           ":path": "/"
-        },
+        }, 
         {
           "user-agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10.8; rv:16.0) Gecko/20100101 Firefox/16.0"
-        },
+        }, 
         {
           "accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8"
-        },
+        }, 
         {
           "accept-language": "en-US,en;q=0.5"
-        },
+        }, 
         {
           "accept-encoding": "gzip, deflate"
-        },
+        }, 
         {
           "connection": "keep-alive"
-        },
+        }, 
         {
           "referer": "http://www.craigslist.org/about/sites/"
-        },
+        }, 
         {
           "cookie": "cl_b=AB2BKbsl4hGM7M4nH5PYWghTM5A"
         }
-      ]
-    },
+      ], 
+      "wire": "458fc6b6a6cc5f56096558d8cc5cfb70ab8d8b848286"
+    }, 
     {
-      "wire": "864d8e0847d163004bd0aca0b542244c21850493ce3177b00219b50b8112f42b282d50891afc8308b44aeebeddfd67ebfeef82e7cfdddf577cecf7d1f5fe7eb2cfc7be8dfd5d095dd80e372d0ccad16757425776038dd9bad866d42e1f8386898d8f",
       "headers": [
         {
           ":method": "GET"
-        },
+        }, 
         {
           ":scheme": "http"
-        },
+        }, 
         {
           ":authority": "www.craigslist.org"
-        },
+        }, 
         {
           ":path": "/styles/craigslist.css"
-        },
+        }, 
         {
           "user-agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10.8; rv:16.0) Gecko/20100101 Firefox/16.0"
-        },
+        }, 
         {
           "accept": "text/css,*/*;q=0.1"
-        },
+        }, 
         {
           "accept-language": "en-US,en;q=0.5"
-        },
+        }, 
         {
           "accept-encoding": "gzip, deflate"
-        },
+        }, 
         {
           "connection": "keep-alive"
-        },
+        }, 
         {
           "referer": "http://shoals.craigslist.org/"
-        },
+        }, 
         {
           "cookie": "cl_b=AB2BKbsl4hGM7M4nH5PYWghTM5A; cl_def_lang=en; cl_def_hp=shoals"
         }
-      ]
-    },
+      ], 
+      "wire": "860d903e2eeb62f13ab04b2ac6c662e7d58e3f854495adcebe639f1ada9b317d58259563633173edc2a3ff48b5559bb7cf9fb4bb7e9bf1b20af56b8f5c177ca1f2fd7e6aae8d70e7ec32acdd4af86eb137553aeeec32acdd4af86eaef9f1ada9b31f8386898d8f"
+    }, 
     {
-      "wire": "4f8a0e300c5afd1118138c3f8587",
       "headers": [
         {
           ":method": "GET"
-        },
+        }, 
         {
           ":scheme": "http"
-        },
+        }, 
         {
           ":authority": "www.craigslist.org"
-        },
+        }, 
         {
           ":path": "/js/formats.js"
-        },
+        }, 
         {
           "user-agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10.8; rv:16.0) Gecko/20100101 Firefox/16.0"
-        },
+        }, 
         {
           "accept": "*/*"
-        },
+        }, 
         {
           "accept-language": "en-US,en;q=0.5"
-        },
+        }, 
         {
           "accept-encoding": "gzip, deflate"
-        },
+        }, 
         {
           "connection": "keep-alive"
-        },
+        }, 
         {
           "referer": "http://shoals.craigslist.org/"
-        },
+        }, 
         {
           "cookie": "cl_b=AB2BKbsl4hGM7M4nH5PYWghTM5A; cl_def_lang=en; cl_def_hp=shoals"
         }
-      ]
-    },
+      ], 
+      "wire": "0f008b3fae27e0dc2d4bb17fd71f8587"
+    }, 
     {
-      "wire": "4f8a0e300cdba0b9190938c3",
       "headers": [
         {
           ":method": "GET"
-        },
+        }, 
         {
           ":scheme": "http"
-        },
+        }, 
         {
           ":authority": "www.craigslist.org"
-        },
+        }, 
         {
           ":path": "/js/homepage.js"
-        },
+        }, 
         {
           "user-agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10.8; rv:16.0) Gecko/20100101 Firefox/16.0"
-        },
+        }, 
         {
           "accept": "*/*"
-        },
+        }, 
         {
           "accept-language": "en-US,en;q=0.5"
-        },
+        }, 
         {
           "accept-encoding": "gzip, deflate"
-        },
+        }, 
         {
           "connection": "keep-alive"
-        },
+        }, 
         {
           "referer": "http://shoals.craigslist.org/"
-        },
+        }, 
         {
           "cookie": "cl_b=AB2BKbsl4hGM7M4nH5PYWghTM5A; cl_def_lang=en; cl_def_hp=shoals"
         }
-      ]
+      ], 
+      "wire": "0f008b3fae27adb6aef4d4b7fd71"
     }
-  ],
+  ], 
+  "draft": 7, 
   "description": "Encoded by nghttp2. The basic encoding strategy is described in http://lists.w3.org/Archives/Public/ietf-http-wg/2013JulSep/1135.html We use huffman encoding only if it produces strictly shorter byte string than original. We make some headers not indexing at all, but this does not always result in less bits on the wire."
 }

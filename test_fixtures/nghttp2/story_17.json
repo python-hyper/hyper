@@ -1,360 +1,360 @@
 {
-  "draft": 6,
-  "description": "Encoded by nghttp2. The basic encoding strategy is described in http://lists.w3.org/Archives/Public/ietf-http-wg/2013JulSep/1135.html We use huffman encoding only if it produces strictly shorter byte string than original. We make some headers not indexing at all, but this does not always result in less bits on the wire.",
   "cases": [
     {
+      "header_table_size": 4096, 
       "headers": [
         {
           ":method": "GET"
-        },
+        }, 
         {
           ":scheme": "http"
-        },
+        }, 
         {
           ":authority": "yahoo.co.jp"
-        },
+        }, 
         {
           ":path": "/"
-        },
+        }, 
         {
           "user-agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10.8; rv:16.0) Gecko/20100101 Firefox/16.0"
-        },
+        }, 
         {
           "accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8"
-        },
+        }, 
         {
           "accept-language": "en-US,en;q=0.5"
-        },
+        }, 
         {
           "accept-encoding": "gzip, deflate"
-        },
+        }, 
         {
           "connection": "keep-alive"
-        },
+        }, 
         {
           "cookie": "B=76j09a189a6h4&b=3&s=0b"
         }
-      ],
-      "header_table_size": 4096,
-      "wire": "82870388f4466d6912d27177873dbeef6faa96b405042f47faef4254c8b619f5747c19115f477a13d1f4f0e8fdf418a4afaba1fcfd86a485ff7d1ee14f2681ca6294c53747053c716f981a921717af88f9c4338e8be9439cb5251153581e79c745ffcf3d17d287396a4a22a6b03cf45f5795a5259d3fd07f5d5e569495ff168b164bf8f0e91675795a5251168acbd54ee9e8c0715a223f00874b58c14c54d67f87e422e950b5731f2892ebb6aa7896c41abb114e73eebed9b742d2df"
-    },
+      ], 
+      "wire": "82874388ea9adad7d4d7fd6f877eb9d6df7659624f0be06feb5a54cb9cdc6bec3785ce5d86d6951bc769bd0c20fc9d86c394c313e1f136a5abd9a720100101369660be0de87189f058b072fa38f5badb32a6fbec6292e636e3f4add6d9fe74b6cca9befb18a4b98db8fd2db3b3f9383f2e5fecffdf67f2707e4f578c5dd9bcf6e55ddd9fc9c1f87f578aabdd97e5352be1625cbf4087536eb96a731b7788f65aefcc9b19c97f6992ed9e38bd42548c92a62ae0c9be7464c670df"
+    }, 
     {
       "headers": [
         {
           ":method": "GET"
-        },
+        }, 
         {
           ":scheme": "http"
-        },
+        }, 
         {
           ":authority": "www.yahoo.co.jp"
-        },
+        }, 
         {
           ":path": "/"
-        },
+        }, 
         {
           "user-agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10.8; rv:16.0) Gecko/20100101 Firefox/16.0"
-        },
+        }, 
         {
           "accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8"
-        },
+        }, 
         {
           "accept-language": "en-US,en;q=0.5"
-        },
+        }, 
         {
           "accept-encoding": "gzip, deflate"
-        },
+        }, 
         {
           "connection": "keep-alive"
-        },
+        }, 
         {
           "cookie": "B=76j09a189a6h4&b=3&s=0b"
         }
-      ],
-      "wire": "088bdb6d89e88cdad225a4e2ef89"
-    },
+      ], 
+      "wire": "488ce7cf9bfd535b5afa9affadff89"
+    }, 
     {
       "headers": [
         {
           ":method": "GET"
-        },
+        }, 
         {
           ":scheme": "http"
-        },
+        }, 
         {
           ":authority": "k.yimg.jp"
-        },
+        }, 
         {
           ":path": "/images/top/sp2/clr/1/clr-121025.css"
-        },
+        }, 
         {
           "user-agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10.8; rv:16.0) Gecko/20100101 Firefox/16.0"
-        },
+        }, 
         {
           "accept": "text/css,*/*;q=0.1"
-        },
+        }, 
         {
           "accept-language": "en-US,en;q=0.5"
-        },
+        }, 
         {
           "accept-encoding": "gzip, deflate"
-        },
+        }, 
         {
           "connection": "keep-alive"
-        },
+        }, 
         {
           "referer": "http://www.yahoo.co.jp/"
         }
-      ],
-      "wire": "0187e44f45699138bb499705688c860116b820e38256f030256f94c7314f4113087f078e88f9c4130874ff41fd75795a521b3f0090ce3177b0036db627a2336b4896938b838485898b"
-    },
+      ], 
+      "wire": "4188f67fab2da9ff5bff09983b2d4d4bc4ee6de7c6f23aacc0e275598661210285f5638f478f72fa38eac71cbfd9ffbecfe4e0f8ff7f0191adcebe639f9f3e6ff54d6d6bea6bfeb79f8485898b"
+    }, 
     {
       "headers": [
         {
           ":method": "GET"
-        },
+        }, 
         {
           ":scheme": "http"
-        },
+        }, 
         {
           ":authority": "k.yimg.jp"
-        },
+        }, 
         {
           ":path": "/images/top/sp/logo.gif"
-        },
+        }, 
         {
           "user-agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10.8; rv:16.0) Gecko/20100101 Firefox/16.0"
-        },
+        }, 
         {
           "accept": "image/png,image/*;q=0.8,*/*;q=0.5"
-        },
+        }, 
         {
           "accept-language": "en-US,en;q=0.5"
-        },
+        }, 
         {
           "accept-encoding": "gzip, deflate"
-        },
+        }, 
         {
           "connection": "keep-alive"
-        },
+        }, 
         {
           "referer": "http://www.yahoo.co.jp/"
         }
-      ],
-      "wire": "4b8f05688c860116b820e05b726932563f029a5688c841cccba55a23210febabcad292be9fe83faeaf2b4a4a3f83"
-    },
+      ], 
+      "wire": "0b903b2d4d4bc4ee6de7c6f3d8da9afd4ce1429b65a9a967beeab2b2d4d4b3ff7d9fc9c1f932ff67fefb3f9383f0ff83"
+    }, 
     {
       "headers": [
         {
           ":method": "GET"
-        },
+        }, 
         {
           ":scheme": "http"
-        },
+        }, 
         {
           ":authority": "k.yimg.jp"
-        },
+        }, 
         {
           ":path": "/images/bookstore/common/special/2012/0829_05/banner/84x84_1.jpg"
-        },
+        }, 
         {
           "user-agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10.8; rv:16.0) Gecko/20100101 Firefox/16.0"
-        },
+        }, 
         {
           "accept": "image/png,image/*;q=0.8,*/*;q=0.5"
-        },
+        }, 
         {
           "accept-language": "en-US,en;q=0.5"
-        },
+        }, 
         {
           "accept-encoding": "gzip, deflate"
-        },
+        }, 
         {
           "connection": "keep-alive"
-        },
+        }, 
         {
           "referer": "http://www.yahoo.co.jp/"
         }
-      ],
-      "wire": "4caa05688c86017b5bca116bc412dd346b020e14a90b0394c702d67b2e2d017a18c178573f9d73dc6271765f"
-    },
+      ], 
+      "wire": "0cac3b2d4d4bc4fbdadf6c5cdc167536db5b71f1bd6a626c390091c2429770427de9bae5e07920e9241b85ff5bea"
+    }, 
     {
       "headers": [
         {
           ":method": "GET"
-        },
+        }, 
         {
           ":scheme": "http"
-        },
+        }, 
         {
           ":authority": "yjaxc.yahoo.co.jp"
-        },
+        }, 
         {
           ":path": "/oi"
-        },
+        }, 
         {
           "user-agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10.8; rv:16.0) Gecko/20100101 Firefox/16.0"
-        },
+        }, 
         {
           "accept": "*/*"
-        },
+        }, 
         {
           "accept-language": "en-US,en;q=0.5"
-        },
+        }, 
         {
           "accept-encoding": "gzip, deflate"
-        },
+        }, 
         {
           "connection": "keep-alive"
-        },
+        }, 
         {
           "referer": "http://www.yahoo.co.jp/"
-        },
+        }, 
         {
           "cookie": "B=76j09a189a6h4&b=3&s=0b"
         }
-      ],
-      "wire": "048df4e28f3493d119b5a44b49c5df4d8206ab02032a2f2a888386"
-    },
+      ], 
+      "wire": "448debea9e8a7faa6b6b5f535ff5bf0d823b5942032a2f2a888386"
+    }, 
     {
       "headers": [
         {
           ":method": "GET"
-        },
+        }, 
         {
           ":scheme": "http"
-        },
+        }, 
         {
           ":authority": "k.yimg.jp"
-        },
+        }, 
         {
           ":path": "/images/weather/general/transparent_s/clouds.gif"
-        },
+        }, 
         {
           "user-agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10.8; rv:16.0) Gecko/20100101 Firefox/16.0"
-        },
+        }, 
         {
           "accept": "image/png,image/*;q=0.8,*/*;q=0.5"
-        },
+        }, 
         {
           "accept-language": "en-US,en;q=0.5"
-        },
+        }, 
         {
           "accept-encoding": "gzip, deflate"
-        },
+        }, 
         {
           "connection": "keep-alive"
-        },
+        }, 
         {
           "referer": "http://www.yahoo.co.jp/"
         }
-      ],
-      "wire": "864e9e05688c8601b0a2398bc32160bd0b08bd0c8390f1646e80256dd70813256383818288"
-    },
+      ], 
+      "wire": "860ea23b2d4d4bc4fcd69756bc0f52ee5e09b0eec137637a705dcedd89d56378d38bf5338783818288"
+    }, 
     {
       "headers": [
         {
           ":method": "GET"
-        },
+        }, 
         {
           ":scheme": "http"
-        },
+        }, 
         {
           ":authority": "k.yimg.jp"
-        },
+        }, 
         {
           ":path": "/images/weather/general/transparent_s/sun.gif"
-        },
+        }, 
         {
           "user-agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10.8; rv:16.0) Gecko/20100101 Firefox/16.0"
-        },
+        }, 
         {
           "accept": "image/png,image/*;q=0.8,*/*;q=0.5"
-        },
+        }, 
         {
           "accept-language": "en-US,en;q=0.5"
-        },
+        }, 
         {
           "accept-encoding": "gzip, deflate"
-        },
+        }, 
         {
           "connection": "keep-alive"
-        },
+        }, 
         {
           "referer": "http://www.yahoo.co.jp/"
         }
-      ],
-      "wire": "4e9c05688c8601b0a2398bc32160bd0b08bd0c8390f1646e804356132563"
-    },
+      ], 
+      "wire": "0ea03b2d4d4bc4fcd69756bc0f52ee5e09b0eec137637a705dcedd89f1e373f53387"
+    }, 
     {
       "headers": [
         {
           ":method": "GET"
-        },
+        }, 
         {
           ":scheme": "http"
-        },
+        }, 
         {
           ":authority": "k.yimg.jp"
-        },
+        }, 
         {
           ":path": "/images/bookstore/common/special/2012/0829_05/banner/84x84_2.jpg"
-        },
+        }, 
         {
           "user-agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10.8; rv:16.0) Gecko/20100101 Firefox/16.0"
-        },
+        }, 
         {
           "accept": "image/png,image/*;q=0.8,*/*;q=0.5"
-        },
+        }, 
         {
           "accept-language": "en-US,en;q=0.5"
-        },
+        }, 
         {
           "accept-encoding": "gzip, deflate"
-        },
+        }, 
         {
           "connection": "keep-alive"
-        },
+        }, 
         {
           "referer": "http://www.yahoo.co.jp/"
         }
-      ],
-      "wire": "4eaa05688c86017b5bca116bc412dd346b020e14a90b0394c702d67b2e2d017a18c178573f9d73dc7271765f"
-    },
+      ], 
+      "wire": "0eac3b2d4d4bc4fbdadf6c5cdc167536db5b71f1bd6a626c390091c2429770427de9bae5e07920e9241b89ff5bea"
+    }, 
     {
       "headers": [
         {
           ":method": "GET"
-        },
+        }, 
         {
           ":scheme": "http"
-        },
+        }, 
         {
           ":authority": "k.yimg.jp"
-        },
+        }, 
         {
           ":path": "/images/premium/contents/bnr/2012/50x50/0928_store_supernatural.jpg"
-        },
+        }, 
         {
           "user-agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10.8; rv:16.0) Gecko/20100101 Firefox/16.0"
-        },
+        }, 
         {
           "accept": "image/png,image/*;q=0.8,*/*;q=0.5"
-        },
+        }, 
         {
           "accept-language": "en-US,en;q=0.5"
-        },
+        }, 
         {
           "accept-encoding": "gzip, deflate"
-        },
+        }, 
         {
           "connection": "keep-alive"
-        },
+        }, 
         {
           "referer": "http://www.yahoo.co.jp/"
         }
-      ],
-      "wire": "4eab05688c8600e78e8ad7404b5911646017b1e07298e1417ce82816c3d77422d78dd0d5c2f6223abd0b271765"
+      ], 
+      "wire": "0eaf3b2d4d4bc4f7e0bb59c6d3a9b739773b13efbb0390091e10e9081c25293762e6e0bdd8f1bd785c9771c1363feb7d5f"
     }
-  ]
+  ], 
+  "draft": 7, 
+  "description": "Encoded by nghttp2. The basic encoding strategy is described in http://lists.w3.org/Archives/Public/ietf-http-wg/2013JulSep/1135.html We use huffman encoding only if it produces strictly shorter byte string than original. We make some headers not indexing at all, but this does not always result in less bits on the wire."
 }

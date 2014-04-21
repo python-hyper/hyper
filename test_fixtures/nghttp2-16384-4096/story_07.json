@@ -1,357 +1,357 @@
 {
-  "draft": 6,
   "cases": [
     {
-      "wire": "807f811f8287038d8451152488e44c6f4e0c23063f479907c1e923b37073387a5e0f0f743e7f1f9edafc25fc779325633cbeef6faa96b405042f47faef4254c8b619f5747c19115f477a13d1f4f0e8fdf418a4afaba1fcfd86a485ff7d1ee14f2681ca6294c53747053c716f981a9217169a5688c841cccba55a23210febabcad292be9fe83faeaf2b4a4a3f158b164bf8f0e91675795a5251158acbd54ee9e8c0715a223f00874b58c14c54d67f87e422e950b5731f3a91ce3177b0036db6262848ded6f2225ba07f",
+      "header_table_size": 16384, 
       "headers": [
         {
           ":method": "GET"
-        },
+        }, 
         {
           ":scheme": "http"
-        },
+        }, 
         {
           ":authority": "static.ak.fbcdn.net"
-        },
+        }, 
         {
           ":path": "/rsrc.php/v2/yb/r/GsNJNwuI-UM.gif"
-        },
+        }, 
         {
           "user-agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10.8; rv:16.0) Gecko/20100101 Firefox/16.0"
-        },
+        }, 
         {
           "accept": "image/png,image/*;q=0.8,*/*;q=0.5"
-        },
+        }, 
         {
           "accept-language": "en-US,en;q=0.5"
-        },
+        }, 
         {
           "accept-encoding": "gzip, deflate"
-        },
+        }, 
         {
           "connection": "keep-alive"
-        },
+        }, 
         {
           "referer": "http://www.facebook.com/"
         }
-      ],
-      "header_table_size": 16384
-    },
+      ], 
+      "wire": "2ff11f8287438ec5c97314fa7d9fe1bd54dcfdcb77079a3e18e0a7efaef3f223f5de7c0fab1d9f3d9cf8f866f3d6fd4ce17db9d6df7659624f0be06feb5a54cb9cdc6bec3785ce5d86d6951bc769bd0c20fc9d86c394c313e1f136a5abd9a720100101369660be0de87189f0579b65a9a967beeab2b2d4d4b3ff7d9fc9c1f932ff67fefb3f9383f0ff568c5dd9bcf6e55ddd9fc9c1f87f568aabdd97e5352be1625cbf4087536eb96a731b7788f65aefcc9b19c97f7b92adcebe639f9f3e6ff04a97bdadf67d4db4ff"
+    }, 
     {
-      "wire": "4d9807c1e923b37073387a7f01e1ad6adf372fddf5ff0c44c21f058e88f9c4130874ff41fd75795a521b86",
       "headers": [
         {
           ":method": "GET"
-        },
+        }, 
         {
           ":scheme": "http"
-        },
+        }, 
         {
           ":authority": "static.ak.fbcdn.net"
-        },
+        }, 
         {
           ":path": "/rsrc.php/v2/yY/r/u8iA3kXb8Y1.css"
-        },
+        }, 
         {
           "user-agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10.8; rv:16.0) Gecko/20100101 Firefox/16.0"
-        },
+        }, 
         {
           "accept": "text/css,*/*;q=0.1"
-        },
+        }, 
         {
           "accept-language": "en-US,en;q=0.5"
-        },
+        }, 
         {
           "accept-encoding": "gzip, deflate"
-        },
+        }, 
         {
           "connection": "keep-alive"
-        },
+        }, 
         {
           "referer": "http://www.facebook.com/"
         }
-      ]
-    },
+      ], 
+      "wire": "0d993e18e0a7efaef3f223f5fd1f03f19199d1ede9be4fd0beac71458f72fa38eac71cbfd9ffbecfe4e0f8ff86"
+    }, 
     {
-      "wire": "4e9807c1e923b37073387a7c01e1e5bfe7f9f1876507c5c44c21",
       "headers": [
         {
           ":method": "GET"
-        },
+        }, 
         {
           ":scheme": "http"
-        },
+        }, 
         {
           ":authority": "static.ak.fbcdn.net"
-        },
+        }, 
         {
           ":path": "/rsrc.php/v2/yI/r/qANVTsC52fp.css"
-        },
+        }, 
         {
           "user-agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10.8; rv:16.0) Gecko/20100101 Firefox/16.0"
-        },
+        }, 
         {
           "accept": "text/css,*/*;q=0.1"
-        },
+        }, 
         {
           "accept-language": "en-US,en;q=0.5"
-        },
+        }, 
         {
           "accept-encoding": "gzip, deflate"
-        },
+        }, 
         {
           "connection": "keep-alive"
-        },
+        }, 
         {
           "referer": "http://www.facebook.com/"
         }
-      ]
-    },
+      ], 
+      "wire": "0e9a3e18e0a7efaef3f223f5f03e07fe67d9f8a31ee84b85efab1c7f"
+    }, 
     {
-      "wire": "4e9907c1e923b37073387a441e1c3fc477ff7e5bfef9765247332f8681",
       "headers": [
         {
           ":method": "GET"
-        },
+        }, 
         {
           ":scheme": "http"
-        },
+        }, 
         {
           ":authority": "static.ak.fbcdn.net"
-        },
+        }, 
         {
           ":path": "/rsrc.php/v2/yt/r/FZaMKqARgC6.png"
-        },
+        }, 
         {
           "user-agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10.8; rv:16.0) Gecko/20100101 Firefox/16.0"
-        },
+        }, 
         {
           "accept": "image/png,image/*;q=0.8,*/*;q=0.5"
-        },
+        }, 
         {
           "accept-language": "en-US,en;q=0.5"
-        },
+        }, 
         {
           "accept-encoding": "gzip, deflate"
-        },
+        }, 
         {
           "connection": "keep-alive"
-        },
+        }, 
         {
           "referer": "http://www.facebook.com/"
         }
-      ]
-    },
+      ], 
+      "wire": "0e9a3e18e0a7efaef3f223f571f03e9fda75fd3f99fef57744fdf7558681"
+    }, 
     {
-      "wire": "4e9907c1e923b37073387a7f80f0e2bfefb5bfb351cbdfee27187f01032a2f2a87",
       "headers": [
         {
           ":method": "GET"
-        },
+        }, 
         {
           ":scheme": "http"
-        },
+        }, 
         {
           ":authority": "static.ak.fbcdn.net"
-        },
+        }, 
         {
           ":path": "/rsrc.php/v2/yZ/r/jlKDoX15kHG.js"
-        },
+        }, 
         {
           "user-agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10.8; rv:16.0) Gecko/20100101 Firefox/16.0"
-        },
+        }, 
         {
           "accept": "*/*"
-        },
+        }, 
         {
           "accept-language": "en-US,en;q=0.5"
-        },
+        }, 
         {
           "accept-encoding": "gzip, deflate"
-        },
+        }, 
         {
           "connection": "keep-alive"
-        },
+        }, 
         {
           "referer": "http://www.facebook.com/"
         }
-      ]
-    },
+      ], 
+      "wire": "0e9a3e18e0a7efaef3f223f5fd9f03fad9f4d0df4187dbe5a9ff5c7f41032a2f2a87"
+    }, 
     {
-      "wire": "4f9807c1e923b37073387a7d01e1777fdd0f7669ecf8791130878281",
       "headers": [
         {
           ":method": "GET"
-        },
+        }, 
         {
           ":scheme": "http"
-        },
+        }, 
         {
           ":authority": "static.ak.fbcdn.net"
-        },
+        }, 
         {
           ":path": "/rsrc.php/v2/yO/r/_MRarphcCIq.css"
-        },
+        }, 
         {
           "user-agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10.8; rv:16.0) Gecko/20100101 Firefox/16.0"
-        },
+        }, 
         {
           "accept": "text/css,*/*;q=0.1"
-        },
+        }, 
         {
           "accept-language": "en-US,en;q=0.5"
-        },
+        }, 
         {
           "accept-encoding": "gzip, deflate"
-        },
+        }, 
         {
           "connection": "keep-alive"
-        },
+        }, 
         {
           "referer": "http://www.facebook.com/"
         }
-      ]
-    },
+      ], 
+      "wire": "0f009a3e18e0a7efaef3f223f5f13e07ddafee9c2fad5dde1fc7d58e3f8281"
+    }, 
     {
-      "wire": "4f9807c1e923b37073387a7d41e1d9f7e4aededfd78e06d49c618182",
       "headers": [
         {
           ":method": "GET"
-        },
+        }, 
         {
           ":scheme": "http"
-        },
+        }, 
         {
           ":authority": "static.ak.fbcdn.net"
-        },
+        }, 
         {
           ":path": "/rsrc.php/v2/yP/r/CRkiDDWTd1u.js"
-        },
+        }, 
         {
           "user-agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10.8; rv:16.0) Gecko/20100101 Firefox/16.0"
-        },
+        }, 
         {
           "accept": "*/*"
-        },
+        }, 
         {
           "accept-language": "en-US,en;q=0.5"
-        },
+        }, 
         {
           "accept-encoding": "gzip, deflate"
-        },
+        }, 
         {
           "connection": "keep-alive"
-        },
+        }, 
         {
           "referer": "http://www.facebook.com/"
         }
-      ]
-    },
+      ], 
+      "wire": "0f00993e18e0a7efaef3f223f5f23e07eefbfb33468fcd148f17fd718182"
+    }, 
     {
-      "wire": "4f9907c1e923b37073387a7ec3cc3ede54fc8d9a3ecffe3c8e665f8703a9ce3177b00211445492239131bd38308c1883e0f491d9b8399c3d3e00f0f2dff3fcf8c3b283e2e226108284",
       "headers": [
         {
           ":method": "GET"
-        },
+        }, 
         {
           ":scheme": "http"
-        },
+        }, 
         {
           ":authority": "static.ak.fbcdn.net"
-        },
+        }, 
         {
           ":path": "/rsrc.php/v2/yX/x/Qq6L1haQrYr.png"
-        },
+        }, 
         {
           "user-agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10.8; rv:16.0) Gecko/20100101 Firefox/16.0"
-        },
+        }, 
         {
           "accept": "image/png,image/*;q=0.8,*/*;q=0.5"
-        },
+        }, 
         {
           "accept-language": "en-US,en;q=0.5"
-        },
+        }, 
         {
           "accept-encoding": "gzip, deflate"
-        },
+        }, 
         {
           "connection": "keep-alive"
-        },
+        }, 
         {
           "referer": "http://static.ak.fbcdn.net/rsrc.php/v2/yI/r/qANVTsC52fp.css"
         }
-      ]
-    },
+      ], 
+      "wire": "0f009a3e18e0a7efaef3f223f5f43f43fdbf917d46b4fdb0fd60fdf7558743acadcebe639f1725cc53e9f67f86f55373f72dc7c31c14fdf5de7e447ebe07c0ffccfb3f1463dd0970bdf5638f8284"
+    }, 
     {
-      "wire": "509807c1e923b37073387a7cc1e1dc87dffa6dda76fe2527187f82848188",
       "headers": [
         {
           ":method": "GET"
-        },
+        }, 
         {
           ":scheme": "http"
-        },
+        }, 
         {
           ":authority": "static.ak.fbcdn.net"
-        },
+        }, 
         {
           ":path": "/rsrc.php/v2/yN/r/EarbWo_mDU-.js"
-        },
+        }, 
         {
           "user-agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10.8; rv:16.0) Gecko/20100101 Firefox/16.0"
-        },
+        }, 
         {
           "accept": "*/*"
-        },
+        }, 
         {
           "accept-language": "en-US,en;q=0.5"
-        },
+        }, 
         {
           "accept-encoding": "gzip, deflate"
-        },
+        }, 
         {
           "connection": "keep-alive"
-        },
+        }, 
         {
           "referer": "http://www.facebook.com/"
         }
-      ]
-    },
+      ], 
+      "wire": "0f01993e18e0a7efaef3f223f5d87c0fde9c37fe5bbadd1e799ff5c782848188"
+    }, 
     {
-      "wire": "509807c1e923b37073387a541e616718d4dfce1c2af5988e665f8801a9ce3177b00211445492239131bd38308c1883e0f491d9b8399c3d3e80f0bbbfee87bb34f67c3c8898438385",
       "headers": [
         {
           ":method": "GET"
-        },
+        }, 
         {
           ":scheme": "http"
-        },
+        }, 
         {
           ":authority": "static.ak.fbcdn.net"
-        },
+        }, 
         {
           ":path": "/rsrc.php/v2/y7/x/9jt7oVdF7z3.png"
-        },
+        }, 
         {
           "user-agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10.8; rv:16.0) Gecko/20100101 Firefox/16.0"
-        },
+        }, 
         {
           "accept": "image/png,image/*;q=0.8,*/*;q=0.5"
-        },
+        }, 
         {
           "accept-language": "en-US,en;q=0.5"
-        },
+        }, 
         {
           "accept-encoding": "gzip, deflate"
-        },
+        }, 
         {
           "connection": "keep-alive"
-        },
+        }, 
         {
           "referer": "http://static.ak.fbcdn.net/rsrc.php/v2/yO/r/_MRarphcCIq.css"
         }
-      ]
+      ], 
+      "wire": "0f01993e18e0a7efaef3f223f58cfd0f2faba36fe29d31fba1fbeeab8841acadcebe639f1725cc53e9f67f86f55373f72dc7c31c14fdf5de7e447ebe27c0fbb5fdd385f5abbbc3f8fab1c78385"
     }
-  ],
+  ], 
+  "draft": 7, 
   "description": "Encoded by nghttp2. The basic encoding strategy is described in http://lists.w3.org/Archives/Public/ietf-http-wg/2013JulSep/1135.html We use huffman encoding only if it produces strictly shorter byte string than original. We make some headers not indexing at all, but this does not always result in less bits on the wire."
 }

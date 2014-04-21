@@ -1,351 +1,351 @@
 {
-  "draft": 6,
   "cases": [
     {
-      "wire": "807f811f8287038782988225ba112c873dbeef6faa96b405042f47faef4254c8b619f5747c19115f477a13d1f4f0e8fdf418a4afaba1fcfd86a485ff7d1ee14f2681ca6294c53747053c716f981a921717af88f9c4338e8be9439cb5251153581e79c745ffcf3d17d287396a4a22a6b03cf45f5795a5259d3fd07f5d5e569495ff168b164bf8f0e91675795a5251168acbd54ee9e8c0715a223f00874b58c14c54d67f87e422e950b5731f",
+      "header_table_size": 16384, 
       "headers": [
         {
           ":method": "GET"
-        },
+        }, 
         {
           ":scheme": "http"
-        },
+        }, 
         {
           ":authority": "sina.com.cn"
-        },
+        }, 
         {
           ":path": "/"
-        },
+        }, 
         {
           "user-agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10.8; rv:16.0) Gecko/20100101 Firefox/16.0"
-        },
+        }, 
         {
           "accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8"
-        },
+        }, 
         {
           "accept-language": "en-US,en;q=0.5"
-        },
+        }, 
         {
           "accept-encoding": "gzip, deflate"
-        },
+        }, 
         {
           "connection": "keep-alive"
         }
-      ],
-      "header_table_size": 16384
-    },
+      ], 
+      "wire": "2ff11f82874388c59725f536d7d577877eb9d6df7659624f0be06feb5a54cb9cdc6bec3785ce5d86d6951bc769bd0c20fc9d86c394c313e1f136a5abd9a720100101369660be0de87189f058b072fa38f5badb32a6fbec6292e636e3f4add6d9fe74b6cca9befb18a4b98db8fd2db3b3f9383f2e5fecffdf67f2707e4f578c5dd9bcf6e55ddd9fc9c1f87f578aabdd97e5352be1625cbf4087536eb96a731b7788f65aefcc9b19c97f"
+    }, 
     {
-      "wire": "078adb6d890531044b74225988",
       "headers": [
         {
           ":method": "GET"
-        },
+        }, 
         {
           ":scheme": "http"
-        },
+        }, 
         {
           ":authority": "www.sina.com.cn"
-        },
+        }, 
         {
           ":path": "/"
-        },
+        }, 
         {
           "user-agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10.8; rv:16.0) Gecko/20100101 Firefox/16.0"
-        },
+        }, 
         {
           "accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8"
-        },
+        }, 
         {
           "accept-language": "en-US,en;q=0.5"
-        },
+        }, 
         {
           "accept-encoding": "gzip, deflate"
-        },
+        }, 
         {
           "connection": "keep-alive"
         }
-      ]
-    },
+      ], 
+      "wire": "478be7cf9bf8b2e4bea6dafaae88"
+    }, 
     {
-      "wire": "018b60ed02414c4112dd08967f48960e300aea0394c7314f381ca639abec6b31f16b89c61f06032a2f2a3e90ce3177b0036db62414c4112dd089607f84888a",
       "headers": [
         {
           ":method": "GET"
-        },
+        }, 
         {
           ":scheme": "http"
-        },
+        }, 
         {
           ":authority": "news.sina.com.cn"
-        },
+        }, 
         {
           ":path": "/js/87/20121024/201218ConfTop.js"
-        },
+        }, 
         {
           "user-agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10.8; rv:16.0) Gecko/20100101 Firefox/16.0"
-        },
+        }, 
         {
           "accept": "*/*"
-        },
+        }, 
         {
           "accept-language": "en-US,en;q=0.5"
-        },
+        }, 
         {
           "accept-encoding": "gzip, deflate"
-        },
+        }, 
         {
           "connection": "keep-alive"
-        },
+        }, 
         {
           "referer": "http://www.sina.com.cn/"
         }
-      ]
-    },
+      ], 
+      "wire": "418cb97cf17f165c97d4db5f55df08963fae27923390090814072012193b9b770a1b7bfeb8ff46032a2f2a7f0091adcebe639f9f3e6fe2cb92fa9b6beab8ff84888a"
+    }, 
     {
-      "wire": "038e53224c1cd6ac90531044b742259f4b8f05396d6f2d5c0a72dade5ab88ecddf84",
       "headers": [
         {
           ":method": "GET"
-        },
+        }, 
         {
           ":scheme": "http"
-        },
+        }, 
         {
           ":authority": "int.dpool.sina.com.cn"
-        },
+        }, 
         {
           ":path": "/iplookup/iplookup.php"
-        },
+        }, 
         {
           "user-agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10.8; rv:16.0) Gecko/20100101 Firefox/16.0"
-        },
+        }, 
         {
           "accept": "*/*"
-        },
+        }, 
         {
           "accept-language": "en-US,en;q=0.5"
-        },
+        }, 
         {
           "accept-encoding": "gzip, deflate"
-        },
+        }, 
         {
           "connection": "keep-alive"
-        },
+        }, 
         {
           "referer": "http://www.sina.com.cn/"
         }
-      ]
-    },
+      ], 
+      "wire": "438f65ce7e9bdadb1fc59725f536d7d5770b913b2fb1adf6e379d97d8d6fb71bdfbebbff84"
+    }, 
     {
-      "wire": "018954c4829885699112cf4ca00e6ac05a07298e0631660fc555968fa9a9abb7c4e531cc62cc731aba26271765049a5688c841cccba55a23210febabcad292be9fe83faeaf2b4a4a3f8385",
       "headers": [
         {
           ":method": "GET"
-        },
+        }, 
         {
           ":scheme": "http"
-        },
+        }, 
         {
           ":authority": "i3.sinaimg.cn"
-        },
+        }, 
         {
           ":path": "/video/2012/1103/U7805P167DT20121103211853.jpg"
-        },
+        }, 
         {
           "user-agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10.8; rv:16.0) Gecko/20100101 Firefox/16.0"
-        },
+        }, 
         {
           "accept": "image/png,image/*;q=0.8,*/*;q=0.5"
-        },
+        }, 
         {
           "accept-language": "en-US,en;q=0.5"
-        },
+        }, 
         {
           "accept-encoding": "gzip, deflate"
-        },
+        }, 
         {
           "connection": "keep-alive"
-        },
+        }, 
         {
           "referer": "http://www.sina.com.cn/"
         }
-      ]
-    },
+      ], 
+      "wire": "4189621fc5972596d4faae0c9e3f2652b69c8048e22083f9c72043e43147a2820121104108c90a1ff5beaf449b65a9a967beeab2b2d4d4b3ff7d9fc9c1f932ff67fefb3f9383f0ff8385"
+    }, 
     {
-      "wire": "4d9e0cdba081ca63818c5387e292ce6facc5edf1394c7318a731ce69e9271765",
       "headers": [
         {
           ":method": "GET"
-        },
+        }, 
         {
           ":scheme": "http"
-        },
+        }, 
         {
           ":authority": "i3.sinaimg.cn"
-        },
+        }, 
         {
           ":path": "/home/2012/1102/U6041P30DT20121102122146.jpg"
-        },
+        }, 
         {
           "user-agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10.8; rv:16.0) Gecko/20100101 Firefox/16.0"
-        },
+        }, 
         {
           "accept": "image/png,image/*;q=0.8,*/*;q=0.5"
-        },
+        }, 
         {
           "accept-language": "en-US,en;q=0.5"
-        },
+        }, 
         {
           "accept-encoding": "gzip, deflate"
-        },
+        }, 
         {
           "connection": "keep-alive"
-        },
+        }, 
         {
           "referer": "http://www.sina.com.cn/"
         }
-      ]
-    },
+      ], 
+      "wire": "0d9c3d6db5672012388811fce20807c901a282012110212218227fd6fabf"
+    }, 
     {
-      "wire": "4d960cdba086029681ca5b00b34c505b726dd9b741264ac7",
       "headers": [
         {
           ":method": "GET"
-        },
+        }, 
         {
           ":scheme": "http"
-        },
+        }, 
         {
           ":authority": "i3.sinaimg.cn"
-        },
+        }, 
         {
           ":path": "/home/deco/2009/0330/logo_home.gif"
-        },
+        }, 
         {
           "user-agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10.8; rv:16.0) Gecko/20100101 Firefox/16.0"
-        },
+        }, 
         {
           "accept": "image/png,image/*;q=0.8,*/*;q=0.5"
-        },
+        }, 
         {
           "accept-language": "en-US,en;q=0.5"
-        },
+        }, 
         {
           "accept-encoding": "gzip, deflate"
-        },
+        }, 
         {
           "connection": "keep-alive"
-        },
+        }, 
         {
           "referer": "http://www.sina.com.cn/"
         }
-      ]
-    },
+      ], 
+      "wire": "0d973d6db567a56a69c80253821007b1b537756db56fd4ce1f"
+    }, 
     {
-      "wire": "0289c0c482988225ba112c4e960867982c539a1807298e629a98298805b726989c5d9783",
       "headers": [
         {
           ":method": "GET"
-        },
+        }, 
         {
           ":scheme": "http"
-        },
+        }, 
         {
           ":authority": "d1.sina.com.cn"
-        },
+        }, 
         {
           ":path": "/shh/lechan/20121016sina/logo1.jpg"
-        },
+        }, 
         {
           "user-agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10.8; rv:16.0) Gecko/20100101 Firefox/16.0"
-        },
+        }, 
         {
           "accept": "image/png,image/*;q=0.8,*/*;q=0.5"
-        },
+        }, 
         {
           "accept-language": "en-US,en;q=0.5"
-        },
+        }, 
         {
           "accept-encoding": "gzip, deflate"
-        },
+        }, 
         {
           "connection": "keep-alive"
-        },
+        }, 
         {
           "referer": "http://www.sina.com.cn/"
         }
-      ]
-    },
+      ], 
+      "wire": "428aa45fc59725f536d7d5770e973e35d67b16aad371c80484062c59724f636a68bfeb7d5f83"
+    }, 
     {
-      "wire": "0189514905310ad322259f4f9f0cdba081ca63818c5983f15d141beb317b7c4e531cc62cc5a66aa69c9c5d9782",
       "headers": [
         {
           ":method": "GET"
-        },
+        }, 
         {
           ":scheme": "http"
-        },
+        }, 
         {
           ":authority": "i0.sinaimg.cn"
-        },
+        }, 
         {
           ":path": "/home/2012/1103/U8551P30DT20121103063734.jpg"
-        },
+        }, 
         {
           "user-agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10.8; rv:16.0) Gecko/20100101 Firefox/16.0"
-        },
+        }, 
         {
           "accept": "image/png,image/*;q=0.8,*/*;q=0.5"
-        },
+        }, 
         {
           "accept-language": "en-US,en;q=0.5"
-        },
+        }, 
         {
           "accept-encoding": "gzip, deflate"
-        },
+        }, 
         {
           "connection": "keep-alive"
-        },
+        }, 
         {
           "referer": "http://www.sina.com.cn/"
         }
-      ]
-    },
+      ], 
+      "wire": "4189603f8b2e4b2da9f55d0f009d3d6db5672012388820fe724308f92034504024220808911a207fd6fabf82"
+    }, 
     {
-      "wire": "0189518905310ad322259f509f0cdba081ca63818c5307e29a67afeb317b7c4e531cc6298d39a798e4e2ecbf82",
       "headers": [
         {
           ":method": "GET"
-        },
+        }, 
         {
           ":scheme": "http"
-        },
+        }, 
         {
           ":authority": "i1.sinaimg.cn"
-        },
+        }, 
         {
           ":path": "/home/2012/1101/U6648P30DT20121101141432.jpg"
-        },
+        }, 
         {
           "user-agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10.8; rv:16.0) Gecko/20100101 Firefox/16.0"
-        },
+        }, 
         {
           "accept": "image/png,image/*;q=0.8,*/*;q=0.5"
-        },
+        }, 
         {
           "accept-language": "en-US,en;q=0.5"
-        },
+        }, 
         {
           "accept-encoding": "gzip, deflate"
-        },
+        }, 
         {
           "connection": "keep-alive"
-        },
+        }, 
         {
           "referer": "http://www.sina.com.cn/"
         }
-      ]
+      ], 
+      "wire": "418960bf8b2e4b2da9f55d0f019c3d6db5672012388809fce28a093c901a282012110118060413feb7d582"
     }
-  ],
+  ], 
+  "draft": 7, 
   "description": "Encoded by nghttp2. The basic encoding strategy is described in http://lists.w3.org/Archives/Public/ietf-http-wg/2013JulSep/1135.html We use huffman encoding only if it produces strictly shorter byte string than original. We make some headers not indexing at all, but this does not always result in less bits on the wire."
 }
