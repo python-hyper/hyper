@@ -10,7 +10,7 @@ from .stream import Stream
 from .tls import wrap_socket
 from .frame import (
     DataFrame, HeadersFrame, PushPromiseFrame, RstStreamFrame, SettingsFrame,
-    Frame, WindowUpdateFrame, GoAwayFrame
+    Frame, WindowUpdateFrame, GoAwayFrame, PingFrame,
 )
 from .response import HTTP20Response, HTTP20Push
 from .window import FlowControlManager
@@ -321,6 +321,13 @@ class HTTP20Connection(object):
         """
         if isinstance(frame, WindowUpdateFrame):
             self._out_flow_control_window += frame.window_increment
+        elif isinstance(frame, PingFrame):
+            if 'ACK' not in frame.flags:
+                # The spec requires us to reply with PING+ACK and identical data.
+                p = PingFrame(0)
+                p.flags.add('ACK')
+                p.opaque_data = frame.opaque_data
+                self._data_cb(p, True)
         elif isinstance(frame, SettingsFrame):
             if 'ACK' not in frame.flags:
                 self._update_settings(frame)
@@ -373,8 +380,9 @@ class HTTP20Connection(object):
         s = Stream(
             stream_id or self.next_stream_id, self._send_cb, self._recv_cb,
             self._close_stream, self.encoder, self.decoder,
-            self.__wm_class(window_size), local_closed
+            self.__wm_class(65535), local_closed
         )
+        s._out_flow_control_window = self._out_flow_control_window
         self.streams[s.stream_id] = s
         self.next_stream_id += 2
 

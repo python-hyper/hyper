@@ -60,10 +60,12 @@ class Stream(object):
         # Set to a key-value set of the response headers once their
         # HEADERS..CONTINUATION frame sequence finishes.
         self.response_headers = None
+
         # A dict mapping the promised stream ID of a pushed resource to a
         # key-value set of its request headers. Entries are added once their
         # PUSH_PROMISE..CONTINUATION frame sequence finishes.
         self.promised_headers = {}
+
         # Chunks of encoded header data from the current
         # (HEADERS|PUSH_PROMISE)..CONTINUATION frame sequence. Since sending any
         # frame other than a CONTINUATION is disallowed while a header block is
@@ -71,6 +73,7 @@ class Stream(object):
         # of state we have to track.
         self.header_data = []
         self.promised_stream_id = None
+
         # Unconsumed response data chunks. Empties after every call to _read().
         self.data = []
 

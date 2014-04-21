@@ -18,9 +18,11 @@ X.X.X (XXXX-XX-XX)
   one in which they were sent. (`Issue #39`_)
 - Default window manager is now smarter about sending WINDOWUPDATE frames.
   (`Issue #41`_)
+- Fixed inverted window sizes. (`Issue #27`_)
 
 .. _Issue #24: https://github.com/Lukasa/hyper/issues/24
 .. _Issue #26: https://github.com/Lukasa/hyper/issues/26
+.. _Issue #27: https://github.com/Lukasa/hyper/issues/27
 .. _Issue #33: https://github.com/Lukasa/hyper/issues/33
 .. _Issue #39: https://github.com/Lukasa/hyper/issues/39
 .. _Issue #41: https://github.com/Lukasa/hyper/issues/41
