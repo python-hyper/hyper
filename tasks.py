@@ -54,4 +54,5 @@ def hpack():
             output['cases'].append(outcase)
 
         with open(outname, 'wb') as f:
-            f.write(json.dumps(output))
+            f.write(json.dumps(output, sort_keys=True,
+                    indent=2, separators=(',', ': ')))
