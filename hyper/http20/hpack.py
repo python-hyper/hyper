@@ -730,7 +730,7 @@ class Decoder(object):
             # move forward.
             data = data[1:]
 
-            length, consumed = decode_integer(data, 7)
+            length, consumed = decode_integer(data, name_len)
             name = data[consumed:consumed + length]
 
             if to_byte(data[0]) & 0x80:
