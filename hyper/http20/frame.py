@@ -141,15 +141,15 @@ class Priority(object):
         return b''
 
     def parse_priority_data(self, data):
+        MASK = 0x80000000
         if 'PRIORITY_GROUP' in self.flags:
             self.priority_group_id, self.priority_group_weight = struct.unpack("!LB", data[:5])
-            self.priority_group_id &= ~(1 << 31) # make sure reserved bit is ignored
+            self.priority_group_id &= ~MASK # make sure reserved bit is ignored
             return 5
         elif 'PRIORITY_DEPENDENCY' in self.flags:
             self.stream_dependency_id = struct.unpack("!L", data[:4])[0]
-            mask = 1 << 31
-            self.stream_dependency_exclusive = bool(self.stream_dependency_id & mask)
-            self.stream_dependency_id &= ~mask
+            self.stream_dependency_exclusive = bool(self.stream_dependency_id & MASK)
+            self.stream_dependency_id &= ~MASK
             return 4
         return 0
 
