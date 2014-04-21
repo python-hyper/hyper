@@ -1146,6 +1146,34 @@ class TestHyperConnection(object):
         assert isinstance(queue[2], WindowUpdateFrame)
         assert queue[2].window_increment == len(b'hi there sir again')
 
+    def test_ping_with_ack_ignored(self):
+        c = HTTP20Connection('www.google.com')
+        f = PingFrame(0)
+        f.flags = set(['ACK'])
+        f.opaque_data = b'12345678'
+
+        def data_cb(frame, tolerate_peer_gone=False):
+            assert False, 'should not be called'
+        c._data_cb = data_cb
+        c.receive_frame(f)
+
+    def test_ping_without_ack_gets_reply(self):
+        c = HTTP20Connection('www.google.com')
+        f = PingFrame(0)
+        f.opaque_data = b'12345678'
+
+        frames = []
+
+        def data_cb(frame, tolerate_peer_gone=False):
+            frames.append(frame)
+        c._data_cb = data_cb
+        c.receive_frame(f)
+
+        assert len(frames) == 1
+        assert frames[0].type == PingFrame.type
+        assert frames[0].flags == set(['ACK'])
+        assert frames[0].opaque_data == b'12345678'
+
 
 class TestServerPush(object):
     def setup_method(self, method):
