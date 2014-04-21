@@ -23,16 +23,18 @@ class Frame(object):
     # The type of the frame.
     type = None
 
-    # If True, the frame's stream_id must be non-zero. If False, it must be zero.
-    has_stream = None
+    # If 'has-stream', the frame's stream_id must be non-zero. If 'no-stream',
+    # it must be zero. If 'either', it's not checked.
+    stream_association = None
 
     def __init__(self, stream_id):
         self.stream_id = stream_id
         self.flags = set()
 
-        if self.has_stream is True and self.stream_id == 0 or \
-            self.has_stream is False and self.stream_id != 0:
-            raise ValueError()
+        if self.stream_association == 'has-stream' and not self.stream_id:
+            raise ValueError('Stream ID must be non-zero')
+        if self.stream_association == 'no-stream' and self.stream_id:
+            raise ValueError('Stream ID must be zero')
 
     @staticmethod
     def parse_frame_header(header):
@@ -165,11 +167,7 @@ class DataFrame(Frame, Padding):
 
     type = 0x0
 
-    has_stream = True
-
-    def __init__(self, stream_id):
-        super(DataFrame, self).__init__(stream_id)
-        Padding.__init__(self)
+    stream_association = 'has-stream'
 
     def serialize_body(self):
         padding_data = self.serialize_padding_data()
@@ -191,11 +189,7 @@ class PriorityFrame(Frame, Priority):
 
     type = 0x02
 
-    has_stream = True
-
-    def __init__(self, stream_id):
-        super(PriorityFrame, self).__init__(stream_id)
-        Priority.__init__(self)
+    stream_association = 'has-stream'
 
     def serialize_body(self):
         return self.serialize_priority_data()
@@ -217,7 +211,7 @@ class RstStreamFrame(Frame):
 
     type = 0x03
 
-    has_stream = True
+    stream_association = 'has-stream'
 
     def __init__(self, stream_id):
         super(RstStreamFrame, self).__init__(stream_id)
@@ -250,7 +244,7 @@ class SettingsFrame(Frame):
 
     type = 0x04
 
-    has_stream = False
+    stream_association = 'no-stream'
 
     # We need to define the known settings, they may as well be class
     # attributes.
@@ -285,11 +279,7 @@ class PushPromiseFrame(Frame, Padding):
 
     type = 0x05
 
-    has_stream = True
-
-    def __init__(self, stream_id):
-        super(PushPromiseFrame, self).__init__(stream_id)
-        Padding.__init__(self)
+    stream_association = 'has-stream'
 
     def serialize_body(self):
         padding_data = self.serialize_padding_data()
@@ -314,7 +304,7 @@ class PingFrame(Frame):
 
     type = 0x06
 
-    has_stream = False
+    stream_association = 'no-stream'
 
     def __init__(self, stream_id):
         super(PingFrame, self).__init__(stream_id)
@@ -345,7 +335,7 @@ class GoAwayFrame(Frame):
     """
     type = 0x07
 
-    has_stream = False
+    stream_association = 'no-stream'
 
     def __init__(self, stream_id):
         super(GoAwayFrame, self).__init__(stream_id)
@@ -386,7 +376,7 @@ class WindowUpdateFrame(Frame):
     """
     type = 0x08
 
-    has_stream = None
+    stream_association = 'either'
 
     def __init__(self, stream_id):
         super(WindowUpdateFrame, self).__init__(stream_id)
@@ -414,7 +404,7 @@ class HeadersFrame(Frame, Padding, Priority):
     """
     type = 0x01
 
-    has_stream = True
+    stream_association = 'has-stream'
 
     defined_flags = [
         ('END_STREAM', 0x01),
@@ -458,7 +448,7 @@ class ContinuationFrame(Frame, Padding):
     """
     type = 0x09
 
-    has_stream = True
+    stream_association = 'has-stream'
 
     defined_flags = [('END_HEADERS', 0x04), ('PAD_LOW', 0x08), ('PAD_HIGH', 0x10)]
 
@@ -485,7 +475,7 @@ class AltsvcFrame(Frame):
     """
     type = 0xA
 
-    has_stream = False
+    stream_association = 'no-stream'
 
     def __init__(self, stream_id):
         super(AltsvcFrame, self).__init__(stream_id)
