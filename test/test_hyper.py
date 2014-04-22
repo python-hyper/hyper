@@ -14,6 +14,7 @@ from hyper.http20.stream import (
 from hyper.http20.response import HTTP20Response
 from hyper.http20.exceptions import HPACKDecodingError, HPACKEncodingError
 from hyper.http20.window import FlowControlManager
+from hyper.http20.util import combine_repeated_headers, split_repeated_headers
 from hyper.compat import zlib_compressobj
 from hyper.contrib import HTTP20Adapter
 import errno
@@ -1800,6 +1801,39 @@ class TestHTTP20Adapter(object):
         conn2 = a.get_connection('twitter.com')
 
         assert conn1 is conn2
+
+
+class TestUtilities(object):
+    def test_combining_repeated_headers(self):
+        test_headers = [
+            (b'key1', b'val1'),
+            (b'key2', b'val2'),
+            (b'key1', b'val1.1'),
+            (b'key3', b'val3'),
+            (b'key2', b'val2.1'),
+            (b'key1', b'val1.2'),
+        ]
+        expected = [
+            (b'key1', b'val1\x00val1.1\x00val1.2'),
+            (b'key2', b'val2\x00val2.1'),
+            (b'key3', b'val3'),
+        ]
+
+        assert expected == combine_repeated_headers(test_headers)
+
+    def test_splitting_repeated_headers(self):
+        test_headers = [
+            (b'key1', b'val1\x00val1.1\x00val1.2'),
+            (b'key2', b'val2\x00val2.1'),
+            (b'key3', b'val3'),
+        ]
+        expected = {
+            b'key1': [b'val1', b'val1.1', b'val1.2'],
+            b'key2': [b'val2', b'val2.1'],
+            b'key3': [b'val3'],
+        }
+
+        assert expected == split_repeated_headers(test_headers)
 
 
 # Some utility classes for the tests.
