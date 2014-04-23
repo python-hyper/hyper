@@ -462,7 +462,7 @@ class ContinuationFrame(Padding, Frame):
 
 Origin = collections.namedtuple('Origin', ['scheme', 'host', 'port'])
 
-class AltsvcFrame(Frame):
+class AltSvcFrame(Frame):
     """
     The ALTSVC frame is used to advertise alternate services that the current
     host, or a different one, can understand.
@@ -472,7 +472,7 @@ class AltsvcFrame(Frame):
     stream_association = 'no-stream'
 
     def __init__(self, stream_id):
-        super(AltsvcFrame, self).__init__(stream_id)
+        super(AltSvcFrame, self).__init__(stream_id)
 
         self.host = None
         self.port = None
@@ -526,6 +526,6 @@ _FRAME_CLASSES = [
     GoAwayFrame,
     WindowUpdateFrame,
     ContinuationFrame,
-    AltsvcFrame,
+    AltSvcFrame,
 ]
 FRAMES = {cls.type: cls for cls in _FRAME_CLASSES}

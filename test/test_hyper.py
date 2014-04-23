@@ -2,7 +2,7 @@
 from hyper.http20.frame import (
     Frame, DataFrame, PriorityFrame, RstStreamFrame, SettingsFrame,
     PushPromiseFrame, PingFrame, GoAwayFrame, WindowUpdateFrame, HeadersFrame,
-    ContinuationFrame, AltsvcFrame, Origin,
+    ContinuationFrame, AltSvcFrame, Origin,
 )
 from hyper.http20.hpack import Encoder, Decoder, encode_integer, decode_integer
 from hyper.http20.huffman import HuffmanDecoder
@@ -472,7 +472,7 @@ class TestContinuationFrame(object):
         assert f.data == b'hello world'
 
 
-class TestAltsvcFrame(object):
+class TestAltSvcFrame(object):
     payload_with_origin = (
         b'\x00\x2B\x0A\x00\x00\x00\x00\x00'
         b'\x00\x00\x00\x1D\x00\x50\x00\x02'
@@ -485,13 +485,13 @@ class TestAltsvcFrame(object):
     )
 
     def test_altsvc_frame_flags(self):
-        f = AltsvcFrame(0)
+        f = AltSvcFrame(0)
         flags = f.parse_flags(0xFF)
 
         assert flags == set()
 
     def test_altsvc_frame_with_origin_serializes_properly(self):
-        f = AltsvcFrame(0)
+        f = AltSvcFrame(0)
         f.host = b'google.com'
         f.port = 80
         f.protocol_id = b'h2'
@@ -505,7 +505,7 @@ class TestAltsvcFrame(object):
         f, length = Frame.parse_frame_header(self.payload_with_origin[:8])
         f.parse_body(self.payload_with_origin[8:8 + length])
 
-        assert isinstance(f, AltsvcFrame)
+        assert isinstance(f, AltSvcFrame)
         assert f.host == b'google.com'
         assert f.port == 80
         assert f.protocol_id == b'h2'
@@ -513,7 +513,7 @@ class TestAltsvcFrame(object):
         assert f.origin == Origin(scheme=b'https', host=b'yahoo.com', port=8080)
 
     def test_altsvc_frame_without_origin_serializes_properly(self):
-        f = AltsvcFrame(0)
+        f = AltSvcFrame(0)
         f.host = b'google.com'
         f.port = 80
         f.protocol_id = b'h2'
@@ -526,7 +526,7 @@ class TestAltsvcFrame(object):
         f, length = Frame.parse_frame_header(self.payload_without_origin[:8])
         f.parse_body(self.payload_without_origin[8:8 + length])
 
-        assert isinstance(f, AltsvcFrame)
+        assert isinstance(f, AltSvcFrame)
         assert f.host == b'google.com'
         assert f.port == 80
         assert f.protocol_id == b'h2'
@@ -534,14 +534,14 @@ class TestAltsvcFrame(object):
         assert f.origin is None
 
     def test_altsvc_frame_serialize_origin_without_port(self):
-        f = AltsvcFrame(0)
+        f = AltSvcFrame(0)
         f.origin = Origin(scheme=b'https', host=b'yahoo.com', port=None)
 
-        assert f.serialize_origin() == 'https://yahoo.com'
+        assert f.serialize_origin() == b'https://yahoo.com'
 
     def test_altsvc_frame_never_has_a_stream(self):
         with pytest.raises(ValueError):
-            AltsvcFrame(1)
+            AltSvcFrame(1)
 
 
 class TestHuffmanDecoder(object):
