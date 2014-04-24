@@ -29,7 +29,7 @@ cert_loc = path.join(path.dirname(__file__), '..', 'certs.pem')
 
 
 if is_py3: # pragma: no cover
-    def wrap_socket(socket, server_hostname):
+    def wrap_socket(socket, server_hostname=None):
         """
         A vastly simplified SSL wrapping function. We'll probably extend this to
         do more things later.
@@ -42,11 +42,9 @@ if is_py3: # pragma: no cover
         if ssl.HAS_SNI:
             return _context.wrap_socket(socket, server_hostname=server_hostname)
 
-        wrapped = _context.wrap_socket(socket)  # pragma: no cover
-        assert wrapped.selected_npn_protocol() == 'HTTP-draft-09/2.0'
-        return wrapped
+        return _context.wrap_socket(socket)  # pragma: no cover
 else: # pragma: no cover
-    def wrap_socket(socket, server_hostname):
+    def wrap_socket(socket, server_hostname=None):
         return ssl.wrap_socket(socket, ssl_version=ssl.PROTOCOL_SSLv23,
             ca_certs=cert_loc, cert_reqs=_verify_mode)
 
