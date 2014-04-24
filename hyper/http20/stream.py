@@ -176,20 +176,20 @@ class Stream(object):
         if 'END_STREAM' in frame.flags:
             self._close_remote()
 
-        if isinstance(frame, WindowUpdateFrame):
+        if frame.type == WindowUpdateFrame.type:
             self._out_flow_control_window += frame.window_increment
-        elif isinstance(frame, HeadersFrame):
+        elif frame.type == HeadersFrame.type:
             # Begin the header block for the response headers.
             self.promised_stream_id = None
             self.header_data = [frame.data]
-        elif isinstance(frame, PushPromiseFrame):
+        elif frame.type == PushPromiseFrame.type:
             # Begin a header block for the request headers of a pushed resource.
             self.promised_stream_id = frame.promised_stream_id
             self.header_data = [frame.data]
-        elif isinstance(frame, ContinuationFrame):
+        elif frame.type == ContinuationFrame.type:
             # Continue a header block begun with either HEADERS or PUSH_PROMISE.
             self.header_data.append(frame.data)
-        elif isinstance(frame, DataFrame):
+        elif frame.type == DataFrame.type:
             # Increase the window size. Only do this if the data frame contains
             # actual data.
             size = len(frame.data) + frame.total_padding
@@ -205,7 +205,7 @@ class Stream(object):
         else:
             raise ValueError('Unexpected frame type: %i' % frame.type)
 
-        if 'END_HEADERS' in frame.flags or 'END_PUSH_PROMISE' in frame.flags:
+        if 'END_HEADERS' in frame.flags:
             headers = self._decoder.decode(b''.join(self.header_data))
             if self.promised_stream_id is None:
                 self.response_headers = headers

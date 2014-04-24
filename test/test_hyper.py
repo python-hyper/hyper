@@ -2,7 +2,7 @@
 from hyper.http20.frame import (
     Frame, DataFrame, PriorityFrame, RstStreamFrame, SettingsFrame,
     PushPromiseFrame, PingFrame, GoAwayFrame, WindowUpdateFrame, HeadersFrame,
-    ContinuationFrame,
+    ContinuationFrame, AltSvcFrame, Origin,
 )
 from hyper.http20.hpack import Encoder, Decoder, encode_integer, decode_integer
 from hyper.http20.huffman import HuffmanDecoder
@@ -51,13 +51,14 @@ class TestGeneralFrameBehaviour(object):
 
 class TestDataFrame(object):
     payload = b'\x00\x08\x00\x01\x00\x00\x00\x01testdata'
-    payload_with_low_padding = b'\x00\x13\x00\x11\x00\x00\x00\x01\x0Atestdata' + b'\0' * 10
-    payload_with_high_and_low_padding = b'\x06\x14\x00\x31\x00\x00\x00\x01\x06\x0Atestdata' + b'\0' * (6 * 256 + 10)
+    payload_with_low_padding = b'\x00\x13\x00\x09\x00\x00\x00\x01\x0Atestdata' + b'\0' * 10
+    payload_with_high_and_low_padding = b'\x06\x14\x00\x19\x00\x00\x00\x01\x06\x0Atestdata' + b'\0' * (6 * 256 + 10)
 
     def test_data_frame_has_correct_flags(self):
         f = DataFrame(1)
         flags = f.parse_flags(0xFF)
-        assert flags == set(['END_STREAM', 'END_SEGMENT', 'PAD_LOW', 'PAD_HIGH'])
+        assert flags == set(['END_STREAM', 'END_SEGMENT', 'PAD_LOW', 'PAD_HIGH',
+                             'PRIORITY_GROUP', 'PRIORITY_DEPENDENCY'])
 
     def test_data_frame_serializes_properly(self):
         f = DataFrame(1)
@@ -122,36 +123,74 @@ class TestDataFrame(object):
 
 
 class TestPriorityFrame(object):
-    def test_priority_frame_has_no_flags(self):
+    payload_with_priority_group = b'\x00\x05\x02\x20\x00\x00\x00\x01\x00\x00\x00\x05\x07'
+    payload_with_exclusive_priority_dependency = b'\x00\x04\x02\x40\x00\x00\x00\x01\x80\x00\x00\x05'
+    payload_with_non_exclusive_priority_dependency = b'\x00\x04\x02\x40\x00\x00\x00\x01\x00\x00\x00\x05'
+
+    def test_priority_frame_has_correct_flags(self):
         f = PriorityFrame(1)
         flags = f.parse_flags(0xFF)
-        assert not flags
+        assert flags == set(['PRIORITY_GROUP', 'PRIORITY_DEPENDENCY'])
         assert isinstance(flags, set)
 
-    def test_priority_frame_serializes_properly(self):
+    def test_priority_frame_with_priority_group_serializes_properly(self):
         f = PriorityFrame(1)
-        f.priority = 0xFF
+        f.flags = set(['PRIORITY_GROUP'])
+        f.priority_group_id = 5
+        f.priority_group_weight = 7
 
         s = f.serialize()
-        assert s == b'\x00\x04\x02\x00\x00\x00\x00\x01\x00\x00\x00\xff'
+        assert s == self.payload_with_priority_group
 
-    def test_priority_frame_parses_properly(self):
-        s = b'\x00\x04\x02\x00\x00\x00\x00\x01\x00\x00\x00\xff'
-        f, length = Frame.parse_frame_header(s[:8])
-        f.parse_body(s[8:8 + length])
+    def test_priority_frame_with_priority_group_parses_properly(self):
+        f, length = Frame.parse_frame_header(self.payload_with_priority_group[:8])
+        f.parse_body(self.payload_with_priority_group[8:8 + length])
 
         assert isinstance(f, PriorityFrame)
-        assert f.flags == set()
-        assert f.priority == 0xFF
+        assert f.flags == set(['PRIORITY_GROUP'])
+        assert f.priority_group_id == 5
+        assert f.priority_group_weight == 7
+
+    def test_priority_frame_with_exclusive_priority_dependency_serializes_properly(self):
+        f = PriorityFrame(1)
+        f.flags = set(['PRIORITY_DEPENDENCY'])
+        f.stream_dependency_id = 5
+        f.stream_dependency_exclusive = True
+
+        s = f.serialize()
+        assert s == self.payload_with_exclusive_priority_dependency
+
+    def test_priority_frame_with_exclusive_priority_dependency_parses_properly(self):
+        f, length = Frame.parse_frame_header(self.payload_with_exclusive_priority_dependency[:8])
+        f.parse_body(self.payload_with_exclusive_priority_dependency[8:8 + length])
+
+        assert isinstance(f, PriorityFrame)
+        assert f.flags == set(['PRIORITY_DEPENDENCY'])
+        assert f.stream_dependency_id == 5
+        assert f.stream_dependency_exclusive == True
+
+    def test_priority_frame_with_non_exclusive_priority_dependency_serializes_properly(self):
+        f = PriorityFrame(1)
+        f.flags = set(['PRIORITY_DEPENDENCY'])
+        f.stream_dependency_id = 5
+        f.stream_dependency_exclusive = False
+
+        s = f.serialize()
+        assert s == self.payload_with_non_exclusive_priority_dependency
+
+    def test_priority_frame_with_non_exclusive_priority_dependency_parses_properly(self):
+        f, length = Frame.parse_frame_header(self.payload_with_non_exclusive_priority_dependency[:8])
+        f.parse_body(self.payload_with_non_exclusive_priority_dependency[8:8 + length])
+
+        assert isinstance(f, PriorityFrame)
+        assert f.flags == set(['PRIORITY_DEPENDENCY'])
+        assert f.stream_dependency_id == 5
+        assert f.stream_dependency_exclusive == False
 
     def test_priority_frame_comes_on_a_stream(self):
         with pytest.raises(ValueError):
             PriorityFrame(0)
 
-    def test_priority_frame_must_have_body_length_four(self):
-        f = PriorityFrame(1)
-        with pytest.raises(ValueError):
-            f.parse_body(b'\x01')
 
 class TestRstStreamFrame(object):
     def test_rst_stream_frame_has_no_flags(self):
@@ -233,24 +272,24 @@ class TestPushPromiseFrame(object):
         f = PushPromiseFrame(1)
         flags = f.parse_flags(0xFF)
 
-        assert flags == set(['END_PUSH_PROMISE'])
+        assert flags == set(['END_HEADERS', 'PAD_HIGH', 'PAD_LOW'])
 
-    def test_push_promise_frame_serialize_with_priority_properly(self):
+    def test_push_promise_frame_serializes_properly(self):
         f = PushPromiseFrame(1)
-        f.parse_flags(0xFF)
+        f.flags = set(['END_HEADERS'])
         f.promised_stream_id = 4
         f.data = b'hello world'
 
         s = f.serialize()
         assert s == (
-            b'\x00\x0F\x05\x01\x00\x00\x00\x01' +
+            b'\x00\x0F\x05\x04\x00\x00\x00\x01' +
             b'\x00\x00\x00\x04' +
             b'hello world'
         )
 
     def test_push_promise_frame_parses_properly(self):
         s = (
-            b'\x00\x0F\x05\x0D\x00\x00\x00\x01' +
+            b'\x00\x0F\x05\x04\x00\x00\x00\x01' +
             b'\x00\x00\x00\x04' +
             b'hello world'
         )
@@ -258,7 +297,7 @@ class TestPushPromiseFrame(object):
         f.parse_body(s[8:8 + length])
 
         assert isinstance(f, PushPromiseFrame)
-        assert f.flags == set(['END_PUSH_PROMISE'])
+        assert f.flags == set(['END_HEADERS'])
         assert f.promised_stream_id == 4
         assert f.data == b'hello world'
 
@@ -378,44 +417,30 @@ class TestHeadersFrame(object):
         flags = f.parse_flags(0xFF)
 
         assert flags == set(['END_STREAM', 'END_SEGMENT', 'END_HEADERS',
-                             'PRIORITY', 'PAD_LOW', 'PAD_HIGH'])
+                             'PAD_LOW', 'PAD_HIGH',
+                             'PRIORITY_GROUP', 'PRIORITY_DEPENDENCY'])
 
-    def test_headers_frame_serialize_with_priority_properly(self):
+    def test_headers_frame_serializes_properly(self):
         f = HeadersFrame(1)
-        f.parse_flags(0x0D)
-        f.priority = (2 ** 30) + 1
+        f.flags = set(['END_STREAM', 'END_HEADERS'])
         f.data = b'hello world'
 
         s = f.serialize()
         assert s == (
-            b'\x00\x0F\x01\x0D\x00\x00\x00\x01' +
-            b'\x40\x00\x00\x01' +
-            b'hello world'
-        )
-
-    def test_headers_frame_serialize_without_priority_properly(self):
-        f = HeadersFrame(1)
-        f.parse_flags(0x0D)
-        f.data = b'hello world'
-
-        s = f.serialize()
-        assert s == (
-            b'\x00\x0B\x01\x0D\x00\x00\x00\x01' +
+            b'\x00\x0B\x01\x05\x00\x00\x00\x01' +
             b'hello world'
         )
 
     def test_headers_frame_parses_properly(self):
         s = (
-            b'\x00\x0F\x01\x0D\x00\x00\x00\x01' +
-            b'\x40\x00\x00\x01' +
+            b'\x00\x0B\x01\x05\x00\x00\x00\x01' +
             b'hello world'
         )
         f, length = Frame.parse_frame_header(s[:8])
         f.parse_body(s[8:8 + length])
 
         assert isinstance(f, HeadersFrame)
-        assert f.flags == set(['END_STREAM', 'END_HEADERS', 'PRIORITY'])
-        assert f.priority == (2 ** 30) + 1
+        assert f.flags == set(['END_STREAM', 'END_HEADERS'])
         assert f.data == b'hello world'
 
 
@@ -445,6 +470,78 @@ class TestContinuationFrame(object):
         assert isinstance(f, ContinuationFrame)
         assert f.flags == set(['END_HEADERS'])
         assert f.data == b'hello world'
+
+
+class TestAltSvcFrame(object):
+    payload_with_origin = (
+        b'\x00\x2B\x0A\x00\x00\x00\x00\x00'
+        b'\x00\x00\x00\x1D\x00\x50\x00\x02'
+        b'h2\x0Agoogle.comhttps://yahoo.com:8080'
+    )
+    payload_without_origin = (
+        b'\x00\x15\x0A\x00\x00\x00\x00\x00'
+        b'\x00\x00\x00\x1D\x00\x50\x00\x02'
+        b'h2\x0Agoogle.com'
+    )
+
+    def test_altsvc_frame_flags(self):
+        f = AltSvcFrame(0)
+        flags = f.parse_flags(0xFF)
+
+        assert flags == set()
+
+    def test_altsvc_frame_with_origin_serializes_properly(self):
+        f = AltSvcFrame(0)
+        f.host = b'google.com'
+        f.port = 80
+        f.protocol_id = b'h2'
+        f.max_age = 29
+        f.origin = Origin(scheme=b'https', host=b'yahoo.com', port=8080)
+
+        s = f.serialize()
+        assert s == self.payload_with_origin
+
+    def test_altsvc_frame_with_origin_parses_properly(self):
+        f, length = Frame.parse_frame_header(self.payload_with_origin[:8])
+        f.parse_body(self.payload_with_origin[8:8 + length])
+
+        assert isinstance(f, AltSvcFrame)
+        assert f.host == b'google.com'
+        assert f.port == 80
+        assert f.protocol_id == b'h2'
+        assert f.max_age == 29
+        assert f.origin == Origin(scheme=b'https', host=b'yahoo.com', port=8080)
+
+    def test_altsvc_frame_without_origin_serializes_properly(self):
+        f = AltSvcFrame(0)
+        f.host = b'google.com'
+        f.port = 80
+        f.protocol_id = b'h2'
+        f.max_age = 29
+
+        s = f.serialize()
+        assert s == self.payload_without_origin
+
+    def test_altsvc_frame_without_origin_parses_properly(self):
+        f, length = Frame.parse_frame_header(self.payload_without_origin[:8])
+        f.parse_body(self.payload_without_origin[8:8 + length])
+
+        assert isinstance(f, AltSvcFrame)
+        assert f.host == b'google.com'
+        assert f.port == 80
+        assert f.protocol_id == b'h2'
+        assert f.max_age == 29
+        assert f.origin is None
+
+    def test_altsvc_frame_serialize_origin_without_port(self):
+        f = AltSvcFrame(0)
+        f.origin = Origin(scheme=b'https', host=b'yahoo.com', port=None)
+
+        assert f.serialize_origin() == b'https://yahoo.com'
+
+    def test_altsvc_frame_never_has_a_stream(self):
+        with pytest.raises(ValueError):
+            AltSvcFrame(1)
 
 
 class TestHuffmanDecoder(object):
@@ -1229,7 +1326,7 @@ class TestServerPush(object):
         frame.promised_stream_id = promised_stream_id
         frame.data = self.encoder.encode(headers)
         if end_block:
-            frame.flags.add('END_PUSH_PROMISE')
+            frame.flags.add('END_HEADERS')
         self.frames.append(frame)
 
     def add_headers_frame(self, stream_id, headers, end_block=True, end_stream=False):
