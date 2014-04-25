@@ -1,10 +1,10 @@
 {
-  "draft": 6,
+  "draft": 7,
   "description": "Encoded by node-http2-hpack. The encoding strategy is based on tatsuhiro-t's encoder algorithm which is described in http://lists.w3.org/Archives/Public/ietf-http-wg/2013JulSep/1135.html.",
   "cases": [
     {
       "seqno": 0,
-      "wire": "8287038782988225ba112c873dbeef6faa96b405042f47faef4254c8b619f5747c19115f477a13d1f4f0e8fdf418a4afaba1fcfd86a485ff7d1ee14f2681ca6294c53747053c716f981a921717af88f9c4338e8be9439cb5251153581e79c745ffcf3d17d287396a4a22a6b03cf45f5795a5259d3fd07f5d5e569495ff168b164bf8f0e91675795a5251168acbd54ee9e8c0715a223f00874b58c14c54d67f87e422e950b5731f",
+      "wire": "82874388c59725f536d7d577877eb9d6df7659624f0be06feb5a54cb9cdc6bec3785ce5d86d6951bc769bd0c20fc9d86c394c313e1f136a5abd9a720100101369660be0de87189f058b072fa38f5badb32a6fbec6292e636e3f4add6d9fe74b6cca9befb18a4b98db8fd2db3b3f9383f2e5fecffdf67f2707e4f578c5dd9bcf6e55ddd9fc9c1f87f578aabdd97e5352be1625cbf4087536eb96a731b7788f65aefcc9b19c97f",
       "headers": [
         {
           ":method": "GET"
@@ -38,7 +38,7 @@
     },
     {
       "seqno": 1,
-      "wire": "078adb6d890531044b74225988",
+      "wire": "478be7cf9bf8b2e4bea6dafaae88",
       "headers": [
         {
           ":method": "GET"
@@ -71,7 +71,7 @@
     },
     {
       "seqno": 2,
-      "wire": "0088f62358e6d7aa3e9f8b60ed02414c4112dd08967f08960e300aea0394c7314f381ca639abec6b31f16b89c61f0783fe83fa3f0090ce3177b0036db62414c4112dd089607f85898b",
+      "wire": "4088993c5d5b7063baff8cb97cf17f165c97d4db5f55df48963fae27923390090814072012193b9b770a1b7bfeb8ff4784fecffdff7f0191adcebe639f9f3e6fe2cb92fa9b6beab8ff85898b",
       "headers": [
         {
           ":method": "GET"
@@ -107,7 +107,7 @@
     },
     {
       "seqno": 3,
-      "wire": "048e53224c1cd6ac90531044b742259f048f05396d6f2d5c0a72dade5ab88ecddf8586",
+      "wire": "448f65ce7e9bdadb1fc59725f536d7d57744913b2fb1adf6e379d97d8d6fb71bdfbebbff8586",
       "headers": [
         {
           ":method": "GET"
@@ -143,7 +143,7 @@
     },
     {
       "seqno": 4,
-      "wire": "028954c4829885699112cf02a00e6ac05a07298e0631660fc555968fa9a9abb7c4e531cc62cc731aba26271765069a5688c841cccba55a23210febabcad292be9fe83faeaf2b4a4a3f848587",
+      "wire": "4289621fc5972596d4faae429e3f2652b69c8048e22083f9c72043e43147a2820121104108c90a1ff5beaf469b65a9a967beeab2b2d4d4b3ff7d9fc9c1f932ff67fefb3f9383f0ff848587",
       "headers": [
         {
           ":method": "GET"
@@ -179,7 +179,7 @@
     },
     {
       "seqno": 5,
-      "wire": "029e0cdba081ca63818c5387e292ce6facc5edf1394c7318a731ce69e927176583",
+      "wire": "429c3d6db5672012388811fce20807c901a282012110212218227fd6fabf83",
       "headers": [
         {
           ":method": "GET"
@@ -215,7 +215,7 @@
     },
     {
       "seqno": 6,
-      "wire": "0084f63911cf960cdba086029681ca5b00b34c505b726dd9b741264ac782",
+      "wire": "40849af4babf973d6db567a56a69c80253821007b1b537756db56fd4ce1f82",
       "headers": [
         {
           ":method": "GET"
@@ -251,7 +251,7 @@
     },
     {
       "seqno": 7,
-      "wire": "0589c0c482988225ba112c02960867982c539a1807298e629a98298805b726989c5d978387",
+      "wire": "458aa45fc59725f536d7d57742973e35d67b16aad371c80484062c59724f636a68bfeb7d5f8387",
       "headers": [
         {
           ":method": "GET"
@@ -287,7 +287,7 @@
     },
     {
       "seqno": 8,
-      "wire": "0289514905310ad322259f029f0cdba081ca63818c5983f15d141beb317b7c4e531cc62cc5a66aa69c9c5d978384",
+      "wire": "4289603f8b2e4b2da9f55d429d3d6db5672012388820fe724308f92034504024220808911a207fd6fabf8384",
       "headers": [
         {
           ":method": "GET"
@@ -323,7 +323,7 @@
     },
     {
       "seqno": 9,
-      "wire": "0289518905310ad322259f029f0cdba081ca63818c5307e29a67afeb317b7c4e531cc6298d39a798e4e2ecbf8384",
+      "wire": "428960bf8b2e4b2da9f55d429c3d6db5672012388809fce28a093c901a282012110118060413feb7d58384",
       "headers": [
         {
           ":method": "GET"

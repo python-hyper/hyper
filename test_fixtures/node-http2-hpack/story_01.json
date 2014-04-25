@@ -1,10 +1,10 @@
 {
-  "draft": 6,
+  "draft": 7,
   "description": "Encoded by node-http2-hpack. The encoding strategy is based on tatsuhiro-t's encoder algorithm which is described in http://lists.w3.org/Archives/Public/ietf-http-wg/2013JulSep/1135.html.",
   "cases": [
     {
       "seqno": 0,
-      "wire": "8702881f3468e58912dd3f86853d87cdc84f2962308f2488f3f3f3f3f3f3f3370085f397315adb84d9af5e1f",
+      "wire": "8742885f44db7d8b7d4db786857e88aef4abdb33978bbf6587e9d3a74e9d3a0f4086e99ab5d9637f84e6dc2ca7",
       "headers": [
         {
           ":scheme": "https"
@@ -32,7 +32,7 @@
     },
     {
       "seqno": 1,
-      "wire": "0288f3f3f3f3f3f3f33f8283",
+      "wire": "4287e9d3a74e9d3a178283",
       "headers": [
         {
           ":scheme": "https"
