@@ -2,7 +2,7 @@
 from hyper.http20.frame import (
     Frame, DataFrame, PriorityFrame, RstStreamFrame, SettingsFrame,
     PushPromiseFrame, PingFrame, GoAwayFrame, WindowUpdateFrame, HeadersFrame,
-    ContinuationFrame, AltSvcFrame, Origin,
+    ContinuationFrame, AltSvcFrame, Origin, BlockedFrame,
 )
 from hyper.http20.hpack import Encoder, Decoder, encode_integer, decode_integer
 from hyper.http20.huffman import HuffmanDecoder
@@ -543,6 +543,29 @@ class TestAltSvcFrame(object):
     def test_altsvc_frame_never_has_a_stream(self):
         with pytest.raises(ValueError):
             AltSvcFrame(1)
+
+
+class TestBlockedFrame(object):
+    def test_blocked_has_no_flags(self):
+        f = BlockedFrame(0)
+        flags = f.parse_flags(0xFF)
+
+        assert not flags
+        assert isinstance(flags, set)
+
+    def test_blocked_serializes_properly(self):
+        f = BlockedFrame(2)
+
+        s = f.serialize()
+        assert s == b'\x00\x00\x0B\x00\x00\x00\x00\x02'
+
+    def test_blocked_frame_parses_properly(self):
+        s = b'\x00\x00\x0B\x00\x00\x00\x00\x02'
+        f, length = Frame.parse_frame_header(s[:8])
+        f.parse_body(s[8:8 + length])
+
+        assert isinstance(f, BlockedFrame)
+        assert f.flags == set()
 
 
 class TestHuffmanDecoder(object):
