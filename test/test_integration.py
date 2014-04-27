@@ -126,7 +126,10 @@ class TestHyperIntegration(SocketLevelTest):
 
         assert isinstance(f, SettingsFrame)
         assert f.stream_id == 0
-        assert f.settings == {SettingsFrame.ENABLE_PUSH: 0}
+        assert f.settings == {
+            SettingsFrame.ENABLE_PUSH: 0,
+            SettingsFrame.COMPRESS_DATA: 1,
+        }
 
         self.tear_down()
 

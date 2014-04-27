@@ -201,11 +201,12 @@ class TestRstStreamFrame(object):
 
 class TestSettingsFrame(object):
     serialized = (
-        b'\x00\x14\x04\x01\x00\x00\x00\x00' +  # Frame header
+        b'\x00\x19\x04\x01\x00\x00\x00\x00' +  # Frame header
         b'\x01\x00\x00\x10\x00'             +  # HEADER_TABLE_SIZE
         b'\x02\x00\x00\x00\x00'             +  # ENABLE_PUSH
         b'\x03\x00\x00\x00\x64'             +  # MAX_CONCURRENT_STREAMS
-        b'\x04\x00\x00\xFF\xFF'                # INITIAL_WINDOW_SIZE
+        b'\x04\x00\x00\xFF\xFF'             +  # INITIAL_WINDOW_SIZE
+        b'\x05\x00\x00\x00\x01'                # COMPRESS_DATA
     )
 
     settings = {
@@ -213,6 +214,7 @@ class TestSettingsFrame(object):
         SettingsFrame.ENABLE_PUSH: 0,
         SettingsFrame.MAX_CONCURRENT_STREAMS: 100,
         SettingsFrame.INITIAL_WINDOW_SIZE: 65535,
+        SettingsFrame.COMPRESS_DATA: 1,
     }
 
     def test_settings_frame_has_only_one_flag(self):

@@ -258,6 +258,7 @@ class SettingsFrame(Frame):
     ENABLE_PUSH            = 0x02
     MAX_CONCURRENT_STREAMS = 0x03
     INITIAL_WINDOW_SIZE    = 0x04
+    COMPRESS_DATA          = 0x05
 
     def __init__(self, stream_id):
         super(SettingsFrame, self).__init__(stream_id)
