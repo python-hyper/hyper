@@ -36,9 +36,12 @@ def wrap_socket(sock, server_hostname):
     # Setting SSLContext.check_hostname to True only verifies that the
     # post-handshake servername matches that of the certificate. We also need to
     # check that it matches the requested one.
-    ssl.match_hostname(ssl_sock.getpeercert(), server_hostname)
+    if _context.check_hostname:  # pragma: no cover
+        ssl.match_hostname(ssl_sock.getpeercert(), server_hostname)
+
     with ignore_missing():
         assert ssl_sock.selected_npn_protocol() == NPN_PROTOCOL
+
     return ssl_sock
 
 

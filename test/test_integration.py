@@ -27,6 +27,7 @@ from server import SocketLevelTest
 # Turn off certificate verification for the tests.
 if ssl is not None:
     hyper.http20.tls._context = hyper.http20.tls._init_context()
+    hyper.http20.tls._context.check_hostname = False
     hyper.http20.tls._context.verify_mode = ssl.CERT_NONE
 
 def decode_frame(frame_data):
