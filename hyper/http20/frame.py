@@ -164,6 +164,7 @@ class DataFrame(Padding, Frame):
         ('END_SEGMENT', 0x02),
         ('PAD_LOW', 0x08),
         ('PAD_HIGH', 0x10),
+        ('COMPRESSED', 0x20),
     ]
 
     type = 0x0

@@ -59,7 +59,7 @@ class TestDataFrame(object):
         f = DataFrame(1)
         flags = f.parse_flags(0xFF)
         assert flags == set([
-            'END_STREAM', 'END_SEGMENT', 'PAD_LOW', 'PAD_HIGH',
+            'END_STREAM', 'END_SEGMENT', 'PAD_LOW', 'PAD_HIGH', 'COMPRESSED',
         ])
 
     def test_data_frame_serializes_properly(self):
