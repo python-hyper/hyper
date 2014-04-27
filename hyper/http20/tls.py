@@ -10,7 +10,7 @@ import os.path as path
 from ..compat import ignore_missing, ssl
 
 
-NPN_PROTOCOL = 'h2-11'
+NPN_PROTOCOL = 'h2-12'
 SUPPORTED_NPN_PROTOCOLS = ['http/1.1', NPN_PROTOCOL]
 
 
