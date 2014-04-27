@@ -58,8 +58,9 @@ class TestDataFrame(object):
     def test_data_frame_has_correct_flags(self):
         f = DataFrame(1)
         flags = f.parse_flags(0xFF)
-        assert flags == set(['END_STREAM', 'END_SEGMENT', 'PAD_LOW', 'PAD_HIGH',
-                             'PRIORITY_GROUP', 'PRIORITY_DEPENDENCY'])
+        assert flags == set([
+            'END_STREAM', 'END_SEGMENT', 'PAD_LOW', 'PAD_HIGH',
+        ])
 
     def test_data_frame_serializes_properly(self):
         f = DataFrame(1)
@@ -124,69 +125,31 @@ class TestDataFrame(object):
 
 
 class TestPriorityFrame(object):
-    payload_with_priority_group = b'\x00\x05\x02\x20\x00\x00\x00\x01\x00\x00\x00\x05\x07'
-    payload_with_exclusive_priority_dependency = b'\x00\x04\x02\x40\x00\x00\x00\x01\x80\x00\x00\x05'
-    payload_with_non_exclusive_priority_dependency = b'\x00\x04\x02\x40\x00\x00\x00\x01\x00\x00\x00\x05'
+    payload = b'\x00\x05\x02\x00\x00\x00\x00\x01\x80\x00\x00\x04\x40'
 
-    def test_priority_frame_has_correct_flags(self):
+    def test_priority_frame_has_no_flags(self):
         f = PriorityFrame(1)
         flags = f.parse_flags(0xFF)
-        assert flags == set(['PRIORITY_GROUP', 'PRIORITY_DEPENDENCY'])
+        assert flags == set()
         assert isinstance(flags, set)
 
-    def test_priority_frame_with_priority_group_serializes_properly(self):
+    def test_priority_frame_with_all_data_serializes_properly(self):
         f = PriorityFrame(1)
-        f.flags = set(['PRIORITY_GROUP'])
-        f.priority_group_id = 5
-        f.priority_group_weight = 7
+        f.depends_on = 0x04
+        f.stream_weight = 64
+        f.exclusive = True
 
-        s = f.serialize()
-        assert s == self.payload_with_priority_group
+        assert f.serialize() == self.payload
 
-    def test_priority_frame_with_priority_group_parses_properly(self):
-        f, length = Frame.parse_frame_header(self.payload_with_priority_group[:8])
-        f.parse_body(self.payload_with_priority_group[8:8 + length])
+    def test_priority_frame_with_all_data_parses_properly(self):
+        f, length = Frame.parse_frame_header(self.payload[:8])
+        f.parse_body(self.payload[8:8 + length])
 
         assert isinstance(f, PriorityFrame)
-        assert f.flags == set(['PRIORITY_GROUP'])
-        assert f.priority_group_id == 5
-        assert f.priority_group_weight == 7
-
-    def test_priority_frame_with_exclusive_priority_dependency_serializes_properly(self):
-        f = PriorityFrame(1)
-        f.flags = set(['PRIORITY_DEPENDENCY'])
-        f.stream_dependency_id = 5
-        f.stream_dependency_exclusive = True
-
-        s = f.serialize()
-        assert s == self.payload_with_exclusive_priority_dependency
-
-    def test_priority_frame_with_exclusive_priority_dependency_parses_properly(self):
-        f, length = Frame.parse_frame_header(self.payload_with_exclusive_priority_dependency[:8])
-        f.parse_body(self.payload_with_exclusive_priority_dependency[8:8 + length])
-
-        assert isinstance(f, PriorityFrame)
-        assert f.flags == set(['PRIORITY_DEPENDENCY'])
-        assert f.stream_dependency_id == 5
-        assert f.stream_dependency_exclusive == True
-
-    def test_priority_frame_with_non_exclusive_priority_dependency_serializes_properly(self):
-        f = PriorityFrame(1)
-        f.flags = set(['PRIORITY_DEPENDENCY'])
-        f.stream_dependency_id = 5
-        f.stream_dependency_exclusive = False
-
-        s = f.serialize()
-        assert s == self.payload_with_non_exclusive_priority_dependency
-
-    def test_priority_frame_with_non_exclusive_priority_dependency_parses_properly(self):
-        f, length = Frame.parse_frame_header(self.payload_with_non_exclusive_priority_dependency[:8])
-        f.parse_body(self.payload_with_non_exclusive_priority_dependency[8:8 + length])
-
-        assert isinstance(f, PriorityFrame)
-        assert f.flags == set(['PRIORITY_DEPENDENCY'])
-        assert f.stream_dependency_id == 5
-        assert f.stream_dependency_exclusive == False
+        assert f.flags == set()
+        assert f.depends_on == 4
+        assert f.stream_weight == 64
+        assert f.exclusive == True
 
     def test_priority_frame_comes_on_a_stream(self):
         with pytest.raises(ValueError):
@@ -418,8 +381,7 @@ class TestHeadersFrame(object):
         flags = f.parse_flags(0xFF)
 
         assert flags == set(['END_STREAM', 'END_SEGMENT', 'END_HEADERS',
-                             'PAD_LOW', 'PAD_HIGH',
-                             'PRIORITY_GROUP', 'PRIORITY_DEPENDENCY'])
+                             'PAD_LOW', 'PAD_HIGH', 'PRIORITY'])
 
     def test_headers_frame_serializes_properly(self):
         f = HeadersFrame(1)
@@ -443,6 +405,39 @@ class TestHeadersFrame(object):
         assert isinstance(f, HeadersFrame)
         assert f.flags == set(['END_STREAM', 'END_HEADERS'])
         assert f.data == b'hello world'
+
+    def test_headers_frame_with_priority_parses_properly(self):
+        # This test also tests that we can receive a HEADERS frame with no
+        # actual headers on it. This is technically possible.
+        s = (
+            b'\x00\x05\x01\x20\x00\x00\x00\x01' +
+            b'\x80\x00\x00\x04\x40'
+        )
+        f, length = Frame.parse_frame_header(s[:8])
+        f.parse_body(s[8:8 + length])
+
+        assert isinstance(f, HeadersFrame)
+        assert f.flags == set(['PRIORITY'])
+        assert f.data == b''
+        assert f.depends_on == 4
+        assert f.stream_weight == 64
+        assert f.exclusive == True
+
+    def test_headers_frame_with_priority_serializes_properly(self):
+        # This test also tests that we can receive a HEADERS frame with no
+        # actual headers on it. This is technically possible.
+        s = (
+            b'\x00\x05\x01\x20\x00\x00\x00\x01' +
+            b'\x80\x00\x00\x04\x40'
+        )
+        f = HeadersFrame(1)
+        f.flags = set(['PRIORITY'])
+        f.data = b''
+        f.depends_on = 4
+        f.stream_weight = 64
+        f.exclusive = True
+
+        assert f.serialize() == s
 
 
 class TestContinuationFrame(object):

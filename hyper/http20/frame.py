@@ -125,33 +125,32 @@ class Priority(object):
     Mixin for frames that contain priority data.
     """
     def __init__(self, stream_id):
-        self.priority_group_id = None
-        self.priority_group_weight = None
-        self.stream_dependency_id = None
-        self.stream_dependency_exclusive = None
+        # The stream ID of the stream on which this stream depends.
+        self.depends_on = None
+
+        # The weight of the stream. This is an integer between 0 and 256.
+        self.stream_weight = None
+
+        # Whether the exclusive bit was set.
+        self.exclusive = None
 
         super(Priority, self).__init__(stream_id)
 
     def serialize_priority_data(self):
-        if 'PRIORITY_GROUP' in self.flags:
-            return struct.pack("!LB", self.priority_group_id, self.priority_group_weight)
-        elif 'PRIORITY_DEPENDENCY' in self.flags:
-            exclusive_bit = int(self.stream_dependency_exclusive) << 31
-            return struct.pack("!L", self.stream_dependency_id | exclusive_bit)
-        return b''
+        return struct.pack(
+            "!LB",
+            self.depends_on | (int(self.exclusive) << 31),
+            self.stream_weight
+        )
 
     def parse_priority_data(self, data):
         MASK = 0x80000000
-        if 'PRIORITY_GROUP' in self.flags:
-            self.priority_group_id, self.priority_group_weight = struct.unpack("!LB", data[:5])
-            self.priority_group_id &= ~MASK # make sure reserved bit is ignored
-            return 5
-        elif 'PRIORITY_DEPENDENCY' in self.flags:
-            self.stream_dependency_id = struct.unpack("!L", data[:4])[0]
-            self.stream_dependency_exclusive = bool(self.stream_dependency_id & MASK)
-            self.stream_dependency_id &= ~MASK
-            return 4
-        return 0
+        self.depends_on, self.stream_weight = struct.unpack(
+            "!LB", data[:5]
+        )
+        self.exclusive = bool(self.depends_on & MASK)
+        self.depends_on &= ~MASK
+        return 5
 
 
 class DataFrame(Padding, Frame):
@@ -165,8 +164,6 @@ class DataFrame(Padding, Frame):
         ('END_SEGMENT', 0x02),
         ('PAD_LOW', 0x08),
         ('PAD_HIGH', 0x10),
-        ('PRIORITY_GROUP', 0x20),
-        ('PRIORITY_DEPENDENCY', 0x40),
     ]
 
     type = 0x0
@@ -189,7 +186,7 @@ class PriorityFrame(Priority, Frame):
     can be sent at any time for an existing stream. This enables
     reprioritisation of existing streams.
     """
-    defined_flags = [('PRIORITY_GROUP', 0x20), ('PRIORITY_DEPENDENCY', 0x40)]
+    defined_flags = []
 
     type = 0x02
 
@@ -415,22 +412,29 @@ class HeadersFrame(Padding, Priority, Frame):
         ('END_HEADERS', 0x04),
         ('PAD_LOW', 0x08),
         ('PAD_HIGH', 0x10),
-        ('PRIORITY_GROUP', 0x20),
-        ('PRIORITY_DEPENDENCY', 0x40),
+        ('PRIORITY', 0x20),
     ]
 
     def serialize_body(self):
         padding_data = self.serialize_padding_data()
         padding = b'\0' * self.total_padding
 
-        priority_data = self.serialize_priority_data()
+        if 'PRIORITY' in self.flags:
+            priority_data = self.serialize_priority_data()
+        else:
+            priority_data = b''
+
         return b''.join([padding_data, priority_data, self.data, padding])
 
     def parse_body(self, data):
         padding_data_length = self.parse_padding_data(data)
         data = data[padding_data_length:]
 
-        priority_data_length = self.parse_priority_data(data)
+        if 'PRIORITY' in self.flags:
+            priority_data_length = self.parse_priority_data(data)
+        else:
+            priority_data_length = 0
+
         self.data = data[priority_data_length:len(data)-self.total_padding]
 
 
