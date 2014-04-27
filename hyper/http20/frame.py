@@ -180,6 +180,10 @@ class DataFrame(Padding, Frame):
         padding_data_length = self.parse_padding_data(data)
         self.data = data[padding_data_length:len(data)-self.total_padding]
 
+    @property
+    def has_compressed_data(self):
+        return 'COMPRESSED' in self.flags
+
 
 class PriorityFrame(Priority, Frame):
     """
