@@ -197,7 +197,8 @@ class HTTP20Connection(object):
             # connection, followed by an initial settings frame.
             sock.send(b'PRI * HTTP/2.0\r\n\r\nSM\r\n\r\n')
             f = SettingsFrame(0)
-            f.settings[SettingsFrame.ENABLE_PUSH] = int(self._enable_push)
+            if not self._enable_push:
+                f.settings[SettingsFrame.ENABLE_PUSH] = 0
             f.settings[SettingsFrame.COMPRESS_DATA] = 1
             self._send_cb(f)
 
