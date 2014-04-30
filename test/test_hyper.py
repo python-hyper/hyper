@@ -1345,6 +1345,26 @@ class TestHyperConnection(object):
         assert frames[0].flags == set(['ACK'])
         assert frames[0].opaque_data == b'12345678'
 
+    def test_blocked_causes_window_updates(self):
+        frames = []
+
+        def data_cb(frame, *args):
+            frames.append(frame)
+
+        c = HTTP20Connection('www.google.com')
+        c._send_cb = data_cb
+
+        # Change the window size.
+        c.window_manager.window_size = 60000
+
+        # Provide a BLOCKED frame.
+        f = BlockedFrame(1)
+        c.receive_frame(f)
+
+        assert len(frames) == 1
+        assert frames[0].type == WindowUpdateFrame.type
+        assert frames[0].window_increment == 5535
+
 
 class TestServerPush(object):
     def setup_method(self, method):
@@ -1625,6 +1645,28 @@ class TestHyperStream(object):
         data = s._read()
         assert data == b'hi there!'
         assert s._in_window_manager.window_size == start_window - f.low_padding - len(data)
+
+    def test_blocked_frames_cause_window_updates(self):
+        out_frames = []
+
+        def send_cb(frame, *args):
+            out_frames.append(frame)
+
+        start_window = 65535
+        s = Stream(1, send_cb, None, None, None, None, FlowControlManager(start_window))
+        s._data_cb = send_cb
+        s.state = STATE_HALF_CLOSED_LOCAL
+
+        # Change the window size.
+        s._in_window_manager.window_size = 60000
+
+        # Provide a BLOCKED frame.
+        f = BlockedFrame(1)
+        s.receive_frame(f)
+
+        assert len(out_frames) == 1
+        assert out_frames[0].type == WindowUpdateFrame.type
+        assert out_frames[0].window_increment == 5535
 
     def test_stream_reading_works(self):
         out_frames = []

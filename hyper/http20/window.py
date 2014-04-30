@@ -79,6 +79,27 @@ class BaseFlowControlManager(object):
             "FlowControlManager is an abstract base class"
         )
 
+    def blocked(self):
+        """
+        Called whenever the remote endpoint reports that it is blocked behind
+        the flow control window.
+
+        When this method is called the remote endpoint is signaling that it
+        has more data to send and that the transport layer is capable of
+        transmitting it, but that the HTTP/2 flow control window prevents it
+        being sent.
+
+        This method should return the size by which the window should be
+        incremented, which may be zero. This method should *not* adjust any
+        of the member variables of this class.
+
+        :returns: The amount to increase the receive window by. Return zero if
+          the window should not be increased.
+        """
+        raise NotImplementedError(
+            "FlowControlManager is an abstract base class"
+        )
+
     def _handle_frame(self, frame_size):
         """
         This internal method is called by the connection or stream that owns
@@ -87,6 +108,16 @@ class BaseFlowControlManager(object):
         """
         rc = self.increase_window_size(frame_size)
         self.window_size -= frame_size
+        self.window_size += rc
+        return rc
+
+    def _blocked(self):
+        """
+        This internal method is called by the connection or stream that owns
+        the flow control manager. It handles the generic behaviour of receiving
+        BLOCKED frames.
+        """
+        rc = self.blocked()
         self.window_size += rc
         return rc
 
@@ -114,3 +145,6 @@ class FlowControlManager(BaseFlowControlManager):
             return self.initial_window_size - future_window_size
 
         return 0
+
+    def blocked(self):
+        return self.initial_window_size - self.window_size

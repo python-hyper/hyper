@@ -15,7 +15,7 @@ the stream by the endpoint that initiated the stream.
 """
 from .frame import (
     FRAME_MAX_LEN, HeadersFrame, DataFrame, PushPromiseFrame, WindowUpdateFrame,
-    ContinuationFrame,
+    ContinuationFrame, BlockedFrame
 )
 from .util import get_from_key_value_set
 import collections
@@ -206,6 +206,13 @@ class Stream(object):
             self.data.append(new_data)
 
             if increment and not self._remote_closed:
+                w = WindowUpdateFrame(self.stream_id)
+                w.window_increment = increment
+                self._data_cb(w, True)
+        elif frame.type == BlockedFrame.type:
+            # If we've been blocked we may want to fixup the window.
+            increment = self._in_window_manager._blocked()
+            if increment:
                 w = WindowUpdateFrame(self.stream_id)
                 w.window_increment = increment
                 self._data_cb(w, True)
