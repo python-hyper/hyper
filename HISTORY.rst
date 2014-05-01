@@ -6,8 +6,11 @@ X.X.X (XXXX-XX-XX)
 
 *Major Changes*
 
-- Support for HPACK draft 06.
+- Support for HPACK draft 7.
+- Support for HTTP/2 draft 12.
 - Support for Python 2.7, thanks to the inimitable @alekstorm! (`Issue #33`_)
+- Support for PyPy.
+- Support for Sever Push, thanks to @alekstorm. (`Issue #40`_)
 
 *Bugfixes*
 
@@ -17,15 +20,21 @@ X.X.X (XXXX-XX-XX)
 - Header blocks can no longer be corrupted if read in a different order to the
   one in which they were sent. (`Issue #39`_)
 - Default window manager is now smarter about sending WINDOWUPDATE frames.
-  (`Issue #41`_)
+  (`Issue #41`_ and `Issue #52`_)
 - Fixed inverted window sizes. (`Issue #27`_)
+- Correct reply to PING frames. (`Issue #48`_)
+- Made the wheel universal, befitting a pure-Python package. (`Issue #46`_)
 
 .. _Issue #24: https://github.com/Lukasa/hyper/issues/24
 .. _Issue #26: https://github.com/Lukasa/hyper/issues/26
 .. _Issue #27: https://github.com/Lukasa/hyper/issues/27
 .. _Issue #33: https://github.com/Lukasa/hyper/issues/33
 .. _Issue #39: https://github.com/Lukasa/hyper/issues/39
+.. _Issue #40: https://github.com/Lukasa/hyper/issues/40
 .. _Issue #41: https://github.com/Lukasa/hyper/issues/41
+.. _Issue #46: https://github.com/Lukasa/hyper/issues/46
+.. _Issue #48: https://github.com/Lukasa/hyper/issues/48
+.. _Issue #52: https://github.com/Lukasa/hyper/issues/52
 
 0.0.4 (2014-03-08)
 ------------------
