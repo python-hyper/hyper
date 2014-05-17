@@ -12,6 +12,7 @@ import logging
 
 from ..compat import to_byte
 from .huffman import HuffmanDecoder, HuffmanEncoder
+from .hpack_structures import Reference
 from hyper.http20.huffman_constants import (
     REQUEST_CODES, REQUEST_CODES_LENGTH, REQUEST_CODES, REQUEST_CODES_LENGTH
 )
@@ -565,7 +566,7 @@ class Decoder(object):
         """
         log.debug("Decoding %s", data)
 
-        headers = set()
+        headers = []
         data_len = len(data)
         current_index = 0
 
@@ -601,36 +602,40 @@ class Decoder(object):
                 )
 
             if header:
-                headers.add(header)
+                headers.append(header)
 
             current_index += consumed
 
         # Now we're at the end, anything in the reference set that isn't in the
-        # headers already gets added.
-        headers = headers | self.reference_set
+        # headers already gets added. Right now this is a slow linear search,
+        # but we can probably do better in future.
+        for ref in self.reference_set:
+            if ref.obj not in headers:
+                headers.append(ref.obj)
 
-        return {(n.decode('utf-8'), v.decode('utf-8')) for n, v in headers}
+        return [(n.decode('utf-8'), v.decode('utf-8')) for n, v in headers]
 
-    def _add_to_header_table(self, name, value):
+    def _add_to_header_table(self, new_header):
         """
         Adds a header to the header table, evicting old ones if necessary.
         """
         # Be optimistic: add the header straight away.
-        self.header_table.appendleft((name, value))
+        self.header_table.appendleft(new_header)
 
         # Now, work out how big the header table is.
         actual_size = header_table_size(self.header_table)
 
         # Loop and remove whatever we need to.
         while actual_size > self.header_table_size:
-            n, v = self.header_table.pop()
+            header = self.header_table.pop()
+            n, v = header
             actual_size -= (
                 32 + len(n) + len(v)
             )
 
             # If something is removed from the header table, it also needs to
             # be removed from the reference set.
-            self.reference_set.discard((n, v))
+            self.reference_set.discard(Reference(header))
 
             log.debug("Evicting %s: %s from the header table", n, v)
 
@@ -661,26 +666,26 @@ class Decoder(object):
 
             # If this came out of the static table, we need to add it to the
             # header table.
-            self._add_to_header_table(*header)
+            self._add_to_header_table(header)
         else:
             header = self.header_table[index]
 
         # If the header is in the reference set, remove it. Otherwise, add it.
         # Since this updates the reference set, don't bother returning the
         # header.
-        if header in self.reference_set:
+        header_ref = Reference(header)
+        if header_ref in self.reference_set:
             log.debug(
                 "Removed %s from the reference set, consumed %d",
                 header,
                 consumed
             )
-            self.reference_set.remove(header)
+            self.reference_set.remove(header_ref)
             return None, consumed
         else:
             log.debug("Decoded %s, consumed %d", header, consumed)
-            self.reference_set.add(header)
+            self.reference_set.add(header_ref)
             return header, consumed
-
 
     def _decode_literal_no_index(self, data):
         return self._decode_literal(data, False)
@@ -744,11 +749,10 @@ class Decoder(object):
 
         # If we've been asked to index this, add it to the header table and
         # the reference set.
-        if should_index:
-            self._add_to_header_table(name, value)
-            self.reference_set.add((name, value))
-
         header = (name, value)
+        if should_index:
+            self._add_to_header_table(header)
+            self.reference_set.add(Reference(header))
 
         log.debug(
             "Decoded %s, consumed %d, indexed %s",
