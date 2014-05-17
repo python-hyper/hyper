@@ -28,13 +28,18 @@ def pop_from_key_value_set(kvset, *keys):
     [('b', 1)]
     """
     extracted = [None] * len(keys)
-    rest = set()
-    for key, value in kvset:
+    indices_to_remove = []
+    for index, elem in enumerate(kvset):
+        key, value = elem
         try:
             extracted[keys.index(key)] = value
+            indices_to_remove.append(index)
         except ValueError:
-            rest.add((key, value))
-    kvset.intersection_update(rest)
+            pass
+
+    for index in indices_to_remove[::-1]:
+        kvset.pop(index)
+
     return tuple(extracted)
 
 def combine_repeated_headers(kvset):

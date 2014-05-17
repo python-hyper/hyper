@@ -1803,14 +1803,14 @@ class TestHyperStream(object):
 
 class TestResponse(object):
     def test_status_is_stripped_from_headers(self):
-        headers = set([(':status', '200')])
+        headers = [(':status', '200')]
         resp = HTTP20Response(headers, None)
 
         assert resp.status == 200
         assert resp.getheaders() == []
 
     def test_response_transparently_decrypts_gzip(self):
-        headers = set([(':status', '200'), ('content-encoding', 'gzip')])
+        headers = [(':status', '200'), ('content-encoding', 'gzip')]
         c = zlib_compressobj(wbits=24)
         body = c.compress(b'this is test data')
         body += c.flush()
@@ -1819,7 +1819,7 @@ class TestResponse(object):
         assert resp.read() == b'this is test data'
 
     def test_response_transparently_decrypts_real_deflate(self):
-        headers = set([(':status', '200'), ('content-encoding', 'deflate')])
+        headers = [(':status', '200'), ('content-encoding', 'deflate')]
         c = zlib_compressobj(wbits=zlib.MAX_WBITS)
         body = c.compress(b'this is test data')
         body += c.flush()
@@ -1828,7 +1828,7 @@ class TestResponse(object):
         assert resp.read() == b'this is test data'
 
     def test_response_transparently_decrypts_wrong_deflate(self):
-        headers = set([(':status', '200'), ('content-encoding', 'deflate')])
+        headers = [(':status', '200'), ('content-encoding', 'deflate')]
         c = zlib_compressobj(wbits=-zlib.MAX_WBITS)
         body = c.compress(b'this is test data')
         body += c.flush()
@@ -1838,7 +1838,7 @@ class TestResponse(object):
 
     def test_response_calls_stream_close(self):
         stream = DummyStream('')
-        resp = HTTP20Response(set([(':status', '200')]), stream)
+        resp = HTTP20Response([(':status', '200')], stream)
         resp.close()
 
         assert stream.closed
@@ -1846,13 +1846,13 @@ class TestResponse(object):
     def test_responses_are_context_managers(self):
         stream = DummyStream('')
 
-        with HTTP20Response(set([(':status', '200')]), stream) as resp:
+        with HTTP20Response([(':status', '200')], stream) as resp:
             pass
 
         assert stream.closed
 
     def test_read_small_chunks(self):
-        headers = set([(':status', '200')])
+        headers = [(':status', '200')]
         stream = DummyStream(b'1234567890')
         chunks = [b'12', b'34', b'56', b'78', b'90']
         resp = HTTP20Response(headers, stream)
@@ -1863,7 +1863,7 @@ class TestResponse(object):
         assert resp.read() == b''
 
     def test_read_buffered(self):
-        headers = set([(':status', '200')])
+        headers = [(':status', '200')]
         stream = DummyStream(b'1234567890')
         chunks = [b'12', b'34', b'56', b'78', b'90'] * 2
         resp = HTTP20Response(headers, stream)
@@ -1875,21 +1875,21 @@ class TestResponse(object):
         assert resp.read() == b''
 
     def test_getheader(self):
-        headers = set([(':status', '200'), ('content-type', 'application/json')])
+        headers = [(':status', '200'), ('content-type', 'application/json')]
         stream = DummyStream(b'')
         resp = HTTP20Response(headers, stream)
 
         assert resp.getheader('content-type') == 'application/json'
 
     def test_getheader_default(self):
-        headers = set([(':status', '200')])
+        headers = [(':status', '200')]
         stream = DummyStream(b'')
         resp = HTTP20Response(headers, stream)
 
         assert resp.getheader('content-type', 'text/html') == 'text/html'
 
     def test_fileno_not_implemented(self):
-        resp = HTTP20Response(set([(':status', '200')]), DummyStream(b''))
+        resp = HTTP20Response([(':status', '200')], DummyStream(b''))
 
         with pytest.raises(NotImplementedError):
             resp.fileno()
