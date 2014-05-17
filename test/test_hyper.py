@@ -799,7 +799,7 @@ class TestHPACKDecoder(object):
         value.
         """
         d = Decoder()
-        header_set = set([('custom-key', 'custom-header')])
+        header_set = [('custom-key', 'custom-header')]
         data = b'\x40\x0acustom-key\x0dcustom-header'
 
         assert d.decode(data) == header_set
@@ -813,7 +813,7 @@ class TestHPACKDecoder(object):
         value.
         """
         d = Decoder()
-        header_set = set([(':path', '/sample/path')])
+        header_set = [(':path', '/sample/path')]
         data = b'\x04\x0c/sample/path'
 
         assert d.decode(data) == header_set
@@ -826,7 +826,7 @@ class TestHPACKDecoder(object):
         into the header table.
         """
         d = Decoder()
-        header_set = set([(':method', 'GET')])
+        header_set = [(':method', 'GET')]
         data = b'\x82'
 
         assert d.decode(data) == header_set
@@ -850,7 +850,7 @@ class TestHPACKDecoder(object):
         first_header_table = first_header_set[::-1][1:]
         first_data = b'\x82\x87\x86\x04\x0fwww.example.com'
 
-        assert d.decode(first_data) == set(first_header_set)
+        assert sorted(d.decode(first_data)) == sorted(first_header_set)
         assert list(d.header_table) == [
             (n.encode('utf-8'), v.encode('utf-8')) for n, v in first_header_table
         ]
@@ -866,7 +866,7 @@ class TestHPACKDecoder(object):
         ]
         second_data = b'\x04\x0fwww.example.com\x0f\x0c\x08no-cache'
 
-        assert d.decode(second_data) == set(second_header_set)
+        assert sorted(d.decode(second_data)) == sorted(second_header_set)
         assert list(d.header_table) == [
             (n.encode('utf-8'), v.encode('utf-8')) for n, v in first_header_table
         ]
@@ -886,7 +886,7 @@ class TestHPACKDecoder(object):
             b'\x40\x0acustom-key\x0ccustom-value'
         )
 
-        assert d.decode(third_data) == set(third_header_set)
+        assert sorted(d.decode(third_data)) == sorted(third_header_set)
         # Don't check the header table here, it's just too complex to be
         # reliable. Check its length though.
         assert len(d.header_table) == 6
@@ -910,7 +910,7 @@ class TestHPACKDecoder(object):
             b'\xff'
         )
 
-        assert d.decode(first_data) == set(first_header_set)
+        assert sorted(d.decode(first_data)) == sorted(first_header_set)
         assert list(d.header_table) == [
             (n.encode('utf-8'), v.encode('utf-8')) for n, v in first_header_table
             if n != ':authority'
@@ -931,7 +931,7 @@ class TestHPACKDecoder(object):
             b'\x86\xb9\xb9\x94\x95\x56\xbf'
         )
 
-        assert d.decode(second_data) == set(second_header_set)
+        assert sorted(d.decode(second_data)) == sorted(second_header_set)
         assert list(d.header_table) == [
             (n.encode('utf-8'), v.encode('utf-8')) for n, v in second_header_table
             if n not in (':authority', 'cache-control')
@@ -952,7 +952,7 @@ class TestHPACKDecoder(object):
             b'\x40\x88W\x1c\\\xdbs{/\xaf\x89W\x1c\\\xdbsrM\x9cW'
         )
 
-        assert d.decode(third_data) == set(third_header_set)
+        assert sorted(d.decode(third_data)) == sorted(third_header_set)
         # Don't check the header table here, it's just too complex to be
         # reliable. Check its length though.
         assert len(d.header_table) == 6
