@@ -40,7 +40,7 @@ class HTTP20Connection(object):
         isn't provided in the ``host`` parameter, defaults to 443.
     :param window_manager: (optional) The class to use to manage flow control
         windows. This needs to be a subclass of the
-        :class:`BaseFlowControlManager <hyper.http20.window.BaseFlowControlManager>.
+        :class:`BaseFlowControlManager <hyper.http20.window.BaseFlowControlManager>`.
         If not provided,
         :class:`FlowControlManager <hyper.http20.window.FlowControlManager>`
         will be used.
