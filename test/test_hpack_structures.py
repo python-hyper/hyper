@@ -9,6 +9,10 @@ class TestReference(object):
         r = Reference(None)
         assert r
 
+    def test_references_have_not_been_emitted_by_default(self):
+        r = Reference(None)
+        assert not r.emitted
+
     def test_two_references_to_the_same_object_compare_equal(self):
         a = 'hi'
         r1 = Reference(a)
