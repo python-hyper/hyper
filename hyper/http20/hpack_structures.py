@@ -35,9 +35,9 @@ class Reference(object):
     def __init__(self, obj):
         self.obj = obj
 
-        # Whether the header being referenced by this reference has been
-        # emitted in this round of header processing.
-        self.emitted = False
+        # The number of times the header being referenced by this reference has
+        # been emitted in this round of header processing.
+        self.emitted = 0
 
     def __eq__(self, other):
         return (isinstance(other, Reference) and self.obj is other.obj)
