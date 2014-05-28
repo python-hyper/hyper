@@ -45,10 +45,12 @@ def hpack():
         for case in indata['cases']:
             outcase = {'header_table_size': e.header_table_size}
             outcase['headers'] = case['headers']
-            headers = {}
+            headers = []
 
             for header in case['headers']:
-                headers.update(header)
+                key = header.keys()[0]
+                header = (key, header[key])
+                headers.append(header)
 
             outcase['wire'] = hexlify(e.encode(headers))
             output['cases'].append(outcase)
