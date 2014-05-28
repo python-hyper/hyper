@@ -673,9 +673,6 @@ class TestHPACKEncoder(object):
             (n.encode('utf-8'), v.encode('utf-8')) for n, v in first_header_table
         ]
 
-        # This request has not enough headers in common with the previous
-        # request to take advantage of the differential encoding.  Therefore,
-        # the reference set is emptied before encoding the header fields.
         third_header_set = [
             (':method', 'GET',),
             (':scheme', 'https',),
@@ -684,8 +681,8 @@ class TestHPACKEncoder(object):
             ('custom-key', 'custom-value'),
         ]
         third_result = (
-            b'\x30\x83\x8a\x89\x06\x0fwww.example.com' +
-            b'\x40\x0acustom-key\x0ccustom-value'
+            b'\x8a\x89\x06\x0fwww.example.com@\ncustom-key\x0ccustom-value' +
+            b'\x84\x85'
         )
 
         assert e.encode(third_header_set, huffman=False) == third_result
@@ -747,8 +744,8 @@ class TestHPACKEncoder(object):
             ('custom-key', 'custom-value'),
         ]
         third_result = (
-            b'\x30\x83\x8a\x89\x06\x8c\xe7\xcf\x9b\xeb\xe8\x9b\x6f\xb1\x6f\xa9\xb6\xff'
-            b'\x40\x88W\x1c\\\xdbs{/\xaf\x89W\x1c\\\xdbsrM\x9cW'
+            b'\x8a\x89\x06\x8c\xe7\xcf\x9b\xeb\xe8\x9bo\xb1o\xa9\xb6\xff@\x88'
+            b'W\x1c\\\xdbs{/\xaf\x89W\x1c\\\xdbsrM\x9cW\x84\x85'
         )
 
         assert e.encode(third_header_set, huffman=True) == third_result
@@ -782,13 +779,13 @@ class TestHPACKEncoder(object):
         e.encode([('no', 'value')])
 
         with pytest.raises(HPACKEncodingError):
-            e.remove([(b'no', b'val')])
+            e.remove((b'no', b'val'))
 
     def test_removing_header_not_in_table_at_all(self):
         e = Encoder()
 
         with pytest.raises(HPACKEncodingError):
-            e.remove([(b'not', b'present')])
+            e.remove((b'not', b'present'))
 
 
 class TestHPACKDecoder(object):
