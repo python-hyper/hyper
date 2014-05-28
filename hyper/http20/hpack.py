@@ -175,11 +175,15 @@ class Encoder(object):
 
     def __init__(self):
         self.header_table = collections.deque()
-        self.reference_set = set()
         self._header_table_size = 4096  # This value set by the standard.
         self.huffman_coder = HuffmanEncoder(
             REQUEST_CODES, REQUEST_CODES_LENGTH
         )
+
+        # Confusingly, the reference set is a dictionary. This is because we
+        # want to be able to get at the individual references, rather than just
+        # test for presence.
+        self.reference_set = {}
 
     @property
     def header_table_size(self):
@@ -199,14 +203,18 @@ class Encoder(object):
             current_size = header_table_size(self.header_table)
 
             while value < current_size:
-                n, v = self.header_table.pop()
+                header = self.header_table.pop()
+                n, v = header
                 current_size -= (
                     32 + len(n) + len(v)
                 )
 
                 # If something is removed from the header table, it also needs
                 # to be removed from the reference set.
-                self.reference_set.discard((n, v))
+                try:
+                    del self.reference_set[Reference(header)]
+                except KeyError:
+                    pass
 
                 log.debug(
                     "Removed %s: %s from the encoder header table", n, v
@@ -237,125 +245,160 @@ class Encoder(object):
         do that, because it's an extra bit of complication, but we will later.
         """
         log.debug("HPACK encoding %s", headers)
+        header_block = []
 
-        # First, turn the headers into a list of tuples if possible. This is
-        # the natural way to interact with them in HPACK.
+        # A preliminary step will unmark all the references.
+        for ref in self.reference_set:
+            ref.emitted = Reference.NOT_EMITTED
+
+        # Turn the headers into a list of tuples if possible. This is the
+        # natural way to interact with them in HPACK.
         if isinstance(headers, dict):
             headers = headers.items()
 
         # Next, walk across the headers and turn them all into bytestrings.
         headers = [(_to_bytes(n), _to_bytes(v)) for n, v in headers]
 
-        incoming_set = set(headers)
+        # We can now encode each header in the block. The logic here roughly
+        # goes as follows:
+        # 1. Check whether the header is in the reference set. If it is and
+        #    hasn't been emitted yet, mark it as emitted. If it has been
+        #    emitted, do the crazy unemit-reemit dance.
+        # 2. If the header is not in the reference set, emit it and add it to
+        #    the reference set as an emitted header.
+        # 3. When we're done with the header block, explicitly remove all
+        #    unemitted references.
+        for header in headers:
+            # Search for the header in the header table.
+            m = self.matching_header(*header)
 
-        # First, we need to determine what set of headers we need to emit.
-        # We do this by comparing against the reference set.
-        # Because the HPACK standard defines a header set as 'potentially
-        # ordered', we should try to maintain their order. It's a hassle, but
-        # there we go.
-        to_add = (x for x in headers if x in incoming_set - self.reference_set)
-        to_remove = (self.reference_set - incoming_set)
+            if m is not None:
+                index, match = m
+            else:
+                index, match = -1, None
 
-        # Now, serialize the headers. Do removal first.
-        # If the list of headers we're removing is more than half of the
-        # reference set, just emit an 'empty the reference set' message.
-        if (len(self.reference_set - incoming_set) >
-                                               (len(self.reference_set) // 2)):
-            log.debug("Emptying the encoder reference set.")
-            header_block = b'\x30'  # 'Empty the reference set' message.
+            # Found it. Is it in the reference set?
+            ref = self.get_from_reference_set(match)
 
-            # Remove everything from the reference set.
-            self.reference_set = set()
-        else:
-            header_block = self.remove(to_remove)
+            if ref is not None and not ref.emitted:
+                # Mark it as emitted.
+                ref.emitted = Reference.IMPLICITLY_EMITTED
+                continue
 
-        header_block += self.add(to_add, huffman)
+            if ref is not None:
+                # Already emitted, emit again. This requires a strange dance of
+                # removal and then re-emission. To do this with minimal code,
+                # we set ref back to None in this block so that we'll fall
+                # into the next branch.
+                if ref.emitted == Reference.IMPLICITLY_EMITTED:
+                    # We actually need to do this twice becuase of the implicit
+                    # emission.
+                    header_block.append(self.remove(ref.obj))
+                    header_block.append(self.add(header))
+                    header = self.matching_header(*header)[1]
+                    ref = self.get_from_reference_set(header)
+
+                header_block.append(self.remove(ref.obj))
+                ref = None
+
+            if ref is None:
+                # Not in the reference set, emit and add.
+                header_block.append(self.add(header, huffman))
+
+        # Remove everything we didn't emit. We do this in a specific order so
+        # that we generate deterministic output, even at the cost of being
+        # slower.
+        for r in sorted(self.reference_set.keys(), key=lambda r: r.obj):
+            if not r.emitted:
+                header_block.append(self.remove(r.obj))
 
         log.debug("Encoded header block to %s", header_block)
 
-        return header_block
+        return b''.join(header_block)
 
-    def remove(self, to_remove):
+    def remove(self, header):
         """
-        This function takes a set of header key-value tuples and serializes
-        them. These must be in the header table, so must be represented as
-        their indexed form.
+        This function takes a header key-value tuple and serializes it.  It
+        must be in the header table, so must be represented in its indexed
+        form.
         """
-        log.debug("Removing %s from the header table", to_remove)
+        log.debug(
+            "Removing %s:%s from the reference set", header[0], header[1]
+        )
 
-        encoded = []
+        try:
+            index, match = self.matching_header(*header)
+        except TypeError:
+            raise HPACKEncodingError(
+                '"%s: %s" not present in the header table' %
+                (header[0], header[1])
+            )
 
-        for name, value in to_remove:
-            try:
-                index, perfect = self.matching_header(name, value)
-            except TypeError:
-                raise HPACKEncodingError(
-                    '"%s: %s" not present in the header table' % (name, value)
-                )
+        # The header must be in the header block. That means that:
+        # - match must be the header tuple
+        # - index must be <= len(self.header_table)
+        max_index = len(self.header_table)
 
-            # The header must be in the header block. That means that:
-            # - perfect must be True
-            # - index must be <= len(self.header_table)
-            max_index = len(self.header_table)
+        if (not match) or (index > max_index):
+            raise HPACKEncodingError(
+                '"%s: %s" not present in the header table' %
+                (header[0], header[1])
+            )
 
-            if (not perfect) or (index > max_index):
-                raise HPACKEncodingError(
-                    '"%s: %s" not present in the header table' % (name, value)
-                )
+        # We can safely encode this as the indexed representation.
+        encoded = self._encode_indexed(index)
 
-            # We can safely encode this as the indexed representation.
-            encoded.append(self._encode_indexed(index))
+        # Having encoded it in the indexed form, we now remove it from the
+        # reference set.
+        del self.reference_set[Reference(header)]
 
-            # Having encoded it in the indexed form, we now remove it from the
-            # reference set.
-            self.reference_set.remove((name, value))
-
-        return b''.join(encoded)
+        return encoded
 
     def add(self, to_add, huffman=False):
         """
-        This function takes a set of header key-value tuples and serializes
-        them for adding to the header table.
+        This function takes a header key-value tuple and serializes it for
+        adding to the header table.
         """
         log.debug("Adding %s to the header table", to_add)
 
-        encoded = []
+        name, value = to_add
 
-        for name, value in to_add:
-            # Search for a matching header in the header table.
-            match = self.matching_header(name, value)
+        # Search for a matching header in the header table.
+        match = self.matching_header(name, value)
 
-            if match is None:
-                # Not in the header table. Encode using the literal syntax,
-                # and add it to the header table.
-                s = self._encode_literal(name, value, True, huffman)
-                encoded.append(s)
-                self._add_to_header_table(name, value)
-                self.reference_set.add((name, value))
-                continue
+        if match is None:
+            # Not in the header table. Encode using the literal syntax,
+            # and add it to the header table.
+            encoded = self._encode_literal(name, value, True, huffman)
+            self._add_to_header_table(to_add)
+            ref = Reference(to_add)
+            ref.emitted = Reference.EMITTED
+            self.reference_set[ref] = ref
+            return encoded
 
-            # The header is in the table, break out the values. If we matched
-            # perfectly, we can use the indexed representation: otherwise we
-            # can use the indexed literal.
-            index, perfect = match
+        # The header is in the table, break out the values. If we matched
+        # perfectly, we can use the indexed representation: otherwise we
+        # can use the indexed literal.
+        index, perfect = match
 
-            if perfect:
-                # Indexed representation. If the index is larger than the size
-                # of the header table, also add to the header table.
-                s = self._encode_indexed(index)
-                encoded.append(s)
+        if perfect:
+            # Indexed representation. If the index is larger than the size
+            # of the header table, also add to the header table.
+            encoded = self._encode_indexed(index)
 
-                if index > len(self.header_table):
-                    self._add_to_header_table(name, value)
+            if index > len(self.header_table):
+                perfect = (name, value)
+                self._add_to_header_table(perfect)
 
-                self.reference_set.add((name, value))
-            else:
-                # Indexed literal. Since we have a partial match, don't add to
-                # the header table, it won't help us.
-                s = self._encode_indexed_literal(index, value, huffman)
-                encoded.append(s)
+            ref = Reference(perfect)
+            ref.emitted = Reference.EMITTED
+            self.reference_set[ref] = ref
+        else:
+            # Indexed literal. Since we have a partial match, don't add to
+            # the header table, it won't help us.
+            encoded = self._encode_indexed_literal(index, value, huffman)
 
-        return b''.join(encoded)
+        return encoded
 
     def matching_header(self, name, value):
         """
@@ -371,39 +414,59 @@ class Encoder(object):
         for (i, (n, v)) in enumerate(self.header_table):
             if n == name:
                 if v == value:
-                    return (i + 1, True)
+                    return (i + 1, self.header_table[i])
                 elif partial_match is None:
-                    partial_match = (i + 1, False)
+                    partial_match = (i + 1, None)
 
         for (i, (n, v)) in enumerate(Encoder.static_table):
             if n == name:
                 if v == value:
-                    return (i + header_table_size + 1, True)
+                    return (i + header_table_size + 1, Encoder.static_table[i])
                 elif partial_match is None:
-                    partial_match = (i + header_table_size + 1, False)
+                    partial_match = (i + header_table_size + 1, None)
 
         return partial_match
 
-    def _add_to_header_table(self, name, value):
+    def get_from_reference_set(self, header):
+        """
+        Determines whether a header is currently in the reference set. Returns
+        ``None`` if not.
+
+        :param header: The header tuple to search for.
+        """
+        if header is None:
+            return None
+
+        r = Reference(header)
+        try:
+            return self.reference_set[r]
+        except KeyError:
+            return None
+
+    def _add_to_header_table(self, header):
         """
         Adds a header to the header table, evicting old ones if necessary.
         """
         # Be optimistic: add the header straight away.
-        self.header_table.appendleft((name, value))
+        self.header_table.appendleft(header)
 
         # Now, work out how big the header table is.
         actual_size = header_table_size(self.header_table)
 
         # Loop and remove whatever we need to.
         while actual_size > self.header_table_size:
-            n, v = self.header_table.pop()
+            header = self.header_table.pop()
+            n, v = header
             actual_size -= (
                 32 + len(n) + len(v)
             )
 
             # If something is removed from the header table, it also needs to
             # be removed from the reference set.
-            self.reference_set.discard((n, v))
+            try:
+                del self.reference_set[Reference(header)]
+            except KeyError:
+                pass
 
             log.debug("Evicted %s: %s from the header table", n, v)
 
