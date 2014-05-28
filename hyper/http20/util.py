@@ -13,7 +13,7 @@ def get_from_key_value_set(kvset, key, default=None):
     Returns a value from a key-value set, or the default if the value isn't
     present.
     """
-    value = pop_from_key_value_set(kvset.copy(), key)[0]
+    value = pop_from_key_value_set(kvset[:], key)[0]
     return value if value is not None else default
 
 def pop_from_key_value_set(kvset, *keys):
