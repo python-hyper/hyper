@@ -51,3 +51,6 @@ class Reference(object):
 
     def __hash__(self):
         return id(self.obj)
+
+    def __repr__(self):  # pragma: no cover
+        return 'Reference <%s>' % id(self.obj)
