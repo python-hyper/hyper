@@ -32,12 +32,16 @@ class Reference(object):
 
     :param obj: The object being referenced.
     """
+    # Enumerated states distinguishing between references that have been
+    # emitted in this round of processing, those that haven't, and those that
+    # have been 'implicitly' emitted (via the reference set).
+    NOT_EMITTED = 0
+    EMITTED = 1
+    IMPLICITLY_EMITTED = 2
+
     def __init__(self, obj):
         self.obj = obj
-
-        # The number of times the header being referenced by this reference has
-        # been emitted in this round of header processing.
-        self.emitted = 0
+        self.emitted = Reference.NOT_EMITTED
 
     def __eq__(self, other):
         return (isinstance(other, Reference) and self.obj is other.obj)
