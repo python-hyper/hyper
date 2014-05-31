@@ -1,11 +1,11 @@
 {
-  "draft": 6,
+  "draft": 7,
   "description": "https://github.com/jxck/hpack implemeted in Golang. Encoded using String Literal with Huffman, no Header/Static Table, and always start with emptied Reference Set. by Jxck.",
   "cases": [
     {
       "seqno": 0,
       "header_table_size": 4096,
-      "wire": "80804086f66831cdb87f84f77778ff4085f641398e8383ce31774088f62358e6d7aa3e9f88f4466d6912d271774084f63911cf810f",
+      "wire": "3000859ad5bab6d383d5df4700859b1556bb5783adcebf0088993c5d5b7063baff88ea9adad7d4d7fd6f00849af4babf813f",
       "headers": [
         {
           ":method": "GET"
@@ -24,7 +24,7 @@
     {
       "seqno": 1,
       "header_table_size": 4096,
-      "wire": "80804086f66831cdb87f84f77778ff4085f641398e8383ce31774088f62358e6d7aa3e9f8bdb6d89e88cdad225a4e2ef4084f63911cf810f",
+      "wire": "3000859ad5bab6d383d5df4700859b1556bb5783adcebf0088993c5d5b7063baff8ce7cf9bfd535b5afa9affadff00849af4babf813f",
       "headers": [
         {
           ":method": "GET"
@@ -43,7 +43,7 @@
     {
       "seqno": 2,
       "header_table_size": 4096,
-      "wire": "80804086f66831cdb87f84f77778ff4085f641398e8383ce31774088f62358e6d7aa3e9f87e44f45699138bb4084f63911cf9905688c860116b820e38274602db9365642534c5a0f591cccbf",
+      "wire": "3000859ad5bab6d383d5df4700859b1556bb5783adcebf0088993c5d5b7063baff88f67fab2da9ff5bff00849af4babf9a3b2d4d4bc4ee6de7c6f23aadb8f636a6e6bb1cc28084a47efbaa",
       "headers": [
         {
           ":method": "GET"

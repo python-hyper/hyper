@@ -1,0 +1,59 @@
+{
+  "cases": [
+    {
+      "seqno": 0, 
+      "header_table_size": 1365, 
+      "wire": "2fc60a8742885f44db7d8b7d4db786857e88aef4abdb33978bbf6587e9d3a74e9d3a0f4086e99ab5d9637f84e6dc2ca7", 
+      "headers": [
+        {
+          ":scheme": "https"
+        }, 
+        {
+          ":authority": "example.com"
+        }, 
+        {
+          ":path": "/"
+        }, 
+        {
+          ":method": "GET"
+        }, 
+        {
+          "user-agent": "hpack-test"
+        }, 
+        {
+          "cookie": "xxxxxxx1"
+        }, 
+        {
+          "x-hello": "world"
+        }
+      ]
+    }, 
+    {
+      "seqno": 1, 
+      "header_table_size": 2730, 
+      "wire": "2f9b154287e9d3a74e9d3a178283", 
+      "headers": [
+        {
+          ":scheme": "https"
+        }, 
+        {
+          ":authority": "example.com"
+        }, 
+        {
+          ":path": "/"
+        }, 
+        {
+          ":method": "GET"
+        }, 
+        {
+          "user-agent": "hpack-test"
+        }, 
+        {
+          "cookie": "xxxxxxx2"
+        }
+      ]
+    }
+  ], 
+  "draft": 7, 
+  "description": "Encoded by nghttp2. The basic encoding strategy is described in http://lists.w3.org/Archives/Public/ietf-http-wg/2013JulSep/1135.html We use huffman encoding only if it produces strictly shorter byte string than original. We make some headers not indexing at all, but this does not always result in less bits on the wire."
+}

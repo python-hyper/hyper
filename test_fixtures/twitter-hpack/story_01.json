@@ -1,0 +1,56 @@
+{
+  "draft": 7,
+  "cases": [
+    {
+      "headers": [
+        {
+          ":scheme": "https"
+        },
+        {
+          ":authority": "example.com"
+        },
+        {
+          ":path": "/"
+        },
+        {
+          ":method": "GET"
+        },
+        {
+          "user-agent": "hpack-test"
+        },
+        {
+          "cookie": "xxxxxxx1"
+        },
+        {
+          "x-hello": "world"
+        }
+      ],
+      "wire": "8742885f44db7d8b7d4db786857e88aef4abdb33978bbf6587e9d3a74e9d3a0f4086e99ab5d9637f84e6dc2ca7"
+    },
+    {
+      "headers": [
+        {
+          ":scheme": "https"
+        },
+        {
+          ":authority": "example.com"
+        },
+        {
+          ":path": "/"
+        },
+        {
+          ":method": "GET"
+        },
+        {
+          "user-agent": "hpack-test"
+        },
+        {
+          "cookie": "xxxxxxx2"
+        }
+      ],
+      "wire": "4287e9d3a74e9d3a178283"
+    }
+  ],
+  "description": "twitter/hpack",
+  "context": "request"
+}

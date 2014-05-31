@@ -1,0 +1,381 @@
+{
+  "draft": 7,
+  "cases": [
+    {
+      "headers": [
+        {
+          ":method": "GET"
+        },
+        {
+          ":scheme": "http"
+        },
+        {
+          ":authority": "nytimes.com"
+        },
+        {
+          ":path": "/"
+        },
+        {
+          "user-agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10.8; rv:16.0) Gecko/20100101 Firefox/16.0"
+        },
+        {
+          "accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8"
+        },
+        {
+          "accept-language": "en-US,en;q=0.5"
+        },
+        {
+          "accept-encoding": "gzip, deflate"
+        },
+        {
+          "connection": "keep-alive"
+        }
+      ],
+      "wire": "82874388bbab996af17d4db7877eb9d6df7659624f0be06feb5a54cb9cdc6bec3785ce5d86d6951bc769bd0c20fc9d86c394c313e1f136a5abd9a720100101369660be0de87189f058b072fa38f5badb32a6fbec6292e636e3f4add6d9fe74b6cca9befb18a4b98db8fd2db3b3f9383f2e5fecffdf67f2707e4f578c5dd9bcf6e55ddd9fc9c1f87f578aabdd97e5352be1625cbf4087536eb96a731b7788f65aefcc9b19c97f"
+    },
+    {
+      "headers": [
+        {
+          ":method": "GET"
+        },
+        {
+          ":scheme": "http"
+        },
+        {
+          ":authority": "t.pointroll.com"
+        },
+        {
+          ":path": "/PointRoll/Track/"
+        },
+        {
+          "user-agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10.8; rv:16.0) Gecko/20100101 Firefox/16.0"
+        },
+        {
+          "accept": "image/png,image/*;q=0.8,*/*;q=0.5"
+        },
+        {
+          "accept-language": "en-US,en;q=0.5"
+        },
+        {
+          "accept-encoding": "gzip, deflate"
+        },
+        {
+          "connection": "keep-alive"
+        },
+        {
+          "referer": "http://www.bbc.co.uk/news/business-20178000"
+        },
+        {
+          "cookie": "PRbu=EzZdduhgq; PRgo=BBBAAFMnA; PRti4CD975E46CAEA=B"
+        }
+      ],
+      "wire": "478b73f7b5973b06d963ea6dbf478d3f935973beedb2c3d18255ec7f469b65a9a967beeab2b2d4d4b3ff7d9fc9c1f932ff67fefb3f9383f0ff7f009fadcebe639f9f3e6fefdea7d4d7f8fb1ee5f3c4fbf8e2cb978e3988063900036dadf2fbefe33f7fbfee9a78d757f3b0de5f7a9b3f6f6f6e7cfa75dd9fb0de5f77320eed12c70f7c117767efcf3f6f898b8c"
+    },
+    {
+      "headers": [
+        {
+          ":method": "GET"
+        },
+        {
+          ":scheme": "http"
+        },
+        {
+          ":authority": "t.pointroll.com"
+        },
+        {
+          ":path": "/PointRoll/Track/"
+        },
+        {
+          "user-agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10.8; rv:16.0) Gecko/20100101 Firefox/16.0"
+        },
+        {
+          "accept": "image/png,image/*;q=0.8,*/*;q=0.5"
+        },
+        {
+          "accept-language": "en-US,en;q=0.5"
+        },
+        {
+          "accept-encoding": "gzip, deflate"
+        },
+        {
+          "connection": "keep-alive"
+        },
+        {
+          "referer": "http://www.bbc.co.uk/news/business-20178000"
+        },
+        {
+          "cookie": "PRbu=EzZdduhgq; PRgo=BBBAAFMnA; PRti4CD975E46CAEA=B"
+        }
+      ],
+      "wire": ""
+    },
+    {
+      "headers": [
+        {
+          ":method": "GET"
+        },
+        {
+          ":scheme": "http"
+        },
+        {
+          ":authority": "graphics8.nytimes.com"
+        },
+        {
+          ":path": "/packages/css/multimedia/bundles/projects/2012/HPLiveDebateFlex.css"
+        },
+        {
+          "user-agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10.8; rv:16.0) Gecko/20100101 Firefox/16.0"
+        },
+        {
+          "accept": "text/css,*/*;q=0.1"
+        },
+        {
+          "accept-language": "en-US,en;q=0.5"
+        },
+        {
+          "accept-encoding": "gzip, deflate"
+        },
+        {
+          "connection": "keep-alive"
+        },
+        {
+          "referer": "http://www.nytimes.com/"
+        },
+        {
+          "cookie": "RMID=007f010022166047bee9002b; adxcs=-"
+        }
+      ],
+      "wire": "458fab04df5b158c8fddd5ccb578bea6db45b03de957b26a5e2756389ede363996ae9624fbf8dd4d8bc4f7e0df55a9d89c8048ff2f2fab392f42f7a5cbd362fa3eac71458f72fa38eac71cbfd9ffbecfe4e0f8ff4591adcebe639f9f3e6fddd5ccb578bea6da7f459bfbebf0d138047c00400886288208f7ad728016fec3269e8ac67cdf868788898a"
+    },
+    {
+      "headers": [
+        {
+          ":method": "GET"
+        },
+        {
+          ":scheme": "http"
+        },
+        {
+          ":authority": "graphics8.nytimes.com"
+        },
+        {
+          ":path": "/js/app/common/slideshow/embeddedSlideshowBuilder.js"
+        },
+        {
+          "user-agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10.8; rv:16.0) Gecko/20100101 Firefox/16.0"
+        },
+        {
+          "accept": "*/*"
+        },
+        {
+          "accept-language": "en-US,en;q=0.5"
+        },
+        {
+          "accept-encoding": "gzip, deflate"
+        },
+        {
+          "connection": "keep-alive"
+        },
+        {
+          "referer": "http://www.nytimes.com/"
+        },
+        {
+          "cookie": "RMID=007f010022166047bee9002b; adxcs=-"
+        }
+      ],
+      "wire": "44a63fae274df79d4db6d6dc7c6c652bc6b6f33aeddeba695d3b6c652bc6b6f3ede2cb295e0ffae344032a2f2a8586"
+    },
+    {
+      "headers": [
+        {
+          ":method": "GET"
+        },
+        {
+          ":scheme": "http"
+        },
+        {
+          ":authority": "graphics8.nytimes.com"
+        },
+        {
+          ":path": "/css/0.1/screen/slideshow/modules/slidingGallery.css"
+        },
+        {
+          "user-agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10.8; rv:16.0) Gecko/20100101 Firefox/16.0"
+        },
+        {
+          "accept": "text/css,*/*;q=0.1"
+        },
+        {
+          "accept-language": "en-US,en;q=0.5"
+        },
+        {
+          "accept-encoding": "gzip, deflate"
+        },
+        {
+          "connection": "keep-alive"
+        },
+        {
+          "referer": "http://www.nytimes.com/"
+        },
+        {
+          "cookie": "RMID=007f010022166047bee9002b; adxcs=-"
+        }
+      ],
+      "wire": "42a53ab1c4e0f89f1560b5dc7c6c652bc6b6f33dada78d8bc4f8d8ca59755a93658bc3abeac71f868283"
+    },
+    {
+      "headers": [
+        {
+          ":method": "GET"
+        },
+        {
+          ":scheme": "http"
+        },
+        {
+          ":authority": "graphics8.nytimes.com"
+        },
+        {
+          ":path": "/adx/images/ADS/31/46/ad.314668/NYT_MBM_IPHON_LEFT_Oct11.jpg"
+        },
+        {
+          "user-agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10.8; rv:16.0) Gecko/20100101 Firefox/16.0"
+        },
+        {
+          "accept": "image/png,image/*;q=0.8,*/*;q=0.5"
+        },
+        {
+          "accept-language": "en-US,en;q=0.5"
+        },
+        {
+          "accept-encoding": "gzip, deflate"
+        },
+        {
+          "connection": "keep-alive"
+        },
+        {
+          "referer": "http://www.nytimes.com/"
+        },
+        {
+          "cookie": "RMID=007f010022166047bee9002b; adxcs=-"
+        }
+      ],
+      "wire": "41af3a69e8765a9a9789f3e8da7409e088e9a5f40c114521f67ea8ddafb75eef0f2f978ecddf5efd346ef153845ff5beaf8c8287"
+    },
+    {
+      "headers": [
+        {
+          ":method": "GET"
+        },
+        {
+          ":scheme": "http"
+        },
+        {
+          ":authority": "graphics8.nytimes.com"
+        },
+        {
+          ":path": "/packages/js/multimedia/bundles/projects/2012/HPLiveDebateFlex.js"
+        },
+        {
+          "user-agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10.8; rv:16.0) Gecko/20100101 Firefox/16.0"
+        },
+        {
+          "accept": "*/*"
+        },
+        {
+          "accept-language": "en-US,en;q=0.5"
+        },
+        {
+          "accept-encoding": "gzip, deflate"
+        },
+        {
+          "connection": "keep-alive"
+        },
+        {
+          "referer": "http://www.nytimes.com/"
+        },
+        {
+          "cookie": "RMID=007f010022166047bee9002b; adxcs=-"
+        }
+      ],
+      "wire": "41b03de957b26a5e27f5c4f6f1b1ccb574b127dfc6ea6c5e27bf06faad4ec4e40247f9797d59c97a17bd2e5e9b17d1ff5c7f84828d"
+    },
+    {
+      "headers": [
+        {
+          ":method": "GET"
+        },
+        {
+          ":scheme": "http"
+        },
+        {
+          ":authority": "graphics8.nytimes.com"
+        },
+        {
+          ":path": "/packages/js/multimedia/data/FilmStripPromo/2012_election_filmstrip.js"
+        },
+        {
+          "user-agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10.8; rv:16.0) Gecko/20100101 Firefox/16.0"
+        },
+        {
+          "accept": "*/*"
+        },
+        {
+          "accept-language": "en-US,en;q=0.5"
+        },
+        {
+          "accept-encoding": "gzip, deflate"
+        },
+        {
+          "connection": "keep-alive"
+        },
+        {
+          "referer": "http://www.nytimes.com/"
+        },
+        {
+          "cookie": "RMID=007f010022166047bee9002b; adxcs=-"
+        }
+      ],
+      "wire": "41b23de957b26a5e27f5c4f6f1b1ccb574b127a52e49f4b2cb76bb065fe5836d69c804b72ec5a9cc6ddbb832cb71760cbdff5c7f82"
+    },
+    {
+      "headers": [
+        {
+          ":method": "GET"
+        },
+        {
+          ":scheme": "http"
+        },
+        {
+          ":authority": "graphics8.nytimes.com"
+        },
+        {
+          ":path": "/packages/js/elections/2012/debates/videostrip/filmstrip.css"
+        },
+        {
+          "user-agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10.8; rv:16.0) Gecko/20100101 Firefox/16.0"
+        },
+        {
+          "accept": "text/css,*/*;q=0.1"
+        },
+        {
+          "accept-language": "en-US,en;q=0.5"
+        },
+        {
+          "accept-encoding": "gzip, deflate"
+        },
+        {
+          "connection": "keep-alive"
+        },
+        {
+          "referer": "http://www.nytimes.com/"
+        },
+        {
+          "cookie": "RMID=007f010022166047bee9002b; adxcs=-"
+        }
+      ],
+      "wire": "41aa3de957b26a5e27f5c4ebb16a731b762720123d2bde972f13f2652b6e2ec1979f832cb71760cbdf5638ff8a8286"
+    }
+  ],
+  "description": "twitter/hpack",
+  "context": "request"
+}

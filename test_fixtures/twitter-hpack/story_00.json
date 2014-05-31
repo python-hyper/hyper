@@ -1,0 +1,58 @@
+{
+  "draft": 7,
+  "cases": [
+    {
+      "headers": [
+        {
+          ":method": "GET"
+        },
+        {
+          ":scheme": "http"
+        },
+        {
+          ":authority": "yahoo.co.jp"
+        },
+        {
+          ":path": "/"
+        }
+      ],
+      "wire": "82874388ea9adad7d4d7fd6f87"
+    },
+    {
+      "headers": [
+        {
+          ":method": "GET"
+        },
+        {
+          ":scheme": "http"
+        },
+        {
+          ":authority": "www.yahoo.co.jp"
+        },
+        {
+          ":path": "/"
+        }
+      ],
+      "wire": "428ce7cf9bfd535b5afa9affadff83"
+    },
+    {
+      "headers": [
+        {
+          ":method": "GET"
+        },
+        {
+          ":scheme": "http"
+        },
+        {
+          ":authority": "k.yimg.jp"
+        },
+        {
+          ":path": "/images/top/sp2/cmn/logo-ns-130528.png"
+        }
+      ],
+      "wire": "4188f67fab2da9ff5bff439a3b2d4d4bc4ee6de7c6f23aadb8f636a6e6bb1cc28084a47efbaa8384"
+    }
+  ],
+  "description": "twitter/hpack",
+  "context": "request"
+}
