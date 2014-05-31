@@ -610,14 +610,15 @@ class Decoder(object):
             current_size = header_table_size(self.header_table)
 
             while value < current_size:
-                n, v = self.header_table.pop()
+                header = self.header_table.pop()
+                n, v = header
                 current_size -= (
                     32 + len(n) + len(v)
                 )
 
                 # If something is removed from the header table, it also needs
                 # to be removed from the reference set.
-                self.reference_set.discard((n, v))
+                self.reference_set.discard(Reference(header))
 
                 log.debug("Evicting %s: %s from the header table", n, v)
 
