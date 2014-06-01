@@ -24,6 +24,8 @@ X.X.X (XXXX-XX-XX)
 - Fixed inverted window sizes. (`Issue #27`_)
 - Correct reply to PING frames. (`Issue #48`_)
 - Made the wheel universal, befitting a pure-Python package. (`Issue #46`_)
+- HPACK encoder correctly encodes header sets with duplicate headers.
+  (`Issue #50`_)
 
 .. _Issue #24: https://github.com/Lukasa/hyper/issues/24
 .. _Issue #26: https://github.com/Lukasa/hyper/issues/26
@@ -34,6 +36,7 @@ X.X.X (XXXX-XX-XX)
 .. _Issue #41: https://github.com/Lukasa/hyper/issues/41
 .. _Issue #46: https://github.com/Lukasa/hyper/issues/46
 .. _Issue #48: https://github.com/Lukasa/hyper/issues/48
+.. _Issue #50: https://github.com/Lukasa/hyper/issues/50
 .. _Issue #52: https://github.com/Lukasa/hyper/issues/52
 
 0.0.4 (2014-03-08)
