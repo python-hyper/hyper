@@ -242,13 +242,17 @@ class HTTP20Push(object):
 
     def getresponse(self):
         """
-        Returns an :class:`HTTP20Response` object representing the pushed
-        response.
+        Get the pushed response provided by the server.
+
+        :returns: A :class:`HTTP20Response <hyper.HTTP20Response>` object
+            representing the pushed response.
         """
         return HTTP20Response(self._stream.getheaders(), self._stream)
 
     def cancel(self):
         """
         Cancel the pushed response and close the stream.
+
+        :returns: Nothing.
         """
         self._stream.close(8) # CANCEL

@@ -122,12 +122,12 @@ class HTTP20Connection(object):
         encodings, pass a bytes object. The Content-Length header is set to the
         length of the body field.
 
-        :returns: A stream ID for the request.
         :param method: The request method, e.g. ``'GET'``.
         :param url: The URL to contact, e.g. ``'/path/segment'``.
         :param body: (optional) The request body to send. Must be a bytestring
             or a file-like object.
         :param headers: (optional) The headers to send on the request.
+        :returns: A stream ID for the request.
         """
         stream_id = self.putrequest(method, url)
 
@@ -176,6 +176,8 @@ class HTTP20Connection(object):
             generator will first yield all buffered push promises, then yield
             additional ones as they arrive, and terminate when the original
             stream closes.
+        :returns: A generator of :class:`HTTP20Push <hyper.HTTP20Push>` objects
+            corresponding to the streams pushed by the server.
         """
         stream = self._get_stream(stream_id)
         for promised_stream_id, headers in stream.getpushes(capture_all):
