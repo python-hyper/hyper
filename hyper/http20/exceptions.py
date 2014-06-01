@@ -3,11 +3,11 @@
 hyper/http20/exceptions
 ~~~~~~~~~~~~~~~~~~~~~~~
 
-This defines exceptions used in the HTTP/2.0 portion of hyper.
+This defines exceptions used in the HTTP/2 portion of hyper.
 """
 class HTTP20Error(Exception):
     """
-    The base class for all of ``hyper``'s HTTP/2.0-related exceptions.
+    The base class for all of ``hyper``'s HTTP/2-related exceptions.
     """
     pass
 
@@ -27,7 +27,7 @@ class HPACKDecodingError(HTTP20Error):
 
 class ConnectionError(HTTP20Error):
     """
-    The remote party signalled an error affecting the entire HTTP/2.0
+    The remote party signalled an error affecting the entire HTTP/2
     connection, and the connection has been closed.
     """
     pass

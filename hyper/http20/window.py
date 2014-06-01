@@ -5,7 +5,7 @@ hyper/http20/window
 
 Objects that understand flow control in hyper.
 
-HTTP/2.0 implements connection- and stream-level flow control. This flow
+HTTP/2 implements connection- and stream-level flow control. This flow
 control is mandatory. Unfortunately, it's difficult for hyper to be
 all that intelligent about how it manages flow control in a general case.
 
@@ -47,7 +47,7 @@ class BaseFlowControlManager(object):
         #: The size of the document being retrieved, in bytes. This is
         #: retrieved from the Content-Length header, if provided. Note that
         #: the total number of bytes that will be received may be larger than
-        #: this value due to HTTP/2.0 padding. It should not be assumed that
+        #: this value due to HTTP/2 padding. It should not be assumed that
         #: simply because the the document size is smaller than the initial
         #: window size that there will never be a need to increase the window
         #: size.

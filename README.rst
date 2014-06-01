@@ -1,14 +1,13 @@
-==========================
-Hyper: HTTP/2.0 for Python
-==========================
+========================
+Hyper: HTTP/2 for Python
+========================
 
 .. image:: https://travis-ci.org/Lukasa/hyper.png?branch=master
     :target: https://travis-ci.org/Lukasa/hyper
 
 HTTP is changing under our feet. HTTP/1.1, our old friend, is being
-supplemented by the brand new HTTP/2.0 standard. HTTP/2.0 provides many
-benefits: improved speed, lower bandwidth usage, better connection management,
-and more.
+supplemented by the brand new HTTP/2 standard. HTTP/2 provides many benefits:
+improved speed, lower bandwidth usage, better connection management, and more.
 
 ``hyper`` provides these benefits to your Python code. How? Like this::
 
@@ -33,7 +32,7 @@ and file down the rough edges.
 Versions
 ========
 
-``hyper`` provides support for draft 12 of the HTTP/2.0 draft specification and
+``hyper`` provides support for draft 12 of the HTTP/2 draft specification and
 draft 7 of the HPACK draft specification. As further drafts are released,
 ``hyper`` will be updated to support them.
 
@@ -43,7 +42,7 @@ Compatibility
 ``hyper`` is intended to be a drop-in replacement for ``http.client``, with a
 similar API. However, ``hyper`` intentionally does not name its classes the
 same way ``http.client`` does. This is because most servers do not support
-HTTP/2.0 at this time: I don't want you accidentally using ``hyper`` when you
+HTTP/2 at this time: I don't want you accidentally using ``hyper`` when you
 wanted ``http.client``.
 
 Contributing

@@ -3,7 +3,7 @@
 hyper/http20/response
 ~~~~~~~~~~~~~~~~~~~~~
 
-Contains the HTTP/2.0 equivalent of the HTTPResponse object defined in
+Contains the HTTP/2 equivalent of the HTTPResponse object defined in
 httplib/http.client.
 """
 import zlib
@@ -69,15 +69,15 @@ class Headers(object):
 
 class HTTP20Response(object):
     """
-    An ``HTTP20Response`` wraps the HTTP/2.0 response from the server. It
+    An ``HTTP20Response`` wraps the HTTP/2 response from the server. It
     provides access to the response headers and the entity body. The response
     is an iterable object and can be used in a with statement (though due to
-    the persistent connections used in HTTP/2.0 this has no effect, and is done
+    the persistent connections used in HTTP/2 this has no effect, and is done
     soley for compatibility).
     """
     def __init__(self, headers, stream):
         #: The reason phrase returned by the server. This is not used in
-        #: HTTP/2.0, and so is always the empty string.
+        #: HTTP/2, and so is always the empty string.
         self.reason = ''
 
         status = pop_from_key_value_set(headers, ':status')[0]
@@ -181,7 +181,7 @@ class HTTP20Response(object):
 
     def close(self):
         """
-        Close the response. In effect this closes the backing HTTP/2.0 stream.
+        Close the response. In effect this closes the backing HTTP/2 stream.
 
         :returns: Nothing.
         """

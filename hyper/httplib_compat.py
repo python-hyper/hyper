@@ -4,9 +4,9 @@ hyper/httplib_compat
 ~~~~~~~~~~~~~~~~~~~~
 
 This file defines the publicly-accessible API for hyper. This API also
-constitutes the abstraction layer between HTTP/1.1 and HTTP/2.0.
+constitutes the abstraction layer between HTTP/1.1 and HTTP/2.
 
-This API doesn't currently work, and is a lower priority than the HTTP/2.0
+This API doesn't currently work, and is a lower priority than the HTTP/2
 stack at this time.
 """
 import socket
@@ -18,7 +18,7 @@ except ImportError:
 from .compat import ssl
 from .http20.tls import wrap_socket
 
-# If there's no NPN support, we're going to drop all support for HTTP/2.0.
+# If there's no NPN support, we're going to drop all support for HTTP/2.
 try:
     support_20 = ssl.HAS_NPN
 except AttributeError:
@@ -34,7 +34,7 @@ if support_20:
     class HTTPSConnection(object):
         """
         An object representing a single HTTPS connection, whether HTTP/1.1 or
-        HTTP/2.0.
+        HTTP/2.
 
         More specifically, this object represents an abstraction over the
         distinction. This object encapsulates a connection object for one of
@@ -108,7 +108,7 @@ if support_20:
             # accept insecurity because no-one's using this anyway.
             sock = wrap_socket(sock, host)
 
-            # At this early stage the library can't do HTTP/2.0, so who cares?
+            # At this early stage the library can't do HTTP/2, so who cares?
             tempconn.sock = sock
             self._sock = sock
             self._conn = tempconn

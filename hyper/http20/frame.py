@@ -3,7 +3,7 @@
 hyper/http20/frame
 ~~~~~~~~~~~~~~~~~~
 
-Defines framing logic for HTTP/2.0. Provides both classes to represent framed
+Defines framing logic for HTTP/2. Provides both classes to represent framed
 data and logic for aiding the connection when it comes to reading from the
 socket.
 """
@@ -15,7 +15,7 @@ FRAME_MAX_LEN = (2 ** 14) - 1
 
 class Frame(object):
     """
-    The base class for all HTTP/2.0 frames.
+    The base class for all HTTP/2 frames.
     """
     # The flags defined on this type of frame.
     defined_flags = []

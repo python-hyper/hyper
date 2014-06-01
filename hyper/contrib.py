@@ -20,8 +20,8 @@ from hyper.compat import urlparse
 class HTTP20Adapter(HTTPAdapter):
     """
     A Requests Transport Adapter that uses hyper to send requests over
-    HTTP/2.0. This implements some degree of connection pooling to maximise the
-    HTTP/2.0 gain.
+    HTTP/2. This implements some degree of connection pooling to maximise the
+    HTTP/2 gain.
     """
     def __init__(self, *args, **kwargs):
         #: A mapping between HTTP netlocs and ``HTTP20Connection`` objects.
@@ -29,7 +29,7 @@ class HTTP20Adapter(HTTPAdapter):
 
     def get_connection(self, netloc):
         """
-        Gets an appropriate HTTP/2.0 connection object based on netloc.
+        Gets an appropriate HTTP/2 connection object based on netloc.
         """
         try:
             conn = self.connections[netloc]

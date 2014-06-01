@@ -3,7 +3,7 @@
 hyper/http20/connection
 ~~~~~~~~~~~~~~~~~~~~~~~
 
-Objects that build hyper's connection-level HTTP/2.0 abstraction.
+Objects that build hyper's connection-level HTTP/2 abstraction.
 """
 from .hpack import Encoder, Decoder
 from .stream import Stream
@@ -25,13 +25,13 @@ log = logging.getLogger(__name__)
 
 class HTTP20Connection(object):
     """
-    An object representing a single HTTP/2.0 connection to a server.
+    An object representing a single HTTP/2 connection to a server.
 
     This object behaves similarly to the Python standard library's
     HTTPConnection object, with a few critical differences.
 
     Most of the standard library's arguments to the constructor are irrelevant
-    for HTTP/2.0 or not supported by hyper.
+    for HTTP/2 or not supported by hyper.
 
     :param host: The host to connect to. This may be an IP address or a
         hostname, and optionally may include a port: for example,
@@ -51,7 +51,7 @@ class HTTP20Connection(object):
     def __init__(self, host, port=None, window_manager=None, enable_push=False,
                  **kwargs):
         """
-        Creates an HTTP/2.0 connection to a specific server.
+        Creates an HTTP/2 connection to a specific server.
         """
         if port is None:
             try:
@@ -72,7 +72,7 @@ class HTTP20Connection(object):
 
     def __init_state(self):
         """
-        Initializes the 'mutable state' portions of the HTTP/2.0 connection
+        Initializes the 'mutable state' portions of the HTTP/2 connection
         object.
 
         This method exists to enable HTTP20Connection objects to be reused if
@@ -97,7 +97,7 @@ class HTTP20Connection(object):
         self.encoder = Encoder()
         self.decoder = Decoder()
 
-        # Values for the settings used on an HTTP/2.0 connection.
+        # Values for the settings used on an HTTP/2 connection.
         self._settings = {
             SettingsFrame.INITIAL_WINDOW_SIZE: 65535,
         }
@@ -235,7 +235,7 @@ class HTTP20Connection(object):
         s = self._new_stream()
 
         # To this stream we need to immediately add a few headers that are
-        # HTTP/2.0 specific. These are: ":method", ":scheme", ":authority" and
+        # HTTP/2 specific. These are: ":method", ":scheme", ":authority" and
         # ":path". We can set all of these now.
         s.add_header(":method", method)
         s.add_header(":scheme", "https")  # We only support HTTPS at this time.
@@ -302,7 +302,7 @@ class HTTP20Connection(object):
     def send(self, data, final=False, stream_id=None):
         """
         Sends some data to the server. This data will be sent immediately
-        (excluding the normal HTTP/2.0 flow control rules). If this is the last
+        (excluding the normal HTTP/2 flow control rules). If this is the last
         data that will be sent as part of this request, the ``final`` argument
         should be set to ``True``. This will cause the stream to be closed.
 
@@ -414,7 +414,7 @@ class HTTP20Connection(object):
 
         It expects to receive a single frame, and then to serialize that frame
         and send it on the connection. It does so obeying the connection-level
-        flow-control principles of HTTP/2.0.
+        flow-control principles of HTTP/2.
         """
         # Maintain our outgoing flow-control window.
         if frame.type == DataFrame.type:

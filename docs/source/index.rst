@@ -3,15 +3,14 @@
    You can adapt this file completely to your liking, but it should at least
    contain the root `toctree` directive.
 
-Hyper: HTTP/2.0 for Python
-=================================
+Hyper: HTTP/2 for Python
+========================
 
 Release v\ |version|.
 
 HTTP is changing under our feet. HTTP/1.1, our old friend, is being
-supplemented by the brand new HTTP/2.0 standard. HTTP/2.0 provides many
-benefits: improved speed, lower bandwidth usage, better connection management,
-and more.
+supplemented by the brand new HTTP/2 standard. HTTP/2 provides many benefits:
+improved speed, lower bandwidth usage, better connection management, and more.
 
 ``hyper`` provides these benefits to your Python code. How? Like this::
 

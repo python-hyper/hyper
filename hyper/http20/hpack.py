@@ -91,7 +91,7 @@ def _to_bytes(string):
 
 def header_table_size(table):
     """
-    Calculates the 'size' of the header table as defined by the HTTP/2.0
+    Calculates the 'size' of the header table as defined by the HTTP/2
     specification.
     """
     # It's phenomenally frustrating that the specification feels it is able to
@@ -106,7 +106,7 @@ def header_table_size(table):
 class Encoder(object):
     """
     An HPACK encoder object. This object takes HTTP headers and emits encoded
-    HTTP/2.0 header blocks.
+    HTTP/2 header blocks.
     """
     # This is the static table of header fields.
     static_table = [

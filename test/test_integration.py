@@ -47,7 +47,7 @@ def build_headers_frame(headers):
 
 
 def receive_preamble(sock):
-    # Receive the HTTP/2.0 'preamble'.
+    # Receive the HTTP/2 'preamble'.
     sock.recv(65535)
     sock.recv(65535)
     sock.send(SettingsFrame(0).serialize())
