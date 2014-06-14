@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 """
-hyper/http20/socket.py
-~~~~~~~~~~~~~~~~~~~~~~
+hyper/http20/bufsocket.py
+~~~~~~~~~~~~~~~~~~~~~~~~~
 
 This file implements a buffered socket wrapper.
 

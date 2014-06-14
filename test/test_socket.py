@@ -5,7 +5,7 @@ test/socket
 
 Test the BufferedSocket implementation in hyper.
 """
-from hyper.http20.socket import BufferedSocket
+from hyper.http20.bufsocket import BufferedSocket
 
 class TestBufferedSocket(object):
     """
