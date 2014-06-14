@@ -15,6 +15,7 @@ from .frame import (
 from .response import HTTP20Response, HTTP20Push
 from .window import FlowControlManager
 from .exceptions import ConnectionError
+from .bufsocket import BufferedSocket
 
 import errno
 import logging
@@ -63,6 +64,12 @@ class HTTP20Connection(object):
             self.host, self.port = host, port
 
         self._enable_push = enable_push
+
+        #: The size of the in-memory buffer used to store data from the
+        #: network. This is used as a performance optimisation. Increase buffer
+        #: size to improve performance: decrease it to conserve memory.
+        #: Defaults to 64kB.
+        self.network_buffer_size = 65536
 
         # Create the mutable state.
         self.__wm_class = window_manager or FlowControlManager
@@ -193,7 +200,7 @@ class HTTP20Connection(object):
         if self._sock is None:
             sock = socket.create_connection((self.host, self.port), 5)
             sock = wrap_socket(sock, self.host)
-            self._sock = sock
+            self._sock = BufferedSocket(sock, self.network_buffer_size)
 
             # We need to send the connection header immediately on this
             # connection, followed by an initial settings frame.
@@ -466,14 +473,14 @@ class HTTP20Connection(object):
         # Begin by reading 8 bytes from the socket.
         header = self._sock.recv(8)
 
-        # Parse the header.
+        # Parse the header. We can use the returned memoryview directly here.
         frame, length = Frame.parse_frame_header(header)
 
         # Read the remaining data from the socket.
         if length:
             data = self._sock.recv(length)
         else:
-            data = b''
+            data = memoryview(b'')
 
         frame.parse_body(data)
 

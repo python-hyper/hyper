@@ -32,7 +32,7 @@ if ssl is not None:
 
 def decode_frame(frame_data):
     f, length = Frame.parse_frame_header(frame_data[:8])
-    f.parse_body(frame_data[8:8 + length])
+    f.parse_body(memoryview(frame_data[8:8 + length]))
     assert 8 + length == len(frame_data)
     return f
 

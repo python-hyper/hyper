@@ -91,7 +91,7 @@ class TestDataFrame(object):
 
     def test_data_frame_parses_properly(self):
         f, length = Frame.parse_frame_header(self.payload[:8])
-        f.parse_body(self.payload[8:8 + length])
+        f.parse_body(memoryview(self.payload[8:8 + length]))
 
         assert isinstance(f, DataFrame)
         assert f.flags == set(['END_STREAM'])
@@ -101,7 +101,7 @@ class TestDataFrame(object):
 
     def test_data_frame_with_low_padding_parses_properly(self):
         f, length = Frame.parse_frame_header(self.payload_with_low_padding[:8])
-        f.parse_body(self.payload_with_low_padding[8:8 + length])
+        f.parse_body(memoryview(self.payload_with_low_padding[8:8 + length]))
 
         assert isinstance(f, DataFrame)
         assert f.flags == set(['END_STREAM', 'PAD_LOW'])
@@ -111,7 +111,7 @@ class TestDataFrame(object):
 
     def test_data_frame_with_high_and_low_padding_parses_properly(self):
         f, length = Frame.parse_frame_header(self.payload_with_high_and_low_padding[:8])
-        f.parse_body(self.payload_with_high_and_low_padding[8:8 + length])
+        f.parse_body(memoryview(self.payload_with_high_and_low_padding[8:8 + length]))
 
         assert isinstance(f, DataFrame)
         assert f.flags == set(['END_STREAM', 'PAD_LOW', 'PAD_HIGH'])
@@ -153,7 +153,7 @@ class TestPriorityFrame(object):
 
     def test_priority_frame_with_all_data_parses_properly(self):
         f, length = Frame.parse_frame_header(self.payload[:8])
-        f.parse_body(self.payload[8:8 + length])
+        f.parse_body(memoryview(self.payload[8:8 + length]))
 
         assert isinstance(f, PriorityFrame)
         assert f.flags == set()
@@ -183,7 +183,7 @@ class TestRstStreamFrame(object):
     def test_rst_stream_frame_parses_properly(self):
         s = b'\x00\x04\x03\x00\x00\x00\x00\x01\x00\x00\x01\xa4'
         f, length = Frame.parse_frame_header(s[:8])
-        f.parse_body(s[8:8 + length])
+        f.parse_body(memoryview(s[8:8 + length]))
 
         assert isinstance(f, RstStreamFrame)
         assert f.flags == set()
@@ -232,7 +232,7 @@ class TestSettingsFrame(object):
 
     def test_settings_frame_parses_properly(self):
         f, length = Frame.parse_frame_header(self.serialized[:8])
-        f.parse_body(self.serialized[8:8 + length])
+        f.parse_body(memoryview(self.serialized[8:8 + length]))
 
         assert isinstance(f, SettingsFrame)
         assert f.flags == set(['ACK'])
@@ -270,7 +270,7 @@ class TestPushPromiseFrame(object):
             b'hello world'
         )
         f, length = Frame.parse_frame_header(s[:8])
-        f.parse_body(s[8:8 + length])
+        f.parse_body(memoryview(s[8:8 + length]))
 
         assert isinstance(f, PushPromiseFrame)
         assert f.flags == set(['END_HEADERS'])
@@ -305,7 +305,7 @@ class TestPingFrame(object):
     def test_ping_frame_parses_properly(self):
         s = b'\x00\x08\x06\x01\x00\x00\x00\x00\x01\x02\x00\x00\x00\x00\x00\x00'
         f, length = Frame.parse_frame_header(s[:8])
-        f.parse_body(s[8:8 + length])
+        f.parse_body(memoryview(s[8:8 + length]))
 
         assert isinstance(f, PingFrame)
         assert f.flags == set(['ACK'])
@@ -351,7 +351,7 @@ class TestGoAwayFrame(object):
             b'hello'                               # Additional data
         )
         f, length = Frame.parse_frame_header(s[:8])
-        f.parse_body(s[8:8 + length])
+        f.parse_body(memoryview(s[8:8 + length]))
 
         assert isinstance(f, GoAwayFrame)
         assert f.flags == set()
@@ -380,7 +380,7 @@ class TestWindowUpdateFrame(object):
     def test_windowupdate_frame_parses_properly(self):
         s = b'\x00\x04\x08\x00\x00\x00\x00\x00\x00\x00\x02\x00'
         f, length = Frame.parse_frame_header(s[:8])
-        f.parse_body(s[8:8 + length])
+        f.parse_body(memoryview(s[8:8 + length]))
 
         assert isinstance(f, WindowUpdateFrame)
         assert f.flags == set()
@@ -412,7 +412,7 @@ class TestHeadersFrame(object):
             b'hello world'
         )
         f, length = Frame.parse_frame_header(s[:8])
-        f.parse_body(s[8:8 + length])
+        f.parse_body(memoryview(s[8:8 + length]))
 
         assert isinstance(f, HeadersFrame)
         assert f.flags == set(['END_STREAM', 'END_HEADERS'])
@@ -426,7 +426,7 @@ class TestHeadersFrame(object):
             b'\x80\x00\x00\x04\x40'
         )
         f, length = Frame.parse_frame_header(s[:8])
-        f.parse_body(s[8:8 + length])
+        f.parse_body(memoryview(s[8:8 + length]))
 
         assert isinstance(f, HeadersFrame)
         assert f.flags == set(['PRIORITY'])
@@ -473,7 +473,7 @@ class TestContinuationFrame(object):
     def test_continuation_frame_parses_properly(self):
         s = b'\x00\x0B\x09\x04\x00\x00\x00\x01hello world'
         f, length = Frame.parse_frame_header(s[:8])
-        f.parse_body(s[8:8 + length])
+        f.parse_body(memoryview(s[8:8 + length]))
 
         assert isinstance(f, ContinuationFrame)
         assert f.flags == set(['END_HEADERS'])
@@ -511,7 +511,7 @@ class TestAltSvcFrame(object):
 
     def test_altsvc_frame_with_origin_parses_properly(self):
         f, length = Frame.parse_frame_header(self.payload_with_origin[:8])
-        f.parse_body(self.payload_with_origin[8:8 + length])
+        f.parse_body(memoryview(self.payload_with_origin[8:8 + length]))
 
         assert isinstance(f, AltSvcFrame)
         assert f.host == b'google.com'
@@ -532,7 +532,7 @@ class TestAltSvcFrame(object):
 
     def test_altsvc_frame_without_origin_parses_properly(self):
         f, length = Frame.parse_frame_header(self.payload_without_origin[:8])
-        f.parse_body(self.payload_without_origin[8:8 + length])
+        f.parse_body(memoryview(self.payload_without_origin[8:8 + length]))
 
         assert isinstance(f, AltSvcFrame)
         assert f.host == b'google.com'
@@ -569,7 +569,7 @@ class TestBlockedFrame(object):
     def test_blocked_frame_parses_properly(self):
         s = b'\x00\x00\x0B\x00\x00\x00\x00\x02'
         f, length = Frame.parse_frame_header(s[:8])
-        f.parse_body(s[8:8 + length])
+        f.parse_body(memoryview(s[8:8 + length]))
 
         assert isinstance(f, BlockedFrame)
         assert f.flags == set()
@@ -1312,7 +1312,7 @@ class TestHyperConnection(object):
         resp = c.getresponse()
         resp.read()
 
-        queue = list(map(decode_frame, sock.queue))
+        queue = list(map(decode_frame, map(memoryview, sock.queue)))
         assert len(queue) == 3  # one headers frame, two window update frames.
         assert isinstance(queue[1], WindowUpdateFrame)
         assert queue[1].window_increment == len(b'hi there sir')
@@ -1954,7 +1954,7 @@ class DummySocket(object):
         self.queue.append(data)
 
     def recv(self, l):
-        return self.buffer.read(l)
+        return memoryview(self.buffer.read(l))
 
     def close(self):
         pass

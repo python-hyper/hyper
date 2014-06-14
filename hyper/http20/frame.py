@@ -178,7 +178,7 @@ class DataFrame(Padding, Frame):
 
     def parse_body(self, data):
         padding_data_length = self.parse_padding_data(data)
-        self.data = data[padding_data_length:len(data)-self.total_padding]
+        self.data = data[padding_data_length:len(data)-self.total_padding].tobytes()
 
     @property
     def has_compressed_data(self):
@@ -297,7 +297,7 @@ class PushPromiseFrame(Padding, Frame):
     def parse_body(self, data):
         padding_data_length = self.parse_padding_data(data)
         self.promised_stream_id = struct.unpack("!L", data[padding_data_length:padding_data_length + 4])[0]
-        self.data = data[padding_data_length + 4:]
+        self.data = data[padding_data_length + 4:].tobytes()
 
 
 class PingFrame(Frame):
@@ -329,7 +329,7 @@ class PingFrame(Frame):
         if len(data) > 8:
             raise ValueError()
 
-        self.opaque_data = data
+        self.opaque_data = data.tobytes()
 
 
 class GoAwayFrame(Frame):
@@ -364,7 +364,7 @@ class GoAwayFrame(Frame):
         self.last_stream_id, self.error_code = struct.unpack("!LL", data[:8])
 
         if len(data) > 8:
-            self.additional_data = data[8:]
+            self.additional_data = data[8:].tobytes()
 
 
 class WindowUpdateFrame(Frame):
@@ -441,7 +441,7 @@ class HeadersFrame(Padding, Priority, Frame):
         else:
             priority_data_length = 0
 
-        self.data = data[priority_data_length:len(data)-self.total_padding]
+        self.data = data[priority_data_length:len(data)-self.total_padding].tobytes()
 
 
 class ContinuationFrame(Padding, Frame):
@@ -467,7 +467,7 @@ class ContinuationFrame(Padding, Frame):
 
     def parse_body(self, data):
         padding_data_length = self.parse_padding_data(data)
-        self.data = data[padding_data_length:len(data)-self.total_padding]
+        self.data = data[padding_data_length:len(data)-self.total_padding].tobytes()
 
 
 Origin = collections.namedtuple('Origin', ['scheme', 'host', 'port'])
@@ -501,6 +501,7 @@ class AltSvcFrame(Frame):
 
     def parse_origin(self, data):
         if len(data) > 0:
+            data = data.tobytes()
             scheme, hostport = data.split(b'://')
             host, _, port = hostport.partition(b':')
             self.origin = Origin(scheme=scheme, host=host,
@@ -515,11 +516,11 @@ class AltSvcFrame(Frame):
     def parse_body(self, data):
         self.max_age, self.port, protocol_id_length = struct.unpack("!LHxB", data[:8])
         pos = 8
-        self.protocol_id = data[pos:pos+protocol_id_length]
+        self.protocol_id = data[pos:pos+protocol_id_length].tobytes()
         pos += protocol_id_length
         host_length = struct.unpack("!B", data[pos:pos+1])[0]
         pos += 1
-        self.host = data[pos:pos+host_length]
+        self.host = data[pos:pos+host_length].tobytes()
         pos += host_length
         self.parse_origin(data[pos:])
 
