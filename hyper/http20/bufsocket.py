@@ -10,6 +10,8 @@ allowing small reads from the network. This represents a potentially massive
 performance optimisation at the cost of burning some memory in the userspace
 process.
 """
+import select
+
 class BufferedSocket(object):
     """
     A buffered socket wrapper.
@@ -91,7 +93,17 @@ class BufferedSocket(object):
 
         # If there's still some room in the buffer, opportunistically attempt
         # to read into it.
-        if self._remaining_capacity > self._bytes_in_buffer:
+        # If we don't actually _need_ the data (i.e. there's enough in the
+        # buffer to satisfy the request), use select to work out if the read
+        # attempt will block. If it will, don't bother reading. If we need the
+        # data, always do the read.
+        if self._bytes_in_buffer >= amt:
+            should_read = select.select([self._sck], [], [], 0)[0]
+        else:
+            should_read = True
+
+        if ((self._remaining_capacity > self._bytes_in_buffer) and
+            (should_read)):
             count = self._sck.recv_into(self._buffer_view[self._buffer_end:])
             self._bytes_in_buffer += count
 

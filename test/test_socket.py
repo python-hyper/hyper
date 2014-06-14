@@ -5,20 +5,32 @@ test/socket
 
 Test the BufferedSocket implementation in hyper.
 """
+import hyper.http20.bufsocket
 from hyper.http20.bufsocket import BufferedSocket
+
+# Patch the select method in bufsocket to make sure that it always returns
+# the dummy socket as readable.
+def dummy_select(a, b, c, d):
+    return a
 
 class TestBufferedSocket(object):
     """
     Tests of the hyper BufferedSocket object.
     """
-    def test_can_create_buffered_sockets(self):
+    def test_can_create_buffered_sockets(self, monkeypatch):
+        monkeypatch.setattr(
+            hyper.http20.bufsocket.select, 'select', dummy_select
+        )
         s = DummySocket()
         b = BufferedSocket(s)
 
         assert b is not None
         assert b._buffer_size == 1000
 
-    def test_can_send_on_buffered_socket(self):
+    def test_can_send_on_buffered_socket(self, monkeypatch):
+        monkeypatch.setattr(
+            hyper.http20.bufsocket.select, 'select', dummy_select
+        )
         s = DummySocket()
         b = BufferedSocket(s)
         b.send(b'test data')
@@ -26,7 +38,10 @@ class TestBufferedSocket(object):
         assert len(s.outbound_packets) == 1
         assert s.outbound_packets[0] == b'test data'
 
-    def test_receive_single_packet(self):
+    def test_receive_single_packet(self, monkeypatch):
+        monkeypatch.setattr(
+            hyper.http20.bufsocket.select, 'select', dummy_select
+        )
         s = DummySocket()
         b = BufferedSocket(s)
         s.inbound_packets.append(b'test data')
@@ -34,7 +49,10 @@ class TestBufferedSocket(object):
         d = b.recv(100).tobytes()
         assert d == b'test data'
 
-    def test_receive_multiple_packets_one_at_a_time(self):
+    def test_receive_multiple_packets_one_at_a_time(self, monkeypatch):
+        monkeypatch.setattr(
+            hyper.http20.bufsocket.select, 'select', dummy_select
+        )
         s = DummySocket()
         b = BufferedSocket(s)
         s.inbound_packets = [b'Here', b'begins', b'the', b'test', b'data']
@@ -45,7 +63,10 @@ class TestBufferedSocket(object):
 
         assert d == b'Herebeginsthetestdata'
 
-    def test_receive_empty_packet(self):
+    def test_receive_empty_packet(self, monkeypatch):
+        monkeypatch.setattr(
+            hyper.http20.bufsocket.select, 'select', dummy_select
+        )
         s = DummySocket()
         b = BufferedSocket(s)
         s.inbound_packets = [b'Here', b'begins', b'', b'the', b'', b'test', b'data']
@@ -56,7 +77,10 @@ class TestBufferedSocket(object):
 
         assert d == b'Herebeginsthetestdata'
 
-    def test_receive_multiple_packets_at_once(self):
+    def test_receive_multiple_packets_at_once(self, monkeypatch):
+        monkeypatch.setattr(
+            hyper.http20.bufsocket.select, 'select', dummy_select
+        )
         s = DummySocket()
         b = BufferedSocket(s)
         s.inbound_packets = [b'Here', b'begins', b'the', b'test', b'data', b'!']
@@ -68,7 +92,10 @@ class TestBufferedSocket(object):
 
         assert d == b'Herebeginsthetestdata!'
 
-    def test_filling_the_buffer(self):
+    def test_filling_the_buffer(self, monkeypatch):
+        monkeypatch.setattr(
+            hyper.http20.bufsocket.select, 'select', dummy_select
+        )
         s = DummySocket()
         b = BufferedSocket(s)
         s.inbound_packets = [
@@ -82,7 +109,10 @@ class TestBufferedSocket(object):
 
         assert d == (b'a' * 1800)
 
-    def test_oversized_read(self):
+    def test_oversized_read(self, monkeypatch):
+        monkeypatch.setattr(
+            hyper.http20.bufsocket.select, 'select', dummy_select
+        )
         s = DummySocket()
         b = BufferedSocket(s)
         s.inbound_packets.append(b'a' * 600)
