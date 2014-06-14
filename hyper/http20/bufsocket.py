@@ -24,7 +24,10 @@ class BufferedSocket(object):
         Create the buffered socket.
 
         :param sck: The socket to wrap.
-        :param buffer_size: The size of the backing buffer in bytes.
+        :param buffer_size: The size of the backing buffer in bytes. This
+            parameter should be set to an appropriate value for your use case.
+            Small values of ``buffer_size`` increase the overhead of buffer
+            management: large values cause more memory to be used.
         """
         # The wrapped socket.
         self._sck = sck
