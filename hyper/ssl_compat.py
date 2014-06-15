@@ -264,7 +264,7 @@ class SSLSocket(object):
         return result
 
     # a dash of magic to reduce boilerplate
-    for method in ['accept', 'bind', 'close', 'getsockname', 'listen']:
+    for method in ['accept', 'bind', 'close', 'getsockname', 'listen', 'fileno']:
         locals()[method] = _proxy(method)
 
 
