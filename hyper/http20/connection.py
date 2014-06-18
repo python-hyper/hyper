@@ -9,8 +9,9 @@ from .hpack import Encoder, Decoder
 from .stream import Stream
 from .tls import wrap_socket
 from .frame import (
-    DataFrame, HeadersFrame, PushPromiseFrame, RstStreamFrame, SettingsFrame,
-    Frame, WindowUpdateFrame, GoAwayFrame, PingFrame, BlockedFrame
+    FRAMES, DataFrame, HeadersFrame, PushPromiseFrame, RstStreamFrame,
+    SettingsFrame, Frame, WindowUpdateFrame, GoAwayFrame, PingFrame,
+    BlockedFrame
 )
 from .response import HTTP20Response, HTTP20Push
 from .window import FlowControlManager
@@ -362,8 +363,14 @@ class HTTP20Connection(object):
                 f = WindowUpdateFrame(0)
                 f.window_increment = increment
                 self._send_cb(f, True)
-        else:
+        elif frame.type in FRAMES:
+            # This frame isn't valid at this point.
             raise ValueError("Unexpected frame %s." % frame)
+        else:  # pragma: no cover
+            # Unexpected frames belong to extensions. Just drop it on the
+            # floor, but log so that users know that something happened.
+            log.warning("Received unknown frame, type %d" % frame.type)
+            pass
 
     def _update_settings(self, frame):
         """

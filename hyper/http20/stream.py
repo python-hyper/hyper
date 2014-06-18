@@ -14,12 +14,15 @@ Each stream is identified by a monotonically increasing integer, assigned to
 the stream by the endpoint that initiated the stream.
 """
 from .frame import (
-    FRAME_MAX_LEN, HeadersFrame, DataFrame, PushPromiseFrame, WindowUpdateFrame,
-    ContinuationFrame, BlockedFrame
+    FRAME_MAX_LEN, FRAMES, HeadersFrame, DataFrame, PushPromiseFrame,
+    WindowUpdateFrame, ContinuationFrame, BlockedFrame
 )
 from .util import get_from_key_value_set
 import collections
+import logging
 import zlib
+
+log = logging.getLogger(__name__)
 
 
 # Define a set of states for a HTTP/2 stream.
@@ -216,8 +219,14 @@ class Stream(object):
                 w = WindowUpdateFrame(self.stream_id)
                 w.window_increment = increment
                 self._data_cb(w, True)
-        else:
-            raise ValueError('Unexpected frame type: %i' % frame.type)
+        elif frame.type in FRAMES:
+            # This frame isn't valid at this point.
+            raise ValueError("Unexpected frame %s." % frame)
+        else:  # pragma: no cover
+            # Unknown frames belong to extensions. Just drop it on the
+            # floor, but log so that users know that something happened.
+            log.warning("Received unknown frame, type %d" % frame.type)
+            pass
 
         if 'END_HEADERS' in frame.flags:
             headers = self._decoder.decode(b''.join(self.header_data))
