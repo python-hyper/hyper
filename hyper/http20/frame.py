@@ -92,32 +92,25 @@ class Padding(object):
     Mixin for frames that contain padding.
     """
     def __init__(self, stream_id):
-        self.data = b''
-        self.low_padding = 0
-        self.high_padding = 0
+        self.pad_length = 0
 
         super(Padding, self).__init__(stream_id)
 
     def serialize_padding_data(self):
-        if 'PAD_LOW' in self.flags:
-            if 'PAD_HIGH' in self.flags:
-                return struct.pack('!BB', self.high_padding, self.low_padding)
-            return struct.pack('!B', self.low_padding)
+        if 'PADDED' in self.flags:
+            return struct.pack('!B', self.pad_length)
         return b''
 
     def parse_padding_data(self, data):
-        if 'PAD_LOW' in self.flags:
-            if 'PAD_HIGH' in self.flags:
-                self.high_padding, self.low_padding = struct.unpack('!BB', data[:2])
-                return 2
-            self.low_padding = struct.unpack('!B', data[:1])[0]
+        if 'PADDED' in self.flags:
+            self.pad_length = struct.unpack('!B', data[:1])[0]
             return 1
         return 0
 
     @property
     def total_padding(self):
         """Return the total length of the padding, if any."""
-        return (self.high_padding << 8) + self.low_padding
+        return self.pad_length
 
 
 class Priority(object):
@@ -162,14 +155,18 @@ class DataFrame(Padding, Frame):
     defined_flags = [
         ('END_STREAM', 0x01),
         ('END_SEGMENT', 0x02),
-        ('PAD_LOW', 0x08),
-        ('PAD_HIGH', 0x10),
+        ('PADDED', 0x08),
         ('COMPRESSED', 0x20),
     ]
 
     type = 0x0
 
     stream_association = 'has-stream'
+
+    def __init__(self, stream_id):
+        super(DataFrame, self).__init__(stream_id)
+
+        self.data = b''
 
     def serialize_body(self):
         padding_data = self.serialize_padding_data()
@@ -282,7 +279,7 @@ class PushPromiseFrame(Padding, Frame):
     The PUSH_PROMISE frame is used to notify the peer endpoint in advance of
     streams the sender intends to initiate.
     """
-    defined_flags = [('END_HEADERS', 0x04), ('PAD_LOW', 0x08), ('PAD_HIGH', 0x10)]
+    defined_flags = [('END_HEADERS', 0x04), ('PADDED', 0x08),]
 
     type = 0x05
 
@@ -416,8 +413,7 @@ class HeadersFrame(Padding, Priority, Frame):
         ('END_STREAM', 0x01),
         ('END_SEGMENT', 0x02),
         ('END_HEADERS', 0x04),
-        ('PAD_LOW', 0x08),
-        ('PAD_HIGH', 0x10),
+        ('PADDED', 0x08),
         ('PRIORITY', 0x20),
     ]
 
@@ -444,7 +440,7 @@ class HeadersFrame(Padding, Priority, Frame):
         self.data = data[priority_data_length:len(data)-self.total_padding].tobytes()
 
 
-class ContinuationFrame(Padding, Frame):
+class ContinuationFrame(Frame):
     """
     The CONTINUATION frame is used to continue a sequence of header block
     fragments. Any number of CONTINUATION frames can be sent on an existing
@@ -458,16 +454,13 @@ class ContinuationFrame(Padding, Frame):
 
     stream_association = 'has-stream'
 
-    defined_flags = [('END_HEADERS', 0x04), ('PAD_LOW', 0x08), ('PAD_HIGH', 0x10)]
+    defined_flags = [('END_HEADERS', 0x04),]
 
     def serialize_body(self):
-        padding_data = self.serialize_padding_data()
-        padding = b'\0' * self.total_padding
-        return b''.join([padding_data, self.data, padding])
+        return self.data
 
     def parse_body(self, data):
-        padding_data_length = self.parse_padding_data(data)
-        self.data = data[padding_data_length:len(data)-self.total_padding].tobytes()
+        self.data = data.tobytes()
 
 
 Origin = collections.namedtuple('Origin', ['scheme', 'host', 'port'])

@@ -52,14 +52,13 @@ class TestGeneralFrameBehaviour(object):
 
 class TestDataFrame(object):
     payload = b'\x00\x08\x00\x01\x00\x00\x00\x01testdata'
-    payload_with_low_padding = b'\x00\x13\x00\x09\x00\x00\x00\x01\x0Atestdata' + b'\0' * 10
-    payload_with_high_and_low_padding = b'\x06\x14\x00\x19\x00\x00\x00\x01\x06\x0Atestdata' + b'\0' * (6 * 256 + 10)
+    payload_with_padding = b'\x00\x13\x00\x09\x00\x00\x00\x01\x0Atestdata' + b'\0' * 10
 
     def test_data_frame_has_correct_flags(self):
         f = DataFrame(1)
         flags = f.parse_flags(0xFF)
         assert flags == set([
-            'END_STREAM', 'END_SEGMENT', 'PAD_LOW', 'PAD_HIGH', 'COMPRESSED',
+            'END_STREAM', 'END_SEGMENT', 'PADDED', 'COMPRESSED',
         ])
 
     def test_data_frame_serializes_properly(self):
@@ -70,24 +69,14 @@ class TestDataFrame(object):
         s = f.serialize()
         assert s == self.payload
 
-    def test_data_frame_with_low_padding_serializes_properly(self):
+    def test_data_frame_with_padding_serializes_properly(self):
         f = DataFrame(1)
-        f.flags = set(['END_STREAM', 'PAD_LOW'])
+        f.flags = set(['END_STREAM', 'PADDED'])
         f.data = b'testdata'
-        f.low_padding = 10
+        f.pad_length = 10
 
         s = f.serialize()
-        assert s == self.payload_with_low_padding
-
-    def test_data_frame_with_high_and_low_padding_serializes_properly(self):
-        f = DataFrame(1)
-        f.flags = set(['END_STREAM', 'PAD_LOW', 'PAD_HIGH'])
-        f.data = b'testdata'
-        f.high_padding = 6
-        f.low_padding = 10
-
-        s = f.serialize()
-        assert s == self.payload_with_high_and_low_padding
+        assert s == self.payload_with_padding
 
     def test_data_frame_parses_properly(self):
         f, length = Frame.parse_frame_header(self.payload[:8])
@@ -95,28 +84,16 @@ class TestDataFrame(object):
 
         assert isinstance(f, DataFrame)
         assert f.flags == set(['END_STREAM'])
-        assert f.low_padding == 0
-        assert f.high_padding == 0
+        assert f.pad_length == 0
         assert f.data == b'testdata'
 
-    def test_data_frame_with_low_padding_parses_properly(self):
-        f, length = Frame.parse_frame_header(self.payload_with_low_padding[:8])
-        f.parse_body(memoryview(self.payload_with_low_padding[8:8 + length]))
+    def test_data_frame_with_padding_parses_properly(self):
+        f, length = Frame.parse_frame_header(self.payload_with_padding[:8])
+        f.parse_body(memoryview(self.payload_with_padding[8:8 + length]))
 
         assert isinstance(f, DataFrame)
-        assert f.flags == set(['END_STREAM', 'PAD_LOW'])
-        assert f.low_padding == 10
-        assert f.high_padding == 0
-        assert f.data == b'testdata'
-
-    def test_data_frame_with_high_and_low_padding_parses_properly(self):
-        f, length = Frame.parse_frame_header(self.payload_with_high_and_low_padding[:8])
-        f.parse_body(memoryview(self.payload_with_high_and_low_padding[8:8 + length]))
-
-        assert isinstance(f, DataFrame)
-        assert f.flags == set(['END_STREAM', 'PAD_LOW', 'PAD_HIGH'])
-        assert f.low_padding == 10
-        assert f.high_padding == 6
+        assert f.flags == set(['END_STREAM', 'PADDED'])
+        assert f.pad_length == 10
         assert f.data == b'testdata'
 
     def test_data_frame_comes_on_a_stream(self):
@@ -248,7 +225,7 @@ class TestPushPromiseFrame(object):
         f = PushPromiseFrame(1)
         flags = f.parse_flags(0xFF)
 
-        assert flags == set(['END_HEADERS', 'PAD_HIGH', 'PAD_LOW'])
+        assert flags == set(['END_HEADERS', 'PADDED'])
 
     def test_push_promise_frame_serializes_properly(self):
         f = PushPromiseFrame(1)
@@ -393,7 +370,7 @@ class TestHeadersFrame(object):
         flags = f.parse_flags(0xFF)
 
         assert flags == set(['END_STREAM', 'END_SEGMENT', 'END_HEADERS',
-                             'PAD_LOW', 'PAD_HIGH', 'PRIORITY'])
+                             'PADDED', 'PRIORITY'])
 
     def test_headers_frame_serializes_properly(self):
         f = HeadersFrame(1)
@@ -457,7 +434,7 @@ class TestContinuationFrame(object):
         f = ContinuationFrame(1)
         flags = f.parse_flags(0xFF)
 
-        assert flags == set(['END_HEADERS', 'PAD_LOW', 'PAD_HIGH'])
+        assert flags == set(['END_HEADERS'])
 
     def test_continuation_frame_serializes(self):
         f = ContinuationFrame(1)
@@ -1640,13 +1617,13 @@ class TestHyperStream(object):
         # Provide two data frames to read.
         f = DataFrame(1)
         f.data = b'hi there!'
-        f.low_padding = 10
+        f.pad_length = 10
         f.flags.add('END_STREAM')
         in_frames.append(f)
 
         data = s._read()
         assert data == b'hi there!'
-        assert s._in_window_manager.window_size == start_window - f.low_padding - len(data)
+        assert s._in_window_manager.window_size == start_window - f.pad_length - len(data)
 
     def test_blocked_frames_cause_window_updates(self):
         out_frames = []
