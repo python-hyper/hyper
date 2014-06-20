@@ -258,13 +258,13 @@ class SettingsFrame(Frame):
         self.settings = {}
 
     def serialize_body(self):
-        settings = [struct.pack("!BL", setting & 0xFF, value)
+        settings = [struct.pack("!HL", setting & 0xFF, value)
                     for setting, value in self.settings.items()]
         return b''.join(settings)
 
     def parse_body(self, data):
-        for i in range(0, len(data), 5):
-            name, value = struct.unpack("!BL", data[i:i+5])
+        for i in range(0, len(data), 6):
+            name, value = struct.unpack("!HL", data[i:i+6])
             self.settings[name] = value
 
 
