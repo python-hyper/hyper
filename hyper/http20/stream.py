@@ -199,14 +199,8 @@ class Stream(object):
             size = len(frame.data) + frame.total_padding
             increment = self._in_window_manager._handle_frame(size)
 
-            # Append the data to the buffer. If the data is compressed,
-            # uncompress it.
-            if frame.has_compressed_data:
-                new_data = zlib.decompress(frame.data, 16 + zlib.MAX_WBITS)
-            else:
-                new_data = frame.data
-
-            self.data.append(new_data)
+            # Append the data to the buffer.
+            self.data.append(frame.data)
 
             if increment and not self._remote_closed:
                 w = WindowUpdateFrame(self.stream_id)

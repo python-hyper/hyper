@@ -58,7 +58,7 @@ class TestDataFrame(object):
         f = DataFrame(1)
         flags = f.parse_flags(0xFF)
         assert flags == set([
-            'END_STREAM', 'END_SEGMENT', 'PADDED', 'COMPRESSED',
+            'END_STREAM', 'END_SEGMENT', 'PADDED'
         ])
 
     def test_data_frame_serializes_properly(self):
@@ -99,16 +99,6 @@ class TestDataFrame(object):
     def test_data_frame_comes_on_a_stream(self):
         with pytest.raises(ValueError):
             DataFrame(0)
-
-    def test_data_frame_is_compressed(self):
-        f1 = DataFrame(1)
-        f1.flags.add('COMPRESSED')
-
-        f2 = DataFrame(1)
-        f2.flags = set()
-
-        assert f1.has_compressed_data
-        assert not f2.has_compressed_data
 
 
 class TestPriorityFrame(object):
@@ -178,12 +168,11 @@ class TestRstStreamFrame(object):
 
 class TestSettingsFrame(object):
     serialized = (
-        b'\x00\x19\x04\x01\x00\x00\x00\x00' +  # Frame header
+        b'\x00\x14\x04\x01\x00\x00\x00\x00' +  # Frame header
         b'\x01\x00\x00\x10\x00'             +  # HEADER_TABLE_SIZE
         b'\x02\x00\x00\x00\x00'             +  # ENABLE_PUSH
         b'\x03\x00\x00\x00\x64'             +  # MAX_CONCURRENT_STREAMS
-        b'\x04\x00\x00\xFF\xFF'             +  # INITIAL_WINDOW_SIZE
-        b'\x05\x00\x00\x00\x01'                # COMPRESS_DATA
+        b'\x04\x00\x00\xFF\xFF'                # INITIAL_WINDOW_SIZE
     )
 
     settings = {
@@ -191,7 +180,6 @@ class TestSettingsFrame(object):
         SettingsFrame.ENABLE_PUSH: 0,
         SettingsFrame.MAX_CONCURRENT_STREAMS: 100,
         SettingsFrame.INITIAL_WINDOW_SIZE: 65535,
-        SettingsFrame.COMPRESS_DATA: 1,
     }
 
     def test_settings_frame_has_only_one_flag(self):
@@ -1741,35 +1729,6 @@ class TestHyperStream(object):
         assert data == b'hi there again!'
         assert len(out_frames) == 1
         assert s.state == STATE_CLOSED
-
-    def test_compressed_stream_reading_works(self):
-        out_frames = []
-        in_frames = []
-
-        def send_cb(frame, tolerate_peer_gone=False):
-            out_frames.append(frame)
-
-        def recv_cb(s):
-            def inner():
-                s.receive_frame(in_frames.pop(0))
-            return inner
-
-        s = Stream(1, send_cb, None, None, None, None, FlowControlManager(65535))
-        s._recv_cb = recv_cb(s)
-        s.state = STATE_HALF_CLOSED_LOCAL
-
-        # Provide a data frame to read.
-        f = DataFrame(1)
-        c = zlib_compressobj(wbits=24)
-        f.data = c.compress(b'hi there!')
-        f.data += c.flush()
-        f.flags.add('END_STREAM')
-        f.flags.add('COMPRESSED')
-        in_frames.append(f)
-
-        data = s._read()
-        assert data == b'hi there!'
-        assert len(out_frames) == 0
 
     def test_receive_unexpected_frame(self):
         # SETTINGS frames are never defined on streams, so send one of those.

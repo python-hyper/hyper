@@ -156,7 +156,6 @@ class DataFrame(Padding, Frame):
         ('END_STREAM', 0x01),
         ('END_SEGMENT', 0x02),
         ('PADDED', 0x08),
-        ('COMPRESSED', 0x20),
     ]
 
     type = 0x0
@@ -176,10 +175,6 @@ class DataFrame(Padding, Frame):
     def parse_body(self, data):
         padding_data_length = self.parse_padding_data(data)
         self.data = data[padding_data_length:len(data)-self.total_padding].tobytes()
-
-    @property
-    def has_compressed_data(self):
-        return 'COMPRESSED' in self.flags
 
 
 class PriorityFrame(Priority, Frame):
