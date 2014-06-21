@@ -219,7 +219,7 @@ class Stream(object):
         else:  # pragma: no cover
             # Unknown frames belong to extensions. Just drop it on the
             # floor, but log so that users know that something happened.
-            log.warning("Received unknown frame, type %d" % frame.type)
+            log.warning("Received unknown frame, type %d", frame.type)
             pass
 
         if 'END_HEADERS' in frame.flags:

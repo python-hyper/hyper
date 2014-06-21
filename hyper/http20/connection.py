@@ -368,7 +368,7 @@ class HTTP20Connection(object):
         else:  # pragma: no cover
             # Unexpected frames belong to extensions. Just drop it on the
             # floor, but log so that users know that something happened.
-            log.warning("Received unknown frame, type %d" % frame.type)
+            log.warning("Received unknown frame, type %d", frame.type)
             pass
 
     def _update_settings(self, frame):
