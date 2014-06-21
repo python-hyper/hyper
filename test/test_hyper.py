@@ -11,7 +11,7 @@ from hyper.http20.connection import HTTP20Connection
 from hyper.http20.stream import (
     Stream, STATE_HALF_CLOSED_LOCAL, STATE_OPEN, MAX_CHUNK, STATE_CLOSED
 )
-from hyper.http20.response import HTTP20Response
+from hyper.http20.response import HTTP20Response, HTTP20Push
 from hyper.http20.exceptions import HPACKDecodingError, HPACKEncodingError
 from hyper.http20.window import FlowControlManager
 from hyper.http20.util import combine_repeated_headers, split_repeated_headers
@@ -1482,6 +1482,19 @@ class TestServerPush(object):
         f.error_code = 7
         assert self.conn._sock.queue[-1] == f.serialize()
 
+    def test_pushed_requests_ignore_unexpected_headers(self):
+        headers = [
+            (':scheme', 'http'),
+            (':method', 'get'),
+            (':authority', 'google.com'),
+            (':path', '/'),
+            (':reserved', 'no'),
+            ('no', 'no'),
+        ]
+        p = HTTP20Push(headers, DummyStream(b''))
+
+        assert p.getrequestheaders() == [('no', 'no')]
+
 
 class TestHyperStream(object):
     def test_streams_have_ids(self):
@@ -1837,6 +1850,13 @@ class TestResponse(object):
         resp = HTTP20Response(headers, stream)
 
         assert resp.getheader('content-type', 'text/html') == 'text/html'
+
+    def test_response_ignores_unknown_headers(self):
+        headers = [(':status', '200'), (':reserved', 'yes'), ('no', 'no')]
+        stream = DummyStream(b'')
+        resp = HTTP20Response(headers, stream)
+
+        assert resp.getheaders() == [('no', 'no')]
 
     def test_fileno_not_implemented(self):
         resp = HTTP20Response([(':status', '200')], DummyStream(b''))

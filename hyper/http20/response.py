@@ -6,9 +6,12 @@ hyper/http20/response
 Contains the HTTP/2 equivalent of the HTTPResponse object defined in
 httplib/http.client.
 """
+import logging
 import zlib
 
 from .util import pop_from_key_value_set
+
+log = logging.getLogger(__name__)
 
 
 class DeflateDecoder(object):
@@ -56,6 +59,7 @@ class Headers(object):
         # This conversion to dictionary is unwise, as there may be repeated
         # keys, but it's acceptable for an early alpha.
         self._headers = dict(pairs)
+        self._strip_headers()
 
     def getheader(self, name, default=None):
         return self._headers.get(name, default)
@@ -65,6 +69,19 @@ class Headers(object):
 
     def items(self):
         return self._headers.items()
+
+    def _strip_headers(self):
+        """
+        Strips the headers attached to the instance of any header beginning
+        with a colon that ``hyper`` doesn't understand. This method logs at
+        warning level about the deleted headers, for discoverability.
+        """
+        # Convert to list to ensure that we don't mutate the headers while
+        # we iterate over them.
+        for name in list(self._headers.keys()):
+            if name.startswith(':'):
+                val = self._headers.pop(name)
+                log.warning("Unknown reserved header: %s: %s", name, val)
 
 
 class HTTP20Response(object):
