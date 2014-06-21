@@ -12,6 +12,16 @@ from ..compat import ignore_missing, ssl
 
 NPN_PROTOCOL = 'h2-12'
 SUPPORTED_NPN_PROTOCOLS = ['http/1.1', NPN_PROTOCOL]
+CIPHERS = [
+    '-ALL',  # Start with an empty cipher list.
+    'ECDHE-RSA-AES256-GCM-SHA384',
+    'ECDHE-ECDSA-AES256-GCM-SHA384',
+    'DHE-RSA-AES256-GCM-SHA384',
+    'ECDHE-RSA-AES128-GCM-SHA256',
+    'ECDHE-ECDSA-AES128-GCM-SHA256',
+    'DHE-RSA-AES128-GCM-SHA256',
+]
+CIPHER_STRING = ':'.join(CIPHERS)
 
 
 # We have a singleton SSLContext object. There's no reason to be creating one
@@ -57,6 +67,9 @@ def _init_context():
 
     with ignore_missing():
         context.set_npn_protocols(SUPPORTED_NPN_PROTOCOLS)
+
+    # Set the default ciphers.
+    context.set_ciphers(CIPHER_STRING)
 
     # required by the spec
     context.options |= ssl.OP_NO_COMPRESSION
