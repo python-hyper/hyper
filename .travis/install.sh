@@ -8,7 +8,7 @@ set -x
 
 sudo add-apt-repository -y "ppa:lukasaoz/openssl101-ppa"
 sudo apt-get -y update
-sudo apt-get install -y --force-yes openssl
+sudo apt-get install -y --force-yes openssl libssl libcrypto
 
 pip install .
 pip install -r test_requirements.txt
