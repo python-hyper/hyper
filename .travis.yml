@@ -6,8 +6,7 @@ python:
   - pypy
 
 install:
-  - "pip install ."
-  - "pip install -r test_requirements.txt"
+  - "./.travis/install.sh"
 script:
   - >
       if [[ $TRAVIS_PYTHON_VERSION == pypy ]]; then
