@@ -1638,7 +1638,7 @@ class TestHyperStream(object):
 
         data = s._read()
         assert data == b'hi there!'
-        assert s._in_window_manager.window_size == start_window - f.pad_length - len(data)
+        assert s._in_window_manager.window_size == start_window - f.pad_length - len(data) - 1
 
     def test_blocked_frames_cause_window_updates(self):
         out_frames = []

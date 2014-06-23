@@ -196,7 +196,7 @@ class Stream(object):
         elif frame.type == DataFrame.type:
             # Increase the window size. Only do this if the data frame contains
             # actual data.
-            size = len(frame.data) + frame.total_padding
+            size = frame.flow_controlled_length
             increment = self._in_window_manager._handle_frame(size)
 
             # Append the data to the buffer.

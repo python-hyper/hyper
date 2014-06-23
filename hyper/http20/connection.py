@@ -501,7 +501,7 @@ class HTTP20Connection(object):
         if frame.type == DataFrame.type:
             # Inform the WindowManager of how much data was received. If the
             # manager tells us to increment the window, do so.
-            self._adjust_receive_window(len(frame.data) + frame.total_padding)
+            self._adjust_receive_window(frame.flow_controlled_length)
         elif frame.type == PushPromiseFrame.type:
             if self._enable_push:
                 self._new_stream(frame.promised_stream_id, local_closed=True)
