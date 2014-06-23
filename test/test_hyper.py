@@ -96,6 +96,20 @@ class TestDataFrame(object):
         assert f.pad_length == 10
         assert f.data == b'testdata'
 
+    def test_data_frame_with_padding_calculates_flow_control_len(self):
+        f = DataFrame(1)
+        f.flags = set(['PADDED'])
+        f.data = b'testdata'
+        f.pad_length = 10
+
+        assert f.flow_controlled_length == 19
+
+    def test_data_frame_without_padding_calculates_flow_control_len(self):
+        f = DataFrame(1)
+        f.data = b'testdata'
+
+        assert f.flow_controlled_length == 8
+
     def test_data_frame_comes_on_a_stream(self):
         with pytest.raises(ValueError):
             DataFrame(0)

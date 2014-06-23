@@ -176,6 +176,15 @@ class DataFrame(Padding, Frame):
         padding_data_length = self.parse_padding_data(data)
         self.data = data[padding_data_length:len(data)-self.total_padding].tobytes()
 
+    @property
+    def flow_controlled_length(self):
+        """
+        If the frame is padded we need to include the padding length byte in
+        the flow control used.
+        """
+        padding_len = self.total_padding + 1 if self.total_padding else 0
+        return len(self.data) + padding_len
+
 
 class PriorityFrame(Priority, Frame):
     """
