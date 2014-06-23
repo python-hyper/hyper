@@ -46,6 +46,7 @@ class SocketServerThread(threading.Thread):
             self.cxt.set_npn_protocols([NPN_PROTOCOL])
         self.cxt.load_cert_chain(certfile='test/certs/server.crt',
                                  keyfile='test/certs/server.key')
+        self.cxt.set_ciphers(CIPHER_STRING)
 
     def _start_server(self):
         sock = socket.socket(socket.AF_INET6)
