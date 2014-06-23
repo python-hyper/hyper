@@ -312,9 +312,6 @@ class SSLContext(object):
             self._ctx.set_password_cb(lambda max_length, prompt_twice, userdata: password)
         self._ctx.use_privatekey_file(keyfile or certfile)
 
-    def set_ciphers(self, cipher_string):
-        return self._ctx.set_cipher_list(cipher_string)
-
     def set_npn_protocols(self, protocols):
         # TODO
         raise NotImplementedError()
