@@ -229,6 +229,8 @@ class Stream(object):
             else:
                 self.promised_headers[self.promised_stream_id] = headers
 
+            self.header_data = None
+
     def open(self, end):
         """
         Open the stream. Does this by encoding and sending the headers: no more

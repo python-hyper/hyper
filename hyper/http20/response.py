@@ -70,6 +70,11 @@ class Headers(object):
     def items(self):
         return self._headers.items()
 
+    def merge(self, headers):
+        for n, v in headers:
+            self._headers[n] = v
+        self._strip_headers()
+
     def _strip_headers(self):
         """
         Strips the headers attached to the instance of any header beginning
@@ -162,6 +167,10 @@ class HTTP20Response(object):
             if decode_content and self._decompressobj:
                 data += self._decompressobj.flush()
 
+            if self._stream.response_headers:
+                self._headers.merge(self._stream.response_headers)
+
+        # We're at the end. Close the connection.
         if not data:
             self.close()
 

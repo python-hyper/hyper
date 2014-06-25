@@ -1945,6 +1945,8 @@ class DummyStream(object):
     def __init__(self, data):
         self.data = data
         self.closed = False
+        self.response_headers = {}
+        self._remote_closed = False
 
     def _read(self, *args, **kwargs):
         try:
@@ -1954,6 +1956,10 @@ class DummyStream(object):
 
         d = self.data[:read_len]
         self.data = self.data[read_len:]
+
+        if not self.data:
+            self._remote_closed = True
+
         return d
 
     def close(self):

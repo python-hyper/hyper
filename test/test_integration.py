@@ -37,10 +37,12 @@ def decode_frame(frame_data):
     return f
 
 
-def build_headers_frame(headers):
+def build_headers_frame(headers, encoder=None):
     f = HeadersFrame(1)
-    e = Encoder()
-    e.huffman_coder = HuffmanEncoder(REQUEST_CODES, REQUEST_CODES_LENGTH)
+    e = encoder
+    if e is None:
+        e = Encoder()
+        e.huffman_coder = HuffmanEncoder(REQUEST_CODES, REQUEST_CODES_LENGTH)
     f.data = e.encode(headers)
     f.flags.add('END_HEADERS')
     return f
@@ -304,6 +306,64 @@ class TestHyperIntegration(SocketLevelTest):
         # Confirm that we can read this, but it has no body.
         assert resp.read() == b''
         assert resp._stream._in_window_manager.document_size == 0
+
+        # Awesome, we're done now.
+        recv_event.set()
+
+        self.tear_down()
+
+    def test_receiving_trailers(self):
+        self.set_up()
+
+        recv_event = threading.Event()
+
+        def socket_handler(listener):
+            sock = listener.accept()[0]
+
+            e = Encoder()
+            e.huffman_coder = HuffmanEncoder(REQUEST_CODES, REQUEST_CODES_LENGTH)
+
+            # We get two messages for the connection open and then a HEADERS
+            # frame.
+            receive_preamble(sock)
+
+            # Now, send the headers for the response. This response has no body.
+            f = build_headers_frame([(':status', '200'), ('content-length', '0')], e)
+            f.stream_id = 1
+            sock.send(f.serialize())
+
+            # Also send a data frame.
+            f = DataFrame(1)
+            f.data = b'have some data'
+            sock.send(f.serialize())
+
+            # Now, send a headers frame again, containing trailing headers.
+            f = build_headers_frame([('trailing', 'sure'), (':res', 'no')], e)
+            f.flags.add('END_STREAM')
+            f.stream_id = 1
+            sock.send(f.serialize())
+
+            # Wait for the message from the main thread.
+            recv_event.wait()
+            sock.close()
+
+        self._start_server(socket_handler)
+        conn = self.get_connection()
+        conn.request('GET', '/')
+        resp = conn.getresponse()
+
+        # Confirm the status code.
+        assert resp.status == 200
+
+        # Confirm that we can read this, but it has no body.
+        assert resp.read() == b'have some data'
+        assert resp._stream._in_window_manager.document_size == 0
+
+        # Confirm that we got the trailing headers, and that they don't contain
+        # reserved headers.
+        assert resp.getheader('trailing') == 'sure'
+        assert resp.getheader(':res') is None
+        assert len(resp.getheaders()) == 2
 
         # Awesome, we're done now.
         recv_event.set()
