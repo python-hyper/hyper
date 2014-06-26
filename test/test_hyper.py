@@ -684,8 +684,7 @@ class TestHPACKEncoder(object):
         # The first_header_table doesn't contain 'authority'
         first_header_table = first_header_set[::-1][1:]
         first_result = (
-            b'\x82\x87\x86\x04\x8c\xe7\xcf\x9b\xeb\xe8\x9b\x6f\xb1\x6f\xa9\xb6'
-            b'\xff'
+            b'\x82\x87\x86\x04\x8c\xf1\xe3\xc2\xe5\xf2:k\xa0\xab\x90\xf4\xff'
         )
 
         assert e.encode(first_header_set, huffman=True) == first_result
@@ -703,8 +702,8 @@ class TestHPACKEncoder(object):
             ('cache-control', 'no-cache'),
         ]
         second_result = (
-            b'\x04\x8c\xe7\xcf\x9b\xeb\xe8\x9b\x6f\xb1\x6f\xa9\xb6\xff\x0f\x0c'
-            b'\x86\xb9\xb9\x94\x95\x56\xbf'
+            b'\x04\x8c\xf1\xe3\xc2\xe5\xf2:k\xa0\xab\x90\xf4\xff\x0f\x0c\x86'
+            b'\xa8\xeb\x10d\x9c\xbf'
         )
 
         assert e.encode(second_header_set, huffman=True) == second_result
@@ -723,8 +722,8 @@ class TestHPACKEncoder(object):
             ('custom-key', 'custom-value'),
         ]
         third_result = (
-            b'\x8a\x89\x06\x8c\xe7\xcf\x9b\xeb\xe8\x9bo\xb1o\xa9\xb6\xff@\x88'
-            b'W\x1c\\\xdbs{/\xaf\x89W\x1c\\\xdbsrM\x9cW\x84\x85'
+            b'\x8a\x89\x06\x8c\xf1\xe3\xc2\xe5\xf2:k\xa0\xab\x90\xf4\xff@\x88%'
+            b'\xa8I\xe9[\xa9}\x7f\x89%\xa8I\xe9[\xb8\xe8\xb4\xbf\x84\x85'
         )
 
         assert e.encode(third_header_set, huffman=True) == third_result
@@ -887,8 +886,7 @@ class TestHPACKDecoder(object):
         ]
         first_header_table = first_header_set[::-1]
         first_data = (
-            b'\x82\x87\x86\x04\x8c\xe7\xcf\x9b\xeb\xe8\x9b\x6f\xb1\x6f\xa9\xb6'
-            b'\xff'
+            b'\x82\x87\x86\x04\x8c\xf1\xe3\xc2\xe5\xf2:k\xa0\xab\x90\xf4\xff'
         )
 
         assert sorted(d.decode(first_data)) == sorted(first_header_set)
@@ -908,8 +906,8 @@ class TestHPACKDecoder(object):
         ]
         second_header_table = second_header_set[::-1]
         second_data = (
-            b'\x04\x8c\xe7\xcf\x9b\xeb\xe8\x9b\x6f\xb1\x6f\xa9\xb6\xff\x0f\x0c'
-            b'\x86\xb9\xb9\x94\x95\x56\xbf'
+            b'\x04\x8c\xf1\xe3\xc2\xe5\xf2:k\xa0\xab\x90\xf4\xff\x0f\x0c\x86'
+            b'\xa8\xeb\x10d\x9c\xbf'
         )
 
         assert sorted(d.decode(second_data)) == sorted(second_header_set)
@@ -929,8 +927,8 @@ class TestHPACKDecoder(object):
             ('custom-key', 'custom-value'),
         ]
         third_data = (
-            b'\x30\x83\x8a\x89\x06\x8c\xe7\xcf\x9b\xeb\xe8\x9b\x6f\xb1\x6f\xa9\xb6\xff'
-            b'\x40\x88W\x1c\\\xdbs{/\xaf\x89W\x1c\\\xdbsrM\x9cW'
+            b'\x8a\x89\x06\x8c\xf1\xe3\xc2\xe5\xf2:k\xa0\xab\x90\xf4\xff@\x88%'
+            b'\xa8I\xe9[\xa9}\x7f\x89%\xa8I\xe9[\xb8\xe8\xb4\xbf\x84\x85'
         )
 
         assert sorted(d.decode(third_data)) == sorted(third_header_set)
