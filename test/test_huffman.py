@@ -19,4 +19,4 @@ class TestHuffman(object):
 
     def test_eos_terminates_decode_request(self):
         decoder = HuffmanDecoder(REQUEST_CODES,REQUEST_CODES_LENGTH)
-        assert decoder.decode(b'\xff\xff\xee\x00') == b''
+        assert decoder.decode(b'\xff\xff\xff\xfc') == b''

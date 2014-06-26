@@ -17,7 +17,7 @@ class TestHPACKDecoderIntegration(object):
         d = Decoder()
 
         # We support draft 7 of the HPACK spec.
-        if story['draft'] != 7:
+        if story['draft'] != 8:
             skip("We support draft 7, not draft %d" % story['draft'])
 
         for case in story['cases']:
