@@ -612,6 +612,9 @@ class TestHPACKEncoder(object):
         header_set = {':method': 'GET'}
         result = b'\x82'
 
+        # Make sure we don't emit an encoding context update.
+        e._table_size_changed = False
+
         assert e.encode(header_set, huffman=False) == result
         assert list(e.header_table) == []
 
@@ -769,6 +772,32 @@ class TestHPACKEncoder(object):
 
         with pytest.raises(HPACKEncodingError):
             e.remove((b'not', b'present'))
+
+    def test_resizing_header_table_sends_context_update(self):
+        e = Encoder()
+
+        # Resize the header table to a size so small that nothing can be in it.
+        e.header_table_size = 40
+
+        # Now, encode a header set. Just a small one, with a well-defined
+        # output.
+        header_set = [(':method', 'GET')]
+        out = e.encode(header_set, huffman=True)
+
+        assert out == b'\x2f\x19\x82'
+
+    def test_setting_table_size_to_the_same_does_nothing(self):
+        e = Encoder()
+
+        # Set the header table size to the default.
+        e.header_table_size = 4096
+
+        # Now encode a header set. Just a small one, with a well-defined
+        # output.
+        header_set = [(':method', 'GET')]
+        out = e.encode(header_set, huffman=True)
+
+        assert out == b'\x82'
 
 
 class TestHPACKDecoder(object):

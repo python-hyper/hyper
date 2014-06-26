@@ -185,6 +185,11 @@ class Encoder(object):
         # test for presence.
         self.reference_set = {}
 
+        # We need to keep track of whether the header table size has been
+        # changed since we last encoded anything. If it has, we need to signal
+        # that change in the HPACK block.
+        self._table_size_changed = False
+
     @property
     def header_table_size(self):
         return self._header_table_size
@@ -219,6 +224,9 @@ class Encoder(object):
                 log.debug(
                     "Removed %s: %s from the encoder header table", n, v
                 )
+
+        if value != self._header_table_size:
+            self._table_size_changed = True
 
         self._header_table_size = value
 
@@ -258,6 +266,12 @@ class Encoder(object):
 
         # Next, walk across the headers and turn them all into bytestrings.
         headers = [(_to_bytes(n), _to_bytes(v)) for n, v in headers]
+
+        # Before we begin, if the header table size has been changed we need
+        # to signal that appropriately.
+        if self._table_size_changed:
+            header_block.append(self._encode_table_size_change())
+            self._table_size_changed = False
 
         # We can now encode each header in the block. The logic here roughly
         # goes as follows:
@@ -514,6 +528,14 @@ class Encoder(object):
             value_len[0] |= 0x80
 
         return b''.join([bytes(name), bytes(value_len), value])
+
+    def _encode_table_size_change(self):
+        """
+        Produces the encoded form of a header table size change context update.
+        """
+        size_bytes = encode_integer(self.header_table_size, 4)
+        size_bytes[0] |= 0x20
+        return bytes(size_bytes)
 
 
 class Decoder(object):
