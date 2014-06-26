@@ -1,357 +1,367 @@
 {
-  "draft": 6,
   "cases": [
     {
-      "wire": "807f811f82870387f443301f323f5f873dbeef6faa96b405042f47faef4254c8b619f5747c19115f477a13d1f4f0e8fdf418a4afaba1fcfd86a485ff7d1ee14f2681ca6294c53747053c716f981a921717af88f9c4338e8be9439cb5251153581e79c745ffcf3d17d287396a4a22a6b03cf45f5795a5259d3fd07f5d5e569495ff168b164bf8f0e91675795a5251168acbd54ee9e8c0715a223f00874b58c14c54d67f87e422e950b5731f",
+      "header_table_size": 16384, 
+      "seqno": 0, 
+      "wire": "2ff11f82874387f43aa42f95ecb7877ebcd07f66a281b0dae053fad0321aa49d13fda992a49685340c8a6adca7e28102ef7da9677b8171707f6a62293a9d810020004015309ac2ca7f2c05c5c158b0497ca589d34d1f43aeba0c41a4c7a98f33a69a3fdf9a68fa1d75d0620d263d4c79a68fbed00177febe58f9fbed00177b578b2d4b70ddf45abefb4005db97408721eaa8a4498f5788ea52d6b0e83772ff", 
       "headers": [
         {
           ":method": "GET"
-        },
+        }, 
         {
           ":scheme": "http"
-        },
+        }, 
         {
           ":authority": "yandex.ru"
-        },
+        }, 
         {
           ":path": "/"
-        },
+        }, 
         {
           "user-agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10.8; rv:16.0) Gecko/20100101 Firefox/16.0"
-        },
+        }, 
         {
           "accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8"
-        },
+        }, 
         {
           "accept-language": "en-US,en;q=0.5"
-        },
+        }, 
         {
           "accept-encoding": "gzip, deflate"
-        },
+        }, 
         {
           "connection": "keep-alive"
         }
-      ],
-      "header_table_size": 16384
-    },
+      ]
+    }, 
     {
-      "wire": "078adb6d89e886603e647ebf88",
+      "seqno": 1, 
+      "wire": "478bf1e3c2fe875485f2bd96ff88", 
       "headers": [
         {
           ":method": "GET"
-        },
+        }, 
         {
           ":scheme": "http"
-        },
+        }, 
         {
           ":authority": "www.yandex.ru"
-        },
+        }, 
         {
           ":path": "/"
-        },
+        }, 
         {
           "user-agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10.8; rv:16.0) Gecko/20100101 Firefox/16.0"
-        },
+        }, 
         {
           "accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8"
-        },
+        }, 
         {
           "accept-language": "en-US,en;q=0.5"
-        },
+        }, 
         {
           "accept-encoding": "gzip, deflate"
-        },
+        }, 
         {
           "connection": "keep-alive"
         }
       ]
-    },
+    }, 
     {
-      "wire": "018bf445f027a21980f991faff48d704b756443f2cdae9bd781f0e5f49ca529ffccd75ff7ee451fdfd7fb3a74fae3de3fc77d0febee2f3de3f4d778e3fe7c37e4dde7fef789f1fafd3e9f5b29f4f29ef41b1edfefddf6ec366bedfc8fdbe75fbb1fcf69aa1ab069a5688c841cccba55a23210febabcad292be9fe83faeaf2b4a4a3f3e8fce3177b0036db627a21980f991fa872c998daeeae8f443301f3d5585b4ce62cf44d55469a83593d93d0685898b",
+      "seqno": 2, 
+      "wire": "418bf438d0bfa1d5217caf65bf08d06087b6a4b1c6af1133ef08a4eba9a00002fd9e87b3621b79b5e61129d72e82f3af50bde207784baad84b2fee48663c22cd09452ebd5ab5bee7aecd4630cb7f362d97833d17f8976697b14bc6f85d2bbf469a352398ac5754df46a473158f9fbed00177bebe58f9fbed00176f7f00909d29aee30c78f1e17f43aa42f95ecb586d994c15fda9e875485f369a481c682069b65d742cb617da7da6c385898b", 
       "headers": [
         {
           ":method": "GET"
-        },
+        }, 
         {
           ":scheme": "http"
-        },
+        }, 
         {
           ":authority": "yabs.yandex.ru"
-        },
+        }, 
         {
           ":path": "/count/Vnw_3zF2dkO40002Zhl8KGa5KPK2cmPfMeYpO2zG0vAeOuAefZIAgoA2KAe2fPOOP96yq4ba1fDKGQC1hlDVeQN8GfVD17e7"
-        },
+        }, 
         {
           "user-agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10.8; rv:16.0) Gecko/20100101 Firefox/16.0"
-        },
+        }, 
         {
           "accept": "image/png,image/*;q=0.8,*/*;q=0.5"
-        },
+        }, 
         {
           "accept-language": "en-US,en;q=0.5"
-        },
+        }, 
         {
           "accept-encoding": "gzip, deflate"
-        },
+        }, 
         {
           "connection": "keep-alive"
-        },
+        }, 
         {
           "referer": "http://www.yandex.ru/"
-        },
+        }, 
         {
           "cookie": "t=p; yandexuid=6410453771351949451"
         }
       ]
-    },
+    }, 
     {
-      "wire": "4bd404b756443f2cdae9b4c635ede5394a52ff99aebfefdc8a3fbfad3e9e53de8363dbfde6bedfc8fdbe75fbb1fcf69aa44d6f927e8c9ecfece9d3eb8f7a6ffb232fdff9facbf9bf26ef3ff7bfbfbe9a7e09edabf537",
+      "seqno": 3, 
+      "wire": "0bce6087b6a4b1c6af11334ca97bc766800003f67a1ecd886de6d6e7aecd4630cb7f34f45fe25d9a5ec52f1be1746cc1d89aaa69fcc2253ae5d048f60e6fcfde53738663c22cd0e8d0e399097dde4cff", 
       "headers": [
         {
           ":method": "GET"
-        },
+        }, 
         {
           ":scheme": "http"
-        },
+        }, 
         {
           ":authority": "yabs.yandex.ru"
-        },
+        }, 
         {
           ":path": "/count/Vnw_3mft8wq40000Zhl8KGa5KP6yq4ba1fDKhlDVeQN8GfVD17a3=qcOn49K2cmPfMcbQagXZWgYAgoA2KAMM66IcD7W3"
-        },
+        }, 
         {
           "user-agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10.8; rv:16.0) Gecko/20100101 Firefox/16.0"
-        },
+        }, 
         {
           "accept": "image/png,image/*;q=0.8,*/*;q=0.5"
-        },
+        }, 
         {
           "accept-language": "en-US,en;q=0.5"
-        },
+        }, 
         {
           "accept-encoding": "gzip, deflate"
-        },
+        }, 
         {
           "connection": "keep-alive"
-        },
+        }, 
         {
           "referer": "http://www.yandex.ru/"
-        },
+        }, 
         {
           "cookie": "t=p; yandexuid=6410453771351949451"
         }
       ]
-    },
+    }, 
     {
-      "wire": "0487f443301f32423f4c9e058e4d0b81ddbad9f4fd6ffb7f7d6581fe367c1bc7fb72bc2eeecda4525b8a82838485",
+      "seqno": 4, 
+      "wire": "4487f43aa42f95d09f0c9d6282cc762262bbf6bfab943b335d020595fc87e99ab36e8b04e75cc43f8a82838485", 
       "headers": [
         {
           ":method": "GET"
-        },
+        }, 
         {
           ":scheme": "http"
-        },
+        }, 
         {
           ":authority": "yandex.st"
-        },
+        }, 
         {
           ":path": "/lego/_/pDu9OWAQKB0s2J9IojKpiS_Eho.ico"
-        },
+        }, 
         {
           "user-agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10.8; rv:16.0) Gecko/20100101 Firefox/16.0"
-        },
+        }, 
         {
           "accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8"
-        },
+        }, 
         {
           "accept-language": "en-US,en;q=0.5"
-        },
+        }, 
         {
           "accept-encoding": "gzip, deflate"
-        },
+        }, 
         {
           "connection": "keep-alive"
         }
       ]
-    },
+    }, 
     {
-      "wire": "4c930db6d80c49a8b036db60507a21980f9cc4733284838a",
+      "seqno": 5, 
+      "wire": "0c9663c78f0c05765b7d8f1e3c30663d0ea90be595ebaa6f84838a", 
       "headers": [
         {
           ":method": "GET"
-        },
+        }, 
         {
           ":scheme": "http"
-        },
+        }, 
         {
           ":authority": "yandex.st"
-        },
+        }, 
         {
           ":path": "/www/1.359/www/i/yandex3.png"
-        },
+        }, 
         {
           "user-agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10.8; rv:16.0) Gecko/20100101 Firefox/16.0"
-        },
+        }, 
         {
           "accept": "image/png,image/*;q=0.8,*/*;q=0.5"
-        },
+        }, 
         {
           "accept-language": "en-US,en;q=0.5"
-        },
+        }, 
         {
           "accept-encoding": "gzip, deflate"
-        },
+        }, 
         {
           "connection": "keep-alive"
-        },
+        }, 
         {
           "referer": "http://www.yandex.ru/"
         }
       ]
-    },
+    }, 
     {
-      "wire": "4c8f0d1afc112adb934140b6e4d239997f",
+      "seqno": 6, 
+      "wire": "0c906293d920d6a0f31d833141e63af5d537", 
       "headers": [
         {
           ":method": "GET"
-        },
+        }, 
         {
           ":scheme": "http"
-        },
+        }, 
         {
           ":authority": "yandex.st"
-        },
+        }, 
         {
           ":path": "/morda-logo/i/logo.png"
-        },
+        }, 
         {
           "user-agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10.8; rv:16.0) Gecko/20100101 Firefox/16.0"
-        },
+        }, 
         {
           "accept": "image/png,image/*;q=0.8,*/*;q=0.5"
-        },
+        }, 
         {
           "accept-language": "en-US,en;q=0.5"
-        },
+        }, 
         {
           "accept-encoding": "gzip, deflate"
-        },
+        }, 
         {
           "connection": "keep-alive"
-        },
+        }, 
         {
           "referer": "http://www.yandex.ru/"
         }
       ]
-    },
+    }, 
     {
-      "wire": "0189d124f443301f323f5f4d890d9114e6151cf44f478382",
+      "seqno": 7, 
+      "wire": "4189a48bfa1d5217caf65b0d8a63c0d249d874426da6ff8382", 
       "headers": [
         {
           ":method": "GET"
-        },
+        }, 
         {
           ":scheme": "http"
-        },
+        }, 
         {
           ":authority": "mc.yandex.ru"
-        },
+        }, 
         {
           ":path": "/watch/722545"
-        },
+        }, 
         {
           "user-agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10.8; rv:16.0) Gecko/20100101 Firefox/16.0"
-        },
+        }, 
         {
           "accept": "image/png,image/*;q=0.8,*/*;q=0.5"
-        },
+        }, 
         {
           "accept-language": "en-US,en;q=0.5"
-        },
+        }, 
         {
           "accept-encoding": "gzip, deflate"
-        },
+        }, 
         {
           "connection": "keep-alive"
-        },
+        }, 
         {
           "referer": "http://www.yandex.ru/"
-        },
+        }, 
         {
           "cookie": "t=p; yandexuid=6410453771351949451"
         }
       ]
-    },
+    }, 
     {
-      "wire": "824da10db6d80c49a8b036db607232184b80c3945ae0db6da54c20176db6d2a61022610f058e88f9c4130874ff41fd75795a521b828486",
+      "seqno": 8, 
+      "wire": "820da563c78f0c05765b7d8f1e3c3158e62a1690a8ea93d6c78f1e162210c45e3c78588842e4423f458e497ca582211f5f2c7cfdf6800b87828486", 
       "headers": [
         {
           ":method": "GET"
-        },
+        }, 
         {
           ":scheme": "http"
-        },
+        }, 
         {
           ":authority": "yandex.st"
-        },
+        }, 
         {
           ":path": "/www/1.359/www/pages-desktop/www-css/_www-css.css"
-        },
+        }, 
         {
           "user-agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10.8; rv:16.0) Gecko/20100101 Firefox/16.0"
-        },
+        }, 
         {
           "accept": "text/css,*/*;q=0.1"
-        },
+        }, 
         {
           "accept-language": "en-US,en;q=0.5"
-        },
+        }, 
         {
           "accept-encoding": "gzip, deflate"
-        },
+        }, 
         {
           "connection": "keep-alive"
-        },
+        }, 
         {
           "referer": "http://www.yandex.ru/"
         }
       ]
-    },
+    }, 
     {
-      "wire": "4e9e0db6d82e0b9f539d2df2e7fdb7b6fcbd3ddfcf42fc3ae6d97c98d239997f8681",
+      "seqno": 9, 
+      "wire": "0e9e63c78f0c44c4563b5d6b46b4f98f7e39bd62e7e8192eb3e28eb51d7aea9b8681", 
       "headers": [
         {
           ":method": "GET"
-        },
+        }, 
         {
           ":scheme": "http"
-        },
+        }, 
         {
           ":authority": "yandex.st"
-        },
+        }, 
         {
           ":path": "/www/_/_r7pp-b-hKoDbgyGYy0IB3wlkno.png"
-        },
+        }, 
         {
           "user-agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10.8; rv:16.0) Gecko/20100101 Firefox/16.0"
-        },
+        }, 
         {
           "accept": "image/png,image/*;q=0.8,*/*;q=0.5"
-        },
+        }, 
         {
           "accept-language": "en-US,en;q=0.5"
-        },
+        }, 
         {
           "accept-encoding": "gzip, deflate"
-        },
+        }, 
         {
           "connection": "keep-alive"
-        },
+        }, 
         {
           "referer": "http://www.yandex.ru/"
         }
       ]
     }
-  ],
+  ], 
+  "draft": 8, 
   "description": "Encoded by nghttp2. The basic encoding strategy is described in http://lists.w3.org/Archives/Public/ietf-http-wg/2013JulSep/1135.html We use huffman encoding only if it produces strictly shorter byte string than original. We make some headers not indexing at all, but this does not always result in less bits on the wire."
 }

@@ -40,6 +40,16 @@ class TestBaseFCM(object):
         assert b.window_size == 5
         assert b.document_size == 10
 
+    def test_base_manager_blocked_doesnt_function(self):
+        b = BaseFlowControlManager(10, 10)
+        with pytest.raises(NotImplementedError):
+            b.blocked()
+
+    def test_base_manager_blocked_private_interface_doesnt_function(self):
+        b = BaseFlowControlManager(10, 10)
+        with pytest.raises(NotImplementedError):
+            b._blocked()
+
 
 class TestFCM(object):
     """
@@ -65,4 +75,13 @@ class TestFCM(object):
 
         # Push us over to 1k.
         assert b._handle_frame(2) == 501
+        assert b.window_size == 1500
+
+    def test_fcm_emits_difference_when_blocked(self):
+        b = FlowControlManager(1500)
+
+        # Move the window size down from the base.
+        b.window_size = 1000
+
+        assert b._blocked() == 500
         assert b.window_size == 1500

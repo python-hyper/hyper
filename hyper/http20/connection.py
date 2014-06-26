@@ -3,18 +3,20 @@
 hyper/http20/connection
 ~~~~~~~~~~~~~~~~~~~~~~~
 
-Objects that build hyper's connection-level HTTP/2.0 abstraction.
+Objects that build hyper's connection-level HTTP/2 abstraction.
 """
 from .hpack import Encoder, Decoder
 from .stream import Stream
 from .tls import wrap_socket
 from .frame import (
-    DataFrame, HeadersFrame, PushPromiseFrame, RstStreamFrame, SettingsFrame,
-    Frame, WindowUpdateFrame, GoAwayFrame, PingFrame,
+    FRAMES, DataFrame, HeadersFrame, PushPromiseFrame, RstStreamFrame,
+    SettingsFrame, Frame, WindowUpdateFrame, GoAwayFrame, PingFrame,
+    BlockedFrame
 )
 from .response import HTTP20Response, HTTP20Push
 from .window import FlowControlManager
 from .exceptions import ConnectionError
+from .bufsocket import BufferedSocket
 
 import errno
 import logging
@@ -25,13 +27,13 @@ log = logging.getLogger(__name__)
 
 class HTTP20Connection(object):
     """
-    An object representing a single HTTP/2.0 connection to a server.
+    An object representing a single HTTP/2 connection to a server.
 
     This object behaves similarly to the Python standard library's
     HTTPConnection object, with a few critical differences.
 
     Most of the standard library's arguments to the constructor are irrelevant
-    for HTTP/2.0 or not supported by hyper.
+    for HTTP/2 or not supported by hyper.
 
     :param host: The host to connect to. This may be an IP address or a
         hostname, and optionally may include a port: for example,
@@ -51,7 +53,7 @@ class HTTP20Connection(object):
     def __init__(self, host, port=None, window_manager=None, enable_push=False,
                  **kwargs):
         """
-        Creates an HTTP/2.0 connection to a specific server.
+        Creates an HTTP/2 connection to a specific server.
         """
         if port is None:
             try:
@@ -64,6 +66,12 @@ class HTTP20Connection(object):
 
         self._enable_push = enable_push
 
+        #: The size of the in-memory buffer used to store data from the
+        #: network. This is used as a performance optimisation. Increase buffer
+        #: size to improve performance: decrease it to conserve memory.
+        #: Defaults to 64kB.
+        self.network_buffer_size = 65536
+
         # Create the mutable state.
         self.__wm_class = window_manager or FlowControlManager
         self.__init_state()
@@ -72,7 +80,7 @@ class HTTP20Connection(object):
 
     def __init_state(self):
         """
-        Initializes the 'mutable state' portions of the HTTP/2.0 connection
+        Initializes the 'mutable state' portions of the HTTP/2 connection
         object.
 
         This method exists to enable HTTP20Connection objects to be reused if
@@ -97,7 +105,7 @@ class HTTP20Connection(object):
         self.encoder = Encoder()
         self.decoder = Decoder()
 
-        # Values for the settings used on an HTTP/2.0 connection.
+        # Values for the settings used on an HTTP/2 connection.
         self._settings = {
             SettingsFrame.INITIAL_WINDOW_SIZE: 65535,
         }
@@ -122,12 +130,12 @@ class HTTP20Connection(object):
         encodings, pass a bytes object. The Content-Length header is set to the
         length of the body field.
 
-        :returns: A stream ID for the request.
         :param method: The request method, e.g. ``'GET'``.
         :param url: The URL to contact, e.g. ``'/path/segment'``.
         :param body: (optional) The request body to send. Must be a bytestring
             or a file-like object.
         :param headers: (optional) The headers to send on the request.
+        :returns: A stream ID for the request.
         """
         stream_id = self.putrequest(method, url)
 
@@ -176,6 +184,8 @@ class HTTP20Connection(object):
             generator will first yield all buffered push promises, then yield
             additional ones as they arrive, and terminate when the original
             stream closes.
+        :returns: A generator of :class:`HTTP20Push <hyper.HTTP20Push>` objects
+            corresponding to the streams pushed by the server.
         """
         stream = self._get_stream(stream_id)
         for promised_stream_id, headers in stream.getpushes(capture_all):
@@ -191,7 +201,7 @@ class HTTP20Connection(object):
         if self._sock is None:
             sock = socket.create_connection((self.host, self.port), 5)
             sock = wrap_socket(sock, self.host)
-            self._sock = sock
+            self._sock = BufferedSocket(sock, self.network_buffer_size)
 
             # We need to send the connection header immediately on this
             # connection, followed by an initial settings frame.
@@ -232,7 +242,7 @@ class HTTP20Connection(object):
         s = self._new_stream()
 
         # To this stream we need to immediately add a few headers that are
-        # HTTP/2.0 specific. These are: ":method", ":scheme", ":authority" and
+        # HTTP/2 specific. These are: ":method", ":scheme", ":authority" and
         # ":path". We can set all of these now.
         s.add_header(":method", method)
         s.add_header(":scheme", "https")  # We only support HTTPS at this time.
@@ -299,7 +309,7 @@ class HTTP20Connection(object):
     def send(self, data, final=False, stream_id=None):
         """
         Sends some data to the server. This data will be sent immediately
-        (excluding the normal HTTP/2.0 flow control rules). If this is the last
+        (excluding the normal HTTP/2 flow control rules). If this is the last
         data that will be sent as part of this request, the ``final`` argument
         should be set to ``True``. This will cause the stream to be closed.
 
@@ -319,16 +329,16 @@ class HTTP20Connection(object):
         """
         Handles receiving frames intended for the stream.
         """
-        if isinstance(frame, WindowUpdateFrame):
+        if frame.type == WindowUpdateFrame.type:
             self._out_flow_control_window += frame.window_increment
-        elif isinstance(frame, PingFrame):
+        elif frame.type == PingFrame.type:
             if 'ACK' not in frame.flags:
                 # The spec requires us to reply with PING+ACK and identical data.
                 p = PingFrame(0)
                 p.flags.add('ACK')
                 p.opaque_data = frame.opaque_data
                 self._data_cb(p, True)
-        elif isinstance(frame, SettingsFrame):
+        elif frame.type == SettingsFrame.type:
             if 'ACK' not in frame.flags:
                 self._update_settings(frame)
 
@@ -336,7 +346,7 @@ class HTTP20Connection(object):
                 f = SettingsFrame(0)
                 f.flags.add('ACK')
                 self._send_cb(f)
-        elif isinstance(frame, GoAwayFrame):
+        elif frame.type == GoAwayFrame.type:
             # If we get GoAway with error code zero, we are doing a graceful
             # shutdown and all is well. Otherwise, throw an exception.
             self.close()
@@ -346,8 +356,20 @@ class HTTP20Connection(object):
                     "Encountered error %d, extra data %s." %
                     (frame.error_code, frame.additional_data)
                 )
-        else:
+        elif frame.type == BlockedFrame.type:
+            increment = self.window_manager._blocked()
+            if increment:
+                f = WindowUpdateFrame(0)
+                f.window_increment = increment
+                self._send_cb(f, True)
+        elif frame.type in FRAMES:
+            # This frame isn't valid at this point.
             raise ValueError("Unexpected frame %s." % frame)
+        else:  # pragma: no cover
+            # Unexpected frames belong to extensions. Just drop it on the
+            # floor, but log so that users know that something happened.
+            log.warning("Received unknown frame, type %d", frame.type)
+            pass
 
     def _update_settings(self, frame):
         """
@@ -405,12 +427,10 @@ class HTTP20Connection(object):
 
         It expects to receive a single frame, and then to serialize that frame
         and send it on the connection. It does so obeying the connection-level
-        flow-control principles of HTTP/2.0.
+        flow-control principles of HTTP/2.
         """
         # Maintain our outgoing flow-control window.
-        if (isinstance(frame, DataFrame) and
-            not isinstance(frame, HeadersFrame)):
-
+        if frame.type == DataFrame.type:
             # If we don't have room in the flow control window, we need to look
             # for a Window Update frame.
             while self._out_flow_control_window < len(frame.data):
@@ -459,14 +479,14 @@ class HTTP20Connection(object):
         # Begin by reading 8 bytes from the socket.
         header = self._sock.recv(8)
 
-        # Parse the header.
+        # Parse the header. We can use the returned memoryview directly here.
         frame, length = Frame.parse_frame_header(header)
 
         # Read the remaining data from the socket.
         if length:
             data = self._sock.recv(length)
         else:
-            data = b''
+            data = memoryview(b'')
 
         frame.parse_body(data)
 
@@ -478,12 +498,11 @@ class HTTP20Connection(object):
 
         # Maintain our flow control window. We do this by delegating to the
         # chosen WindowManager.
-        if (isinstance(frame, DataFrame) and
-            not isinstance(frame, HeadersFrame)):
+        if frame.type == DataFrame.type:
             # Inform the WindowManager of how much data was received. If the
             # manager tells us to increment the window, do so.
-            self._adjust_receive_window(len(frame.data))
-        elif isinstance(frame, PushPromiseFrame):
+            self._adjust_receive_window(frame.flow_controlled_length)
+        elif frame.type == PushPromiseFrame.type:
             if self._enable_push:
                 self._new_stream(frame.promised_stream_id, local_closed=True)
             else:

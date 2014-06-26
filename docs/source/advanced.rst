@@ -10,7 +10,7 @@ Responses as Context Managers
 
 If you're concerned about having too many TCP sockets open at any one time, you
 may want to keep your connections alive only as long as you know you'll need
-them. In HTTP/2.0 this is generally not something you should do unless you're
+them. In HTTP/2 this is generally not something you should do unless you're
 very confident you won't need the connection again anytime soon. However, if
 you decide you want to avoid keeping the connection open, you can use the
 :class:`HTTP20Connection <hyper.HTTP20Connection>` as a context manager::
@@ -42,7 +42,7 @@ sending requests and returning responses. The stream identifiers provided by
 SSL/TLS Certificate Verification
 --------------------------------
 
-By default, all HTTP/2.0 connections are made over TLS, and ``hyper`` bundles
+By default, all HTTP/2 connections are made over TLS, and ``hyper`` bundles
 certificate authorities that it uses to verify the offered TLS certificates.
 Currently certificate verification cannot be disabled.
 
@@ -58,7 +58,7 @@ this, as ``hyper`` won't set it for you.
 Content Decompression
 ---------------------
 
-In HTTP/2.0 it's mandatory that user-agents support receiving responses that
+In HTTP/2 it's mandatory that user-agents support receiving responses that
 have their bodies compressed. As demonstrated in the quickstart guide,
 ``hyper`` transparently implements this decompression, meaning that responses
 are automatically decompressed for you. If you don't want this to happen,
@@ -71,8 +71,8 @@ you can turn it off by passing the ``decode_content`` parameter to
 Flow Control & Window Managers
 ------------------------------
 
-HTTP/2.0 provides a facility for performing 'flow control', enabling both ends
-of a HTTP/2.0 connection to influence the rate at which data is received. When
+HTTP/2 provides a facility for performing 'flow control', enabling both ends
+of a HTTP/2 connection to influence the rate at which data is received. When
 used correctly flow control can be a powerful tool for maximising the efficiency
 of a connection. However, when used poorly, flow control leads to severe
 inefficiency and can adversely affect the throughput of the connection.
@@ -114,7 +114,7 @@ the window of the connection itself.
 Server Push
 -----------
 
-HTTP/2.0 provides servers with the ability to "push" additional resources to
+HTTP/2 provides servers with the ability to "push" additional resources to
 clients in response to a request, as if the client had requested the resources
 themselves. When minimizing the number of round trips is more critical than
 maximizing bandwidth usage, this can be a significant performance improvement.

@@ -3,29 +3,38 @@
 hyper/http20/frame
 ~~~~~~~~~~~~~~~~~~
 
-Defines framing logic for HTTP/2.0. Provides both classes to represent framed
+Defines framing logic for HTTP/2. Provides both classes to represent framed
 data and logic for aiding the connection when it comes to reading from the
 socket.
 """
+import collections
 import struct
 
 # The maximum length of a frame. Some frames have shorter maximum lengths.
 FRAME_MAX_LEN = (2 ** 14) - 1
 
-
 class Frame(object):
     """
-    The base class for all HTTP/2.0 frames.
+    The base class for all HTTP/2 frames.
     """
     # The flags defined on this type of frame.
     defined_flags = []
 
     # The type of the frame.
-    type = -1
+    type = None
+
+    # If 'has-stream', the frame's stream_id must be non-zero. If 'no-stream',
+    # it must be zero. If 'either', it's not checked.
+    stream_association = None
 
     def __init__(self, stream_id):
         self.stream_id = stream_id
         self.flags = set()
+
+        if self.stream_association == 'has-stream' and not self.stream_id:
+            raise ValueError('Stream ID must be non-zero')
+        if self.stream_association == 'no-stream' and self.stream_id:
+            raise ValueError('Stream ID must be zero')
 
     @staticmethod
     def parse_frame_header(header):
@@ -50,7 +59,9 @@ class Frame(object):
 
         return self.flags
 
-    def build_frame_header(self, length):
+    def serialize(self):
+        body = self.serialize_body()
+
         # Build the common frame header.
         # First, get the flags.
         flags = 0
@@ -61,50 +72,121 @@ class Frame(object):
 
         header = struct.pack(
             "!HBBL",
-            length & 0x3FFF,  # Length must have the top two bits unset.
+            len(body) & 0x3FFF,  # Length must have the top two bits unset.
             self.type,
             flags,
             self.stream_id & 0x7FFFFFFF  # Stream ID is 32 bits.
         )
 
-        return header
+        return header + body
 
-    def serialize(self):
+    def serialize_body(self):
         raise NotImplementedError()
 
     def parse_body(self, data):
         raise NotImplementedError()
 
 
-class DataFrame(Frame):
+class Padding(object):
+    """
+    Mixin for frames that contain padding.
+    """
+    def __init__(self, stream_id):
+        self.pad_length = 0
+
+        super(Padding, self).__init__(stream_id)
+
+    def serialize_padding_data(self):
+        if 'PADDED' in self.flags:
+            return struct.pack('!B', self.pad_length)
+        return b''
+
+    def parse_padding_data(self, data):
+        if 'PADDED' in self.flags:
+            self.pad_length = struct.unpack('!B', data[:1])[0]
+            return 1
+        return 0
+
+    @property
+    def total_padding(self):
+        """Return the total length of the padding, if any."""
+        return self.pad_length
+
+
+class Priority(object):
+    """
+    Mixin for frames that contain priority data.
+    """
+    def __init__(self, stream_id):
+        # The stream ID of the stream on which this stream depends.
+        self.depends_on = None
+
+        # The weight of the stream. This is an integer between 0 and 256.
+        self.stream_weight = None
+
+        # Whether the exclusive bit was set.
+        self.exclusive = None
+
+        super(Priority, self).__init__(stream_id)
+
+    def serialize_priority_data(self):
+        return struct.pack(
+            "!LB",
+            self.depends_on | (int(self.exclusive) << 31),
+            self.stream_weight
+        )
+
+    def parse_priority_data(self, data):
+        MASK = 0x80000000
+        self.depends_on, self.stream_weight = struct.unpack(
+            "!LB", data[:5]
+        )
+        self.exclusive = bool(self.depends_on & MASK)
+        self.depends_on &= ~MASK
+        return 5
+
+
+class DataFrame(Padding, Frame):
     """
     DATA frames convey arbitrary, variable-length sequences of octets
     associated with a stream. One or more DATA frames are used, for instance,
     to carry HTTP request or response payloads.
     """
-    defined_flags = [('END_STREAM', 0x01)]
+    defined_flags = [
+        ('END_STREAM', 0x01),
+        ('END_SEGMENT', 0x02),
+        ('PADDED', 0x08),
+    ]
 
-    type = 0
+    type = 0x0
+
+    stream_association = 'has-stream'
 
     def __init__(self, stream_id):
         super(DataFrame, self).__init__(stream_id)
 
         self.data = b''
 
-        # Data frames may not be stream 0.
-        if not self.stream_id:
-            raise ValueError()
-
-    def serialize(self):
-        data = self.build_frame_header(len(self.data))
-        data += self.data
-        return data
+    def serialize_body(self):
+        padding_data = self.serialize_padding_data()
+        padding = b'\0' * self.total_padding
+        return b''.join([padding_data, self.data, padding])
 
     def parse_body(self, data):
-        self.data = data
+        padding_data_length = self.parse_padding_data(data)
+        self.data = data[padding_data_length:len(data)-self.total_padding].tobytes()
+
+    @property
+    def flow_controlled_length(self):
+        """
+        If the frame is padded we need to include the padding length byte in
+        the flow control used.
+        """
+        padding_len = self.total_padding + 1 if self.total_padding else 0
+        return len(self.data) + padding_len
 
 
-class PriorityFrame(Frame):
+class PriorityFrame(Priority, Frame):
     """
     The PRIORITY frame specifies the sender-advised priority of a stream. It
     can be sent at any time for an existing stream. This enables
@@ -114,24 +196,13 @@ class PriorityFrame(Frame):
 
     type = 0x02
 
-    def __init__(self, stream_id):
-        super(PriorityFrame, self).__init__(stream_id)
+    stream_association = 'has-stream'
 
-        self.priority = 0
-
-        if not stream_id:
-            raise ValueError()
-
-    def serialize(self):
-        data = self.build_frame_header(4)
-        data += struct.pack("!L", self.priority & 0x7FFFFFFF)
-        return data
+    def serialize_body(self):
+        return self.serialize_priority_data()
 
     def parse_body(self, data):
-        if len(data) != 4:
-            raise ValueError()
-
-        self.priority = struct.unpack("!L", data)[0]
+        self.parse_priority_data(data)
 
 
 class RstStreamFrame(Frame):
@@ -147,18 +218,15 @@ class RstStreamFrame(Frame):
 
     type = 0x03
 
+    stream_association = 'has-stream'
+
     def __init__(self, stream_id):
         super(RstStreamFrame, self).__init__(stream_id)
 
         self.error_code = 0
 
-        if not stream_id:
-            raise ValueError()
-
-    def serialize(self):
-        data = self.build_frame_header(4)
-        data += struct.pack("!L", self.error_code)
-        return data
+    def serialize_body(self):
+        return struct.pack("!L", self.error_code)
 
     def parse_body(self, data):
         if len(data) != 4:
@@ -183,13 +251,14 @@ class SettingsFrame(Frame):
 
     type = 0x04
 
+    stream_association = 'no-stream'
+
     # We need to define the known settings, they may as well be class
     # attributes.
     HEADER_TABLE_SIZE      = 0x01
     ENABLE_PUSH            = 0x02
-    MAX_CONCURRENT_STREAMS = 0x04
-    INITIAL_WINDOW_SIZE    = 0x07
-    FLOW_CONTROL_OPTIONS   = 0x0A
+    MAX_CONCURRENT_STREAMS = 0x03
+    INITIAL_WINDOW_SIZE    = 0x04
 
     def __init__(self, stream_id):
         super(SettingsFrame, self).__init__(stream_id)
@@ -197,43 +266,38 @@ class SettingsFrame(Frame):
         # A dictionary of the setting type byte to the value.
         self.settings = {}
 
-        if stream_id:
-            raise ValueError()
-
-    def serialize(self):
-        # Each setting consumes 8 bytes.
-        length = len(self.settings) * 8
-
-        data = self.build_frame_header(length)
-
-        for setting, value in self.settings.items():
-            data += struct.pack("!LL", setting & 0x00FFFFFF, value)
-
-        return data
+    def serialize_body(self):
+        settings = [struct.pack("!HL", setting & 0xFF, value)
+                    for setting, value in self.settings.items()]
+        return b''.join(settings)
 
     def parse_body(self, data):
-        for i in range(0, len(data), 8):
-            name, value = struct.unpack("!LL", data[i:i+8])
+        for i in range(0, len(data), 6):
+            name, value = struct.unpack("!HL", data[i:i+6])
             self.settings[name] = value
 
 
-class PushPromiseFrame(Frame):
+class PushPromiseFrame(Padding, Frame):
     """
     The PUSH_PROMISE frame is used to notify the peer endpoint in advance of
     streams the sender intends to initiate.
     """
-    defined_flags = [('END_PUSH_PROMISE', 0x01)]
+    defined_flags = [('END_HEADERS', 0x04), ('PADDED', 0x08),]
 
     type = 0x05
 
-    def serialize(self):
-        data = self.build_frame_header(len(self.data) + 4)
-        data += struct.pack("!L", self.promised_stream_id)
-        return b''.join([data, self.data])
+    stream_association = 'has-stream'
+
+    def serialize_body(self):
+        padding_data = self.serialize_padding_data()
+        padding = b'\0' * self.total_padding
+        data = struct.pack("!L", self.promised_stream_id)
+        return b''.join([padding_data, data, self.data, padding])
 
     def parse_body(self, data):
-        self.promised_stream_id, = struct.unpack("!L", data[:4])
-        self.data = data[4:]
+        padding_data_length = self.parse_padding_data(data)
+        self.promised_stream_id = struct.unpack("!L", data[padding_data_length:padding_data_length + 4])[0]
+        self.data = data[padding_data_length + 4:].tobytes()
 
 
 class PingFrame(Frame):
@@ -246,20 +310,18 @@ class PingFrame(Frame):
 
     type = 0x06
 
+    stream_association = 'no-stream'
+
     def __init__(self, stream_id):
         super(PingFrame, self).__init__(stream_id)
 
         self.opaque_data = b''
 
-        if stream_id:
-            raise ValueError()
-
-    def serialize(self):
+    def serialize_body(self):
         if len(self.opaque_data) > 8:
             raise ValueError()
 
-        data = self.build_frame_header(8)
-        data += self.opaque_data
+        data = self.opaque_data
         data += b'\x00' * (8 - len(self.opaque_data))
         return data
 
@@ -267,7 +329,7 @@ class PingFrame(Frame):
         if len(data) > 8:
             raise ValueError()
 
-        self.opaque_data = data
+        self.opaque_data = data.tobytes()
 
 
 class GoAwayFrame(Frame):
@@ -279,6 +341,8 @@ class GoAwayFrame(Frame):
     """
     type = 0x07
 
+    stream_association = 'no-stream'
+
     def __init__(self, stream_id):
         super(GoAwayFrame, self).__init__(stream_id)
 
@@ -286,12 +350,8 @@ class GoAwayFrame(Frame):
         self.error_code = 0
         self.additional_data = b''
 
-        if stream_id:
-            raise ValueError()
-
-    def serialize(self):
-        data = self.build_frame_header(8 + len(self.additional_data))
-        data += struct.pack(
+    def serialize_body(self):
+        data = struct.pack(
             "!LL",
             self.last_stream_id & 0x7FFFFFFF,
             self.error_code
@@ -304,7 +364,7 @@ class GoAwayFrame(Frame):
         self.last_stream_id, self.error_code = struct.unpack("!LL", data[:8])
 
         if len(data) > 8:
-            self.additional_data = data[8:]
+            self.additional_data = data[8:].tobytes()
 
 
 class WindowUpdateFrame(Frame):
@@ -320,24 +380,23 @@ class WindowUpdateFrame(Frame):
     can indirectly cause the propagation of flow control information toward the
     original sender.
     """
-    type = 0x09
+    type = 0x08
+
+    stream_association = 'either'
 
     def __init__(self, stream_id):
         super(WindowUpdateFrame, self).__init__(stream_id)
 
         self.window_increment = 0
 
-    def serialize(self):
-        data = self.build_frame_header(4)
-        data += struct.pack("!L", self.window_increment & 0x7FFFFFFF)
-
-        return data
+    def serialize_body(self):
+        return struct.pack("!L", self.window_increment & 0x7FFFFFFF)
 
     def parse_body(self, data):
         self.window_increment = struct.unpack("!L", data)[0]
 
 
-class HeadersFrame(DataFrame):
+class HeadersFrame(Padding, Priority, Frame):
     """
     The HEADERS frame carries name-value pairs. It is used to open a stream.
     HEADERS frames can be sent on a stream in the "open" or "half closed
@@ -351,61 +410,155 @@ class HeadersFrame(DataFrame):
     """
     type = 0x01
 
+    stream_association = 'has-stream'
+
     defined_flags = [
         ('END_STREAM', 0x01),
+        ('END_SEGMENT', 0x02),
         ('END_HEADERS', 0x04),
-        ('PRIORITY', 0x08)
+        ('PADDED', 0x08),
+        ('PRIORITY', 0x20),
     ]
 
-    def __init__(self, stream_id):
-        super(HeadersFrame, self).__init__(stream_id)
+    def serialize_body(self):
+        padding_data = self.serialize_padding_data()
+        padding = b'\0' * self.total_padding
 
-        self.priority = None
-
-    def serialize(self):
-        if self.priority is None:
-            data = self.build_frame_header(len(self.data))
+        if 'PRIORITY' in self.flags:
+            priority_data = self.serialize_priority_data()
         else:
-            data = self.build_frame_header(len(self.data) + 4)
-            data += struct.pack("!L", self.priority)
+            priority_data = b''
 
-        data += self.data
-        return data
+        return b''.join([padding_data, priority_data, self.data, padding])
 
     def parse_body(self, data):
+        padding_data_length = self.parse_padding_data(data)
+        data = data[padding_data_length:]
+
         if 'PRIORITY' in self.flags:
-            self.priority = struct.unpack("!L", data[:4])[0]
-            data = data[4:]
+            priority_data_length = self.parse_priority_data(data)
+        else:
+            priority_data_length = 0
 
-        super(HeadersFrame, self).parse_body(data)
+        self.data = data[priority_data_length:len(data)-self.total_padding].tobytes()
 
 
-class ContinuationFrame(DataFrame):
+class ContinuationFrame(Frame):
     """
     The CONTINUATION frame is used to continue a sequence of header block
     fragments. Any number of CONTINUATION frames can be sent on an existing
     stream, as long as the preceding frame on the same stream is one of
-    HEADERS, PUSH_PROMISE or CONTINUATION without the END_HEADERS or
-    END_PUSH_PROMISE flag set.
+    HEADERS, PUSH_PROMISE or CONTINUATION without the END_HEADERS flag set.
 
     Much like the HEADERS frame, hyper treats this as an opaque data frame with
     different flags and a different type.
     """
-    type = 0x0A
+    type = 0x09
 
-    defined_flags = [('END_HEADERS', 0x04)]
+    stream_association = 'has-stream'
+
+    defined_flags = [('END_HEADERS', 0x04),]
+
+    def serialize_body(self):
+        return self.data
+
+    def parse_body(self, data):
+        self.data = data.tobytes()
+
+
+Origin = collections.namedtuple('Origin', ['scheme', 'host', 'port'])
+
+class AltSvcFrame(Frame):
+    """
+    The ALTSVC frame is used to advertise alternate services that the current
+    host, or a different one, can understand.
+    """
+    type = 0xA
+
+    stream_association = 'no-stream'
+
+    def __init__(self, stream_id):
+        super(AltSvcFrame, self).__init__(stream_id)
+
+        self.host = None
+        self.port = None
+        self.protocol_id = None
+        self.max_age = None
+        self.origin = None
+
+    def serialize_origin(self):
+        if self.origin is not None:
+            if self.origin.port is None:
+                hostport = self.origin.host
+            else:
+                hostport = self.origin.host + b':' + str(self.origin.port).encode('ascii')
+            return self.origin.scheme + b'://' + hostport
+        return b''
+
+    def parse_origin(self, data):
+        if len(data) > 0:
+            data = data.tobytes()
+            scheme, hostport = data.split(b'://')
+            host, _, port = hostport.partition(b':')
+            self.origin = Origin(scheme=scheme, host=host,
+                                 port=int(port) if len(port) > 0 else None)
+
+    def serialize_body(self):
+        first = struct.pack("!LHxB", self.max_age, self.port, len(self.protocol_id))
+        host_length = struct.pack("!B", len(self.host))
+        return b''.join([first, self.protocol_id, host_length, self.host,
+                         self.serialize_origin()])
+
+    def parse_body(self, data):
+        self.max_age, self.port, protocol_id_length = struct.unpack("!LHxB", data[:8])
+        pos = 8
+        self.protocol_id = data[pos:pos+protocol_id_length].tobytes()
+        pos += protocol_id_length
+        host_length = struct.unpack("!B", data[pos:pos+1])[0]
+        pos += 1
+        self.host = data[pos:pos+host_length].tobytes()
+        pos += host_length
+        self.parse_origin(data[pos:])
+
+
+class BlockedFrame(Frame):
+    """
+    The BLOCKED frame indicates that the sender is unable to send data due to a
+    closed flow control window.
+
+    The BLOCKED frame is used to provide feedback about the performance of flow
+    control for the purposes of performance tuning and debugging. The BLOCKED
+    frame can be sent by a peer when flow controlled data cannot be sent due to
+    the connection- or stream-level flow control. This frame MUST NOT be sent
+    if there are other reasons preventing data from being sent, either a lack
+    of available data, or the underlying transport being blocked.
+    """
+    type = 0x0B
+
+    stream_association = 'both'
+
+    defined_flags = []
+
+    def serialize_body(self):
+        return b''
+
+    def parse_body(self, data):
+        pass
 
 
 # A map of type byte to frame class.
-FRAMES = {
-    0x00: DataFrame,
-    0x01: HeadersFrame,
-    0x02: PriorityFrame,
-    0x03: RstStreamFrame,
-    0x04: SettingsFrame,
-    0x05: PushPromiseFrame,
-    0x06: PingFrame,
-    0x07: GoAwayFrame,
-    0x09: WindowUpdateFrame,
-    0x0A: ContinuationFrame
-}
+_FRAME_CLASSES = [
+    DataFrame,
+    HeadersFrame,
+    PriorityFrame,
+    RstStreamFrame,
+    SettingsFrame,
+    PushPromiseFrame,
+    PingFrame,
+    GoAwayFrame,
+    WindowUpdateFrame,
+    ContinuationFrame,
+    AltSvcFrame,
+    BlockedFrame
+]
+FRAMES = {cls.type: cls for cls in _FRAME_CLASSES}

@@ -3,5 +3,5 @@
 hyper/http20
 ~~~~~~~~~~~~
 
-The HTTP/2.0 submodule that powers hyper.
+The HTTP/2 submodule that powers hyper.
 """

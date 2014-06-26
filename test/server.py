@@ -14,17 +14,18 @@ ingenuity and about a million beers. The license is available in NOTICES.
 
 import threading
 import socket
-import ssl
 import sys
 
-from hyper.compat import is_py3
+from hyper import HTTP20Connection
+from hyper.compat import ssl
 from hyper.http20.hpack import Encoder
 from hyper.http20.huffman import HuffmanEncoder
 from hyper.http20.huffman_constants import (
     REQUEST_CODES, REQUEST_CODES_LENGTH
 )
+from hyper.http20.tls import NPN_PROTOCOL
 
-class _SocketServerThreadBase(threading.Thread):
+class SocketServerThread(threading.Thread):
     """
     This method stolen wholesale from shazow/urllib3 under license. See NOTICES.
 
@@ -40,11 +41,17 @@ class _SocketServerThreadBase(threading.Thread):
         self.host = host
         self.ready_event = ready_event
 
+        self.cxt = ssl.SSLContext(ssl.PROTOCOL_TLSv1_2)
+        if ssl.HAS_NPN:
+            self.cxt.set_npn_protocols([NPN_PROTOCOL])
+        self.cxt.load_cert_chain(certfile='test/certs/server.crt',
+                                 keyfile='test/certs/server.key')
+
     def _start_server(self):
         sock = socket.socket(socket.AF_INET6)
         if sys.platform != 'win32':
             sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-        sock = self._wrap_socket(sock)
+        sock = self.cxt.wrap_socket(sock, server_side=True)
         sock.bind((self.host, 0))
         self.port = sock.getsockname()[1]
 
@@ -64,31 +71,6 @@ class _SocketServerThreadBase(threading.Thread):
         self.server = self._start_server()
 
 
-class _SocketServerThreadPy2(_SocketServerThreadBase):
-    def _wrap_socket(self, sock):
-        return ssl.wrap_socket(sock, server_side=True,
-                               certfile='test/certs/server.crt',
-                               keyfile='test/certs/server.key')
-
-
-class _SocketServerThreadPy3(_SocketServerThreadBase):
-    def __init__(self, socket_handler, host='localhost', ready_event=None):
-        super().__init__(socket_handler, host, ready_event)
-        self.cxt = ssl.SSLContext(ssl.PROTOCOL_SSLv23)
-        self.cxt.set_npn_protocols(['HTTP-draft-09/2.0'])
-        self.cxt.load_cert_chain(certfile='test/certs/server.crt',
-                                 keyfile='test/certs/server.key')
-
-    def _wrap_socket(self, sock):
-        return self.cxt.wrap_socket(sock, server_side=True)
-
-
-if is_py3:
-    SocketServerThread = _SocketServerThreadPy3
-else:
-    SocketServerThread = _SocketServerThreadPy2
-
-
 class SocketLevelTest(object):
     """
     A test-class that defines a few helper methods for running socket-level
@@ -106,12 +88,15 @@ class SocketLevelTest(object):
         ready_event = threading.Event()
         self.server_thread = SocketServerThread(
             socket_handler=socket_handler,
-            ready_event=ready_event
+            ready_event=ready_event,
         )
         self.server_thread.start()
         ready_event.wait()
         self.host = self.server_thread.host
         self.port = self.server_thread.port
+
+    def get_connection(self):
+        return HTTP20Connection(self.host, self.port)
 
     def get_encoder(self):
         """

@@ -5,7 +5,7 @@ hyper/http20/window
 
 Objects that understand flow control in hyper.
 
-HTTP/2.0 implements connection- and stream-level flow control. This flow
+HTTP/2 implements connection- and stream-level flow control. This flow
 control is mandatory. Unfortunately, it's difficult for hyper to be
 all that intelligent about how it manages flow control in a general case.
 
@@ -47,7 +47,7 @@ class BaseFlowControlManager(object):
         #: The size of the document being retrieved, in bytes. This is
         #: retrieved from the Content-Length header, if provided. Note that
         #: the total number of bytes that will be received may be larger than
-        #: this value due to HTTP/2.0 padding. It should not be assumed that
+        #: this value due to HTTP/2 padding. It should not be assumed that
         #: simply because the the document size is smaller than the initial
         #: window size that there will never be a need to increase the window
         #: size.
@@ -79,6 +79,27 @@ class BaseFlowControlManager(object):
             "FlowControlManager is an abstract base class"
         )
 
+    def blocked(self):
+        """
+        Called whenever the remote endpoint reports that it is blocked behind
+        the flow control window.
+
+        When this method is called the remote endpoint is signaling that it
+        has more data to send and that the transport layer is capable of
+        transmitting it, but that the HTTP/2 flow control window prevents it
+        being sent.
+
+        This method should return the size by which the window should be
+        incremented, which may be zero. This method should *not* adjust any
+        of the member variables of this class.
+
+        :returns: The amount to increase the receive window by. Return zero if
+          the window should not be increased.
+        """
+        raise NotImplementedError(
+            "FlowControlManager is an abstract base class"
+        )
+
     def _handle_frame(self, frame_size):
         """
         This internal method is called by the connection or stream that owns
@@ -87,6 +108,16 @@ class BaseFlowControlManager(object):
         """
         rc = self.increase_window_size(frame_size)
         self.window_size -= frame_size
+        self.window_size += rc
+        return rc
+
+    def _blocked(self):
+        """
+        This internal method is called by the connection or stream that owns
+        the flow control manager. It handles the generic behaviour of receiving
+        BLOCKED frames.
+        """
+        rc = self.blocked()
         self.window_size += rc
         return rc
 
@@ -114,3 +145,6 @@ class FlowControlManager(BaseFlowControlManager):
             return self.initial_window_size - future_window_size
 
         return 0
+
+    def blocked(self):
+        return self.initial_window_size - self.window_size

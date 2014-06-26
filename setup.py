@@ -1,6 +1,8 @@
 #!/usr/bin/env python
-
+# -*- coding: utf-8 -*-
+import itertools
 import os
+import re
 import sys
 
 try:
@@ -9,7 +11,6 @@ except ImportError:
     from distutils.core import setup
 
 # Get the version
-import re
 version_regex = r'__version__ = ["\']([^"\']*)["\']'
 with open('hyper/__init__.py', 'r') as f:
     text = f.read()
@@ -25,12 +26,19 @@ if sys.argv[-1] == 'publish':
     os.system('python setup.py sdist upload')
     sys.exit()
 
+py_version = sys.version_info[:2]
+
+def resolve_install_requires():
+    if py_version in [(2,7), (3,3)]:
+        return ['pyOpenSSL>=0.14']
+    return []
+
 packages = ['hyper', 'hyper.http20']
 
 setup(
     name='hyper',
     version=version,
-    description='HTTP/2.0 for Python',
+    description='HTTP/2 for Python',
     long_description=open('README.rst').read() + '\n\n' + open('HISTORY.rst').read(),
     author='Cory Benfield',
     author_email='cory@lukasa.co.uk',
@@ -52,5 +60,6 @@ setup(
         'Programming Language :: Python :: 3.4',
         'Programming Language :: Python :: Implementation :: CPython',
         'Programming Language :: Python :: Implementation :: PyPy',
-    ]
+    ],
+    install_requires=resolve_install_requires(),
 )

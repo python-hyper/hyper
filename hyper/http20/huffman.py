@@ -123,4 +123,14 @@ class HuffmanEncoder(object):
         # If this is odd, prepend a zero.
         final_num = '0' + final_num if len(final_num) % 2 != 0 else final_num
 
+        # This number should have twice as many digits as bytes. If not, we're
+        # missing some leading zeroes. Work out how many bytes we want and how
+        # many digits we have, then add the missing zero digits to the front.
+        total_bytes = (final_int_len + bits_to_be_padded) // 8
+        expected_digits = total_bytes * 2
+
+        if len(final_num) != expected_digits:
+            missing_digits = expected_digits - len(final_num)
+            final_num = ('0' * missing_digits) + final_num
+
         return decode_hex(final_num)

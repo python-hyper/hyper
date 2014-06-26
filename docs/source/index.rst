@@ -3,15 +3,14 @@
    You can adapt this file completely to your liking, but it should at least
    contain the root `toctree` directive.
 
-Hyper: HTTP/2.0 for Python
-=================================
+Hyper: HTTP/2 for Python
+========================
 
 Release v\ |version|.
 
 HTTP is changing under our feet. HTTP/1.1, our old friend, is being
-supplemented by the brand new HTTP/2.0 standard. HTTP/2.0 provides many
-benefits: improved speed, lower bandwidth usage, better connection management,
-and more.
+supplemented by the brand new HTTP/2 standard. HTTP/2 provides many benefits:
+improved speed, lower bandwidth usage, better connection management, and more.
 
 ``hyper`` provides these benefits to your Python code. How? Like this::
 
@@ -24,10 +23,13 @@ and more.
     print(resp.read())
 
 Simple. ``hyper`` is written in 100% pure Python, which means no C extensions.
-It is also 100% self-contained: there are no external dependencies beyond the
-Python standard library.
+For recent versions of Python (3.4 and onward) it's entirely self-contained
+with no external dependencies. With older versions, we depend on `PyOpenSSL`_
+to work around the standard library's anaemic TLS support.
 
 ``hyper`` supports Python 2.7 and 3.3+ on CPython and PyPy.
+
+.. _PyOpenSSL: http://pyopenssl.readthedocs.org/en/latest/
 
 Caveat Emptor!
 --------------

@@ -3,25 +3,29 @@
 hyper/http20/stream
 ~~~~~~~~~~~~~~~~~~~
 
-Objects that make up the stream-level abstraction of hyper's HTTP/2.0 support.
+Objects that make up the stream-level abstraction of hyper's HTTP/2 support.
 
-These objects are not expected to be part of the public HTTP/2.0 API: they're
-intended purely for use inside hyper's HTTP/2.0 abstraction.
+These objects are not expected to be part of the public HTTP/2 API: they're
+intended purely for use inside hyper's HTTP/2 abstraction.
 
-Conceptually, a single HTTP/2.0 connection is made up of many streams: each
+Conceptually, a single HTTP/2 connection is made up of many streams: each
 stream is an independent, bi-directional sequence of HTTP headers and data.
 Each stream is identified by a monotonically increasing integer, assigned to
 the stream by the endpoint that initiated the stream.
 """
 from .frame import (
-    FRAME_MAX_LEN, HeadersFrame, DataFrame, PushPromiseFrame, WindowUpdateFrame,
-    ContinuationFrame,
+    FRAME_MAX_LEN, FRAMES, HeadersFrame, DataFrame, PushPromiseFrame,
+    WindowUpdateFrame, ContinuationFrame, BlockedFrame
 )
 from .util import get_from_key_value_set
 import collections
+import logging
+import zlib
+
+log = logging.getLogger(__name__)
 
 
-# Define a set of states for a HTTP/2.0 stream.
+# Define a set of states for a HTTP/2 stream.
 STATE_IDLE               = 0
 STATE_OPEN               = 1
 STATE_HALF_CLOSED_LOCAL  = 2
@@ -37,7 +41,7 @@ MAX_CHUNK = 1024
 
 class Stream(object):
     """
-    A single HTTP/2.0 stream.
+    A single HTTP/2 stream.
 
     A stream is an independent, bi-directional sequence of HTTP headers and
     data. Each stream is identified by a single integer. From a HTTP
@@ -176,39 +180,56 @@ class Stream(object):
         if 'END_STREAM' in frame.flags:
             self._close_remote()
 
-        if isinstance(frame, WindowUpdateFrame):
+        if frame.type == WindowUpdateFrame.type:
             self._out_flow_control_window += frame.window_increment
-        elif isinstance(frame, HeadersFrame):
+        elif frame.type == HeadersFrame.type:
             # Begin the header block for the response headers.
             self.promised_stream_id = None
             self.header_data = [frame.data]
-        elif isinstance(frame, PushPromiseFrame):
+        elif frame.type == PushPromiseFrame.type:
             # Begin a header block for the request headers of a pushed resource.
             self.promised_stream_id = frame.promised_stream_id
             self.header_data = [frame.data]
-        elif isinstance(frame, ContinuationFrame):
+        elif frame.type == ContinuationFrame.type:
             # Continue a header block begun with either HEADERS or PUSH_PROMISE.
             self.header_data.append(frame.data)
-        elif isinstance(frame, DataFrame):
+        elif frame.type == DataFrame.type:
+            # Increase the window size. Only do this if the data frame contains
+            # actual data.
+            size = frame.flow_controlled_length
+            increment = self._in_window_manager._handle_frame(size)
+
             # Append the data to the buffer.
             self.data.append(frame.data)
 
-            # Increase the window size. Only do this if the data frame contains
-            # actual data.
-            increment = self._in_window_manager._handle_frame(len(frame.data))
             if increment and not self._remote_closed:
                 w = WindowUpdateFrame(self.stream_id)
                 w.window_increment = increment
                 self._data_cb(w, True)
-        else:
-            raise ValueError('Unexpected frame type: %i' % frame.type)
+        elif frame.type == BlockedFrame.type:
+            # If we've been blocked we may want to fixup the window.
+            increment = self._in_window_manager._blocked()
+            if increment:
+                w = WindowUpdateFrame(self.stream_id)
+                w.window_increment = increment
+                self._data_cb(w, True)
+        elif frame.type in FRAMES:
+            # This frame isn't valid at this point.
+            raise ValueError("Unexpected frame %s." % frame)
+        else:  # pragma: no cover
+            # Unknown frames belong to extensions. Just drop it on the
+            # floor, but log so that users know that something happened.
+            log.warning("Received unknown frame, type %d", frame.type)
+            pass
 
-        if 'END_HEADERS' in frame.flags or 'END_PUSH_PROMISE' in frame.flags:
+        if 'END_HEADERS' in frame.flags:
             headers = self._decoder.decode(b''.join(self.header_data))
             if self.promised_stream_id is None:
                 self.response_headers = headers
             else:
                 self.promised_headers[self.promised_stream_id] = headers
+
+            self.header_data = None
 
     def open(self, end):
         """

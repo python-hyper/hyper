@@ -2,7 +2,7 @@
 from hyper.http20.frame import (
     Frame, DataFrame, PriorityFrame, RstStreamFrame, SettingsFrame,
     PushPromiseFrame, PingFrame, GoAwayFrame, WindowUpdateFrame, HeadersFrame,
-    ContinuationFrame,
+    ContinuationFrame, AltSvcFrame, Origin, BlockedFrame,
 )
 from hyper.http20.hpack import Encoder, Decoder, encode_integer, decode_integer
 from hyper.http20.huffman import HuffmanDecoder
@@ -11,9 +11,10 @@ from hyper.http20.connection import HTTP20Connection
 from hyper.http20.stream import (
     Stream, STATE_HALF_CLOSED_LOCAL, STATE_OPEN, MAX_CHUNK, STATE_CLOSED
 )
-from hyper.http20.response import HTTP20Response
+from hyper.http20.response import HTTP20Response, HTTP20Push
 from hyper.http20.exceptions import HPACKDecodingError, HPACKEncodingError
 from hyper.http20.window import FlowControlManager
+from hyper.http20.util import combine_repeated_headers, split_repeated_headers
 from hyper.compat import zlib_compressobj
 from hyper.contrib import HTTP20Adapter
 import errno
@@ -50,10 +51,15 @@ class TestGeneralFrameBehaviour(object):
 
 
 class TestDataFrame(object):
-    def test_data_frame_has_only_one_flag(self):
+    payload = b'\x00\x08\x00\x01\x00\x00\x00\x01testdata'
+    payload_with_padding = b'\x00\x13\x00\x09\x00\x00\x00\x01\x0Atestdata' + b'\0' * 10
+
+    def test_data_frame_has_correct_flags(self):
         f = DataFrame(1)
         flags = f.parse_flags(0xFF)
-        assert flags == set(['END_STREAM'])
+        assert flags == set([
+            'END_STREAM', 'END_SEGMENT', 'PADDED'
+        ])
 
     def test_data_frame_serializes_properly(self):
         f = DataFrame(1)
@@ -61,16 +67,48 @@ class TestDataFrame(object):
         f.data = b'testdata'
 
         s = f.serialize()
-        assert s == b'\x00\x08\x00\x01\x00\x00\x00\x01testdata'
+        assert s == self.payload
+
+    def test_data_frame_with_padding_serializes_properly(self):
+        f = DataFrame(1)
+        f.flags = set(['END_STREAM', 'PADDED'])
+        f.data = b'testdata'
+        f.pad_length = 10
+
+        s = f.serialize()
+        assert s == self.payload_with_padding
 
     def test_data_frame_parses_properly(self):
-        s = b'\x00\x08\x00\x01\x00\x00\x00\x01testdata'
-        f, length = Frame.parse_frame_header(s[:8])
-        f.parse_body(s[8:8 + length])
+        f, length = Frame.parse_frame_header(self.payload[:8])
+        f.parse_body(memoryview(self.payload[8:8 + length]))
 
         assert isinstance(f, DataFrame)
         assert f.flags == set(['END_STREAM'])
+        assert f.pad_length == 0
         assert f.data == b'testdata'
+
+    def test_data_frame_with_padding_parses_properly(self):
+        f, length = Frame.parse_frame_header(self.payload_with_padding[:8])
+        f.parse_body(memoryview(self.payload_with_padding[8:8 + length]))
+
+        assert isinstance(f, DataFrame)
+        assert f.flags == set(['END_STREAM', 'PADDED'])
+        assert f.pad_length == 10
+        assert f.data == b'testdata'
+
+    def test_data_frame_with_padding_calculates_flow_control_len(self):
+        f = DataFrame(1)
+        f.flags = set(['PADDED'])
+        f.data = b'testdata'
+        f.pad_length = 10
+
+        assert f.flow_controlled_length == 19
+
+    def test_data_frame_without_padding_calculates_flow_control_len(self):
+        f = DataFrame(1)
+        f.data = b'testdata'
+
+        assert f.flow_controlled_length == 8
 
     def test_data_frame_comes_on_a_stream(self):
         with pytest.raises(ValueError):
@@ -78,36 +116,36 @@ class TestDataFrame(object):
 
 
 class TestPriorityFrame(object):
+    payload = b'\x00\x05\x02\x00\x00\x00\x00\x01\x80\x00\x00\x04\x40'
+
     def test_priority_frame_has_no_flags(self):
         f = PriorityFrame(1)
         flags = f.parse_flags(0xFF)
-        assert not flags
+        assert flags == set()
         assert isinstance(flags, set)
 
-    def test_priority_frame_serializes_properly(self):
+    def test_priority_frame_with_all_data_serializes_properly(self):
         f = PriorityFrame(1)
-        f.priority = 0xFF
+        f.depends_on = 0x04
+        f.stream_weight = 64
+        f.exclusive = True
 
-        s = f.serialize()
-        assert s == b'\x00\x04\x02\x00\x00\x00\x00\x01\x00\x00\x00\xff'
+        assert f.serialize() == self.payload
 
-    def test_priority_frame_parses_properly(self):
-        s = b'\x00\x04\x02\x00\x00\x00\x00\x01\x00\x00\x00\xff'
-        f, length = Frame.parse_frame_header(s[:8])
-        f.parse_body(s[8:8 + length])
+    def test_priority_frame_with_all_data_parses_properly(self):
+        f, length = Frame.parse_frame_header(self.payload[:8])
+        f.parse_body(memoryview(self.payload[8:8 + length]))
 
         assert isinstance(f, PriorityFrame)
         assert f.flags == set()
-        assert f.priority == 0xFF
+        assert f.depends_on == 4
+        assert f.stream_weight == 64
+        assert f.exclusive == True
 
     def test_priority_frame_comes_on_a_stream(self):
         with pytest.raises(ValueError):
             PriorityFrame(0)
 
-    def test_priority_frame_must_have_body_length_four(self):
-        f = PriorityFrame(1)
-        with pytest.raises(ValueError):
-            f.parse_body(b'\x01')
 
 class TestRstStreamFrame(object):
     def test_rst_stream_frame_has_no_flags(self):
@@ -126,7 +164,7 @@ class TestRstStreamFrame(object):
     def test_rst_stream_frame_parses_properly(self):
         s = b'\x00\x04\x03\x00\x00\x00\x00\x01\x00\x00\x01\xa4'
         f, length = Frame.parse_frame_header(s[:8])
-        f.parse_body(s[8:8 + length])
+        f.parse_body(memoryview(s[8:8 + length]))
 
         assert isinstance(f, RstStreamFrame)
         assert f.flags == set()
@@ -143,6 +181,21 @@ class TestRstStreamFrame(object):
 
 
 class TestSettingsFrame(object):
+    serialized = (
+        b'\x00\x18\x04\x01\x00\x00\x00\x00' +  # Frame header
+        b'\x00\x01\x00\x00\x10\x00'         +  # HEADER_TABLE_SIZE
+        b'\x00\x02\x00\x00\x00\x00'         +  # ENABLE_PUSH
+        b'\x00\x03\x00\x00\x00\x64'         +  # MAX_CONCURRENT_STREAMS
+        b'\x00\x04\x00\x00\xFF\xFF'            # INITIAL_WINDOW_SIZE
+    )
+
+    settings = {
+        SettingsFrame.HEADER_TABLE_SIZE: 4096,
+        SettingsFrame.ENABLE_PUSH: 0,
+        SettingsFrame.MAX_CONCURRENT_STREAMS: 100,
+        SettingsFrame.INITIAL_WINDOW_SIZE: 65535,
+    }
+
     def test_settings_frame_has_only_one_flag(self):
         f = SettingsFrame(0)
         flags = f.parse_flags(0xFF)
@@ -151,45 +204,18 @@ class TestSettingsFrame(object):
     def test_settings_frame_serializes_properly(self):
         f = SettingsFrame(0)
         f.parse_flags(0xFF)
-        f.settings = {
-            SettingsFrame.HEADER_TABLE_SIZE: 4096,
-            SettingsFrame.ENABLE_PUSH: 0,
-            SettingsFrame.MAX_CONCURRENT_STREAMS: 100,
-            SettingsFrame.INITIAL_WINDOW_SIZE: 65535,
-            SettingsFrame.FLOW_CONTROL_OPTIONS: 1,
-        }
+        f.settings = self.settings
 
         s = f.serialize()
-        assert s == (
-            b'\x00\x28\x04\x01\x00\x00\x00\x00' +  # Frame header
-            b'\x00\x00\x00\x01\x00\x00\x10\x00' +  # HEADER_TABLE_SIZE
-            b'\x00\x00\x00\x02\x00\x00\x00\x00' +  # ENABLE_PUSH
-            b'\x00\x00\x00\x04\x00\x00\x00\x64' +  # MAX_CONCURRENT_STREAMS
-            b'\x00\x00\x00\x0A\x00\x00\x00\x01' +  # FLOW_CONTROL_OPTIONS
-            b'\x00\x00\x00\x07\x00\x00\xFF\xFF'    # INITIAL_WINDOW_SIZE
-        )
+        assert s == self.serialized
 
     def test_settings_frame_parses_properly(self):
-        s = (
-            b'\x00\x28\x04\x01\x00\x00\x00\x00' +  # Frame header
-            b'\x00\x00\x00\x01\x00\x00\x10\x00' +  # HEADER_TABLE_SIZE
-            b'\x00\x00\x00\x02\x00\x00\x00\x00' +  # ENABLE_PUSH
-            b'\x00\x00\x00\x04\x00\x00\x00\x64' +  # MAX_CONCURRENT_STREAMS
-            b'\x00\x00\x00\x0A\x00\x00\x00\x01' +  # FLOW_CONTROL_OPTIONS
-            b'\x00\x00\x00\x07\x00\x00\xFF\xFF'    # INITIAL_WINDOW_SIZE
-        )
-        f, length = Frame.parse_frame_header(s[:8])
-        f.parse_body(s[8:8 + length])
+        f, length = Frame.parse_frame_header(self.serialized[:8])
+        f.parse_body(memoryview(self.serialized[8:8 + length]))
 
         assert isinstance(f, SettingsFrame)
         assert f.flags == set(['ACK'])
-        assert f.settings == {
-            SettingsFrame.HEADER_TABLE_SIZE: 4096,
-            SettingsFrame.ENABLE_PUSH: 0,
-            SettingsFrame.MAX_CONCURRENT_STREAMS: 100,
-            SettingsFrame.INITIAL_WINDOW_SIZE: 65535,
-            SettingsFrame.FLOW_CONTROL_OPTIONS: 1,
-        }
+        assert f.settings == self.settings
 
     def test_settings_frames_never_have_streams(self):
         with pytest.raises(ValueError):
@@ -201,32 +227,32 @@ class TestPushPromiseFrame(object):
         f = PushPromiseFrame(1)
         flags = f.parse_flags(0xFF)
 
-        assert flags == set(['END_PUSH_PROMISE'])
+        assert flags == set(['END_HEADERS', 'PADDED'])
 
-    def test_push_promise_frame_serialize_with_priority_properly(self):
+    def test_push_promise_frame_serializes_properly(self):
         f = PushPromiseFrame(1)
-        f.parse_flags(0xFF)
+        f.flags = set(['END_HEADERS'])
         f.promised_stream_id = 4
         f.data = b'hello world'
 
         s = f.serialize()
         assert s == (
-            b'\x00\x0F\x05\x01\x00\x00\x00\x01' +
+            b'\x00\x0F\x05\x04\x00\x00\x00\x01' +
             b'\x00\x00\x00\x04' +
             b'hello world'
         )
 
     def test_push_promise_frame_parses_properly(self):
         s = (
-            b'\x00\x0F\x05\x0D\x00\x00\x00\x01' +
+            b'\x00\x0F\x05\x04\x00\x00\x00\x01' +
             b'\x00\x00\x00\x04' +
             b'hello world'
         )
         f, length = Frame.parse_frame_header(s[:8])
-        f.parse_body(s[8:8 + length])
+        f.parse_body(memoryview(s[8:8 + length]))
 
         assert isinstance(f, PushPromiseFrame)
-        assert f.flags == set(['END_PUSH_PROMISE'])
+        assert f.flags == set(['END_HEADERS'])
         assert f.promised_stream_id == 4
         assert f.data == b'hello world'
 
@@ -258,7 +284,7 @@ class TestPingFrame(object):
     def test_ping_frame_parses_properly(self):
         s = b'\x00\x08\x06\x01\x00\x00\x00\x00\x01\x02\x00\x00\x00\x00\x00\x00'
         f, length = Frame.parse_frame_header(s[:8])
-        f.parse_body(s[8:8 + length])
+        f.parse_body(memoryview(s[8:8 + length]))
 
         assert isinstance(f, PingFrame)
         assert f.flags == set(['ACK'])
@@ -304,7 +330,7 @@ class TestGoAwayFrame(object):
             b'hello'                               # Additional data
         )
         f, length = Frame.parse_frame_header(s[:8])
-        f.parse_body(s[8:8 + length])
+        f.parse_body(memoryview(s[8:8 + length]))
 
         assert isinstance(f, GoAwayFrame)
         assert f.flags == set()
@@ -328,12 +354,12 @@ class TestWindowUpdateFrame(object):
         f.window_increment = 512
 
         s = f.serialize()
-        assert s == b'\x00\x04\x09\x00\x00\x00\x00\x00\x00\x00\x02\x00'
+        assert s == b'\x00\x04\x08\x00\x00\x00\x00\x00\x00\x00\x02\x00'
 
     def test_windowupdate_frame_parses_properly(self):
-        s = b'\x00\x04\x09\x00\x00\x00\x00\x00\x00\x00\x02\x00'
+        s = b'\x00\x04\x08\x00\x00\x00\x00\x00\x00\x00\x02\x00'
         f, length = Frame.parse_frame_header(s[:8])
-        f.parse_body(s[8:8 + length])
+        f.parse_body(memoryview(s[8:8 + length]))
 
         assert isinstance(f, WindowUpdateFrame)
         assert f.flags == set()
@@ -345,45 +371,64 @@ class TestHeadersFrame(object):
         f = HeadersFrame(1)
         flags = f.parse_flags(0xFF)
 
-        assert flags == set(['END_STREAM', 'END_HEADERS', 'PRIORITY'])
+        assert flags == set(['END_STREAM', 'END_SEGMENT', 'END_HEADERS',
+                             'PADDED', 'PRIORITY'])
 
-    def test_headers_frame_serialize_with_priority_properly(self):
+    def test_headers_frame_serializes_properly(self):
         f = HeadersFrame(1)
-        f.parse_flags(0xFF)
-        f.priority = (2 ** 30) + 1
+        f.flags = set(['END_STREAM', 'END_HEADERS'])
         f.data = b'hello world'
 
         s = f.serialize()
         assert s == (
-            b'\x00\x0F\x01\x0D\x00\x00\x00\x01' +
-            b'\x40\x00\x00\x01' +
-            b'hello world'
-        )
-
-    def test_headers_frame_serialize_without_priority_properly(self):
-        f = HeadersFrame(1)
-        f.parse_flags(0xFF)
-        f.data = b'hello world'
-
-        s = f.serialize()
-        assert s == (
-            b'\x00\x0B\x01\x0D\x00\x00\x00\x01' +
+            b'\x00\x0B\x01\x05\x00\x00\x00\x01' +
             b'hello world'
         )
 
     def test_headers_frame_parses_properly(self):
         s = (
-            b'\x00\x0F\x01\x0D\x00\x00\x00\x01' +
-            b'\x40\x00\x00\x01' +
+            b'\x00\x0B\x01\x05\x00\x00\x00\x01' +
             b'hello world'
         )
         f, length = Frame.parse_frame_header(s[:8])
-        f.parse_body(s[8:8 + length])
+        f.parse_body(memoryview(s[8:8 + length]))
 
         assert isinstance(f, HeadersFrame)
-        assert f.flags == set(['END_STREAM', 'END_HEADERS', 'PRIORITY'])
-        assert f.priority == (2 ** 30) + 1
+        assert f.flags == set(['END_STREAM', 'END_HEADERS'])
         assert f.data == b'hello world'
+
+    def test_headers_frame_with_priority_parses_properly(self):
+        # This test also tests that we can receive a HEADERS frame with no
+        # actual headers on it. This is technically possible.
+        s = (
+            b'\x00\x05\x01\x20\x00\x00\x00\x01' +
+            b'\x80\x00\x00\x04\x40'
+        )
+        f, length = Frame.parse_frame_header(s[:8])
+        f.parse_body(memoryview(s[8:8 + length]))
+
+        assert isinstance(f, HeadersFrame)
+        assert f.flags == set(['PRIORITY'])
+        assert f.data == b''
+        assert f.depends_on == 4
+        assert f.stream_weight == 64
+        assert f.exclusive == True
+
+    def test_headers_frame_with_priority_serializes_properly(self):
+        # This test also tests that we can receive a HEADERS frame with no
+        # actual headers on it. This is technically possible.
+        s = (
+            b'\x00\x05\x01\x20\x00\x00\x00\x01' +
+            b'\x80\x00\x00\x04\x40'
+        )
+        f = HeadersFrame(1)
+        f.flags = set(['PRIORITY'])
+        f.data = b''
+        f.depends_on = 4
+        f.stream_weight = 64
+        f.exclusive = True
+
+        assert f.serialize() == s
 
 
 class TestContinuationFrame(object):
@@ -395,23 +440,118 @@ class TestContinuationFrame(object):
 
     def test_continuation_frame_serializes(self):
         f = ContinuationFrame(1)
-        f.parse_flags(0xFF)
+        f.parse_flags(0x04)
         f.data = b'hello world'
 
         s = f.serialize()
         assert s == (
-            b'\x00\x0B\x0A\x04\x00\x00\x00\x01' +
+            b'\x00\x0B\x09\x04\x00\x00\x00\x01' +
             b'hello world'
         )
 
     def test_continuation_frame_parses_properly(self):
-        s = b'\x00\x0B\x0A\x04\x00\x00\x00\x01hello world'
+        s = b'\x00\x0B\x09\x04\x00\x00\x00\x01hello world'
         f, length = Frame.parse_frame_header(s[:8])
-        f.parse_body(s[8:8 + length])
+        f.parse_body(memoryview(s[8:8 + length]))
 
         assert isinstance(f, ContinuationFrame)
         assert f.flags == set(['END_HEADERS'])
         assert f.data == b'hello world'
+
+
+class TestAltSvcFrame(object):
+    payload_with_origin = (
+        b'\x00\x2B\x0A\x00\x00\x00\x00\x00'
+        b'\x00\x00\x00\x1D\x00\x50\x00\x02'
+        b'h2\x0Agoogle.comhttps://yahoo.com:8080'
+    )
+    payload_without_origin = (
+        b'\x00\x15\x0A\x00\x00\x00\x00\x00'
+        b'\x00\x00\x00\x1D\x00\x50\x00\x02'
+        b'h2\x0Agoogle.com'
+    )
+
+    def test_altsvc_frame_flags(self):
+        f = AltSvcFrame(0)
+        flags = f.parse_flags(0xFF)
+
+        assert flags == set()
+
+    def test_altsvc_frame_with_origin_serializes_properly(self):
+        f = AltSvcFrame(0)
+        f.host = b'google.com'
+        f.port = 80
+        f.protocol_id = b'h2'
+        f.max_age = 29
+        f.origin = Origin(scheme=b'https', host=b'yahoo.com', port=8080)
+
+        s = f.serialize()
+        assert s == self.payload_with_origin
+
+    def test_altsvc_frame_with_origin_parses_properly(self):
+        f, length = Frame.parse_frame_header(self.payload_with_origin[:8])
+        f.parse_body(memoryview(self.payload_with_origin[8:8 + length]))
+
+        assert isinstance(f, AltSvcFrame)
+        assert f.host == b'google.com'
+        assert f.port == 80
+        assert f.protocol_id == b'h2'
+        assert f.max_age == 29
+        assert f.origin == Origin(scheme=b'https', host=b'yahoo.com', port=8080)
+
+    def test_altsvc_frame_without_origin_serializes_properly(self):
+        f = AltSvcFrame(0)
+        f.host = b'google.com'
+        f.port = 80
+        f.protocol_id = b'h2'
+        f.max_age = 29
+
+        s = f.serialize()
+        assert s == self.payload_without_origin
+
+    def test_altsvc_frame_without_origin_parses_properly(self):
+        f, length = Frame.parse_frame_header(self.payload_without_origin[:8])
+        f.parse_body(memoryview(self.payload_without_origin[8:8 + length]))
+
+        assert isinstance(f, AltSvcFrame)
+        assert f.host == b'google.com'
+        assert f.port == 80
+        assert f.protocol_id == b'h2'
+        assert f.max_age == 29
+        assert f.origin is None
+
+    def test_altsvc_frame_serialize_origin_without_port(self):
+        f = AltSvcFrame(0)
+        f.origin = Origin(scheme=b'https', host=b'yahoo.com', port=None)
+
+        assert f.serialize_origin() == b'https://yahoo.com'
+
+    def test_altsvc_frame_never_has_a_stream(self):
+        with pytest.raises(ValueError):
+            AltSvcFrame(1)
+
+
+class TestBlockedFrame(object):
+    def test_blocked_has_no_flags(self):
+        f = BlockedFrame(0)
+        flags = f.parse_flags(0xFF)
+
+        assert not flags
+        assert isinstance(flags, set)
+
+    def test_blocked_serializes_properly(self):
+        f = BlockedFrame(2)
+
+        s = f.serialize()
+        assert s == b'\x00\x00\x0B\x00\x00\x00\x00\x02'
+
+    def test_blocked_frame_parses_properly(self):
+        s = b'\x00\x00\x0B\x00\x00\x00\x00\x02'
+        f, length = Frame.parse_frame_header(s[:8])
+        f.parse_body(memoryview(s[8:8 + length]))
+
+        assert isinstance(f, BlockedFrame)
+        assert f.flags == set()
 
 
 class TestHuffmanDecoder(object):
@@ -432,7 +572,7 @@ class TestHPACKEncoder(object):
         """
         e = Encoder()
         header_set = {'custom-key': 'custom-header'}
-        result = b'\x00\x0acustom-key\x0dcustom-header'
+        result = b'\x40\x0acustom-key\x0dcustom-header'
 
         assert e.encode(header_set, huffman=False) == result
         assert list(e.header_table) == [
@@ -446,7 +586,7 @@ class TestHPACKEncoder(object):
         """
         e = Encoder()
         header_set = {':path': '/sample/path'}
-        result = b'\x44\x0c/sample/path'
+        result = b'\x04\x0c/sample/path'
 
         assert e.encode(header_set, huffman=False) == result
         assert list(e.header_table) == []
@@ -472,6 +612,9 @@ class TestHPACKEncoder(object):
         header_set = {':method': 'GET'}
         result = b'\x82'
 
+        # Make sure we don't emit an encoding context update.
+        e._table_size_changed = False
+
         assert e.encode(header_set, huffman=False) == result
         assert list(e.header_table) == []
 
@@ -489,7 +632,7 @@ class TestHPACKEncoder(object):
         ]
         # The first_header_table doesn't contain 'authority'
         first_header_table = first_header_set[::-1][1:]
-        first_result = b'\x82\x87\x86\x44\x0fwww.example.com'
+        first_result = b'\x82\x87\x86\x04\x0fwww.example.com'
 
         assert e.encode(first_header_set, huffman=False) == first_result
         assert list(e.header_table) == [
@@ -505,16 +648,13 @@ class TestHPACKEncoder(object):
             (':authority', 'www.example.com',),
             ('cache-control', 'no-cache'),
         ]
-        second_result = b'\x44\x0fwww.example.com\x5a\x08no-cache'
+        second_result = b'\x04\x0fwww.example.com\x0f\x0c\x08no-cache'
 
         assert e.encode(second_header_set, huffman=False) == second_result
         assert list(e.header_table) == [
             (n.encode('utf-8'), v.encode('utf-8')) for n, v in first_header_table
         ]
 
-        # This request has not enough headers in common with the previous
-        # request to take advantage of the differential encoding.  Therefore,
-        # the reference set is emptied before encoding the header fields.
         third_header_set = [
             (':method', 'GET',),
             (':scheme', 'https',),
@@ -523,8 +663,8 @@ class TestHPACKEncoder(object):
             ('custom-key', 'custom-value'),
         ]
         third_result = (
-            b'\x80\x80\x83\x8a\x89\x46\x0fwww.example.com' +
-            b'\x00\x0acustom-key\x0ccustom-value'
+            b'\x8a\x89\x06\x0fwww.example.com@\ncustom-key\x0ccustom-value' +
+            b'\x84\x85'
         )
 
         assert e.encode(third_header_set, huffman=False) == third_result
@@ -547,7 +687,7 @@ class TestHPACKEncoder(object):
         # The first_header_table doesn't contain 'authority'
         first_header_table = first_header_set[::-1][1:]
         first_result = (
-            b'\x82\x87\x86\x44\x8b\xdb\x6d\x88\x3e\x68\xd1\xcb\x12\x25\xba\x7f'
+            b'\x82\x87\x86\x04\x8c\xf1\xe3\xc2\xe5\xf2:k\xa0\xab\x90\xf4\xff'
         )
 
         assert e.encode(first_header_set, huffman=True) == first_result
@@ -564,7 +704,10 @@ class TestHPACKEncoder(object):
             (':authority', 'www.example.com',),
             ('cache-control', 'no-cache'),
         ]
-        second_result = b'\x44\x8b\xdb\x6d\x88\x3e\x68\xd1\xcb\x12\x25\xba\x7f\x5a\x86\x63\x65\x4a\x13\x98\xff'
+        second_result = (
+            b'\x04\x8c\xf1\xe3\xc2\xe5\xf2:k\xa0\xab\x90\xf4\xff\x0f\x0c\x86'
+            b'\xa8\xeb\x10d\x9c\xbf'
+        )
 
         assert e.encode(second_header_set, huffman=True) == second_result
         assert list(e.header_table) == [
@@ -582,8 +725,8 @@ class TestHPACKEncoder(object):
             ('custom-key', 'custom-value'),
         ]
         third_result = (
-            b'\x80\x80\x83\x8a\x89F\x8b\xdbm\x88>h\xd1\xcb\x12%\xba\x7f\x00\x88'
-            b'N\xb0\x8bt\x97\x90\xfa\x7f\x89N\xb0\x8bt\x97\x9a\x17\xa8\xff'
+            b'\x8a\x89\x06\x8c\xf1\xe3\xc2\xe5\xf2:k\xa0\xab\x90\xf4\xff@\x88%'
+            b'\xa8I\xe9[\xa9}\x7f\x89%\xa8I\xe9[\xb8\xe8\xb4\xbf\x84\x85'
         )
 
         assert e.encode(third_header_set, huffman=True) == third_result
@@ -608,6 +751,11 @@ class TestHPACKEncoder(object):
         ]
         e.encode(header_set, huffman=True)
 
+        # Delete a random item from the reference set, just to make sure we can
+        # handle things in the header table that aren't in the reference set.
+        r = list(e.reference_set.keys())[0]
+        del e.reference_set[r]
+
         # Resize the header table to a size so small that nothing can be in it.
         e.header_table_size = 40
         assert len(e.header_table) == 0
@@ -617,13 +765,39 @@ class TestHPACKEncoder(object):
         e.encode([('no', 'value')])
 
         with pytest.raises(HPACKEncodingError):
-            e.remove([(b'no', b'val')])
+            e.remove((b'no', b'val'))
 
     def test_removing_header_not_in_table_at_all(self):
         e = Encoder()
 
         with pytest.raises(HPACKEncodingError):
-            e.remove([(b'not', b'present')])
+            e.remove((b'not', b'present'))
+
+    def test_resizing_header_table_sends_context_update(self):
+        e = Encoder()
+
+        # Resize the header table to a size so small that nothing can be in it.
+        e.header_table_size = 40
+
+        # Now, encode a header set. Just a small one, with a well-defined
+        # output.
+        header_set = [(':method', 'GET')]
+        out = e.encode(header_set, huffman=True)
+
+        assert out == b'\x2f\x19\x82'
+
+    def test_setting_table_size_to_the_same_does_nothing(self):
+        e = Encoder()
+
+        # Set the header table size to the default.
+        e.header_table_size = 4096
+
+        # Now encode a header set. Just a small one, with a well-defined
+        # output.
+        header_set = [(':method', 'GET')]
+        out = e.encode(header_set, huffman=True)
+
+        assert out == b'\x82'
 
 
 class TestHPACKDecoder(object):
@@ -634,8 +808,8 @@ class TestHPACKDecoder(object):
         value.
         """
         d = Decoder()
-        header_set = set([('custom-key', 'custom-header')])
-        data = b'\x00\x0acustom-key\x0dcustom-header'
+        header_set = [('custom-key', 'custom-header')]
+        data = b'\x40\x0acustom-key\x0dcustom-header'
 
         assert d.decode(data) == header_set
         assert list(d.header_table) == [
@@ -648,8 +822,8 @@ class TestHPACKDecoder(object):
         value.
         """
         d = Decoder()
-        header_set = set([(':path', '/sample/path')])
-        data = b'\x44\x0c/sample/path'
+        header_set = [(':path', '/sample/path')]
+        data = b'\x04\x0c/sample/path'
 
         assert d.decode(data) == header_set
         assert list(d.header_table) == []
@@ -661,7 +835,7 @@ class TestHPACKDecoder(object):
         into the header table.
         """
         d = Decoder()
-        header_set = set([(':method', 'GET')])
+        header_set = [(':method', 'GET')]
         data = b'\x82'
 
         assert d.decode(data) == header_set
@@ -683,9 +857,9 @@ class TestHPACKDecoder(object):
         ]
         # The first_header_table doesn't contain 'authority'
         first_header_table = first_header_set[::-1][1:]
-        first_data = b'\x82\x87\x86\x44\x0fwww.example.com'
+        first_data = b'\x82\x87\x86\x04\x0fwww.example.com'
 
-        assert d.decode(first_data) == set(first_header_set)
+        assert sorted(d.decode(first_data)) == sorted(first_header_set)
         assert list(d.header_table) == [
             (n.encode('utf-8'), v.encode('utf-8')) for n, v in first_header_table
         ]
@@ -699,9 +873,9 @@ class TestHPACKDecoder(object):
             (':authority', 'www.example.com',),
             ('cache-control', 'no-cache'),
         ]
-        second_data = b'\x44\x0fwww.example.com\x5a\x08no-cache'
+        second_data = b'\x04\x0fwww.example.com\x0f\x0c\x08no-cache'
 
-        assert d.decode(second_data) == set(second_header_set)
+        assert sorted(d.decode(second_data)) == sorted(second_header_set)
         assert list(d.header_table) == [
             (n.encode('utf-8'), v.encode('utf-8')) for n, v in first_header_table
         ]
@@ -717,11 +891,11 @@ class TestHPACKDecoder(object):
             ('custom-key', 'custom-value'),
         ]
         third_data = (
-            b'\x80\x80\x83\x8a\x89\x46\x0fwww.example.com' +
-            b'\x00\x0acustom-key\x0ccustom-value'
+            b'\x30\x83\x8a\x89\x06\x0fwww.example.com' +
+            b'\x40\x0acustom-key\x0ccustom-value'
         )
 
-        assert d.decode(third_data) == set(third_header_set)
+        assert sorted(d.decode(third_data)) == sorted(third_header_set)
         # Don't check the header table here, it's just too complex to be
         # reliable. Check its length though.
         assert len(d.header_table) == 6
@@ -733,9 +907,6 @@ class TestHPACKDecoder(object):
         """
         d = Decoder()
 
-        # Patch the decoder to use the Request Huffman tables, not the Response
-        # ones.
-        d.huffman_coder = HuffmanDecoder(REQUEST_CODES, REQUEST_CODES_LENGTH)
         first_header_set = [
             (':method', 'GET',),
             (':scheme', 'http',),
@@ -744,12 +915,13 @@ class TestHPACKDecoder(object):
         ]
         first_header_table = first_header_set[::-1]
         first_data = (
-            b'\x82\x87\x86\x04\x8b\xdb\x6d\x88\x3e\x68\xd1\xcb\x12\x25\xba\x7f'
+            b'\x82\x87\x86\x04\x8c\xf1\xe3\xc2\xe5\xf2:k\xa0\xab\x90\xf4\xff'
         )
 
-        assert d.decode(first_data) == set(first_header_set)
+        assert sorted(d.decode(first_data)) == sorted(first_header_set)
         assert list(d.header_table) == [
             (n.encode('utf-8'), v.encode('utf-8')) for n, v in first_header_table
+            if n != ':authority'
         ]
 
         # This request takes advantage of the differential encoding of header
@@ -762,11 +934,15 @@ class TestHPACKDecoder(object):
             ('cache-control', 'no-cache'),
         ]
         second_header_table = second_header_set[::-1]
-        second_data = b'\x1b\x86\x63\x65\x4a\x13\x98\xff'
+        second_data = (
+            b'\x04\x8c\xf1\xe3\xc2\xe5\xf2:k\xa0\xab\x90\xf4\xff\x0f\x0c\x86'
+            b'\xa8\xeb\x10d\x9c\xbf'
+        )
 
-        assert d.decode(second_data) == set(second_header_set)
+        assert sorted(d.decode(second_data)) == sorted(second_header_set)
         assert list(d.header_table) == [
             (n.encode('utf-8'), v.encode('utf-8')) for n, v in second_header_table
+            if n not in (':authority', 'cache-control')
         ]
 
         # This request has not enough headers in common with the previous
@@ -780,14 +956,14 @@ class TestHPACKDecoder(object):
             ('custom-key', 'custom-value'),
         ]
         third_data = (
-            b'\x80\x80\x85\x8c\x8b\x84\x00\x88\x4e\xb0\x8b\x74\x97\x90\xfa\x7f\x89'
-            b'\x4e\xb0\x8b\x74\x97\x9a\x17\xa8\xff'
+            b'\x8a\x89\x06\x8c\xf1\xe3\xc2\xe5\xf2:k\xa0\xab\x90\xf4\xff@\x88%'
+            b'\xa8I\xe9[\xa9}\x7f\x89%\xa8I\xe9[\xb8\xe8\xb4\xbf\x84\x85'
         )
 
-        assert d.decode(third_data) == set(third_header_set)
+        assert sorted(d.decode(third_data)) == sorted(third_header_set)
         # Don't check the header table here, it's just too complex to be
         # reliable. Check its length though.
-        assert len(d.header_table) == 8
+        assert len(d.header_table) == 6
 
     # These tests are custom, for hyper.
     def test_resizing_header_table(self):
@@ -1082,10 +1258,13 @@ class TestHyperConnection(object):
 
     def test_headers_with_continuation(self):
         e = Encoder()
+        header_data = e.encode(
+            {':status': 200, 'content-type': 'foo/bar', 'content-length': '0'}
+        )
         h = HeadersFrame(1)
-        h.data = e.encode({':status': 200, 'content-type': 'foo/bar'})
+        h.data = header_data[0:int(len(header_data)/2)]
         c = ContinuationFrame(1)
-        c.data = e.encode({'content-length': '0'})
+        c.data = header_data[int(len(header_data)/2):]
         c.flags |= set(['END_HEADERS', 'END_STREAM'])
         sock = DummySocket()
         sock.buffer = BytesIO(h.serialize() + c.serialize())
@@ -1139,7 +1318,7 @@ class TestHyperConnection(object):
         resp = c.getresponse()
         resp.read()
 
-        queue = list(map(decode_frame, sock.queue))
+        queue = list(map(decode_frame, map(memoryview, sock.queue)))
         assert len(queue) == 3  # one headers frame, two window update frames.
         assert isinstance(queue[1], WindowUpdateFrame)
         assert queue[1].window_increment == len(b'hi there sir')
@@ -1174,6 +1353,26 @@ class TestHyperConnection(object):
         assert frames[0].flags == set(['ACK'])
         assert frames[0].opaque_data == b'12345678'
 
+    def test_blocked_causes_window_updates(self):
+        frames = []
+
+        def data_cb(frame, *args):
+            frames.append(frame)
+
+        c = HTTP20Connection('www.google.com')
+        c._send_cb = data_cb
+
+        # Change the window size.
+        c.window_manager.window_size = 60000
+
+        # Provide a BLOCKED frame.
+        f = BlockedFrame(1)
+        c.receive_frame(f)
+
+        assert len(frames) == 1
+        assert frames[0].type == WindowUpdateFrame.type
+        assert frames[0].window_increment == 5535
+
 
 class TestServerPush(object):
     def setup_method(self, method):
@@ -1186,7 +1385,7 @@ class TestServerPush(object):
         frame.promised_stream_id = promised_stream_id
         frame.data = self.encoder.encode(headers)
         if end_block:
-            frame.flags.add('END_PUSH_PROMISE')
+            frame.flags.add('END_HEADERS')
         self.frames.append(frame)
 
     def add_headers_frame(self, stream_id, headers, end_block=True, end_stream=False):
@@ -1324,6 +1523,19 @@ class TestServerPush(object):
         f.error_code = 7
         assert self.conn._sock.queue[-1] == f.serialize()
 
+    def test_pushed_requests_ignore_unexpected_headers(self):
+        headers = [
+            (':scheme', 'http'),
+            (':method', 'get'),
+            (':authority', 'google.com'),
+            (':path', '/'),
+            (':reserved', 'no'),
+            ('no', 'no'),
+        ]
+        p = HTTP20Push(headers, DummyStream(b''))
+
+        assert p.getrequestheaders() == [('no', 'no')]
+
 
 class TestHyperStream(object):
     def test_streams_have_ids(self):
@@ -1427,6 +1639,56 @@ class TestHyperStream(object):
 
         assert s._out_flow_control_window == 65535 + 1000
 
+    def test_flow_control_manager_update_includes_padding(self):
+        out_frames = []
+        in_frames = []
+
+        def send_cb(frame):
+            out_frames.append(frame)
+
+        def recv_cb(s):
+            def inner():
+                s.receive_frame(in_frames.pop(0))
+            return inner
+
+        start_window = 65535
+        s = Stream(1, send_cb, None, None, None, None, FlowControlManager(start_window))
+        s._recv_cb = recv_cb(s)
+        s.state = STATE_HALF_CLOSED_LOCAL
+
+        # Provide two data frames to read.
+        f = DataFrame(1)
+        f.data = b'hi there!'
+        f.pad_length = 10
+        f.flags.add('END_STREAM')
+        in_frames.append(f)
+
+        data = s._read()
+        assert data == b'hi there!'
+        assert s._in_window_manager.window_size == start_window - f.pad_length - len(data) - 1
+
+    def test_blocked_frames_cause_window_updates(self):
+        out_frames = []
+
+        def send_cb(frame, *args):
+            out_frames.append(frame)
+
+        start_window = 65535
+        s = Stream(1, send_cb, None, None, None, None, FlowControlManager(start_window))
+        s._data_cb = send_cb
+        s.state = STATE_HALF_CLOSED_LOCAL
+
+        # Change the window size.
+        s._in_window_manager.window_size = 60000
+
+        # Provide a BLOCKED frame.
+        f = BlockedFrame(1)
+        s.receive_frame(f)
+
+        assert len(out_frames) == 1
+        assert out_frames[0].type == WindowUpdateFrame.type
+        assert out_frames[0].window_increment == 5535
+
     def test_stream_reading_works(self):
         out_frames = []
         in_frames = []
@@ -1522,6 +1784,18 @@ class TestHyperStream(object):
         assert len(out_frames) == 1
         assert s.state == STATE_CLOSED
 
+    def test_can_receive_continuation_frame_after_end_stream(self):
+        s = Stream(1, None, None, None, None, None, FlowControlManager(65535))
+        f = HeadersFrame(1)
+        f.data = 'hi there'
+        f.flags = set('END_STREAM')
+        f2 = ContinuationFrame(1)
+        f2.data = ' sir'
+        f2.flags = set('END_HEADERS')
+
+        s.receive_frame(f)
+        s.receive_frame(f2)
+
     def test_receive_unexpected_frame(self):
         # SETTINGS frames are never defined on streams, so send one of those.
         s = Stream(1, None, None, None, None, None, None)
@@ -1533,14 +1807,14 @@ class TestHyperStream(object):
 
 class TestResponse(object):
     def test_status_is_stripped_from_headers(self):
-        headers = set([(':status', '200')])
+        headers = [(':status', '200')]
         resp = HTTP20Response(headers, None)
 
         assert resp.status == 200
         assert resp.getheaders() == []
 
     def test_response_transparently_decrypts_gzip(self):
-        headers = set([(':status', '200'), ('content-encoding', 'gzip')])
+        headers = [(':status', '200'), ('content-encoding', 'gzip')]
         c = zlib_compressobj(wbits=24)
         body = c.compress(b'this is test data')
         body += c.flush()
@@ -1549,7 +1823,7 @@ class TestResponse(object):
         assert resp.read() == b'this is test data'
 
     def test_response_transparently_decrypts_real_deflate(self):
-        headers = set([(':status', '200'), ('content-encoding', 'deflate')])
+        headers = [(':status', '200'), ('content-encoding', 'deflate')]
         c = zlib_compressobj(wbits=zlib.MAX_WBITS)
         body = c.compress(b'this is test data')
         body += c.flush()
@@ -1558,7 +1832,7 @@ class TestResponse(object):
         assert resp.read() == b'this is test data'
 
     def test_response_transparently_decrypts_wrong_deflate(self):
-        headers = set([(':status', '200'), ('content-encoding', 'deflate')])
+        headers = [(':status', '200'), ('content-encoding', 'deflate')]
         c = zlib_compressobj(wbits=-zlib.MAX_WBITS)
         body = c.compress(b'this is test data')
         body += c.flush()
@@ -1568,7 +1842,7 @@ class TestResponse(object):
 
     def test_response_calls_stream_close(self):
         stream = DummyStream('')
-        resp = HTTP20Response(set([(':status', '200')]), stream)
+        resp = HTTP20Response([(':status', '200')], stream)
         resp.close()
 
         assert stream.closed
@@ -1576,13 +1850,13 @@ class TestResponse(object):
     def test_responses_are_context_managers(self):
         stream = DummyStream('')
 
-        with HTTP20Response(set([(':status', '200')]), stream) as resp:
+        with HTTP20Response([(':status', '200')], stream) as resp:
             pass
 
         assert stream.closed
 
     def test_read_small_chunks(self):
-        headers = set([(':status', '200')])
+        headers = [(':status', '200')]
         stream = DummyStream(b'1234567890')
         chunks = [b'12', b'34', b'56', b'78', b'90']
         resp = HTTP20Response(headers, stream)
@@ -1593,7 +1867,7 @@ class TestResponse(object):
         assert resp.read() == b''
 
     def test_read_buffered(self):
-        headers = set([(':status', '200')])
+        headers = [(':status', '200')]
         stream = DummyStream(b'1234567890')
         chunks = [b'12', b'34', b'56', b'78', b'90'] * 2
         resp = HTTP20Response(headers, stream)
@@ -1605,21 +1879,28 @@ class TestResponse(object):
         assert resp.read() == b''
 
     def test_getheader(self):
-        headers = set([(':status', '200'), ('content-type', 'application/json')])
+        headers = [(':status', '200'), ('content-type', 'application/json')]
         stream = DummyStream(b'')
         resp = HTTP20Response(headers, stream)
 
         assert resp.getheader('content-type') == 'application/json'
 
     def test_getheader_default(self):
-        headers = set([(':status', '200')])
+        headers = [(':status', '200')]
         stream = DummyStream(b'')
         resp = HTTP20Response(headers, stream)
 
         assert resp.getheader('content-type', 'text/html') == 'text/html'
 
+    def test_response_ignores_unknown_headers(self):
+        headers = [(':status', '200'), (':reserved', 'yes'), ('no', 'no')]
+        stream = DummyStream(b'')
+        resp = HTTP20Response(headers, stream)
+
+        assert resp.getheaders() == [('no', 'no')]
+
     def test_fileno_not_implemented(self):
-        resp = HTTP20Response(set([(':status', '200')]), DummyStream(b''))
+        resp = HTTP20Response([(':status', '200')], DummyStream(b''))
 
         with pytest.raises(NotImplementedError):
             resp.fileno()
@@ -1632,6 +1913,39 @@ class TestHTTP20Adapter(object):
         conn2 = a.get_connection('twitter.com')
 
         assert conn1 is conn2
+
+
+class TestUtilities(object):
+    def test_combining_repeated_headers(self):
+        test_headers = [
+            (b'key1', b'val1'),
+            (b'key2', b'val2'),
+            (b'key1', b'val1.1'),
+            (b'key3', b'val3'),
+            (b'key2', b'val2.1'),
+            (b'key1', b'val1.2'),
+        ]
+        expected = [
+            (b'key1', b'val1\x00val1.1\x00val1.2'),
+            (b'key2', b'val2\x00val2.1'),
+            (b'key3', b'val3'),
+        ]
+
+        assert expected == combine_repeated_headers(test_headers)
+
+    def test_splitting_repeated_headers(self):
+        test_headers = [
+            (b'key1', b'val1\x00val1.1\x00val1.2'),
+            (b'key2', b'val2\x00val2.1'),
+            (b'key3', b'val3'),
+        ]
+        expected = {
+            b'key1': [b'val1', b'val1.1', b'val1.2'],
+            b'key2': [b'val2', b'val2.1'],
+            b'key3': [b'val3'],
+        }
+
+        assert expected == split_repeated_headers(test_headers)
 
 
 # Some utility classes for the tests.
@@ -1649,7 +1963,7 @@ class DummySocket(object):
         self.queue.append(data)
 
     def recv(self, l):
-        return self.buffer.read(l)
+        return memoryview(self.buffer.read(l))
 
     def close(self):
         pass
@@ -1658,6 +1972,8 @@ class DummyStream(object):
     def __init__(self, data):
         self.data = data
         self.closed = False
+        self.response_headers = {}
+        self._remote_closed = False
 
     def _read(self, *args, **kwargs):
         try:
@@ -1667,6 +1983,10 @@ class DummyStream(object):
 
         d = self.data[:read_len]
         self.data = self.data[read_len:]
+
+        if not self.data:
+            self._remote_closed = True
+
         return d
 
     def close(self):

@@ -7,12 +7,10 @@ This file defines integration-type tests for hyper. These are still not fully
 hitting the network, so that's alright.
 """
 import requests
-import ssl
 import threading
 import hyper
 import pytest
-from hyper import HTTP20Connection
-from hyper.compat import is_py3
+from hyper.compat import ssl
 from hyper.contrib import HTTP20Adapter
 from hyper.http20.frame import (
     Frame, SettingsFrame, WindowUpdateFrame, DataFrame, HeadersFrame,
@@ -27,28 +25,31 @@ from hyper.http20.exceptions import ConnectionError
 from server import SocketLevelTest
 
 # Turn off certificate verification for the tests.
-hyper.http20.tls._verify_mode = ssl.CERT_NONE
-if is_py3:
+if ssl is not None:
     hyper.http20.tls._context = hyper.http20.tls._init_context()
+    hyper.http20.tls._context.check_hostname = False
+    hyper.http20.tls._context.verify_mode = ssl.CERT_NONE
 
 def decode_frame(frame_data):
     f, length = Frame.parse_frame_header(frame_data[:8])
-    f.parse_body(frame_data[8:8 + length])
+    f.parse_body(memoryview(frame_data[8:8 + length]))
     assert 8 + length == len(frame_data)
     return f
 
 
-def build_headers_frame(headers):
+def build_headers_frame(headers, encoder=None):
     f = HeadersFrame(1)
-    e = Encoder()
-    e.huffman_coder = HuffmanEncoder(REQUEST_CODES, REQUEST_CODES_LENGTH)
+    e = encoder
+    if e is None:
+        e = Encoder()
+        e.huffman_coder = HuffmanEncoder(REQUEST_CODES, REQUEST_CODES_LENGTH)
     f.data = e.encode(headers)
     f.flags.add('END_HEADERS')
     return f
 
 
 def receive_preamble(sock):
-    # Receive the HTTP/2.0 'preamble'.
+    # Receive the HTTP/2 'preamble'.
     sock.recv(65535)
     sock.recv(65535)
     sock.send(SettingsFrame(0).serialize())
@@ -83,7 +84,7 @@ class TestHyperIntegration(SocketLevelTest):
             sock.close()
 
         self._start_server(socket_handler)
-        conn = HTTP20Connection(self.host, self.port)
+        conn = self.get_connection()
         conn.connect()
         send_event.wait()
 
@@ -117,7 +118,7 @@ class TestHyperIntegration(SocketLevelTest):
             sock.close()
 
         self._start_server(socket_handler)
-        conn = HTTP20Connection(self.host, self.port)
+        conn = self.get_connection()
         conn.connect()
         send_event.wait()
 
@@ -127,7 +128,9 @@ class TestHyperIntegration(SocketLevelTest):
 
         assert isinstance(f, SettingsFrame)
         assert f.stream_id == 0
-        assert f.settings == {SettingsFrame.ENABLE_PUSH: 0}
+        assert f.settings == {
+            SettingsFrame.ENABLE_PUSH: 0,
+        }
 
         self.tear_down()
 
@@ -172,7 +175,7 @@ class TestHyperIntegration(SocketLevelTest):
             sock.close()
 
         self._start_server(socket_handler)
-        conn = HTTP20Connection(self.host, self.port)
+        conn = self.get_connection()
 
         conn.putrequest('GET', '/')
         conn.endheaders()
@@ -226,7 +229,7 @@ class TestHyperIntegration(SocketLevelTest):
             sock.close()
 
         self._start_server(socket_handler)
-        with HTTP20Connection(self.host, self.port) as conn:
+        with self.get_connection() as conn:
             conn.connect()
             send_event.wait()
 
@@ -257,7 +260,7 @@ class TestHyperIntegration(SocketLevelTest):
             sock.close()
 
         self._start_server(socket_handler)
-        conn = HTTP20Connection(self.host, self.port)
+        conn = self.get_connection()
         conn.request('GET', '/')
         resp = conn.getresponse()
 
@@ -293,7 +296,7 @@ class TestHyperIntegration(SocketLevelTest):
             sock.close()
 
         self._start_server(socket_handler)
-        conn = HTTP20Connection(self.host, self.port)
+        conn = self.get_connection()
         conn.request('GET', '/')
         resp = conn.getresponse()
 
@@ -303,6 +306,64 @@ class TestHyperIntegration(SocketLevelTest):
         # Confirm that we can read this, but it has no body.
         assert resp.read() == b''
         assert resp._stream._in_window_manager.document_size == 0
+
+        # Awesome, we're done now.
+        recv_event.set()
+
+        self.tear_down()
+
+    def test_receiving_trailers(self):
+        self.set_up()
+
+        recv_event = threading.Event()
+
+        def socket_handler(listener):
+            sock = listener.accept()[0]
+
+            e = Encoder()
+            e.huffman_coder = HuffmanEncoder(REQUEST_CODES, REQUEST_CODES_LENGTH)
+
+            # We get two messages for the connection open and then a HEADERS
+            # frame.
+            receive_preamble(sock)
+
+            # Now, send the headers for the response. This response has no body.
+            f = build_headers_frame([(':status', '200'), ('content-length', '0')], e)
+            f.stream_id = 1
+            sock.send(f.serialize())
+
+            # Also send a data frame.
+            f = DataFrame(1)
+            f.data = b'have some data'
+            sock.send(f.serialize())
+
+            # Now, send a headers frame again, containing trailing headers.
+            f = build_headers_frame([('trailing', 'sure'), (':res', 'no')], e)
+            f.flags.add('END_STREAM')
+            f.stream_id = 1
+            sock.send(f.serialize())
+
+            # Wait for the message from the main thread.
+            recv_event.wait()
+            sock.close()
+
+        self._start_server(socket_handler)
+        conn = self.get_connection()
+        conn.request('GET', '/')
+        resp = conn.getresponse()
+
+        # Confirm the status code.
+        assert resp.status == 200
+
+        # Confirm that we can read this, but it has no body.
+        assert resp.read() == b'have some data'
+        assert resp._stream._in_window_manager.document_size == 0
+
+        # Confirm that we got the trailing headers, and that they don't contain
+        # reserved headers.
+        assert resp.getheader('trailing') == 'sure'
+        assert resp.getheader(':res') is None
+        assert len(resp.getheaders()) == 2
 
         # Awesome, we're done now.
         recv_event.set()
@@ -333,7 +394,7 @@ class TestHyperIntegration(SocketLevelTest):
             sock.close()
 
         self._start_server(socket_handler)
-        conn = HTTP20Connection(self.host, self.port)
+        conn = self.get_connection()
         conn.connect()
 
         # Confirm the connection is closed.
@@ -368,7 +429,7 @@ class TestHyperIntegration(SocketLevelTest):
             recv_event.wait()
 
         self._start_server(socket_handler)
-        conn = HTTP20Connection(self.host, self.port)
+        conn = self.get_connection()
 
         with pytest.raises(ConnectionError):
             conn.connect()
@@ -456,9 +517,9 @@ class TestRequestsAdapter(SocketLevelTest):
         self._start_server(socket_handler)
 
         s = requests.Session()
-        s.mount('https://%s' % self.host, HTTP20Adapter())
+        s.mount('http://%s' % self.host, HTTP20Adapter())
         r = s.post(
-            'https://%s:%s/some/path' % (self.host, self.port),
+            'http://%s:%s/some/path' % (self.host, self.port),
             data='hi there',
         )
 

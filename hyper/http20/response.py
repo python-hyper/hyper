@@ -3,12 +3,15 @@
 hyper/http20/response
 ~~~~~~~~~~~~~~~~~~~~~
 
-Contains the HTTP/2.0 equivalent of the HTTPResponse object defined in
+Contains the HTTP/2 equivalent of the HTTPResponse object defined in
 httplib/http.client.
 """
+import logging
 import zlib
 
 from .util import pop_from_key_value_set
+
+log = logging.getLogger(__name__)
 
 
 class DeflateDecoder(object):
@@ -56,6 +59,7 @@ class Headers(object):
         # This conversion to dictionary is unwise, as there may be repeated
         # keys, but it's acceptable for an early alpha.
         self._headers = dict(pairs)
+        self._strip_headers()
 
     def getheader(self, name, default=None):
         return self._headers.get(name, default)
@@ -66,18 +70,36 @@ class Headers(object):
     def items(self):
         return self._headers.items()
 
+    def merge(self, headers):
+        for n, v in headers:
+            self._headers[n] = v
+        self._strip_headers()
+
+    def _strip_headers(self):
+        """
+        Strips the headers attached to the instance of any header beginning
+        with a colon that ``hyper`` doesn't understand. This method logs at
+        warning level about the deleted headers, for discoverability.
+        """
+        # Convert to list to ensure that we don't mutate the headers while
+        # we iterate over them.
+        for name in list(self._headers.keys()):
+            if name.startswith(':'):
+                val = self._headers.pop(name)
+                log.warning("Unknown reserved header: %s: %s", name, val)
+
 
 class HTTP20Response(object):
     """
-    An ``HTTP20Response`` wraps the HTTP/2.0 response from the server. It
+    An ``HTTP20Response`` wraps the HTTP/2 response from the server. It
     provides access to the response headers and the entity body. The response
     is an iterable object and can be used in a with statement (though due to
-    the persistent connections used in HTTP/2.0 this has no effect, and is done
+    the persistent connections used in HTTP/2 this has no effect, and is done
     soley for compatibility).
     """
     def __init__(self, headers, stream):
         #: The reason phrase returned by the server. This is not used in
-        #: HTTP/2.0, and so is always the empty string.
+        #: HTTP/2, and so is always the empty string.
         self.reason = ''
 
         status = pop_from_key_value_set(headers, ':status')[0]
@@ -145,6 +167,10 @@ class HTTP20Response(object):
             if decode_content and self._decompressobj:
                 data += self._decompressobj.flush()
 
+            if self._stream.response_headers:
+                self._headers.merge(self._stream.response_headers)
+
+        # We're at the end. Close the connection.
         if not data:
             self.close()
 
@@ -181,7 +207,7 @@ class HTTP20Response(object):
 
     def close(self):
         """
-        Close the response. In effect this closes the backing HTTP/2.0 stream.
+        Close the response. In effect this closes the backing HTTP/2 stream.
 
         :returns: Nothing.
         """
@@ -242,13 +268,17 @@ class HTTP20Push(object):
 
     def getresponse(self):
         """
-        Returns an :class:`HTTP20Response` object representing the pushed
-        response.
+        Get the pushed response provided by the server.
+
+        :returns: A :class:`HTTP20Response <hyper.HTTP20Response>` object
+            representing the pushed response.
         """
         return HTTP20Response(self._stream.getheaders(), self._stream)
 
     def cancel(self):
         """
         Cancel the pushed response and close the stream.
+
+        :returns: Nothing.
         """
         self._stream.close(8) # CANCEL

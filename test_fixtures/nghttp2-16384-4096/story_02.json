@@ -1,351 +1,361 @@
 {
-  "draft": 6,
   "cases": [
     {
-      "wire": "807f811f828703874688f56b0896e9873dbeef6faa96b405042f47faef4254c8b619f5747c19115f477a13d1f4f0e8fdf418a4afaba1fcfd86a485ff7d1ee14f2681ca6294c53747053c716f981a921717af88f9c4338e8be9439cb5251153581e79c745ffcf3d17d287396a4a22a6b03cf45f5795a5259d3fd07f5d5e569495ff168b164bf8f0e91675795a5251168acbd54ee9e8c0715a223f00874b58c14c54d67f87e422e950b5731f",
+      "header_table_size": 16384, 
+      "seqno": 0, 
+      "wire": "2ff11f828743871d23f67a9721e9877ebcd07f66a281b0dae053fad0321aa49d13fda992a49685340c8a6adca7e28102ef7da9677b8171707f6a62293a9d810020004015309ac2ca7f2c05c5c158b0497ca589d34d1f43aeba0c41a4c7a98f33a69a3fdf9a68fa1d75d0620d263d4c79a68fbed00177febe58f9fbed00177b578b2d4b70ddf45abefb4005db97408721eaa8a4498f5788ea52d6b0e83772ff", 
       "headers": [
         {
           ":method": "GET"
-        },
+        }, 
         {
           ":scheme": "http"
-        },
+        }, 
         {
           ":authority": "amazon.com"
-        },
+        }, 
         {
           ":path": "/"
-        },
+        }, 
         {
           "user-agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10.8; rv:16.0) Gecko/20100101 Firefox/16.0"
-        },
+        }, 
         {
           "accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8"
-        },
+        }, 
         {
           "accept-language": "en-US,en;q=0.5"
-        },
+        }, 
         {
           "accept-encoding": "gzip, deflate"
-        },
+        }, 
         {
           "connection": "keep-alive"
         }
-      ],
-      "header_table_size": 16384
-    },
+      ]
+    }, 
     {
-      "wire": "0790ca514f9915a232184a8d11ead6112dd347a905688c8601ee0298326342f1425ac0eb1425acf073d51197f1e1294c4bbf3394d6166a26a2e239997f059a5688c841cccba55a23210febabcad292be9fe83faeaf2b4a4a3f3d8fce3177b0036db6223447ab5844b74087898a",
+      "seqno": 1, 
+      "wire": "4791996293cae6a473150b0e91fb3d4b90f4ff07ab60d48e62a18c4c002c4d51d88ca321ea62e94643d5babb0c92adc372c00af17168017c0cb6cb712f5d537f459a352398ac5754df46a473158f9fbed00177bebe58f9fbed00176f7e919d29aee30c78f1e171d23f67a9721e963f87898a", 
       "headers": [
         {
           ":method": "GET"
-        },
+        }, 
         {
           ":scheme": "http"
-        },
+        }, 
         {
           ":authority": "g-ecx.images-amazon.com"
-        },
+        }, 
         {
           ":path": "/images/G/01/gno/beacon/BeaconSprite-US-01._V401903535_.png"
-        },
+        }, 
         {
           "user-agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10.8; rv:16.0) Gecko/20100101 Firefox/16.0"
-        },
+        }, 
         {
           "accept": "image/png,image/*;q=0.8,*/*;q=0.5"
-        },
+        }, 
         {
           "accept-language": "en-US,en;q=0.5"
-        },
+        }, 
         {
           "accept-encoding": "gzip, deflate"
-        },
+        }, 
         {
           "connection": "keep-alive"
-        },
+        }, 
         {
           "referer": "http://www.amazon.com/"
         }
       ]
-    },
+    }, 
     {
-      "wire": "49ab05688c8601ee02983ce55b52858825ba68d6045e8641c878b232b95e62b25df99aba6c9cf3d33dc4c958ff",
+      "seqno": 2, 
+      "wire": "09ad60d48e62a18c4c002c795a83907415821e9a4f5309b07522b1d85a92b566f25a178b8b2f38fb4269c6a25e634b", 
       "headers": [
         {
           ":method": "GET"
-        },
+        }, 
         {
           ":scheme": "http"
-        },
+        }, 
         {
           ":authority": "g-ecx.images-amazon.com"
-        },
+        }, 
         {
           ":path": "/images/G/01/x-locale/common/transparent-pixel._V386942464_.gif"
-        },
+        }, 
         {
           "user-agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10.8; rv:16.0) Gecko/20100101 Firefox/16.0"
-        },
+        }, 
         {
           "accept": "image/png,image/*;q=0.8,*/*;q=0.5"
-        },
+        }, 
         {
           "accept-language": "en-US,en;q=0.5"
-        },
+        }, 
         {
           "accept-encoding": "gzip, deflate"
-        },
+        }, 
         {
           "connection": "keep-alive"
-        },
+        }, 
         {
           "referer": "http://www.amazon.com/"
         }
       ]
-    },
+    }, 
     {
-      "wire": "49bb05688c8601ee029815a6463836398bc305411088be578ad43884c52ca96af5d18104330f495e2b50e374c52f9d5412efcce52d35d93d86b88e665f",
+      "seqno": 3, 
+      "wire": "09bf60d48e62a18c4c002c1a9982260e99cb63121903424b62d61683165619001621e8b69a9840ea93d2d61683165899003cbadaf171680071e7da7c312f5d537f", 
       "headers": [
         {
           ":method": "GET"
-        },
+        }, 
         {
           ":scheme": "http"
-        },
+        }, 
         {
           ":authority": "g-ecx.images-amazon.com"
-        },
+        }, 
         {
           ":path": "/images/G/01/img12/other/disaster-relief/300-column/sandy-relief_300x75._V400689491_.png"
-        },
+        }, 
         {
           "user-agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10.8; rv:16.0) Gecko/20100101 Firefox/16.0"
-        },
+        }, 
         {
           "accept": "image/png,image/*;q=0.8,*/*;q=0.5"
-        },
+        }, 
         {
           "accept-language": "en-US,en;q=0.5"
-        },
+        }, 
         {
           "accept-encoding": "gzip, deflate"
-        },
+        }, 
         {
           "connection": "keep-alive"
-        },
+        }, 
         {
           "referer": "http://www.amazon.com/"
         }
       ]
-    },
+    }, 
     {
-      "wire": "038adb6d888d11ead6112dd38a88828384",
+      "seqno": 4, 
+      "wire": "438bf1e3c2e3a47ecf52e43d3f8a88828384", 
       "headers": [
         {
           ":method": "GET"
-        },
+        }, 
         {
           ":scheme": "http"
-        },
+        }, 
         {
           ":authority": "www.amazon.com"
-        },
+        }, 
         {
           ":path": "/"
-        },
+        }, 
         {
           "user-agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10.8; rv:16.0) Gecko/20100101 Firefox/16.0"
-        },
+        }, 
         {
           "accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8"
-        },
+        }, 
         {
           "accept-language": "en-US,en;q=0.5"
-        },
+        }, 
         {
           "accept-encoding": "gzip, deflate"
-        },
+        }, 
         {
           "connection": "keep-alive"
         }
       ]
-    },
+    }, 
     {
-      "wire": "844aaa05688c8601ee02983ce55b52858825ba68d6045e8641c878b232b95e62b25df935873cd3d35517132563838281888a",
+      "seqno": 5, 
+      "wire": "840aad60d48e62a18c4c002c795a83907415821e9a4f5309b07522b1d85a92b566f25a178b885f109969c75b89798d2f838281888a", 
       "headers": [
         {
           ":method": "GET"
-        },
+        }, 
         {
           ":scheme": "http"
-        },
+        }, 
         {
           ":authority": "g-ecx.images-amazon.com"
-        },
+        }, 
         {
           ":path": "/images/G/01/x-locale/common/transparent-pixel._V192234675_.gif"
-        },
+        }, 
         {
           "user-agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10.8; rv:16.0) Gecko/20100101 Firefox/16.0"
-        },
+        }, 
         {
           "accept": "image/png,image/*;q=0.8,*/*;q=0.5"
-        },
+        }, 
         {
           "accept-language": "en-US,en;q=0.5"
-        },
+        }, 
         {
           "accept-encoding": "gzip, deflate"
-        },
+        }, 
         {
           "connection": "keep-alive"
-        },
+        }, 
         {
           "referer": "http://www.amazon.com/"
         }
       ]
-    },
+    }, 
     {
-      "wire": "4abf05688c8601ee029815a6463843368c020858c2e1e62c8c00c6b98de6062cc5bb7a5230835ea187d7eff4effa5deefd3d5967125df99ca5a4f4d9416e264ac7",
+      "seqno": 6, 
+      "wire": "0ac160d48e62a18c4c002c1a9982261139ca86103a0a888bdcb5250c0431547eec040c82284842a107b0c546bdbab46a8b172b0d34e95e2e2d000e09c7db044bcc697f", 
       "headers": [
         {
           ":method": "GET"
-        },
+        }, 
         {
           ":scheme": "http"
-        },
+        }, 
         {
           ":authority": "g-ecx.images-amazon.com"
-        },
+        }, 
         {
           ":path": "/images/G/01/img12/shoes/sales_events/11_nov/1030_AccessoriesPROMO_GWright._V400626950_.gif"
-        },
+        }, 
         {
           "user-agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10.8; rv:16.0) Gecko/20100101 Firefox/16.0"
-        },
+        }, 
         {
           "accept": "image/png,image/*;q=0.8,*/*;q=0.5"
-        },
+        }, 
         {
           "accept-language": "en-US,en;q=0.5"
-        },
+        }, 
         {
           "accept-encoding": "gzip, deflate"
-        },
+        }, 
         {
           "connection": "keep-alive"
-        },
+        }, 
         {
           "referer": "http://www.amazon.com/"
         }
       ]
-    },
+    }, 
     {
-      "wire": "4aaa05688c8601ee029837eb16e8d8ab9883db16c03b757a122b5d252dc6394977e4d61ce59eaa67b89c5d97",
+      "seqno": 7, 
+      "wire": "0aac60d48e62a18c4c002c436a4f49d26ee562c3a4e862fdb60c85a287000882202f1710be2101a75c6a25fa5737", 
       "headers": [
         {
           ":method": "GET"
-        },
+        }, 
         {
           ":scheme": "http"
-        },
+        }, 
         {
           ":authority": "g-ecx.images-amazon.com"
-        },
+        }, 
         {
           ":path": "/images/G/01/Automotive/rotos/Duracell600_120._V192204764_.jpg"
-        },
+        }, 
         {
           "user-agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10.8; rv:16.0) Gecko/20100101 Firefox/16.0"
-        },
+        }, 
         {
           "accept": "image/png,image/*;q=0.8,*/*;q=0.5"
-        },
+        }, 
         {
           "accept-language": "en-US,en;q=0.5"
-        },
+        }, 
         {
           "accept-encoding": "gzip, deflate"
-        },
+        }, 
         {
           "connection": "keep-alive"
-        },
+        }, 
         {
           "referer": "http://www.amazon.com/"
         }
       ]
-    },
+    }, 
     {
-      "wire": "4aae05688c8601ee029835502da8c3e0cc149445af802da8c3e0cc149445af95687e424bbf26b0e6b289eb2dc4c958ff",
+      "seqno": 8, 
+      "wire": "0ab060d48e62a18c4c002c5a662838e4c9548620d27b10c5071c992a90c41a4f62d40ec98abc5c42f882fb6d3c089798d2ff", 
       "headers": [
         {
           ":method": "GET"
-        },
+        }, 
         {
           ":scheme": "http"
-        },
+        }, 
         {
           ":authority": "g-ecx.images-amazon.com"
-        },
+        }, 
         {
           ":path": "/images/G/01/ui/loadIndicators/loadIndicator-large._V192195480_.gif"
-        },
+        }, 
         {
           "user-agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10.8; rv:16.0) Gecko/20100101 Firefox/16.0"
-        },
+        }, 
         {
           "accept": "image/png,image/*;q=0.8,*/*;q=0.5"
-        },
+        }, 
         {
           "accept-language": "en-US,en;q=0.5"
-        },
+        }, 
         {
           "accept-encoding": "gzip, deflate"
-        },
+        }, 
         {
           "connection": "keep-alive"
-        },
+        }, 
         {
           "referer": "http://www.amazon.com/"
         }
       ]
-    },
+    }, 
     {
-      "wire": "018f14f9915a232184a8d11ead6112dd3f4b9b05688c8601f009cdefff25f9f6cbe1f8f912ef0f91a6a2e271765f85",
+      "seqno": 9, 
+      "wire": "418f293cae6a473150b0e91fb3d4b90f4f0b9a60d48e62a18c8c341c7fab69beb6ee19d78b7670b2dc4bf4ae6f85", 
       "headers": [
         {
           ":method": "GET"
-        },
+        }, 
         {
           ":scheme": "http"
-        },
+        }, 
         {
           ":authority": "ecx.images-amazon.com"
-        },
+        }, 
         {
           ":path": "/images/I/41HZ-ND-SUL._SL135_.jpg"
-        },
+        }, 
         {
           "user-agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10.8; rv:16.0) Gecko/20100101 Firefox/16.0"
-        },
+        }, 
         {
           "accept": "image/png,image/*;q=0.8,*/*;q=0.5"
-        },
+        }, 
         {
           "accept-language": "en-US,en;q=0.5"
-        },
+        }, 
         {
           "accept-encoding": "gzip, deflate"
-        },
+        }, 
         {
           "connection": "keep-alive"
-        },
+        }, 
         {
           "referer": "http://www.amazon.com/"
         }
       ]
     }
-  ],
+  ], 
+  "draft": 8, 
   "description": "Encoded by nghttp2. The basic encoding strategy is described in http://lists.w3.org/Archives/Public/ietf-http-wg/2013JulSep/1135.html We use huffman encoding only if it produces strictly shorter byte string than original. We make some headers not indexing at all, but this does not always result in less bits on the wire."
 }

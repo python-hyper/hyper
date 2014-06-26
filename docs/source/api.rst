@@ -7,8 +7,8 @@ Interface
 
 This section of the documentation covers the interface portions of ``hyper``.
 
-Primary HTTP/2.0 Interface
---------------------------
+Primary HTTP/2 Interface
+------------------------
 
 .. autoclass:: hyper.HTTP20Connection
    :inherited-members:
