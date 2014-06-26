@@ -11,6 +11,7 @@ X.X.X (XXXX-XX-XX)
 - Support for Python 2.7, thanks to the inimitable @alekstorm! (`Issue #33`_)
 - Support for PyPy.
 - Support for Sever Push, thanks to @alekstorm. (`Issue #40`_)
+- Use a buffered socket to avoid unnecessary syscalls. (`Issue #56`_)
 
 *Bugfixes*
 
@@ -38,6 +39,7 @@ X.X.X (XXXX-XX-XX)
 .. _Issue #48: https://github.com/Lukasa/hyper/issues/48
 .. _Issue #50: https://github.com/Lukasa/hyper/issues/50
 .. _Issue #52: https://github.com/Lukasa/hyper/issues/52
+.. _Issue #56: https://github.com/Lukasa/hyper/issues/56
 
 0.0.4 (2014-03-08)
 ------------------
