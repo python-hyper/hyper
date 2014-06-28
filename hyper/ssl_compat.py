@@ -16,6 +16,7 @@ except ImportError:
 import errno
 import socket
 import time
+import re
 
 from OpenSSL import SSL as ossl
 
