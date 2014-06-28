@@ -8,9 +8,10 @@ python:
 
 env:
   - TEST_RELEASE=false
+  - TEST_RELEASE=true
 
 matrix:
-  include:
+  allow_failures:
   - env:
       TEST_RELEASE=true
 
