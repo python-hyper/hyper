@@ -194,7 +194,7 @@ class HTTP20Response(object):
         """
         Get all the headers sent on the response.
 
-        :returns: A list of (header, value) tuples.
+        :returns: A list of ``(header, value)`` tuples.
         """
         return list(self._headers.items())
 
@@ -248,9 +248,9 @@ class HTTP20Push(object):
         """
         Return the value of the simulated request header ``name``, or ``default``
         if there is no header matching ``name``. If there is more than one header
-        with the value ``name``, return all of the values joined by ', '. If
-        ``default`` is any iterable other than a single string, its elements are
-        similarly returned joined by commas.
+        with the value ``name``, return all of the values joined by ``', '``.
+        If ``default`` is any iterable other than a single string, its elements
+        are similarly returned joined by commas.
 
         :param name: The name of the header to get the value of.
         :param default: (optional) The return value if the header wasn't sent.
@@ -262,7 +262,7 @@ class HTTP20Push(object):
         """
         Get all the simulated request headers.
 
-        :returns: A list of (header, value) tuples.
+        :returns: A list of ``(header, value)`` tuples.
         """
         return self._request_headers.getheaders()
 

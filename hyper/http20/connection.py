@@ -30,7 +30,7 @@ class HTTP20Connection(object):
     An object representing a single HTTP/2 connection to a server.
 
     This object behaves similarly to the Python standard library's
-    HTTPConnection object, with a few critical differences.
+    ``HTTPConnection`` object, with a few critical differences.
 
     Most of the standard library's arguments to the constructor are irrelevant
     for HTTP/2 or not supported by hyper.
@@ -158,24 +158,25 @@ class HTTP20Connection(object):
         """
         Should be called after a request is sent to get a response from the
         server. If sending multiple parallel requests, pass the stream ID of
-        the request whose response you want. Returns a HTTPResponse instance.
-        If you pass no stream_id, you will receive the oldest HTTPResponse
-        still outstanding.
+        the request whose response you want. Returns a
+        :class:`HTTP20Response <hyper.HTTP20Response>` instance.
+        If you pass no ``stream_id``, you will receive the oldest
+        :class:`HTTPResponse <hyper.HTTP20Response>` still outstanding.
 
         :param stream_id: (optional) The stream ID of the request for which to
             get a response.
-        :returns: A HTTP response object.
+        :returns: A :class:`HTTP20Response <hyper.HTTP20Response>` object.
         """
         stream = self._get_stream(stream_id)
         return HTTP20Response(stream.getheaders(), stream)
 
     def getpushes(self, stream_id=None, capture_all=False):
         """
-        Returns a generator that yields push promises from the server. Note that
-        this method is not idempotent; promises returned in one call will not be
-        returned in subsequent calls. Iterating through generators returned by
-        multiple calls to this method simultaneously results in undefined
-        behavior.
+        Returns a generator that yields push promises from the server. **Note
+        that this method is not idempotent**: promises returned in one call
+        will not be returned in subsequent calls. Iterating through generators
+        returned by multiple calls to this method simultaneously results in
+        undefined behavior.
 
         :param stream_id: (optional) The stream ID of the request for which to
             get push promises.
@@ -259,9 +260,10 @@ class HTTP20Connection(object):
         Sends an HTTP header to the server, with name ``header`` and value
         ``argument``.
 
-        Unlike the httplib version of this function, this version does not
+        Unlike the ``httplib`` version of this function, this version does not
         actually send anything when called. Instead, it queues the headers up
-        to be sent when you call ``endheaders``.
+        to be sent when you call
+        :meth:`endheaders() <hyper.HTTP20Connection.endheaders>`.
 
         :param header: The name of the header.
         :param argument: The value of the header.
@@ -287,7 +289,7 @@ class HTTP20Connection(object):
             assuming that ``send()`` will be called.
         :param final: (optional) If the ``message_body`` parameter is provided,
             should be set to ``True`` if no further data will be provided via
-            calls to ``send()``.
+            calls to :meth:`send() <hyper.HTTP20Connection.send>`.
         :param stream_id: (optional) The stream ID of the request to finish
             sending the headers on.
         :returns: Nothing.
