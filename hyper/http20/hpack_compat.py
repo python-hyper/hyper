@@ -46,16 +46,11 @@ if USE_NGHTTP2:
             Returns the header table size. For the moment this isn't
             useful, so we don't use it.
             """
-            headers = self._e.get_hd_table()
-            return sum(x.namelen + x.valuelen for x in headers)
+            raise NotImplementedError()
 
         @header_table_size.setter
         def header_table_size(self, value):
-            log.debug(
-                "Setting header table size to %d from %d",
-                value,
-                self.header_table_size,
-            )
+            log.debug("Setting header table size to %d", value)
             self._e.change_table_size(value)
 
         def encode(self, headers, huffman=True):
@@ -91,16 +86,11 @@ if USE_NGHTTP2:
             Returns the header table size. For the moment this isn't
             useful, so we don't use it.
             """
-            headers = self._d.get_hd_table()
-            return sum(x.namelen + x.valuelen for x in headers)
+            raise NotImplementedError()
 
         @header_table_size.setter
         def header_table_size(self, value):
-            log.debug(
-                "Setting header table size to %d from %d",
-                value,
-                self.header_table_size,
-            )
+            log.debug("Setting header table size to %d", value)
             self._d.change_table_size(value)
 
         def decode(self, data):
