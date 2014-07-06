@@ -1227,7 +1227,6 @@ class TestHyperConnection(object):
 
         # Confirm that the setting is stored and the header table shrunk.
         assert c._settings[SettingsFrame.HEADER_TABLE_SIZE] == 1024
-        assert c.encoder.header_table_size == 1024
 
         # Confirm we got a SETTINGS ACK.
         f2 = decode_frame(sock.queue[0])
