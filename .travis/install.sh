@@ -35,8 +35,9 @@ if [[ "$NGHTTP2" = true ]]; then
     python setup.py install
     cd ../..
 
-    # Make sure we point Python at the new library.
-    export LD_LIBRARY_PATH="/usr/local/lib"
+    # Let's try ldconfig.
+    echo "/usr/local/lib" > /etc/ld.so.conf.d/libemu.conf
+    sudo ldconfig
 fi
 
 pip install .
