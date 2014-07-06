@@ -15,7 +15,7 @@ if [[ "$NGHTTP2" = true ]]; then
     # Now, download and install nghttp2's latest version.
     wget https://github.com/tatsuhiro-t/nghttp2/releases/download/v0.4.1/nghttp2-0.4.1.tar.gz
     tar -xzvf nghttp2-0.4.1.tar.gz
-    cd nghttp2-0.4.1.tar.gz
+    cd nghttp2-0.4.1
     autoreconf -i
     automake
     autoconf
