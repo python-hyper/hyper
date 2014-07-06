@@ -27,7 +27,8 @@ if [[ "$NGHTTP2" = true ]]; then
     automake
     autoconf
     ./configure
-    make && make install
+    make
+    sudo make install
     cd ..
 fi
 
