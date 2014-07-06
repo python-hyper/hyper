@@ -34,6 +34,9 @@ if [[ "$NGHTTP2" = true ]]; then
     cd python
     python setup.py install
     cd ../..
+
+    # Make sure we point Python at the new library.
+    export LD_LIBRARY_PATH="/usr/local/lib"
 fi
 
 pip install .
