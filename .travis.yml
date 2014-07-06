@@ -9,6 +9,8 @@ python:
 env:
   - TEST_RELEASE=false
   - TEST_RELEASE=true
+  - NGHTTP2=true
+  - NGHTTP2=false
 
 matrix:
   allow_failures:
@@ -16,8 +18,7 @@ matrix:
       TEST_RELEASE=true
 
 install:
-  - "pip install ."
-  - "pip install -r test_requirements.txt"
+  - ".travis/install.sh"
 script:
   - >
       if [[ "$TEST_RELEASE" == true ]]; then
