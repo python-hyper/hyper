@@ -5,7 +5,9 @@ set -x
 
 if [[ "$NGHTTP2" = true ]]; then
     # GCC 4.6 seems to cause problems, so go straight to 4.8.
-    sudo apt-get install g++-4.8
+    sudo add-apt-repository --yes ppa:ubuntu-toolchain-r/test
+    sudo apt-get update
+    sudo apt-get install g++-4.8 libstdc++-4.8-dev
     export CXX="g++-4.8" CC="gcc-4.8"
     $CC --version
 
