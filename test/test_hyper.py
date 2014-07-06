@@ -1948,7 +1948,7 @@ class TestUtilities(object):
 
         assert expected == split_repeated_headers(test_headers)
 
-    @pytest.mark.skipif(not os.environ['NGHTTP2'], reason="No nghttp2")
+    @pytest.mark.skipif(not os.environ.get('NGHTTP2'), reason="No nghttp2")
     def test_nghttp2_installs_correctly(self):
         # This test is a debugging tool: if nghttp2 is being tested by Travis,
         # we need to confirm it imports correctly. Hyper will normally hide the
