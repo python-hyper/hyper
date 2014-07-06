@@ -18,6 +18,7 @@ from hyper.http20.util import combine_repeated_headers, split_repeated_headers
 from hyper.compat import zlib_compressobj
 from hyper.contrib import HTTP20Adapter
 import errno
+import os
 import pytest
 import socket
 import zlib
@@ -1946,6 +1947,14 @@ class TestUtilities(object):
         }
 
         assert expected == split_repeated_headers(test_headers)
+
+    @pytest.mark.skipif(not os.environ['NGHTTP2'], reason="No nghttp2")
+    def test_nghttp2_installs_correctly(self):
+        # This test is a debugging tool: if nghttp2 is being tested by Travis,
+        # we need to confirm it imports correctly. Hyper will normally hide the
+        # import failure, so let's discover it here.
+        import nghttp2
+        assert True
 
 
 # Some utility classes for the tests.
