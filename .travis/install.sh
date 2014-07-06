@@ -36,7 +36,7 @@ if [[ "$NGHTTP2" = true ]]; then
     cd ../..
 
     # Let's try ldconfig.
-    echo "/usr/local/lib" > /etc/ld.so.conf.d/libemu.conf
+    sudo sh -c 'echo "/usr/local/lib" > /etc/ld.so.conf.d/libnghttp2.conf'
     sudo ldconfig
 fi
 
