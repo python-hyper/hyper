@@ -29,7 +29,11 @@ if [[ "$NGHTTP2" = true ]]; then
     ./configure
     make
     sudo make install
-    cd ..
+
+    # The makefile doesn't install into the active virtualenv. Install again.
+    cd python
+    python setup.py install
+    cd ../..
 fi
 
 pip install .
