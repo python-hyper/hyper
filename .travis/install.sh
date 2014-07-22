@@ -20,9 +20,9 @@ if [[ "$NGHTTP2" = true ]]; then
     pip install cython
 
     # Now, download and install nghttp2's latest version.
-    wget https://github.com/tatsuhiro-t/nghttp2/releases/download/v0.4.1/nghttp2-0.4.1.tar.gz
-    tar -xzvf nghttp2-0.4.1.tar.gz
-    cd nghttp2-0.4.1
+    wget https://github.com/tatsuhiro-t/nghttp2/releases/download/v0.5.0/nghttp2-0.5.0.tar.gz
+    tar -xzvf nghttp2-0.5.0.tar.gz
+    cd nghttp2-0.5.0
     autoreconf -i
     automake
     autoconf
