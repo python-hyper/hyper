@@ -10,7 +10,6 @@ env:
   - TEST_RELEASE=false
   - TEST_RELEASE=true
   - NGHTTP2=true
-  - NGHTTP2=false
 
 matrix:
   allow_failures:
