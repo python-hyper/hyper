@@ -13,8 +13,10 @@ env:
 
 matrix:
   allow_failures:
-  - env:
-      TEST_RELEASE=true
+    - env: TEST_RELEASE=true
+  exclude:
+    - env: NGHTTP2=true
+      python: pypy
 
 install:
   - ".travis/install.sh"
