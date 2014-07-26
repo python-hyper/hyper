@@ -26,7 +26,7 @@ if [[ "$NGHTTP2" = true ]]; then
     autoreconf -i
     automake
     autoconf
-    ./configure
+    ./configure --disable-threads
     make
     sudo make install
 
