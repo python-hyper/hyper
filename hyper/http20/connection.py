@@ -5,7 +5,7 @@ hyper/http20/connection
 
 Objects that build hyper's connection-level HTTP/2 abstraction.
 """
-from .hpack import Encoder, Decoder
+from .hpack_compat import Encoder, Decoder
 from .stream import Stream
 from .tls import wrap_socket
 from .frame import (
