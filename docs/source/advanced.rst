@@ -160,3 +160,27 @@ resources as authoritative without performing this check themselves (since
 the server push mechanism is only an optimization, and clients are free to
 issue requests for any pushed resources manually, there is little downside to
 simply ignoring suspicious ones).
+
+Nghttp2
+-------
+
+By default ``hyper`` uses its built-in pure-Python HPACK encoder and decoder.
+These are reasonably efficient, and suitable for most use cases. However, they
+do not produce the best compression ratio possible, and because they're written
+in pure-Python they incur a cost in memory usage above what is strictly
+necessary.
+
+`nghttp2`_ is a HTTP/2 library written in C that includes a HPACK encoder and
+decoder. ``nghttp2``'s encoder produces extremely compressed output, and
+because it is written in C it is also fast and memory efficient. For this
+reason, performance conscious users may prefer to use ``nghttp2``'s HPACK
+implementation instead of ``hyper``'s.
+
+You can do this very easily. If ``nghttp2``'s Python bindings are installed,
+``hyper`` will transparently switch to using ``nghttp2``'s HPACK implementation
+instead of its own. No configuration is required.
+
+Instructions for installing ``nghttp2`` `are available here`_.
+
+.. _nghttp2: https://nghttp2.org/
+.. _are available here: https://nghttp2.org/documentation/package_README.html#requirements
