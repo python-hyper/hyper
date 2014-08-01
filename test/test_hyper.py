@@ -753,19 +753,6 @@ class TestHPACKEncoder(object):
         e.header_table_size = 40
         assert len(e.header_table) == 0
 
-    def test_removing_header_partially_in_table(self):
-        e = Encoder()
-        e.encode([('no', 'value')])
-
-        with pytest.raises(HPACKEncodingError):
-            e.remove((b'no', b'val'))
-
-    def test_removing_header_not_in_table_at_all(self):
-        e = Encoder()
-
-        with pytest.raises(HPACKEncodingError):
-            e.remove((b'not', b'present'))
-
     def test_resizing_header_table_sends_context_update(self):
         e = Encoder()
 
