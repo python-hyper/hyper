@@ -391,7 +391,7 @@ class Encoder(object):
         """
         Produces the encoded form of a header table size change context update.
         """
-        size_bytes = encode_integer(self.header_table_size, 4)
+        size_bytes = encode_integer(self.header_table_size, 5)
         size_bytes[0] |= 0x20
         return bytes(size_bytes)
 
@@ -572,7 +572,7 @@ class Decoder(object):
         Handles a byte that updates the encoding context.
         """
         # We've been asked to resize the header table.
-        new_size, consumed = decode_integer(data, 4)
+        new_size, consumed = decode_integer(data, 5)
         self.header_table_size = new_size
         return consumed
 
