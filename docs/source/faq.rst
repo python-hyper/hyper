@@ -16,7 +16,7 @@ What version of the HTTP/2 draft specification does ``hyper`` support?
 ----------------------------------------------------------------------
 
 Currently, ``hyper`` supports version 13 of the HTTP/2 draft specification,
-and version 8 of the HPACK draft specification. ``hyper`` will be updated to
+and version 9 of the HPACK draft specification. ``hyper`` will be updated to
 keep up with the HTTP/2 draft specifications as they progress.
 
 Does ``hyper`` support HTTP/2 flow control?

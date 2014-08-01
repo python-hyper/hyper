@@ -6,7 +6,7 @@ X.X.X (XXXX-XX-XX)
 
 *Major Changes*
 
-- Support for HPACK draft 8.
+- Support for HPACK draft 9.
 - Support for HTTP/2 draft 13.
 - Support for Python 2.7, thanks to the inimitable @alekstorm! (`Issue #33`_)
 - Support for PyPy.

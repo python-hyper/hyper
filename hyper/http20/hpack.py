@@ -5,7 +5,7 @@ hyper/http20/hpack
 
 Implements the HPACK header compression algorithm as detailed by the IETF.
 
-Implements the version dated January 9, 2014.
+Implements the version dated July 31, 2014.
 """
 import collections
 import logging
@@ -20,7 +20,7 @@ from .exceptions import HPACKEncodingError
 log = logging.getLogger(__name__)
 
 # The implementation draft of HPACK we support.
-DRAFT = 8
+DRAFT = 9
 
 
 def encode_integer(integer, prefix_bits):
