@@ -764,7 +764,7 @@ class TestHPACKEncoder(object):
         header_set = [(':method', 'GET')]
         out = e.encode(header_set, huffman=True)
 
-        assert out == b'\x2f\x19\x82'
+        assert out == b'?\t\x82'
 
     def test_setting_table_size_to_the_same_does_nothing(self):
         e = Encoder()
