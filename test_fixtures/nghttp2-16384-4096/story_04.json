@@ -3,7 +3,7 @@
     {
       "header_table_size": 16384, 
       "seqno": 0, 
-      "wire": "2ff11f828743878c6692d5c87a7f877ebcd07f66a281b0dae053fad0321aa49d13fda992a49685340c8a6adca7e28102ef7da9677b8171707f6a62293a9d810020004015309ac2ca7f2c05c5c158b0497ca589d34d1f43aeba0c41a4c7a98f33a69a3fdf9a68fa1d75d0620d263d4c79a68fbed00177febe58f9fbed00177b578b2d4b70ddf45abefb4005db97408721eaa8a4498f5788ea52d6b0e83772ff", 
+      "wire": "3fe11f828641878c6692d5c87a7f847abcd07f66a281b0dae053fad0321aa49d13fda992a49685340c8a6adca7e28102ef7da9677b8171707f6a62293a9d810020004015309ac2ca7f2c05c5c153b0497ca589d34d1f43aeba0c41a4c7a98f33a69a3fdf9a68fa1d75d0620d263d4c79a68fbed00177febe58f9fbed00177b518b2d4b70ddf45abefb4005db90408721eaa8a4498f5788ea52d6b0e83772ff", 
       "headers": [
         {
           ":method": "GET"
@@ -36,7 +36,7 @@
     }, 
     {
       "seqno": 1, 
-      "wire": "06896251f7310f52e621ff86", 
+      "wire": "8286c204896251f7310f52e621ffc1c0bf90be", 
       "headers": [
         {
           ":method": "GET"
@@ -69,7 +69,7 @@
     }, 
     {
       "seqno": 2, 
-      "wire": "478af1e3c2f18cd25ab90f4f8788", 
+      "wire": "8286418af1e3c2f18cd25ab90f4f84c2c1c090bf", 
       "headers": [
         {
           ":method": "GET"
@@ -102,7 +102,7 @@
     }, 
     {
       "seqno": 3, 
-      "wire": "079060d4ccc4633496c48f541e6385798d2f459a352398ac5754df46a473158f9fbed00177bebe58f9fbed00176f7e909d29aee30c78f1e178c6692d5c87a58f6ca4bb0e4bfc325f82eb8165c86f04182ee0042f61bd7c417305d71abcd5e0c2ddeb9871401f888a", 
+      "wire": "8286be049060d4ccc4633496c48f541e6385798d2fc2539a352398ac5754df46a473158f9fbed00177bebe58f9fbed00176fc190c073909d29aee30c78f1e178c6692d5c87a58f60a4bb0e4bfc325f82eb8165c86f04182ee0042f61bd7c417305d71abcd5e0c2ddeb9871401f", 
       "headers": [
         {
           ":method": "GET"
@@ -141,7 +141,7 @@
     }, 
     {
       "seqno": 4, 
-      "wire": "0a91608324e5626a0f18e860d4ccc4c85e634b", 
+      "wire": "8286c10491608324e5626a0f18e860d4ccc4c85e634bc5c0c390c2bfbe", 
       "headers": [
         {
           ":method": "GET"
@@ -180,7 +180,7 @@
     }, 
     {
       "seqno": 5, 
-      "wire": "448a40578e442469311721e90b9f62c63c78f0c10649cac4d41e31d0c7443091d53583a560aecaed102b817e8844032a2f2a838586", 
+      "wire": "8286418a40578e442469311721e9049f62c63c78f0c10649cac4d41e31d0c7443091d53583a560aecaed102b817e88c653032a2f2ac590c4c1", 
       "headers": [
         {
           ":method": "GET"
@@ -216,7 +216,7 @@
     }, 
     {
       "seqno": 6, 
-      "wire": "0c9962c63c78f0c10649cac4d41e31d0c7443139e92ac15de5fa23", 
+      "wire": "8286bf049962c63c78f0c10649cac4d41e31d0c7443139e92ac15de5fa23c7bec590c4c1", 
       "headers": [
         {
           ":method": "GET"
@@ -252,7 +252,7 @@
     }, 
     {
       "seqno": 7, 
-      "wire": "0c9762c63c78f0c10649cac5a82d8c744316ac15d95da5fa23", 
+      "wire": "8286bf049762c63c78f0c10649cac5a82d8c744316ac15d95da5fa23c7bec590c4c1", 
       "headers": [
         {
           ":method": "GET"
@@ -288,7 +288,7 @@
     }, 
     {
       "seqno": 8, 
-      "wire": "0c9162c63c78f0c1a999832c15c0b817aea9bf8581", 
+      "wire": "8286bf049162c63c78f0c1a999832c15c0b817aea9bfc7c2c590c4c1", 
       "headers": [
         {
           ":method": "GET"
@@ -324,7 +324,7 @@
     }, 
     {
       "seqno": 9, 
-      "wire": "860c896251f7310f52e621ff8a83828485", 
+      "wire": "8286c304896251f7310f52e621ffc7c6c590c4c0", 
       "headers": [
         {
           ":method": "GET"
@@ -359,6 +359,6 @@
       ]
     }
   ], 
-  "draft": 8, 
+  "draft": 9, 
   "description": "Encoded by nghttp2. The basic encoding strategy is described in http://lists.w3.org/Archives/Public/ietf-http-wg/2013JulSep/1135.html We use huffman encoding only if it produces strictly shorter byte string than original. We make some headers not indexing at all, but this does not always result in less bits on the wire."
 }
