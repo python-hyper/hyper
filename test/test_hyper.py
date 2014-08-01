@@ -640,8 +640,6 @@ class TestHPACKEncoder(object):
             (n.encode('utf-8'), v.encode('utf-8')) for n, v in first_header_table
         ]
 
-        # This request takes advantage of the differential encoding of header
-        # sets.
         second_header_set = [
             (':method', 'GET',),
             (':scheme', 'http',),
@@ -649,7 +647,9 @@ class TestHPACKEncoder(object):
             (':authority', 'www.example.com',),
             ('cache-control', 'no-cache'),
         ]
-        second_result = b'\x04\x0fwww.example.com\x0f\x0c\x08no-cache'
+        second_result = (
+            b'\x83\x82\x81\x04\x0fwww.example.com\x0f\x0c\x08no-cache'
+        )
 
         assert e.encode(second_header_set, huffman=False) == second_result
         assert list(e.header_table) == [
@@ -664,8 +664,7 @@ class TestHPACKEncoder(object):
             ('custom-key', 'custom-value'),
         ]
         third_result = (
-            b'\x8a\x89\x06\x0fwww.example.com@\ncustom-key\x0ccustom-value' +
-            b'\x84\x85'
+            b'\x83\x8a\x89\x06\x0fwww.example.com@\ncustom-key\x0ccustom-value'
         )
 
         assert e.encode(third_header_set, huffman=False) == third_result
@@ -696,8 +695,6 @@ class TestHPACKEncoder(object):
             (n.encode('utf-8'), v.encode('utf-8')) for n, v in first_header_table
         ]
 
-        # This request takes advantage of the differential encoding of header
-        # sets.
         second_header_set = [
             (':method', 'GET',),
             (':scheme', 'http',),
@@ -706,8 +703,8 @@ class TestHPACKEncoder(object):
             ('cache-control', 'no-cache'),
         ]
         second_result = (
-            b'\x04\x8c\xf1\xe3\xc2\xe5\xf2:k\xa0\xab\x90\xf4\xff\x0f\x0c\x86'
-            b'\xa8\xeb\x10d\x9c\xbf'
+            b'\x83\x82\x81\x04\x8c\xf1\xe3\xc2\xe5\xf2:k\xa0\xab\x90\xf4\xff'
+            b'\x0f\x0c\x86\xa8\xeb\x10d\x9c\xbf'
         )
 
         assert e.encode(second_header_set, huffman=True) == second_result
@@ -726,8 +723,8 @@ class TestHPACKEncoder(object):
             ('custom-key', 'custom-value'),
         ]
         third_result = (
-            b'\x8a\x89\x06\x8c\xf1\xe3\xc2\xe5\xf2:k\xa0\xab\x90\xf4\xff@\x88%'
-            b'\xa8I\xe9[\xa9}\x7f\x89%\xa8I\xe9[\xb8\xe8\xb4\xbf\x84\x85'
+            b'\x83\x8a\x89\x06\x8c\xf1\xe3\xc2\xe5\xf2:k\xa0\xab\x90\xf4\xff@'
+            b'\x88%\xa8I\xe9[\xa9}\x7f\x89%\xa8I\xe9[\xb8\xe8\xb4\xbf'
         )
 
         assert e.encode(third_header_set, huffman=True) == third_result
@@ -869,7 +866,9 @@ class TestHPACKDecoder(object):
             (':authority', 'www.example.com',),
             ('cache-control', 'no-cache'),
         ]
-        second_data = b'\x04\x0fwww.example.com\x0f\x0c\x08no-cache'
+        second_data = (
+            b'\x83\x82\x81\x04\x0fwww.example.com\x0f\x0c\x08no-cache'
+        )
 
         assert sorted(d.decode(second_data)) == sorted(second_header_set)
         assert list(d.header_table) == [
@@ -887,8 +886,7 @@ class TestHPACKDecoder(object):
             ('custom-key', 'custom-value'),
         ]
         third_data = (
-            b'\x30\x83\x8a\x89\x06\x0fwww.example.com' +
-            b'\x40\x0acustom-key\x0ccustom-value'
+            b'\x83\x8a\x89\x06\x0fwww.example.com@\ncustom-key\x0ccustom-value'
         )
 
         assert sorted(d.decode(third_data)) == sorted(third_header_set)
@@ -920,8 +918,6 @@ class TestHPACKDecoder(object):
             if n != ':authority'
         ]
 
-        # This request takes advantage of the differential encoding of header
-        # sets.
         second_header_set = [
             (':method', 'GET',),
             (':scheme', 'http',),
@@ -931,8 +927,8 @@ class TestHPACKDecoder(object):
         ]
         second_header_table = second_header_set[::-1]
         second_data = (
-            b'\x04\x8c\xf1\xe3\xc2\xe5\xf2:k\xa0\xab\x90\xf4\xff\x0f\x0c\x86'
-            b'\xa8\xeb\x10d\x9c\xbf'
+            b'\x83\x82\x81\x04\x8c\xf1\xe3\xc2\xe5\xf2:k\xa0\xab\x90\xf4\xff'
+            b'\x0f\x0c\x86\xa8\xeb\x10d\x9c\xbf'
         )
 
         assert sorted(d.decode(second_data)) == sorted(second_header_set)
@@ -952,8 +948,8 @@ class TestHPACKDecoder(object):
             ('custom-key', 'custom-value'),
         ]
         third_data = (
-            b'\x8a\x89\x06\x8c\xf1\xe3\xc2\xe5\xf2:k\xa0\xab\x90\xf4\xff@\x88%'
-            b'\xa8I\xe9[\xa9}\x7f\x89%\xa8I\xe9[\xb8\xe8\xb4\xbf\x84\x85'
+            b'\x83\x8a\x89\x06\x8c\xf1\xe3\xc2\xe5\xf2:k\xa0\xab\x90\xf4\xff@'
+            b'\x88%\xa8I\xe9[\xa9}\x7f\x89%\xa8I\xe9[\xb8\xe8\xb4\xbf'
         )
 
         assert sorted(d.decode(third_data)) == sorted(third_header_set)
