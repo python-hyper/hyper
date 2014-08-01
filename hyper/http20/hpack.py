@@ -12,7 +12,6 @@ import logging
 
 from ..compat import to_byte
 from .huffman import HuffmanDecoder, HuffmanEncoder
-from .hpack_structures import Reference
 from hyper.http20.huffman_constants import (
     REQUEST_CODES, REQUEST_CODES_LENGTH, REQUEST_CODES, REQUEST_CODES_LENGTH
 )
@@ -180,11 +179,6 @@ class Encoder(object):
             REQUEST_CODES, REQUEST_CODES_LENGTH
         )
 
-        # Confusingly, the reference set is a dictionary. This is because we
-        # want to be able to get at the individual references, rather than just
-        # test for presence.
-        self.reference_set = {}
-
         # We need to keep track of whether the header table size has been
         # changed since we last encoded anything. If it has, we need to signal
         # that change in the HPACK block.
@@ -214,13 +208,6 @@ class Encoder(object):
                     32 + len(n) + len(v)
                 )
 
-                # If something is removed from the header table, it also needs
-                # to be removed from the reference set.
-                try:
-                    del self.reference_set[Reference(header)]
-                except KeyError:
-                    pass
-
                 log.debug(
                     "Removed %s: %s from the encoder header table", n, v
                 )
@@ -236,28 +223,14 @@ class Encoder(object):
         block.
 
         Transforming the headers into a header block is a procedure that can
-        be modeled as a chain or pipe. First, the headers are compared against
-        the reference set. Any headers already in the reference set don't need
-        to be emitted at all, they can be left alone. Headers not in the
-        reference set need to be emitted. Headers in the reference set that
-        need to be removed (potentially to be replaced) need to be emitted as
-        well.
-
-        Next, the headers are encoded. This encoding can be done a number of
-        ways. If the header name-value pair are already in the header table we
-        can represent them using the indexed representation: the same is true
-        if they are in the static table. Otherwise, a literal representation
-        will be used.
-
-        Literal text values may optionally be Huffman encoded. For now we don't
-        do that, because it's an extra bit of complication, but we will later.
+        be modeled as a chain or pipe. First, the headers are encoded. This
+        encoding can be done a number of ways. If the header name-value pair
+        are already in the header table we can represent them using the indexed
+        representation: the same is true if they are in the static table.
+        Otherwise, a literal representation will be used.
         """
         log.debug("HPACK encoding %s", headers)
         header_block = []
-
-        # A preliminary step will unmark all the references.
-        for ref in self.reference_set:
-            ref.emitted = Reference.NOT_EMITTED
 
         # Turn the headers into a list of tuples if possible. This is the
         # natural way to interact with them in HPACK.
@@ -273,105 +246,20 @@ class Encoder(object):
             header_block.append(self._encode_table_size_change())
             self._table_size_changed = False
 
-        # We can now encode each header in the block. The logic here roughly
-        # goes as follows:
-        # 1. Check whether the header is in the reference set. If it is and
-        #    hasn't been emitted yet, mark it as emitted. If it has been
-        #    emitted, do the crazy unemit-reemit dance.
-        # 2. If the header is not in the reference set, emit it and add it to
-        #    the reference set as an emitted header.
-        # 3. When we're done with the header block, explicitly remove all
-        #    unemitted references.
-        for header in headers:
-            # Search for the header in the header table.
-            m = self.matching_header(*header)
+        # We can now encode each header in the block.
+        header_block.extend(
+            (self.add(header, huffman) for header in headers)
+        )
 
-            if m is not None:
-                index, match = m
-            else:
-                index, match = -1, None
-
-            # Found it. Is it in the reference set?
-            ref = self.get_from_reference_set(match)
-
-            if ref is not None and not ref.emitted:
-                # Mark it as emitted.
-                ref.emitted = Reference.IMPLICITLY_EMITTED
-                continue
-
-            if ref is not None:
-                # Already emitted, emit again. This requires a strange dance of
-                # removal and then re-emission. To do this with minimal code,
-                # we set ref back to None in this block so that we'll fall
-                # into the next branch.
-                if ref.emitted == Reference.IMPLICITLY_EMITTED:
-                    # We actually need to do this twice becuase of the implicit
-                    # emission.
-                    header_block.append(self.remove(ref.obj))
-                    header_block.append(self.add(header))
-                    header = self.matching_header(*header)[1]
-                    ref = self.get_from_reference_set(header)
-
-                header_block.append(self.remove(ref.obj))
-                ref = None
-
-            if ref is None:
-                # Not in the reference set, emit and add.
-                header_block.append(self.add(header, huffman))
-
-        # Remove everything we didn't emit. We do this in a specific order so
-        # that we generate deterministic output, even at the cost of being
-        # slower.
-        for r in sorted(self.reference_set.keys(), key=lambda r: r.obj):
-            if not r.emitted:
-                header_block.append(self.remove(r.obj))
+        header_block = b''.join(header_block)
 
         log.debug("Encoded header block to %s", header_block)
 
-        return b''.join(header_block)
-
-    def remove(self, header):
-        """
-        This function takes a header key-value tuple and serializes it.  It
-        must be in the header table, so must be represented in its indexed
-        form.
-        """
-        log.debug(
-            "Removing %s:%s from the reference set", header[0], header[1]
-        )
-
-        try:
-            index, match = self.matching_header(*header)
-        except TypeError:
-            raise HPACKEncodingError(
-                '"%s: %s" not present in the header table' %
-                (header[0], header[1])
-            )
-
-        # The header must be in the header block. That means that:
-        # - match must be the header tuple
-        # - index must be <= len(self.header_table)
-        max_index = len(self.header_table)
-
-        if (not match) or (index > max_index):
-            raise HPACKEncodingError(
-                '"%s: %s" not present in the header table' %
-                (header[0], header[1])
-            )
-
-        # We can safely encode this as the indexed representation.
-        encoded = self._encode_indexed(index)
-
-        # Having encoded it in the indexed form, we now remove it from the
-        # reference set.
-        del self.reference_set[Reference(header)]
-
-        return encoded
+        return header_block
 
     def add(self, to_add, huffman=False):
         """
-        This function takes a header key-value tuple and serializes it for
-        adding to the header table.
+        This function takes a header key-value tuple and serializes it.
         """
         log.debug("Adding %s to the header table", to_add)
 
@@ -385,9 +273,6 @@ class Encoder(object):
             # and add it to the header table.
             encoded = self._encode_literal(name, value, True, huffman)
             self._add_to_header_table(to_add)
-            ref = Reference(to_add)
-            ref.emitted = Reference.EMITTED
-            self.reference_set[ref] = ref
             return encoded
 
         # The header is in the table, break out the values. If we matched
@@ -403,10 +288,6 @@ class Encoder(object):
             if index > len(self.header_table):
                 perfect = (name, value)
                 self._add_to_header_table(perfect)
-
-            ref = Reference(perfect)
-            ref.emitted = Reference.EMITTED
-            self.reference_set[ref] = ref
         else:
             # Indexed literal. Since we have a partial match, don't add to
             # the header table, it won't help us.
@@ -441,22 +322,6 @@ class Encoder(object):
 
         return partial_match
 
-    def get_from_reference_set(self, header):
-        """
-        Determines whether a header is currently in the reference set. Returns
-        ``None`` if not.
-
-        :param header: The header tuple to search for.
-        """
-        if header is None:
-            return None
-
-        r = Reference(header)
-        try:
-            return self.reference_set[r]
-        except KeyError:
-            return None
-
     def _add_to_header_table(self, header):
         """
         Adds a header to the header table, evicting old ones if necessary.
@@ -474,13 +339,6 @@ class Encoder(object):
             actual_size -= (
                 32 + len(n) + len(v)
             )
-
-            # If something is removed from the header table, it also needs to
-            # be removed from the reference set.
-            try:
-                del self.reference_set[Reference(header)]
-            except KeyError:
-                pass
 
             log.debug("Evicted %s: %s from the header table", n, v)
 
@@ -608,7 +466,6 @@ class Decoder(object):
 
     def __init__(self):
         self.header_table = collections.deque()
-        self.reference_set = set()
         self._header_table_size = 4096  # This value set by the standard.
         self.huffman_coder = HuffmanDecoder(
             REQUEST_CODES, REQUEST_CODES_LENGTH
@@ -637,10 +494,6 @@ class Decoder(object):
                 current_size -= (
                     32 + len(n) + len(v)
                 )
-
-                # If something is removed from the header table, it also needs
-                # to be removed from the reference set.
-                self.reference_set.discard(Reference(header))
 
                 log.debug("Evicting %s: %s from the header table", n, v)
 
@@ -692,13 +545,6 @@ class Decoder(object):
 
             current_index += consumed
 
-        # Now we're at the end, anything in the reference set that isn't in the
-        # headers already gets added. Right now this is a slow linear search,
-        # but we can probably do better in future.
-        for ref in self.reference_set:
-            if ref.obj not in headers:
-                headers.append(ref.obj)
-
         return [(n.decode('utf-8'), v.decode('utf-8')) for n, v in headers]
 
     def _add_to_header_table(self, new_header):
@@ -719,24 +565,15 @@ class Decoder(object):
                 32 + len(n) + len(v)
             )
 
-            # If something is removed from the header table, it also needs to
-            # be removed from the reference set.
-            self.reference_set.discard(Reference(header))
-
             log.debug("Evicting %s: %s from the header table", n, v)
 
     def _update_encoding_context(self, data):
         """
         Handles a byte that updates the encoding context.
         """
-        # If the byte is 0x30, this empties the reference set.
-        if to_byte(data[0]) == 0x30:
-            self.reference_set = set()
-            consumed = 1
-        else:
-            # We've been asked to resize the header table.
-            new_size, consumed = decode_integer(data, 4)
-            self.header_table_size = new_size
+        # We've been asked to resize the header table.
+        new_size, consumed = decode_integer(data, 4)
+        self.header_table_size = new_size
         return consumed
 
     def _decode_indexed(self, data):
@@ -756,22 +593,8 @@ class Decoder(object):
         else:
             header = self.header_table[index]
 
-        # If the header is in the reference set, remove it. Otherwise, add it.
-        # Since this updates the reference set, don't bother returning the
-        # header.
-        header_ref = Reference(header)
-        if header_ref in self.reference_set:
-            log.debug(
-                "Removed %s from the reference set, consumed %d",
-                header,
-                consumed
-            )
-            self.reference_set.remove(header_ref)
-            return None, consumed
-        else:
-            log.debug("Decoded %s, consumed %d", header, consumed)
-            self.reference_set.add(header_ref)
-            return header, consumed
+        log.debug("Decoded %s, consumed %d", header, consumed)
+        return header, consumed
 
     def _decode_literal_no_index(self, data):
         return self._decode_literal(data, False)
@@ -833,12 +656,10 @@ class Decoder(object):
         # Updated the total consumed length.
         total_consumed += length + consumed
 
-        # If we've been asked to index this, add it to the header table and
-        # the reference set.
+        # If we've been asked to index this, add it to the header table.
         header = (name, value)
         if should_index:
             self._add_to_header_table(header)
-            self.reference_set.add(Reference(header))
 
         log.debug(
             "Decoded %s, consumed %d, indexed %s",
