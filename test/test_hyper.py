@@ -752,11 +752,6 @@ class TestHPACKEncoder(object):
         ]
         e.encode(header_set, huffman=True)
 
-        # Delete a random item from the reference set, just to make sure we can
-        # handle things in the header table that aren't in the reference set.
-        r = list(e.reference_set.keys())[0]
-        del e.reference_set[r]
-
         # Resize the header table to a size so small that nothing can be in it.
         e.header_table_size = 40
         assert len(e.header_table) == 0
