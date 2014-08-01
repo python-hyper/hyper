@@ -26,11 +26,10 @@ class TestHPACKDecoderIntegration(object):
             except KeyError:
                 pass
             decoded_headers = d.decode(unhexlify(case['wire']))
-            decoded_headers = sorted(decoded_headers)
 
             # The correct headers are a list of dicts, which is annoying.
             correct_headers = [(item[0], item[1]) for header in case['headers'] for item in header.items()]
-            correct_headers = sorted(correct_headers)
+            correct_headers = correct_headers
             assert correct_headers == decoded_headers
 
     def test_can_encode_a_story_no_huffman(self, raw_story):
