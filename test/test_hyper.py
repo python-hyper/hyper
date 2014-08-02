@@ -763,6 +763,16 @@ class TestHPACKEncoder(object):
 
         assert out == b'\x82'
 
+    def test_evicting_header_table_objects(self):
+        e = Encoder()
+
+        # Set the header table size large enough to include one header.
+        e.header_table_size = 66
+        header_set = [('a', 'b'), ('long-custom-header', 'longish value')]
+        e.encode(header_set)
+
+        assert len(e.header_table) == 1
+
 
 class TestHPACKDecoder(object):
     # These tests are stolen entirely from the IETF specification examples.
