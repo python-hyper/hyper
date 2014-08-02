@@ -628,9 +628,9 @@ class TestHPACKEncoder(object):
             (':path', '/',),
             (':authority', 'www.example.com'),
         ]
-        # The first_header_table doesn't contain 'authority'
-        first_header_table = first_header_set[::-1][1:]
-        first_result = b'\x82\x87\x86\x04\x0fwww.example.com'
+        # The first_header_table doesn't contain anything.
+        first_header_table = []
+        first_result = b'\x82\x86\x84\x01\x0fwww.example.com'
 
         assert e.encode(first_header_set, huffman=False) == first_result
         assert list(e.header_table) == [
@@ -645,13 +645,11 @@ class TestHPACKEncoder(object):
             ('cache-control', 'no-cache'),
         ]
         second_result = (
-            b'\x83\x82\x81\x04\x0fwww.example.com\x0f\x0c\x08no-cache'
+            b'\x82\x86\x84\x01\x0fwww.example.com\x0f\t\x08no-cache'
         )
 
         assert e.encode(second_header_set, huffman=False) == second_result
-        assert list(e.header_table) == [
-            (n.encode('utf-8'), v.encode('utf-8')) for n, v in first_header_table
-        ]
+        assert list(e.header_table) == []
 
         third_header_set = [
             (':method', 'GET',),
@@ -661,13 +659,13 @@ class TestHPACKEncoder(object):
             ('custom-key', 'custom-value'),
         ]
         third_result = (
-            b'\x83\x8a\x89\x06\x0fwww.example.com@\ncustom-key\x0ccustom-value'
+            b'\x82\x87\x85\x01\x0fwww.example.com@\ncustom-key\x0ccustom-value'
         )
 
         assert e.encode(third_header_set, huffman=False) == third_result
         # Don't check the header table here, it's just too complex to be
         # reliable. Check its length though.
-        assert len(e.header_table) == 6
+        assert len(e.header_table) == 1
 
     def test_request_examples_with_huffman(self):
         """
@@ -681,16 +679,12 @@ class TestHPACKEncoder(object):
             (':path', '/',),
             (':authority', 'www.example.com'),
         ]
-        # The first_header_table doesn't contain 'authority'
-        first_header_table = first_header_set[::-1][1:]
         first_result = (
-            b'\x82\x87\x86\x04\x8c\xf1\xe3\xc2\xe5\xf2:k\xa0\xab\x90\xf4\xff'
+            b'\x82\x86\x84\x01\x8c\xf1\xe3\xc2\xe5\xf2:k\xa0\xab\x90\xf4\xff'
         )
 
         assert e.encode(first_header_set, huffman=True) == first_result
-        assert list(e.header_table) == [
-            (n.encode('utf-8'), v.encode('utf-8')) for n, v in first_header_table
-        ]
+        assert list(e.header_table) == []
 
         second_header_set = [
             (':method', 'GET',),
@@ -700,18 +694,13 @@ class TestHPACKEncoder(object):
             ('cache-control', 'no-cache'),
         ]
         second_result = (
-            b'\x83\x82\x81\x04\x8c\xf1\xe3\xc2\xe5\xf2:k\xa0\xab\x90\xf4\xff'
-            b'\x0f\x0c\x86\xa8\xeb\x10d\x9c\xbf'
+            b'\x82\x86\x84\x01\x8c\xf1\xe3\xc2\xe5\xf2:k\xa0\xab\x90\xf4\xff'
+            b'\x0f\t\x86\xa8\xeb\x10d\x9c\xbf'
         )
 
         assert e.encode(second_header_set, huffman=True) == second_result
-        assert list(e.header_table) == [
-            (n.encode('utf-8'), v.encode('utf-8')) for n, v in first_header_table
-        ]
+        assert list(e.header_table) == []
 
-        # This request has not enough headers in common with the previous
-        # request to take advantage of the differential encoding.  Therefore,
-        # the reference set is emptied before encoding the header fields.
         third_header_set = [
             (':method', 'GET',),
             (':scheme', 'https',),
@@ -720,14 +709,12 @@ class TestHPACKEncoder(object):
             ('custom-key', 'custom-value'),
         ]
         third_result = (
-            b'\x83\x8a\x89\x06\x8c\xf1\xe3\xc2\xe5\xf2:k\xa0\xab\x90\xf4\xff@'
+            b'\x82\x87\x85\x01\x8c\xf1\xe3\xc2\xe5\xf2:k\xa0\xab\x90\xf4\xff@'
             b'\x88%\xa8I\xe9[\xa9}\x7f\x89%\xa8I\xe9[\xb8\xe8\xb4\xbf'
         )
 
         assert e.encode(third_header_set, huffman=True) == third_result
-        # Don't check the header table here, it's just too complex to be
-        # reliable. Check its length though.
-        assert len(e.header_table) == 6
+        assert len(e.header_table) == 1
 
     # These tests are custom, for hyper.
     def test_resizing_header_table(self):
@@ -830,13 +817,10 @@ class TestHPACKDecoder(object):
             (':authority', 'www.example.com'),
         ]
         # The first_header_table doesn't contain 'authority'
-        first_header_table = first_header_set[::-1][1:]
-        first_data = b'\x82\x87\x86\x04\x0fwww.example.com'
+        first_data = b'\x82\x86\x84\x01\x0fwww.example.com'
 
-        assert sorted(d.decode(first_data)) == sorted(first_header_set)
-        assert list(d.header_table) == [
-            (n.encode('utf-8'), v.encode('utf-8')) for n, v in first_header_table
-        ]
+        assert d.decode(first_data) == first_header_set
+        assert list(d.header_table) == []
 
         # This request takes advantage of the differential encoding of header
         # sets.
@@ -848,17 +832,12 @@ class TestHPACKDecoder(object):
             ('cache-control', 'no-cache'),
         ]
         second_data = (
-            b'\x83\x82\x81\x04\x0fwww.example.com\x0f\x0c\x08no-cache'
+            b'\x82\x86\x84\x01\x0fwww.example.com\x0f\t\x08no-cache'
         )
 
-        assert sorted(d.decode(second_data)) == sorted(second_header_set)
-        assert list(d.header_table) == [
-            (n.encode('utf-8'), v.encode('utf-8')) for n, v in first_header_table
-        ]
+        assert d.decode(second_data) == second_header_set
+        assert list(d.header_table) == []
 
-        # This request has not enough headers in common with the previous
-        # request to take advantage of the differential encoding.  Therefore,
-        # the reference set is emptied before encoding the header fields.
         third_header_set = [
             (':method', 'GET',),
             (':scheme', 'https',),
@@ -867,13 +846,13 @@ class TestHPACKDecoder(object):
             ('custom-key', 'custom-value'),
         ]
         third_data = (
-            b'\x83\x8a\x89\x06\x0fwww.example.com@\ncustom-key\x0ccustom-value'
+            b'\x82\x87\x85\x01\x0fwww.example.com@\ncustom-key\x0ccustom-value'
         )
 
-        assert sorted(d.decode(third_data)) == sorted(third_header_set)
+        assert d.decode(third_data) == third_header_set
         # Don't check the header table here, it's just too complex to be
         # reliable. Check its length though.
-        assert len(d.header_table) == 6
+        assert len(d.header_table) == 1
 
     def test_request_examples_with_huffman(self):
         """
@@ -890,14 +869,11 @@ class TestHPACKDecoder(object):
         ]
         first_header_table = first_header_set[::-1]
         first_data = (
-            b'\x82\x87\x86\x04\x8c\xf1\xe3\xc2\xe5\xf2:k\xa0\xab\x90\xf4\xff'
+            b'\x82\x86\x84\x01\x8c\xf1\xe3\xc2\xe5\xf2:k\xa0\xab\x90\xf4\xff'
         )
 
-        assert sorted(d.decode(first_data)) == sorted(first_header_set)
-        assert list(d.header_table) == [
-            (n.encode('utf-8'), v.encode('utf-8')) for n, v in first_header_table
-            if n != ':authority'
-        ]
+        assert d.decode(first_data) == first_header_set
+        assert list(d.header_table) == []
 
         second_header_set = [
             (':method', 'GET',),
@@ -906,21 +882,14 @@ class TestHPACKDecoder(object):
             (':authority', 'www.example.com',),
             ('cache-control', 'no-cache'),
         ]
-        second_header_table = second_header_set[::-1]
         second_data = (
-            b'\x83\x82\x81\x04\x8c\xf1\xe3\xc2\xe5\xf2:k\xa0\xab\x90\xf4\xff'
-            b'\x0f\x0c\x86\xa8\xeb\x10d\x9c\xbf'
+            b'\x82\x86\x84\x01\x8c\xf1\xe3\xc2\xe5\xf2:k\xa0\xab\x90\xf4\xff'
+            b'\x0f\t\x86\xa8\xeb\x10d\x9c\xbf'
         )
 
-        assert sorted(d.decode(second_data)) == sorted(second_header_set)
-        assert list(d.header_table) == [
-            (n.encode('utf-8'), v.encode('utf-8')) for n, v in second_header_table
-            if n not in (':authority', 'cache-control')
-        ]
+        assert d.decode(second_data) == second_header_set
+        assert list(d.header_table) == []
 
-        # This request has not enough headers in common with the previous
-        # request to take advantage of the differential encoding.  Therefore,
-        # the reference set is emptied before encoding the header fields.
         third_header_set = [
             (':method', 'GET',),
             (':scheme', 'https',),
@@ -929,14 +898,12 @@ class TestHPACKDecoder(object):
             ('custom-key', 'custom-value'),
         ]
         third_data = (
-            b'\x83\x8a\x89\x06\x8c\xf1\xe3\xc2\xe5\xf2:k\xa0\xab\x90\xf4\xff@'
+            b'\x82\x87\x85\x01\x8c\xf1\xe3\xc2\xe5\xf2:k\xa0\xab\x90\xf4\xff@'
             b'\x88%\xa8I\xe9[\xa9}\x7f\x89%\xa8I\xe9[\xb8\xe8\xb4\xbf'
         )
 
-        assert sorted(d.decode(third_data)) == sorted(third_header_set)
-        # Don't check the header table here, it's just too complex to be
-        # reliable. Check its length though.
-        assert len(d.header_table) == 6
+        assert d.decode(third_data) == third_header_set
+        assert len(d.header_table) == 1
 
     # These tests are custom, for hyper.
     def test_resizing_header_table(self):
