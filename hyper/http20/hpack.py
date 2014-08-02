@@ -281,13 +281,8 @@ class Encoder(object):
         index, perfect = match
 
         if perfect:
-            # Indexed representation. If the index is larger than the size
-            # of the header table, also add to the header table.
+            # Indexed representation.
             encoded = self._encode_indexed(index)
-
-            if index > len(self.header_table):
-                perfect = (name, value)
-                self._add_to_header_table(perfect)
         else:
             # Indexed literal. Since we have a partial match, don't add to
             # the header table, it won't help us.
