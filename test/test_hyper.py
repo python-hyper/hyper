@@ -595,17 +595,14 @@ class TestHPACKEncoder(object):
     def test_indexed_header_field(self):
         """
         The header field representation uses an indexed header field, from
-        the static table.  Upon using it, the static table entry is copied
-        into the header table.
+        the static table.
         """
         e = Encoder()
         header_set = {':method': 'GET'}
         result = b'\x82'
 
         assert e.encode(header_set, huffman=False) == result
-        assert list(e.header_table) == [
-            (n.encode('utf-8'), v.encode('utf-8')) for n, v in header_set.items()
-        ]
+        assert list(e.header_table) == []
 
     def test_indexed_header_field_from_static_table(self):
         e = Encoder()
@@ -811,17 +808,14 @@ class TestHPACKDecoder(object):
     def test_indexed_header_field(self):
         """
         The header field representation uses an indexed header field, from
-        the static table.  Upon using it, the static table entry is copied
-        into the header table.
+        the static table.
         """
         d = Decoder()
         header_set = [(':method', 'GET')]
         data = b'\x82'
 
         assert d.decode(data) == header_set
-        assert list(d.header_table) == [
-            (n.encode('utf-8'), v.encode('utf-8')) for n, v in header_set
-        ]
+        assert list(d.header_table) == []
 
     def test_request_examples_without_huffman(self):
         """
