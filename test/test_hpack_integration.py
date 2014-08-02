@@ -39,11 +39,9 @@ class TestHPACKDecoderIntegration(object):
         for case in raw_story['cases']:
             # The input headers are a list of dicts, which is annoying.
             input_headers = [(item[0], item[1]) for header in case['headers'] for item in header.items()]
-            input_headers = sorted(input_headers)
 
             encoded = e.encode(input_headers, huffman=False)
             decoded_headers = d.decode(encoded)
-            decoded_headers = sorted(decoded_headers)
 
             assert input_headers == decoded_headers
 
@@ -54,10 +52,8 @@ class TestHPACKDecoderIntegration(object):
         for case in raw_story['cases']:
             # The input headers are a list of dicts, which is annoying.
             input_headers = [(item[0], item[1]) for header in case['headers'] for item in header.items()]
-            input_headers = sorted(input_headers)
 
             encoded = e.encode(input_headers, huffman=True)
             decoded_headers = d.decode(encoded)
-            decoded_headers = sorted(decoded_headers)
 
             assert input_headers == decoded_headers
