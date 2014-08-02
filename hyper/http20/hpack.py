@@ -299,21 +299,21 @@ class Encoder(object):
         Upsettingly, the header table is one-indexed, not zero-indexed.
         """
         partial_match = None
-        header_table_size = len(self.header_table)
-
-        for (i, (n, v)) in enumerate(self.header_table):
-            if n == name:
-                if v == value:
-                    return (i + 1, self.header_table[i])
-                elif partial_match is None:
-                    partial_match = (i + 1, None)
+        static_table_len = len(Encoder.static_table)
 
         for (i, (n, v)) in enumerate(Encoder.static_table):
             if n == name:
                 if v == value:
-                    return (i + header_table_size + 1, Encoder.static_table[i])
+                    return (i + 1, Encoder.static_table[i])
                 elif partial_match is None:
-                    partial_match = (i + header_table_size + 1, None)
+                    partial_match = (i + 1, None)
+
+        for (i, (n, v)) in enumerate(self.header_table):
+            if n == name:
+                if v == value:
+                    return (i + static_table_len + 1, self.header_table[i])
+                elif partial_match is None:
+                    partial_match = (i + static_table_len + 1, None)
 
         return partial_match
 
@@ -578,15 +578,11 @@ class Decoder(object):
         index, consumed = decode_integer(data, 7)
         index -= 1  # Because this idiot table is 1-indexed. Ugh.
 
-        if index > len(self.header_table):
-            index -= len(self.header_table)
-            header = Decoder.static_table[index]
-
-            # If this came out of the static table, we need to add it to the
-            # header table.
-            self._add_to_header_table(header)
-        else:
+        if index >= len(Decoder.static_table):
+            index -= len(Decoder.static_table)
             header = self.header_table[index]
+        else:
+            header = Decoder.static_table[index]
 
         log.debug("Decoded %s, consumed %d", header, consumed)
         return header, consumed
@@ -619,11 +615,11 @@ class Decoder(object):
             index, consumed = decode_integer(data, name_len)
             index -= 1
 
-            if index >= len(self.header_table):
-                index -= len(self.header_table)
-                name = Decoder.static_table[index][0]
-            else:
+            if index >= len(Decoder.static_table):
+                index -= len(Decoder.static_table)
                 name = self.header_table[index][0]
+            else:
+                name = Decoder.static_table[index][0]
 
             total_consumed = consumed
             length = 0
