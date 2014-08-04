@@ -154,7 +154,6 @@ class DataFrame(Padding, Frame):
     """
     defined_flags = [
         ('END_STREAM', 0x01),
-        ('END_SEGMENT', 0x02),
         ('PADDED', 0x08),
     ]
 
@@ -414,7 +413,6 @@ class HeadersFrame(Padding, Priority, Frame):
 
     defined_flags = [
         ('END_STREAM', 0x01),
-        ('END_SEGMENT', 0x02),
         ('END_HEADERS', 0x04),
         ('PADDED', 0x08),
         ('PRIORITY', 0x20),

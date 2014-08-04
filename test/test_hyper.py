@@ -59,7 +59,7 @@ class TestDataFrame(object):
         f = DataFrame(1)
         flags = f.parse_flags(0xFF)
         assert flags == set([
-            'END_STREAM', 'END_SEGMENT', 'PADDED'
+            'END_STREAM', 'PADDED'
         ])
 
     def test_data_frame_serializes_properly(self):
@@ -372,7 +372,7 @@ class TestHeadersFrame(object):
         f = HeadersFrame(1)
         flags = f.parse_flags(0xFF)
 
-        assert flags == set(['END_STREAM', 'END_SEGMENT', 'END_HEADERS',
+        assert flags == set(['END_STREAM', 'END_HEADERS',
                              'PADDED', 'PRIORITY'])
 
     def test_headers_frame_serializes_properly(self):
