@@ -31,9 +31,9 @@ if ssl is not None:
     hyper.http20.tls._context.verify_mode = ssl.CERT_NONE
 
 def decode_frame(frame_data):
-    f, length = Frame.parse_frame_header(frame_data[:8])
-    f.parse_body(memoryview(frame_data[8:8 + length]))
-    assert 8 + length == len(frame_data)
+    f, length = Frame.parse_frame_header(frame_data[:9])
+    f.parse_body(memoryview(frame_data[9:9 + length]))
+    assert 9 + length == len(frame_data)
     return f
 
 

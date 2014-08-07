@@ -39,14 +39,15 @@ class Frame(object):
     @staticmethod
     def parse_frame_header(header):
         """
-        Takes an 8-byte frame header and returns a tuple of the appropriate
+        Takes an 9-byte frame header and returns a tuple of the appropriate
         Frame object and the length that needs to be read from the socket.
         """
-        fields = struct.unpack("!HBBL", header)
-        length = fields[0] & 0x3FFF
-        type = fields[1]
-        flags = fields[2]
-        stream_id = fields[3]
+        fields = struct.unpack("!HBBBL", header)
+        # First 24 bits are frame length.
+        length = (fields[0] << 8) + fields[1]
+        type = fields[2]
+        flags = fields[3]
+        stream_id = fields[4]
 
         frame = FRAMES[type](stream_id)
         frame.parse_flags(flags)
@@ -61,6 +62,7 @@ class Frame(object):
 
     def serialize(self):
         body = self.serialize_body()
+        body_len = len(body)
 
         # Build the common frame header.
         # First, get the flags.
@@ -71,8 +73,9 @@ class Frame(object):
                 flags |= flag_bit
 
         header = struct.pack(
-            "!HBBL",
-            len(body) & 0x3FFF,  # Length must have the top two bits unset.
+            "!HBBBL",
+            body_len & 0xFFFF00,  # Length is spread over top 24 bits
+            body_len & 0x0000FF,
             self.type,
             flags,
             self.stream_id & 0x7FFFFFFF  # Stream ID is 32 bits.

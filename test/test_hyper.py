@@ -26,9 +26,9 @@ from io import BytesIO
 
 
 def decode_frame(frame_data):
-    f, length = Frame.parse_frame_header(frame_data[:8])
-    f.parse_body(frame_data[8:8 + length])
-    assert 8 + length == len(frame_data)
+    f, length = Frame.parse_frame_header(frame_data[:9])
+    f.parse_body(memoryview(frame_data[9:9 + length]))
+    assert 9 + length == len(frame_data)
     return f
 
 
@@ -52,8 +52,8 @@ class TestGeneralFrameBehaviour(object):
 
 
 class TestDataFrame(object):
-    payload = b'\x00\x08\x00\x01\x00\x00\x00\x01testdata'
-    payload_with_padding = b'\x00\x13\x00\x09\x00\x00\x00\x01\x0Atestdata' + b'\0' * 10
+    payload = b'\x00\x00\x08\x00\x01\x00\x00\x00\x01testdata'
+    payload_with_padding = b'\x00\x00\x13\x00\x09\x00\x00\x00\x01\x0Atestdata' + b'\0' * 10
 
     def test_data_frame_has_correct_flags(self):
         f = DataFrame(1)
@@ -80,8 +80,7 @@ class TestDataFrame(object):
         assert s == self.payload_with_padding
 
     def test_data_frame_parses_properly(self):
-        f, length = Frame.parse_frame_header(self.payload[:8])
-        f.parse_body(memoryview(self.payload[8:8 + length]))
+        f = decode_frame(self.payload)
 
         assert isinstance(f, DataFrame)
         assert f.flags == set(['END_STREAM'])
@@ -89,8 +88,7 @@ class TestDataFrame(object):
         assert f.data == b'testdata'
 
     def test_data_frame_with_padding_parses_properly(self):
-        f, length = Frame.parse_frame_header(self.payload_with_padding[:8])
-        f.parse_body(memoryview(self.payload_with_padding[8:8 + length]))
+        f = decode_frame(self.payload_with_padding)
 
         assert isinstance(f, DataFrame)
         assert f.flags == set(['END_STREAM', 'PADDED'])
@@ -117,7 +115,7 @@ class TestDataFrame(object):
 
 
 class TestPriorityFrame(object):
-    payload = b'\x00\x05\x02\x00\x00\x00\x00\x01\x80\x00\x00\x04\x40'
+    payload = b'\x00\x00\x05\x02\x00\x00\x00\x00\x01\x80\x00\x00\x04\x40'
 
     def test_priority_frame_has_no_flags(self):
         f = PriorityFrame(1)
@@ -134,8 +132,7 @@ class TestPriorityFrame(object):
         assert f.serialize() == self.payload
 
     def test_priority_frame_with_all_data_parses_properly(self):
-        f, length = Frame.parse_frame_header(self.payload[:8])
-        f.parse_body(memoryview(self.payload[8:8 + length]))
+        f = decode_frame(self.payload)
 
         assert isinstance(f, PriorityFrame)
         assert f.flags == set()
@@ -160,12 +157,11 @@ class TestRstStreamFrame(object):
         f.error_code = 420
 
         s = f.serialize()
-        assert s == b'\x00\x04\x03\x00\x00\x00\x00\x01\x00\x00\x01\xa4'
+        assert s == b'\x00\x00\x04\x03\x00\x00\x00\x00\x01\x00\x00\x01\xa4'
 
     def test_rst_stream_frame_parses_properly(self):
-        s = b'\x00\x04\x03\x00\x00\x00\x00\x01\x00\x00\x01\xa4'
-        f, length = Frame.parse_frame_header(s[:8])
-        f.parse_body(memoryview(s[8:8 + length]))
+        s = b'\x00\x00\x04\x03\x00\x00\x00\x00\x01\x00\x00\x01\xa4'
+        f = decode_frame(s)
 
         assert isinstance(f, RstStreamFrame)
         assert f.flags == set()
@@ -183,13 +179,13 @@ class TestRstStreamFrame(object):
 
 class TestSettingsFrame(object):
     serialized = (
-        b'\x00\x24\x04\x01\x00\x00\x00\x00' +  # Frame header
-        b'\x00\x01\x00\x00\x10\x00'         +  # HEADER_TABLE_SIZE
-        b'\x00\x02\x00\x00\x00\x00'         +  # ENABLE_PUSH
-        b'\x00\x03\x00\x00\x00\x64'         +  # MAX_CONCURRENT_STREAMS
-        b'\x00\x04\x00\x00\xFF\xFF'         +  # INITIAL_WINDOW_SIZE
-        b'\x00\x05\x00\x00\x40\x00'         +  # SETTINGS_MAX_FRAME_SIZE
-        b'\x00\x06\x00\x00\xFF\xFF'            # SETTINGS_MAX_HEADER_LIST_SIZE
+        b'\x00\x00\x24\x04\x01\x00\x00\x00\x00' +  # Frame header
+        b'\x00\x01\x00\x00\x10\x00'             +  # HEADER_TABLE_SIZE
+        b'\x00\x02\x00\x00\x00\x00'             +  # ENABLE_PUSH
+        b'\x00\x03\x00\x00\x00\x64'             +  # MAX_CONCURRENT_STREAMS
+        b'\x00\x04\x00\x00\xFF\xFF'             +  # INITIAL_WINDOW_SIZE
+        b'\x00\x05\x00\x00\x40\x00'             +  # SETTINGS_MAX_FRAME_SIZE
+        b'\x00\x06\x00\x00\xFF\xFF'                # SETTINGS_MAX_HEADER_LIST_SIZE
     )
 
     settings = {
@@ -215,8 +211,7 @@ class TestSettingsFrame(object):
         assert s == self.serialized
 
     def test_settings_frame_parses_properly(self):
-        f, length = Frame.parse_frame_header(self.serialized[:8])
-        f.parse_body(memoryview(self.serialized[8:8 + length]))
+        f = decode_frame(self.serialized)
 
         assert isinstance(f, SettingsFrame)
         assert f.flags == set(['ACK'])
@@ -242,19 +237,18 @@ class TestPushPromiseFrame(object):
 
         s = f.serialize()
         assert s == (
-            b'\x00\x0F\x05\x04\x00\x00\x00\x01' +
+            b'\x00\x00\x0F\x05\x04\x00\x00\x00\x01' +
             b'\x00\x00\x00\x04' +
             b'hello world'
         )
 
     def test_push_promise_frame_parses_properly(self):
         s = (
-            b'\x00\x0F\x05\x04\x00\x00\x00\x01' +
+            b'\x00\x00\x0F\x05\x04\x00\x00\x00\x01' +
             b'\x00\x00\x00\x04' +
             b'hello world'
         )
-        f, length = Frame.parse_frame_header(s[:8])
-        f.parse_body(memoryview(s[8:8 + length]))
+        f = decode_frame(s)
 
         assert isinstance(f, PushPromiseFrame)
         assert f.flags == set(['END_HEADERS'])
@@ -276,7 +270,7 @@ class TestPingFrame(object):
 
         s = f.serialize()
         assert s == (
-            b'\x00\x08\x06\x01\x00\x00\x00\x00\x01\x02\x00\x00\x00\x00\x00\x00'
+            b'\x00\x00\x08\x06\x01\x00\x00\x00\x00\x01\x02\x00\x00\x00\x00\x00\x00'
         )
 
     def test_no_more_than_8_octets(self):
@@ -287,9 +281,8 @@ class TestPingFrame(object):
             f.serialize()
 
     def test_ping_frame_parses_properly(self):
-        s = b'\x00\x08\x06\x01\x00\x00\x00\x00\x01\x02\x00\x00\x00\x00\x00\x00'
-        f, length = Frame.parse_frame_header(s[:8])
-        f.parse_body(memoryview(s[8:8 + length]))
+        s = b'\x00\x00\x08\x06\x01\x00\x00\x00\x00\x01\x02\x00\x00\x00\x00\x00\x00'
+        f = decode_frame(s)
 
         assert isinstance(f, PingFrame)
         assert f.flags == set(['ACK'])
@@ -321,21 +314,20 @@ class TestGoAwayFrame(object):
 
         s = f.serialize()
         assert s == (
-            b'\x00\x0D\x07\x00\x00\x00\x00\x00' +  # Frame header
-            b'\x00\x00\x00\x40'                 +  # Last Stream ID
-            b'\x00\x00\x00\x20'                 +  # Error Code
-            b'hello'                               # Additional data
+            b'\x00\x00\x0D\x07\x00\x00\x00\x00\x00' +  # Frame header
+            b'\x00\x00\x00\x40'                     +  # Last Stream ID
+            b'\x00\x00\x00\x20'                     +  # Error Code
+            b'hello'                                   # Additional data
         )
 
     def test_goaway_frame_parses_properly(self):
         s = (
-            b'\x00\x0D\x07\x00\x00\x00\x00\x00' +  # Frame header
-            b'\x00\x00\x00\x40'                 +  # Last Stream ID
-            b'\x00\x00\x00\x20'                 +  # Error Code
-            b'hello'                               # Additional data
+            b'\x00\x00\x0D\x07\x00\x00\x00\x00\x00' +  # Frame header
+            b'\x00\x00\x00\x40'                     +  # Last Stream ID
+            b'\x00\x00\x00\x20'                     +  # Error Code
+            b'hello'                                   # Additional data
         )
-        f, length = Frame.parse_frame_header(s[:8])
-        f.parse_body(memoryview(s[8:8 + length]))
+        f = decode_frame(s)
 
         assert isinstance(f, GoAwayFrame)
         assert f.flags == set()
@@ -359,12 +351,11 @@ class TestWindowUpdateFrame(object):
         f.window_increment = 512
 
         s = f.serialize()
-        assert s == b'\x00\x04\x08\x00\x00\x00\x00\x00\x00\x00\x02\x00'
+        assert s == b'\x00\x00\x04\x08\x00\x00\x00\x00\x00\x00\x00\x02\x00'
 
     def test_windowupdate_frame_parses_properly(self):
-        s = b'\x00\x04\x08\x00\x00\x00\x00\x00\x00\x00\x02\x00'
-        f, length = Frame.parse_frame_header(s[:8])
-        f.parse_body(memoryview(s[8:8 + length]))
+        s = b'\x00\x00\x04\x08\x00\x00\x00\x00\x00\x00\x00\x02\x00'
+        f = decode_frame(s)
 
         assert isinstance(f, WindowUpdateFrame)
         assert f.flags == set()
@@ -386,17 +377,16 @@ class TestHeadersFrame(object):
 
         s = f.serialize()
         assert s == (
-            b'\x00\x0B\x01\x05\x00\x00\x00\x01' +
+            b'\x00\x00\x0B\x01\x05\x00\x00\x00\x01' +
             b'hello world'
         )
 
     def test_headers_frame_parses_properly(self):
         s = (
-            b'\x00\x0B\x01\x05\x00\x00\x00\x01' +
+            b'\x00\x00\x0B\x01\x05\x00\x00\x00\x01' +
             b'hello world'
         )
-        f, length = Frame.parse_frame_header(s[:8])
-        f.parse_body(memoryview(s[8:8 + length]))
+        f = decode_frame(s)
 
         assert isinstance(f, HeadersFrame)
         assert f.flags == set(['END_STREAM', 'END_HEADERS'])
@@ -406,11 +396,10 @@ class TestHeadersFrame(object):
         # This test also tests that we can receive a HEADERS frame with no
         # actual headers on it. This is technically possible.
         s = (
-            b'\x00\x05\x01\x20\x00\x00\x00\x01' +
+            b'\x00\x00\x05\x01\x20\x00\x00\x00\x01' +
             b'\x80\x00\x00\x04\x40'
         )
-        f, length = Frame.parse_frame_header(s[:8])
-        f.parse_body(memoryview(s[8:8 + length]))
+        f = decode_frame(s)
 
         assert isinstance(f, HeadersFrame)
         assert f.flags == set(['PRIORITY'])
@@ -423,7 +412,7 @@ class TestHeadersFrame(object):
         # This test also tests that we can receive a HEADERS frame with no
         # actual headers on it. This is technically possible.
         s = (
-            b'\x00\x05\x01\x20\x00\x00\x00\x01' +
+            b'\x00\x00\x05\x01\x20\x00\x00\x00\x01' +
             b'\x80\x00\x00\x04\x40'
         )
         f = HeadersFrame(1)
@@ -450,14 +439,13 @@ class TestContinuationFrame(object):
 
         s = f.serialize()
         assert s == (
-            b'\x00\x0B\x09\x04\x00\x00\x00\x01' +
+            b'\x00\x00\x0B\x09\x04\x00\x00\x00\x01' +
             b'hello world'
         )
 
     def test_continuation_frame_parses_properly(self):
-        s = b'\x00\x0B\x09\x04\x00\x00\x00\x01hello world'
-        f, length = Frame.parse_frame_header(s[:8])
-        f.parse_body(memoryview(s[8:8 + length]))
+        s = b'\x00\x00\x0B\x09\x04\x00\x00\x00\x01hello world'
+        f = decode_frame(s)
 
         assert isinstance(f, ContinuationFrame)
         assert f.flags == set(['END_HEADERS'])
@@ -466,12 +454,12 @@ class TestContinuationFrame(object):
 
 class TestAltSvcFrame(object):
     payload_with_origin = (
-        b'\x00\x2B\x0A\x00\x00\x00\x00\x00'
+        b'\x00\x00\x2B\x0A\x00\x00\x00\x00\x00'
         b'\x00\x00\x00\x1D\x00\x50\x00\x02'
         b'h2\x0Agoogle.comhttps://yahoo.com:8080'
     )
     payload_without_origin = (
-        b'\x00\x15\x0A\x00\x00\x00\x00\x00'
+        b'\x00\x00\x15\x0A\x00\x00\x00\x00\x00'
         b'\x00\x00\x00\x1D\x00\x50\x00\x02'
         b'h2\x0Agoogle.com'
     )
@@ -494,8 +482,7 @@ class TestAltSvcFrame(object):
         assert s == self.payload_with_origin
 
     def test_altsvc_frame_with_origin_parses_properly(self):
-        f, length = Frame.parse_frame_header(self.payload_with_origin[:8])
-        f.parse_body(memoryview(self.payload_with_origin[8:8 + length]))
+        f = decode_frame(self.payload_with_origin)
 
         assert isinstance(f, AltSvcFrame)
         assert f.host == b'google.com'
@@ -515,8 +502,7 @@ class TestAltSvcFrame(object):
         assert s == self.payload_without_origin
 
     def test_altsvc_frame_without_origin_parses_properly(self):
-        f, length = Frame.parse_frame_header(self.payload_without_origin[:8])
-        f.parse_body(memoryview(self.payload_without_origin[8:8 + length]))
+        f = decode_frame(self.payload_without_origin)
 
         assert isinstance(f, AltSvcFrame)
         assert f.host == b'google.com'
@@ -548,12 +534,11 @@ class TestBlockedFrame(object):
         f = BlockedFrame(2)
 
         s = f.serialize()
-        assert s == b'\x00\x00\x0B\x00\x00\x00\x00\x02'
+        assert s == b'\x00\x00\x00\x0B\x00\x00\x00\x00\x02'
 
     def test_blocked_frame_parses_properly(self):
-        s = b'\x00\x00\x0B\x00\x00\x00\x00\x02'
-        f, length = Frame.parse_frame_header(s[:8])
-        f.parse_body(memoryview(s[8:8 + length]))
+        s = b'\x00\x00\x00\x0B\x00\x00\x00\x00\x02'
+        f = decode_frame(s)
 
         assert isinstance(f, BlockedFrame)
         assert f.flags == set()
@@ -1074,7 +1059,7 @@ class TestHyperConnection(object):
 
     def test_we_can_read_from_the_socket(self):
         sock = DummySocket()
-        sock.buffer = BytesIO(b'\x00\x08\x00\x01\x00\x00\x00\x01testdata')
+        sock.buffer = BytesIO(b'\x00\x00\x08\x00\x01\x00\x00\x00\x01testdata')
 
         c = HTTP20Connection('www.google.com')
         c._sock = sock

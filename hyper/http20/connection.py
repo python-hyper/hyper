@@ -478,8 +478,8 @@ class HTTP20Connection(object):
         read a frame that doesn't belong to them. That's ok: streams need to
         make a decision to spin around again.
         """
-        # Begin by reading 8 bytes from the socket.
-        header = self._sock.recv(8)
+        # Begin by reading 9 bytes from the socket.
+        header = self._sock.recv(9)
 
         # Parse the header. We can use the returned memoryview directly here.
         frame, length = Frame.parse_frame_header(header)
