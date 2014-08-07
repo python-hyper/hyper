@@ -32,8 +32,8 @@ and file down the rough edges.
 Versions
 ========
 
-``hyper`` provides support for draft 13 of the HTTP/2 draft specification and
-draft 8 of the HPACK draft specification. As further drafts are released,
+``hyper`` provides support for draft 14 of the HTTP/2 draft specification and
+draft 9 of the HPACK draft specification. As further drafts are released,
 ``hyper`` will be updated to support them.
 
 Compatibility
