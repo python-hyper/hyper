@@ -39,7 +39,7 @@ def encode_integer(integer, prefix_bits):
         integer = integer - max_number
 
         while integer >= 0x80:
-            elements.append((integer % 0x80) + 0x80)
+            elements.append((integer & 0x7f) | 0x80)
             integer = integer >> 7  # We need integer division
 
         elements.append(integer)
