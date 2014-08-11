@@ -40,7 +40,7 @@ def encode_integer(integer, prefix_bits):
 
         while integer >= 0x80:
             elements.append((integer % 0x80) + 0x80)
-            integer = integer // 0x80  # We need integer division
+            integer = integer >> 7  # We need integer division
 
         elements.append(integer)
 
@@ -68,7 +68,7 @@ def decode_integer(data, prefix_bits):
             next_byte = to_byte(data[index])
 
             if next_byte >= 0x80:
-                number += (next_byte - 0x80) * multiple(index)
+                number += (next_byte & 0x7f) * multiple(index)
             else:
                 number += next_byte * multiple(index)
                 break
