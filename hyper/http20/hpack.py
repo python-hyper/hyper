@@ -30,7 +30,7 @@ def encode_integer(integer, prefix_bits):
     """
     log.debug("Encoding %d with %d bits.", integer, prefix_bits)
 
-    max_number = (2 ** prefix_bits) - 1
+    max_number = (1 << prefix_bits) - 1
 
     if (integer < max_number):
         return bytearray([integer])  # Seriously?
@@ -38,9 +38,9 @@ def encode_integer(integer, prefix_bits):
         elements = [max_number]
         integer = integer - max_number
 
-        while integer >= 128:
-            elements.append((integer % 128) + 128)
-            integer = integer // 128  # We need integer division
+        while integer >= 0x80:
+            elements.append((integer & 0x7f) | 0x80)
+            integer = integer >> 7  # We need integer division
 
         elements.append(integer)
 
@@ -54,8 +54,8 @@ def decode_integer(data, prefix_bits):
     number of bytes that were consumed from ``data`` in order to get that
     integer.
     """
-    multiple = lambda index: 128 ** (index - 1)
-    max_number = (2 ** prefix_bits) - 1
+    multiple = lambda index: 1 << (7 * (index - 1))
+    max_number = (1 << prefix_bits) - 1
     mask = 0xFF >> (8 - prefix_bits)
     index = 0
 
@@ -67,8 +67,8 @@ def decode_integer(data, prefix_bits):
             index += 1
             next_byte = to_byte(data[index])
 
-            if next_byte >= 128:
-                number += (next_byte - 128) * multiple(index)
+            if next_byte >= 0x80:
+                number += (next_byte & 0x7f) * multiple(index)
             else:
                 number += next_byte * multiple(index)
                 break
