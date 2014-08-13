@@ -31,3 +31,9 @@ class ConnectionError(HTTP20Error):
     connection, and the connection has been closed.
     """
     pass
+
+class ProtocolError(HTTP20Error):
+    """
+    The remote party violated the HTTP/2 protocol.
+    """
+    pass
