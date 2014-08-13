@@ -111,6 +111,9 @@ class HTTP20Response(object):
         # once, and never assigned again.
         self._headers = Headers(headers)
 
+        # The response trailers. These are always intially ``None``.
+        self._trailers = None
+
         # The stream this response is being sent over.
         self._stream = stream
 
@@ -197,6 +200,48 @@ class HTTP20Response(object):
         :returns: A list of ``(header, value)`` tuples.
         """
         return list(self._headers.items())
+
+    def gettrailer(self, name, default=None):
+        """
+        Return the value of the trailer ``name``, or ``default`` if there is no
+        trailer matching ``name``. If there is more than one trailer with the
+        value ``name``, return all of the values joined by ', '. If ``default``
+        is any iterable other than a single string, its elements are similarly
+        returned joined by commas.
+
+        .. warning:: Note that this method requires that the stream is
+                     totally exhausted. This means that, if you have not
+                     completely read from the stream, all stream data will be
+                     read into memory.
+
+        :param name: The name of the trailer to get the value of.
+        :param default: (optional) The return value if the trailer wasn't sent.
+        :returns: The value of the trailer.
+        """
+        # We need to get the trailers.
+        if self._trailers is None:
+            trailers = self.stream.gettrailers() or []
+            self._trailers = Headers(trailers)
+
+        return self._trailers.getheader(name, default)
+
+    def gettrailers(self):
+        """
+        Get all the trailers sent on the response.
+
+        .. warning:: Note that this method requires that the stream is
+                     totally exhausted. This means that, if you have not
+                     completely read from the stream, all stream data will be
+                     read into memory.
+
+        :returns: A list of ``(header, value)`` tuples.
+        """
+        # We need to get the trailers.
+        if self._trailers is None:
+            trailers = self.stream.gettrailers() or []
+            self._trailers = Headers(trailers)
+
+        return list(self._trailers.items())
 
     def fileno(self):
         """
