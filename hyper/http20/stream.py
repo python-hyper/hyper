@@ -13,6 +13,7 @@ stream is an independent, bi-directional sequence of HTTP headers and data.
 Each stream is identified by a monotonically increasing integer, assigned to
 the stream by the endpoint that initiated the stream.
 """
+from .exceptions import ProtocolError
 from .frame import (
     FRAME_MAX_LEN, FRAMES, HeadersFrame, DataFrame, PushPromiseFrame,
     WindowUpdateFrame, ContinuationFrame, BlockedFrame
@@ -64,6 +65,10 @@ class Stream(object):
         # Set to a key-value set of the response headers once their
         # HEADERS..CONTINUATION frame sequence finishes.
         self.response_headers = None
+
+        # Set to a key-value set of the response trailers once their
+        # HEADERS..CONTINUATION frame sequence finishes.
+        self.response_trailers = None
 
         # A dict mapping the promised stream ID of a pushed resource to a
         # key-value set of its request headers. Entries are added once their
@@ -224,8 +229,17 @@ class Stream(object):
 
         if 'END_HEADERS' in frame.flags:
             headers = self._decoder.decode(b''.join(self.header_data))
-            if self.promised_stream_id is None:
-                self.response_headers = headers
+
+            # The header block may be for trailers or headers. If we've already
+            # received headers these _must_ be for trailers.
+            if (self.promised_stream_id is None):
+                if self.response_headers is None:
+                    self.response_headers = headers
+                elif self.response_trailers is None:
+                    self.response_trailers = headers
+                else:
+                    # Received too many headers blocks.
+                    raise ProtocolError("Too many header blocks.")
             else:
                 self.promised_headers[self.promised_stream_id] = headers
 
