@@ -348,7 +348,6 @@ class Stream(object):
         body is sent. This method enforces the logic associated with this,
         storing the headers in the appropriate places.
         """
-
         # At this stage we should check for a provisional response (1XX). As
         # hyper doesn't currently support such responses, we'll leave that as a
         # TODO.
@@ -364,7 +363,7 @@ class Stream(object):
             # Received too many headers blocks.
             raise ProtocolError("Too many header blocks.")
 
-        self.header_data = None
+        return
 
     def _send_chunk(self, data, final):
         """
