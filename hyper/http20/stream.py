@@ -243,7 +243,6 @@ class Stream(object):
             # We've handled the headers, zero them out.
             self.header_data = None
 
-
     def open(self, end):
         """
         Open the stream. Does this by encoding and sending the headers: no more
@@ -299,6 +298,28 @@ class Stream(object):
         )
 
         return self.response_headers
+
+    def gettrailers(self):
+        """
+        Once all data has been sent on this connection, returns a key-value set
+        of the trailers of the response to the original request.
+
+        .. warning:: Note that this method requires that the stream is
+                     totally exhausted. This means that, if you have not
+                     completely read from the stream, all stream data will be
+                     read into memory.
+
+        :returns: The key-value set of the trailers, or ``None`` if no trailers
+                  were sent.
+        """
+        # Keep reading until the stream is done.
+        # TODO: Right now this doesn't handle CONTINUATION blocks in trailers.
+        # The idea of receiving such a thing is mind-boggling it's so unlikely,
+        # but we should fix this up at some stage.
+        while not self._remote_closed:
+            self._recv_cb()
+
+        return self.response_trailers
 
     def getpushes(self, capture_all=False):
         """
