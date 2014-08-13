@@ -25,12 +25,14 @@ class HPACKDecodingError(HTTP20Error):
     """
     pass
 
+
 class ConnectionError(HTTP20Error):
     """
     The remote party signalled an error affecting the entire HTTP/2
     connection, and the connection has been closed.
     """
     pass
+
 
 class ProtocolError(HTTP20Error):
     """
