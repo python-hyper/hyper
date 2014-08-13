@@ -228,22 +228,21 @@ class Stream(object):
             pass
 
         if 'END_HEADERS' in frame.flags:
+            # Begin by decoding the header block. If this fails, we need to
+            # tear down the entire connection. TODO: actually do that.
             headers = self._decoder.decode(b''.join(self.header_data))
 
-            # The header block may be for trailers or headers. If we've already
-            # received headers these _must_ be for trailers.
+            # If we're involved in a PUSH_PROMISE sequence, this header block
+            # is the proposed request headers. Save it off. Otherwise, handle
+            # it as an in-stream HEADERS block.
             if (self.promised_stream_id is None):
-                if self.response_headers is None:
-                    self.response_headers = headers
-                elif self.response_trailers is None:
-                    self.response_trailers = headers
-                else:
-                    # Received too many headers blocks.
-                    raise ProtocolError("Too many header blocks.")
+                self._handle_header_block(headers)
             else:
                 self.promised_headers[self.promised_stream_id] = headers
 
+            # We've handled the headers, zero them out.
             self.header_data = None
+
 
     def open(self, end):
         """
@@ -333,6 +332,39 @@ class Stream(object):
         # Right now let's not bother with grace, let's just call close on the
         # connection.
         self._close_cb(self.stream_id, error_code)
+
+    def _handle_header_block(self, headers):
+        """
+        Handles the logic for receiving a completed headers block.
+
+        A headers block is an uninterrupted sequence of one HEADERS frame
+        followed by zero or more CONTINUATION frames, and is terminated by a
+        frame bearing the END_HEADERS flag.
+
+        HTTP/2 allows receipt of up to three such blocks on a stream. The first
+        is optional, and contains a 1XX response. The second is mandatory, and
+        must contain a final response (200 or higher). The third is optional,
+        and may contain 'trailers', headers that are sent after a chunk-encoded
+        body is sent. This method enforces the logic associated with this,
+        storing the headers in the appropriate places.
+        """
+
+        # At this stage we should check for a provisional response (1XX). As
+        # hyper doesn't currently support such responses, we'll leave that as a
+        # TODO.
+        # TODO: Handle 1XX responses here.
+
+        # The header block may be for trailers or headers. If we've already
+        # received headers these _must_ be for trailers.
+        if self.response_headers is None:
+            self.response_headers = headers
+        elif self.response_trailers is None:
+            self.response_trailers = headers
+        else:
+            # Received too many headers blocks.
+            raise ProtocolError("Too many header blocks.")
+
+        self.header_data = None
 
     def _send_chunk(self, data, final):
         """
