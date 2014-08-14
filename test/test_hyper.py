@@ -1742,6 +1742,37 @@ class TestHyperStream(object):
         with pytest.raises(ValueError):
             s.receive_frame(f)
 
+    def test_can_receive_trailers(self):
+        headers = [('a', 'b'), ('c', 'd'), (':status', '200')]
+        trailers = [('e', 'f'), ('g', 'h')]
+
+        s = Stream(1, None, None, None, None, FixedDecoder(headers), None)
+        s.state = STATE_HALF_CLOSED_LOCAL
+
+        # Provide the first HEADERS frame.
+        f = HeadersFrame(1)
+        f.data = b'hi there!'
+        f.flags.add('END_HEADERS')
+        s.receive_frame(f)
+
+        assert s.response_headers == headers
+
+        # Now, replace the dummy decoder to ensure we get a new header block.
+        s._decoder = FixedDecoder(trailers)
+
+        # Provide the trailers.
+        f = HeadersFrame(1)
+        f.data = b'hi there again!'
+        f.flags.add('END_STREAM')
+        f.flags.add('END_HEADERS')
+        s.receive_frame(f)
+
+        # Now, check the trailers.
+        assert s.response_trailers == trailers
+
+        # Confirm we closed the stream.
+        assert s.state == STATE_CLOSED
+
 
 class TestResponse(object):
     def test_status_is_stripped_from_headers(self):
@@ -1899,6 +1930,13 @@ class NullEncoder(object):
     @staticmethod
     def encode(headers):
         return '\n'.join("%s%s" % (name, val) for name, val in headers)
+
+class FixedDecoder(object):
+    def __init__(self, result):
+        self.result = result
+
+    def decode(self, headers):
+        return self.result
 
 class DummySocket(object):
     def __init__(self):
