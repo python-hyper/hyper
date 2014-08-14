@@ -12,7 +12,9 @@ from hyper.http20.stream import (
     Stream, STATE_HALF_CLOSED_LOCAL, STATE_OPEN, MAX_CHUNK, STATE_CLOSED
 )
 from hyper.http20.response import HTTP20Response, HTTP20Push
-from hyper.http20.exceptions import HPACKDecodingError, HPACKEncodingError
+from hyper.http20.exceptions import (
+    HPACKDecodingError, HPACKEncodingError, ProtocolError
+)
 from hyper.http20.window import FlowControlManager
 from hyper.http20.util import combine_repeated_headers, split_repeated_headers
 from hyper.compat import zlib_compressobj
@@ -1772,6 +1774,32 @@ class TestHyperStream(object):
 
         # Confirm we closed the stream.
         assert s.state == STATE_CLOSED
+
+    def test_cannot_receive_three_header_blocks(self):
+        first = [('a', 'b'), ('c', 'd'), (':status', '200')]
+
+        s = Stream(1, None, None, None, None, FixedDecoder(first), None)
+        s.state = STATE_HALF_CLOSED_LOCAL
+
+        # Provide the first two header frames.
+        f = HeadersFrame(1)
+        f.data = b'hi there!'
+        f.flags.add('END_HEADERS')
+        s.receive_frame(f)
+
+        f = HeadersFrame(1)
+        f.data = b'hi there again!'
+        f.flags.add('END_HEADERS')
+        s.receive_frame(f)
+
+        # Provide the third. This one blows up.
+        f = HeadersFrame(1)
+        f.data = b'hi there again!'
+        f.flags.add('END_STREAM')
+        f.flags.add('END_HEADERS')
+
+        with pytest.raises(ProtocolError):
+            s.receive_frame(f)
 
     def test_reading_trailers_early_reads_all_data(self):
         in_frames = []
