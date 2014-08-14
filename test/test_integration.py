@@ -361,9 +361,10 @@ class TestHyperIntegration(SocketLevelTest):
 
         # Confirm that we got the trailing headers, and that they don't contain
         # reserved headers.
-        assert resp.getheader('trailing') == 'sure'
-        assert resp.getheader(':res') is None
-        assert len(resp.getheaders()) == 2
+        assert resp.gettrailer('trailing') == 'sure'
+        assert resp.gettrailer(':res') is None
+        assert len(resp.getheaders()) == 1
+        assert len(resp.gettrailers()) == 1
 
         # Awesome, we're done now.
         recv_event.set()
