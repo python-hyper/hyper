@@ -220,7 +220,7 @@ class HTTP20Response(object):
         """
         # We need to get the trailers.
         if self._trailers is None:
-            trailers = self.stream.gettrailers() or []
+            trailers = self._stream.gettrailers() or []
             self._trailers = Headers(trailers)
 
         return self._trailers.getheader(name, default)
@@ -238,7 +238,7 @@ class HTTP20Response(object):
         """
         # We need to get the trailers.
         if self._trailers is None:
-            trailers = self.stream.gettrailers() or []
+            trailers = self._stream.gettrailers() or []
             self._trailers = Headers(trailers)
 
         return list(self._trailers.items())
