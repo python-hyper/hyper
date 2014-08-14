@@ -1874,6 +1874,23 @@ class TestResponse(object):
         with pytest.raises(NotImplementedError):
             resp.fileno()
 
+    def test_trailers_are_read(self):
+        trailers = [('a', 'b'), ('c', 'd')]
+        stream = DummyStream(b'', trailers=trailers)
+        resp = HTTP20Response([(':status', '200')], stream)
+
+        # Cast to dict in both places because we roundtrip through a dict
+        # anyway.
+        assert dict(resp.gettrailers()) == dict(trailers)
+        assert resp.gettrailer('a') == 'b'
+        assert resp.gettrailer('c') == 'd'
+
+    def test_gettrailer_defaults_correctly(self):
+        resp = HTTP20Response([(':status', '200')], DummyStream(b''))
+
+        assert resp.gettrailer('a') is None
+        assert resp.gettrailer('a', 'b') == 'b'
+
 
 class TestHTTP20Adapter(object):
     def test_adapter_reuses_connections(self):
@@ -1953,11 +1970,15 @@ class DummySocket(object):
         pass
 
 class DummyStream(object):
-    def __init__(self, data):
+    def __init__(self, data, trailers=None):
         self.data = data
         self.closed = False
         self.response_headers = {}
         self._remote_closed = False
+        self.trailers = trailers
+
+        if self.trailers is None:
+            self.trailers = []
 
     def _read(self, *args, **kwargs):
         try:
@@ -1978,3 +1999,6 @@ class DummyStream(object):
             self.closed = True
         else:
             assert False
+
+    def gettrailers(self):
+        return self.trailers
