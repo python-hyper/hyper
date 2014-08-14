@@ -1773,6 +1773,48 @@ class TestHyperStream(object):
         # Confirm we closed the stream.
         assert s.state == STATE_CLOSED
 
+    def test_reading_trailers_early_reads_all_data(self):
+        in_frames = []
+        headers = [('a', 'b'), ('c', 'd'), (':status', '200')]
+        trailers = [('e', 'f'), ('g', 'h')]
+
+        def recv_cb(s):
+            def inner():
+                s.receive_frame(in_frames.pop(0))
+            return inner
+
+        s = Stream(1, None, None, None, None, FixedDecoder(headers), FlowControlManager(65535))
+        s._recv_cb = recv_cb(s)
+        s.state = STATE_HALF_CLOSED_LOCAL
+
+        # Provide the first HEADERS frame.
+        f = HeadersFrame(1)
+        f.data = b'hi there!'
+        f.flags.add('END_HEADERS')
+        in_frames.append(f)
+
+        # Provide some data.
+        f = DataFrame(1)
+        f.data = b'testdata'
+        in_frames.append(f)
+
+        # Provide the trailers.
+        f = HeadersFrame(1)
+        f.data = b'hi there again!'
+        f.flags.add('END_STREAM')
+        f.flags.add('END_HEADERS')
+        in_frames.append(f)
+
+        # Begin by reading the first headers.
+        assert s.getheaders() == headers
+
+        # Now, replace the dummy decoder to ensure we get a new header block.
+        s._decoder = FixedDecoder(trailers)
+
+        # Ask for the trailers. This should also read the data frames.
+        assert s.gettrailers() == trailers
+        assert s.data == [b'testdata']
+
 
 class TestResponse(object):
     def test_status_is_stripped_from_headers(self):
