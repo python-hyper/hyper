@@ -24,12 +24,9 @@ improved speed, lower bandwidth usage, better connection management, and more.
 
 Simple. ``hyper`` is written in 100% pure Python, which means no C extensions.
 For recent versions of Python (3.4 and onward) it's entirely self-contained
-with no external dependencies. With older versions, we depend on `PyOpenSSL`_
-to work around the standard library's anaemic TLS support.
+with no external dependencies.
 
-``hyper`` supports Python 2.7 and 3.3+ on CPython and PyPy.
-
-.. _PyOpenSSL: http://pyopenssl.readthedocs.org/en/latest/
+``hyper`` supports Python 3.4.
 
 Caveat Emptor!
 --------------
