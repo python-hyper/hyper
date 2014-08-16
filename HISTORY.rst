@@ -1,7 +1,7 @@
 Release History
 ===============
 
-X.X.X (XXXX-XX-XX)
+0.1.0 (2014-08-16)
 ------------------
 
 *Regressions and Known Bugs*
