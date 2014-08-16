@@ -4,12 +4,21 @@ Release History
 X.X.X (XXXX-XX-XX)
 ------------------
 
+*Regressions and Known Bugs*
+
+- Support for Python 3.3 has been temporarily dropped due to features missing
+  from the Python 3.3 ``ssl`` module. PyOpenSSL has been identified as a
+  replacement, but until NPN support is merged it cannot be used. Python 3.3
+  support *will* be re-added when a suitable release of PyOpenSSL is shipped.
+- Technically this release also includes support for PyPy and Python 2.7. That
+  support is also blocked behind a suitable PyOpenSSL release.
+
+For more information on these regressions, please see `Issue #37`_.
+
 *Major Changes*
 
 - Support for HPACK draft 9.
 - Support for HTTP/2 draft 14.
-- Support for Python 2.7, thanks to the inimitable @alekstorm! (`Issue #33`_)
-- Support for PyPy.
 - Support for Sever Push, thanks to @alekstorm. (`Issue #40`_)
 - Use a buffered socket to avoid unnecessary syscalls. (`Issue #56`_)
 - If `nghttp2`_ is present, use its HPACK encoder for improved speed and
@@ -37,6 +46,7 @@ X.X.X (XXXX-XX-XX)
 .. _Issue #26: https://github.com/Lukasa/hyper/issues/26
 .. _Issue #27: https://github.com/Lukasa/hyper/issues/27
 .. _Issue #33: https://github.com/Lukasa/hyper/issues/33
+.. _Issue #37: https://github.com/Lukasa/hyper/issues/37
 .. _Issue #39: https://github.com/Lukasa/hyper/issues/39
 .. _Issue #40: https://github.com/Lukasa/hyper/issues/40
 .. _Issue #41: https://github.com/Lukasa/hyper/issues/41
