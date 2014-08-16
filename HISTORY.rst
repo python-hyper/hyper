@@ -14,6 +14,9 @@ X.X.X (XXXX-XX-XX)
 - Use a buffered socket to avoid unnecessary syscalls. (`Issue #56`_)
 - If `nghttp2`_ is present, use its HPACK encoder for improved speed and
   compression efficiency. (`Issue #60`_)
+- Add ``HTTP20Response.gettrailer()`` and ``HTTP20Response.gettrailers()``,
+  supporting downloading and examining HTTP trailers. (Discussed in part in
+  `Issue #71`_.)
 
 *Bugfixes*
 
@@ -43,6 +46,7 @@ X.X.X (XXXX-XX-XX)
 .. _Issue #52: https://github.com/Lukasa/hyper/issues/52
 .. _Issue #56: https://github.com/Lukasa/hyper/issues/56
 .. _Issue #60: https://github.com/Lukasa/hyper/issues/60
+.. _Issue #71: https://github.com/Lukasa/hyper/issues/71
 .. _nghttp2: https://nghttp2.org/
 
 0.0.4 (2014-03-08)
