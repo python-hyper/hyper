@@ -20,7 +20,7 @@ X.X.X (XXXX-XX-XX)
 
 *Bugfixes*
 
-- `HTTP20Response` objects are context managers. (`Issue #24`_)
+- ``HTTP20Response`` objects are context managers. (`Issue #24`_)
 - Pluggable window managers are now correctly informed about the document size.
   (`Issue #26`_)
 - Header blocks can no longer be corrupted if read in a different order to the
