@@ -1,0 +1,36 @@
+# -*- coding: utf-8 -*-
+"""
+http2dump
+
+Decodes a binary stream of HTTP/2 data into a textual representation of the
+encoded frame data.
+
+Usage:
+  http2dump infile
+  http2dump -h | --help
+  http2dump --version
+
+Options:
+  -h, --help    Show this screen.
+  --version     Show version.
+"""
+from docopt import docopt
+import hyper
+
+def main(infile=None):
+    """
+    The main http2dump loop.
+
+    Generally, this loop executes as follows:
+      - Read from the binary file until a frame is decoded.
+      - Print the frame to stdout.
+      - Repeat
+
+    The loop terminates when the binary file is exhausted.
+    """
+    pass
+
+if __name__ == '__main__':
+    options = docopt(__doc__, help=True, version=hyper.version)
+
+    main(**options)
