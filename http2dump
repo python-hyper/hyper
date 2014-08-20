@@ -15,6 +15,9 @@ Options:
   -h, --help    Show this screen.
   --version     Show version.
 """
+# Version compatibility
+from __future__ import print_function
+
 from docopt import docopt
 import hyper
 
