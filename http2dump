@@ -7,13 +7,14 @@ Decodes a binary stream of HTTP/2 data into a textual representation of the
 encoded frame data.
 
 Usage:
-  http2dump infile
+  http2dump [options] infile
   http2dump -h | --help
   http2dump --version
 
 Options:
-  -h, --help    Show this screen.
-  --version     Show version.
+  -o <outfile>, --output=<outfile>   File to write output to instead of stdout.
+  -h, --help                         Show this screen.
+  --version                          Show version.
 """
 # Version compatibility
 from __future__ import print_function
@@ -21,7 +22,7 @@ from __future__ import print_function
 from docopt import docopt
 import hyper
 
-def main(infile=None):
+def main(infile=None, outfile=None):
     """
     The main http2dump loop.
 
