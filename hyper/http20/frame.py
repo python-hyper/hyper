@@ -131,7 +131,7 @@ class Padding(object):
 
     def diag_serialize_padding_data(self):
         if 'PADDED' in self.flags:
-            return '(%d padding bytes)' % self.pad_length
+            return ' (%d padding bytes)' % self.pad_length
         return ''
 
     @property
@@ -173,7 +173,7 @@ class Priority(object):
         return 5
 
     def diag_serialize_priority_data(self):
-        base = 'Priority: Depends on %d, weight %d' % (
+        base = '  Priority: Depends on %d, weight %d' % (
             self.depends_on, self.stream_weight
         )
         if self.exclusive:
