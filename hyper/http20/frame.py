@@ -129,6 +129,11 @@ class Padding(object):
             return 1
         return 0
 
+    def diag_serialize_padding_data(self):
+        if 'PADDED' in self.flags:
+            return '(%d padding bytes)' % self.pad_length
+        return ''
+
     @property
     def total_padding(self):
         """Return the total length of the padding, if any."""
@@ -166,6 +171,17 @@ class Priority(object):
         self.exclusive = bool(self.depends_on & MASK)
         self.depends_on &= ~MASK
         return 5
+
+    def diag_serialize_priority_data(self):
+        base = 'Priority: Depends on %d, weight %d' % (
+            self.depends_on, self.stream_weight
+        )
+        if self.exclusive:
+            exclusive = ' (Exclusive)'
+        else:
+            exclusive = ''
+
+        return ''.join(base, exclusive)
 
 
 class DataFrame(Padding, Frame):
