@@ -46,6 +46,6 @@ def main(infile=None, outfile=None):
 
 
 if __name__ == '__main__':
-    options = docopt(__doc__, help=True, version=hyper.version)
+    options = docopt(__doc__, help=True, version=hyper.__version__)
 
     main(**options)
