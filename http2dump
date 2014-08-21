@@ -42,6 +42,10 @@ def main(infile=None, outfile=None):
     while True:
         # Parse the frame.
         frame_header = infile.read(9)
+
+        if not frame_header:
+            break
+
         frame, length = hyper.http20.frame.Frame.parse_frame_header(frame_header)
         body = infile.read(length)
         frame.parse_body(memoryview(body))
