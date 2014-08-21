@@ -7,7 +7,7 @@ Decodes a binary stream of HTTP/2 data into a textual representation of the
 encoded frame data.
 
 Usage:
-  http2dump [options] infile
+  http2dump [options] <infile>
   http2dump -h | --help
   http2dump --version
 
