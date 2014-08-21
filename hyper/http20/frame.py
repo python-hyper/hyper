@@ -10,6 +10,9 @@ socket.
 import collections
 import struct
 
+from binascii import hexlify
+
+
 # The maximum length of a frame. Some frames have shorter maximum lengths.
 FRAME_MAX_LEN = (2 ** 14) - 1
 
@@ -221,6 +224,13 @@ class DataFrame(Padding, Frame):
     def parse_body(self, data):
         padding_data_length = self.parse_padding_data(data)
         self.data = data[padding_data_length:len(data)-self.total_padding].tobytes()
+
+    def diag_serialize_body(self):
+        def chunks(string):
+            chunk_size = 68
+            for i in range(0, len(string), chunk_size):
+                yield '  ' + string[i:i+chunk_size]
+        return '\n'.join(chunks(hexlify(self.data).decode('utf-8')))
 
     @property
     def flow_controlled_length(self):

@@ -120,6 +120,23 @@ class TestDataFrame(object):
         with pytest.raises(ValueError):
             DataFrame(0)
 
+    def test_data_frame_without_padding_diag_serializes_properly(self):
+        f = DataFrame(1)
+        f.flags = set(['END_STREAM'])
+        f.data = b'\x01' * 80
+
+        result = (
+            "DATA\n"
+            "  Stream ID: 1\n"
+            "  Flags: END_STREAM\n"
+            "  Length: 80\n"
+            "  " + "01"*34 + "\n"
+            "  " + "01"*34 + "\n"
+            "  " + "01"*12 + "\n"
+        )
+
+        assert f.diag_serialize() == result
+
 
 class TestPriorityFrame(object):
     payload = b'\x00\x00\x05\x02\x00\x00\x00\x00\x01\x80\x00\x00\x04\x40'
