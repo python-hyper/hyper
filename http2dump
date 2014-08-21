@@ -36,6 +36,9 @@ def main(infile=None, outfile=None):
 
     The loop terminates when the binary file is exhausted.
     """
+    # Read the HTTP/2 preamble (24 byes).
+    infile.read(24)
+
     while True:
         # Parse the frame.
         frame_header = infile.read(9)
