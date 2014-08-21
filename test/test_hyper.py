@@ -52,6 +52,11 @@ class TestGeneralFrameBehaviour(object):
         with pytest.raises(NotImplementedError):
             f.parse_body(data)
 
+    def test_base_frame_doesnt_diag_serialize(self):
+        f = Frame(0)
+        with pytest.raises(NotImplementedError):
+            f.diag_serialize()
+
 
 class TestDataFrame(object):
     payload = b'\x00\x00\x08\x00\x01\x00\x00\x00\x01testdata'

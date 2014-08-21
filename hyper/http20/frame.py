@@ -83,7 +83,26 @@ class Frame(object):
 
         return header + body
 
+    def diag_serialize(self):
+        """
+        Serialize a frame for diagnostic purposes. Prints a human-readable
+        representation of the frame.
+        """
+        # Get some useful info
+        body = self.serialize_body_diag()
+        body_len = len(self.serialize_body())
+
+        name = self.__class__.__name__.upper()
+        stream_id = '  Stream ID: %d' % self.stream_id
+        flags = '  Flags: %s' % (', '.join(self.flags))
+        length = '  Length: %d' % len(self.serialize_body())
+
+        return '\n'.join([name, stream_id, flags, length, body, ''])
+
     def serialize_body(self):
+        raise NotImplementedError()
+
+    def serialize_body_diag(self):
         raise NotImplementedError()
 
     def parse_body(self, data):
