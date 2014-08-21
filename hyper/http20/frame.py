@@ -89,7 +89,7 @@ class Frame(object):
         representation of the frame.
         """
         # Get some useful info
-        body = self.serialize_body_diag()
+        body = self.diag_serialize_body()
 
         name = self.__class__.__name__.upper()
         stream_id = '  Stream ID: %d' % self.stream_id
@@ -111,7 +111,7 @@ class Frame(object):
     def serialize_body(self):
         raise NotImplementedError()
 
-    def serialize_body_diag(self):
+    def diag_serialize_body(self):
         raise NotImplementedError()
 
     def parse_body(self, data):
