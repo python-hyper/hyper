@@ -137,6 +137,24 @@ class TestDataFrame(object):
 
         assert f.diag_serialize() == result
 
+    def test_data_frame_with_padding_diag_serializes_properly(self):
+        f = DataFrame(1)
+        f.flags = ['END_STREAM', 'PADDED']  # Don't use a set, be predictable
+        f.data = b'\x01' * 80
+        f.pad_length = 10
+
+        result = (
+            "DATA\n"
+            "  Stream ID: 1\n"
+            "  Flags: END_STREAM, PADDED\n"
+            "  Length: 91 (11 padding bytes)\n"
+            "  " + "01"*34 + "\n"
+            "  " + "01"*34 + "\n"
+            "  " + "01"*12 + "\n"
+        )
+
+        assert f.diag_serialize() == result
+
 
 class TestPriorityFrame(object):
     payload = b'\x00\x00\x05\x02\x00\x00\x00\x00\x01\x80\x00\x00\x04\x40'

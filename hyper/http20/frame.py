@@ -142,8 +142,9 @@ class Padding(object):
         return 0
 
     def diag_serialize_padding_data(self):
+        # Make sure to add 1 to the padding length to include the length byte.
         if 'PADDED' in self.flags:
-            return ' (%d padding bytes)' % self.pad_length
+            return ' (%d padding bytes)' % (self.pad_length + 1)
         return ''
 
     @property
