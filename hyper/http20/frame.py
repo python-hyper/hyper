@@ -90,14 +90,23 @@ class Frame(object):
         """
         # Get some useful info
         body = self.serialize_body_diag()
-        body_len = len(self.serialize_body())
 
         name = self.__class__.__name__.upper()
         stream_id = '  Stream ID: %d' % self.stream_id
         flags = '  Flags: %s' % (', '.join(self.flags))
         length = '  Length: %d' % len(self.serialize_body())
 
-        return '\n'.join(name, stream_id, flags, length, body, '')
+        if hasattr(self, 'diag_serialize_padding_data'):
+            length += self.diag_serialize_padding_data()
+
+        parts = [name, stream_id, flags, length, body]
+
+        if hasattr(self, 'diag_serialize_priority_data'):
+            parts.append(self.diag_serialize_priority_data())
+
+        parts.append('')
+
+        return '\n'.join(parts)
 
     def serialize_body(self):
         raise NotImplementedError()
