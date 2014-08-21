@@ -91,8 +91,6 @@ class Frame(object):
         Serialize a frame for diagnostic purposes. Prints a human-readable
         representation of the frame.
         """
-        # Get some useful info
-        body = self.diag_serialize_body()
 
         name = self.__class__.__name__.upper()[:-5]  # Drop the 'FRAME' chars.
         stream_id = '  Stream ID: %d' % self.stream_id
@@ -102,7 +100,12 @@ class Frame(object):
         if hasattr(self, 'diag_serialize_padding_data'):
             length += self.diag_serialize_padding_data()
 
-        parts = [name, stream_id, flags, length, body]
+        parts = [name, stream_id, flags, length]
+
+        body = self.diag_serialize_body()
+
+        if body:
+            parts.append(body)
 
         if hasattr(self, 'diag_serialize_priority_data'):
             parts.append(self.diag_serialize_priority_data())
