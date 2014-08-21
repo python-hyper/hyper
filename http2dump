@@ -37,6 +37,8 @@ def main(infile=None, outfile=None):
     The loop terminates when the binary file is exhausted.
     """
     # Read the HTTP/2 preamble (24 byes).
+    # FIXME: This makes the assumption that we're looking at a client stream.
+    # For now that's fine, but we'll need to fix it later.
     infile.read(24)
 
     while True:
