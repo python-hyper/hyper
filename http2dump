@@ -44,7 +44,7 @@ def main(infile=None, outfile=None):
         frame_header = infile.read(9)
         frame, length = hyper.http20.frame.Frame.parse_frame_header(frame_header)
         body = infile.read(length)
-        frame.parse_body(body)
+        frame.parse_body(memoryview(body))
 
         # Done! In this early iteration of the script, we'll just print the
         # frame types to stdout.
