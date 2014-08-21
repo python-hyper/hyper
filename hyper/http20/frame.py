@@ -91,7 +91,7 @@ class Frame(object):
         # Get some useful info
         body = self.diag_serialize_body()
 
-        name = self.__class__.__name__.upper()
+        name = self.__class__.__name__.upper()[:-5]  # Drop the 'FRAME' chars.
         stream_id = '  Stream ID: %d' % self.stream_id
         flags = '  Flags: %s' % (', '.join(self.flags))
         length = '  Length: %d' % len(self.serialize_body())
