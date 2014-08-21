@@ -97,7 +97,7 @@ class Frame(object):
         flags = '  Flags: %s' % (', '.join(self.flags))
         length = '  Length: %d' % len(self.serialize_body())
 
-        return '\n'.join([name, stream_id, flags, length, body, ''])
+        return '\n'.join(name, stream_id, flags, length, body, '')
 
     def serialize_body(self):
         raise NotImplementedError()
