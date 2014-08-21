@@ -201,7 +201,7 @@ class Priority(object):
         else:
             exclusive = ''
 
-        return ''.join(base, exclusive)
+        return ''.join([base, exclusive])
 
 
 class DataFrame(Padding, Frame):
@@ -267,6 +267,9 @@ class PriorityFrame(Priority, Frame):
 
     def parse_body(self, data):
         self.parse_priority_data(data)
+
+    def diag_serialize_body(self):
+        return ''
 
 
 class RstStreamFrame(Frame):

@@ -186,6 +186,38 @@ class TestPriorityFrame(object):
         with pytest.raises(ValueError):
             PriorityFrame(0)
 
+    def test_priority_frame_with_exclusive_diag_serializes_properly(self):
+        f = PriorityFrame(1)
+        f.depends_on = 0x04
+        f.stream_weight = 64
+        f.exclusive = True
+
+        result = (
+            "PRIORITY\n"
+            "  Stream ID: 1\n"
+            "  Flags: None\n"
+            "  Length: 5\n"
+            "  Priority: Depends on 4, weight 64 (Exclusive)\n"
+        )
+
+        assert f.diag_serialize() == result
+
+    def test_priority_frame_without_exclusive_diag_serializes_properly(self):
+        f = PriorityFrame(1)
+        f.depends_on = 0x04
+        f.stream_weight = 64
+        f.exclusive = False
+
+        result = (
+            "PRIORITY\n"
+            "  Stream ID: 1\n"
+            "  Flags: None\n"
+            "  Length: 5\n"
+            "  Priority: Depends on 4, weight 64\n"
+        )
+
+        assert f.diag_serialize() == result
+
 
 class TestRstStreamFrame(object):
     def test_rst_stream_frame_has_no_flags(self):
