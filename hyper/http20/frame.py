@@ -121,7 +121,7 @@ class Frame(object):
     def serialize_body(self):
         raise NotImplementedError()
 
-    def diag_serialize_body(self):
+    def diag_serialize_body(self):  # pragma: no cover
         raise NotImplementedError()
 
     def parse_body(self, data):
