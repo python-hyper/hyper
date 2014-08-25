@@ -101,16 +101,15 @@ class Frame(object):
             'stream id': self.stream_id,
             'flags': self.flags,
             'length': len(self.serialize_body()),
-            'padding length': None,
+            'padding length': 0,
             'body': None,
-            'priority': None,
         }
 
         if hasattr(self, 'total_padding'):
             data['padding length'] = self.total_padding
 
         if hasattr(self, 'depends_on'):
-            data['padding'] = {
+            data['priority'] = {
                 'depends on': self.depends_on,
                 'stream weight': self.stream_weight,
                 'exclusive': self.exclusive,
