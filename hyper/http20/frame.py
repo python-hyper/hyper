@@ -105,7 +105,7 @@ class Frame(object):
         }
 
         if dump_body:
-            data['body'] = hexlify(self.serialize_body())
+            data['body'] = hexlify(self.serialize_body()).decode('ascii')
 
         return data
 
