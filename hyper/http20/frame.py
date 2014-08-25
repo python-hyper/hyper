@@ -99,7 +99,7 @@ class Frame(object):
         data = {
             'type': self.__class__.__name__.upper()[:-5],
             'stream id': self.stream_id,
-            'flags': self.flags,
+            'flags': list(self.flags),
             'length': len(self.serialize_body()),
             'body': None,
         }
