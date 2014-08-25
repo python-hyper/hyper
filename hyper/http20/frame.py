@@ -104,13 +104,6 @@ class Frame(object):
             'body': None,
         }
 
-        if hasattr(self, 'depends_on'):
-            data['priority'] = {
-                'depends on': self.depends_on,
-                'stream weight': self.stream_weight,
-                'exclusive': self.exclusive,
-            }
-
         if dump_body:
             data['body'] = hexlify(self.serialize_body())
 
@@ -189,6 +182,15 @@ class Priority(object):
         self.exclusive = bool(self.depends_on & MASK)
         self.depends_on &= ~MASK
         return 5
+
+    def to_json_obj(self, dump_body=False):
+        data = super(Priority, self).to_json_obj(dump_body)
+        data['priority'] = {
+            'depends on': self.depends_on,
+            'stream weight': self.stream_weight,
+            'exclusive': self.exclusive,
+        }
+        return data
 
 
 class DataFrame(Padding, Frame):
