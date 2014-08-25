@@ -101,7 +101,6 @@ class Frame(object):
             'stream id': self.stream_id,
             'flags': self.flags,
             'length': len(self.serialize_body()),
-            'padding length': 0,
             'body': None,
         }
 
