@@ -320,6 +320,16 @@ class SettingsFrame(Frame):
     SETTINGS_MAX_FRAME_SIZE       = 0x05
     SETTINGS_MAX_HEADER_LIST_SIZE = 0x06
 
+    # Define a reverse mapping as well.
+    text_names = {
+        0x01: 'HEADER_TABLE_SIZE',
+        0x02: 'ENABLE_PUSH',
+        0x03: 'MAX_CONCURRENT_STREAMS',
+        0x04: 'INITIAL_WINDOW_SIZE',
+        0x05: 'SETTINGS_MAX_FRAME_SIZE',
+        0x06: 'SETTINGS_MAX_HEADER_LIST_SIZE',
+    }
+
     def __init__(self, stream_id):
         super(SettingsFrame, self).__init__(stream_id)
 
@@ -335,6 +345,13 @@ class SettingsFrame(Frame):
         for i in range(0, len(data), 6):
             name, value = struct.unpack("!HL", data[i:i+6])
             self.settings[name] = value
+
+    def to_json_obj(self, dump_body=False):
+        data = super(SettingsFrame, self).to_json_obj(False)
+        data['SETTINGS'] = {
+            self.text_names[k]: v for k,v in self.settings.items()
+        }
+        return data
 
 
 class PushPromiseFrame(Padding, Frame):

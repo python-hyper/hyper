@@ -305,6 +305,28 @@ class TestSettingsFrame(object):
         assert f.flags == set(['ACK'])
         assert f.settings == self.settings
 
+    def test_settings_frame_to_json(self):
+        f = SettingsFrame(0)
+        f.parse_flags(0xFF)
+        f.settings = self.settings
+        result = {
+            'type': 'SETTINGS',
+            'stream id': 0,
+            'flags': ['ACK'],
+            'length': 36,
+            'body': None,
+            'SETTINGS': {
+                'HEADER_TABLE_SIZE': 4096,
+                'ENABLE_PUSH': 0,
+                'MAX_CONCURRENT_STREAMS': 100,
+                'INITIAL_WINDOW_SIZE': 65535,
+                'SETTINGS_MAX_FRAME_SIZE': 16384,
+                'SETTINGS_MAX_HEADER_LIST_SIZE': 65535,
+            }
+        }
+
+        assert f.to_json_obj() == result
+
     def test_settings_frames_never_have_streams(self):
         with pytest.raises(ValueError):
             SettingsFrame(1)
