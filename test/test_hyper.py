@@ -52,11 +52,6 @@ class TestGeneralFrameBehaviour(object):
         with pytest.raises(NotImplementedError):
             f.parse_body(data)
 
-    def test_base_frame_doesnt_diag_serialize(self):
-        f = Frame(0)
-        with pytest.raises(NotImplementedError):
-            f.diag_serialize()
-
 
 class TestDataFrame(object):
     payload = b'\x00\x00\x08\x00\x01\x00\x00\x00\x01testdata'
@@ -120,40 +115,54 @@ class TestDataFrame(object):
         with pytest.raises(ValueError):
             DataFrame(0)
 
-    def test_data_frame_without_padding_diag_serializes_properly(self):
+    def test_data_frame_without_padding_json_serializes_properly(self):
         f = DataFrame(1)
         f.flags = set(['END_STREAM'])
-        f.data = b'\x01' * 80
+        f.data = b'hi there sir'
 
-        result = (
-            "DATA\n"
-            "  Stream ID: 1\n"
-            "  Flags: END_STREAM\n"
-            "  Length: 80\n"
-            "  " + "01"*34 + "\n"
-            "  " + "01"*34 + "\n"
-            "  " + "01"*12 + "\n"
-        )
+        result = {
+            'type': 'DATA',
+            'stream id': 1,
+            'flags': ['END_STREAM'],
+            'length': 12,
+            'padding length': 0,
+            'body': None,
+        }
 
-        assert f.diag_serialize() == result
+        assert f.to_json_obj() == result
 
-    def test_data_frame_with_padding_diag_serializes_properly(self):
+    def test_data_frame_with_padding_json_serializes_properly(self):
         f = DataFrame(1)
         f.flags = ['END_STREAM', 'PADDED']  # Don't use a set, be predictable
-        f.data = b'\x01' * 80
+        f.data = b'hi there sir'
         f.pad_length = 10
 
-        result = (
-            "DATA\n"
-            "  Stream ID: 1\n"
-            "  Flags: END_STREAM, PADDED\n"
-            "  Length: 91 (11 padding bytes)\n"
-            "  " + "01"*34 + "\n"
-            "  " + "01"*34 + "\n"
-            "  " + "01"*12 + "\n"
-        )
+        result = {
+            'type': 'DATA',
+            'stream id': 1,
+            'flags': ['END_STREAM', 'PADDED'],
+            'length': 23,
+            'padding length': 11,
+            'body': None,
+        }
 
-        assert f.diag_serialize() == result
+        assert f.to_json_obj() == result
+
+    def test_data_frame_json_serializes_properly_with_data(self):
+        f = DataFrame(1)
+        f.flags = set(['END_STREAM'])
+        f.data = b'\x01\x02\x03\x04'
+
+        result = {
+            'type': 'DATA',
+            'stream id': 1,
+            'flags': ['END_STREAM'],
+            'length': 4,
+            'padding length': 0,
+            'body': '01020304',
+        }
+
+        assert f.to_json_obj(dump_body=True) == result
 
 
 class TestPriorityFrame(object):
@@ -186,37 +195,26 @@ class TestPriorityFrame(object):
         with pytest.raises(ValueError):
             PriorityFrame(0)
 
-    def test_priority_frame_with_exclusive_diag_serializes_properly(self):
+    def test_priority_frame_with_exclusive_json_serializes_properly(self):
         f = PriorityFrame(1)
         f.depends_on = 0x04
         f.stream_weight = 64
         f.exclusive = True
 
-        result = (
-            "PRIORITY\n"
-            "  Stream ID: 1\n"
-            "  Flags: None\n"
-            "  Length: 5\n"
-            "  Priority: Depends on 4, weight 64 (Exclusive)\n"
-        )
+        result = {
+            'type': 'PRIORITY',
+            'stream id': 1,
+            'flags': [],
+            'length': 5,
+            'body': None,
+            'priority': {
+                'depends on': 4,
+                'stream weight': 64,
+                'exclusive': True,
+            }
+        }
 
-        assert f.diag_serialize() == result
-
-    def test_priority_frame_without_exclusive_diag_serializes_properly(self):
-        f = PriorityFrame(1)
-        f.depends_on = 0x04
-        f.stream_weight = 64
-        f.exclusive = False
-
-        result = (
-            "PRIORITY\n"
-            "  Stream ID: 1\n"
-            "  Flags: None\n"
-            "  Length: 5\n"
-            "  Priority: Depends on 4, weight 64\n"
-        )
-
-        assert f.diag_serialize() == result
+        assert f.to_json_obj() == result
 
 
 class TestRstStreamFrame(object):
