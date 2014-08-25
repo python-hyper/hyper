@@ -365,6 +365,24 @@ class TestPushPromiseFrame(object):
         assert f.promised_stream_id == 4
         assert f.data == b'hello world'
 
+    def test_push_promise_frame_json_serializes_properly(self):
+        f = PushPromiseFrame(1)
+        f.flags = ['END_HEADERS', 'PADDED']
+        f.promised_stream_id = 4
+        f.data = b'\x01\x02\x03\x04'
+        f.pad_length = 10
+        result = {
+            'type': 'PUSHPROMISE',
+            'stream id': 1,
+            'flags': ['END_HEADERS', 'PADDED'],
+            'length': 19,
+            'body': None,
+            'padding length': 11,
+            'PUSH_PROMISE': {'promised stream id': 4}
+        }
+
+        assert f.to_json_obj() == result
+
 
 class TestPingFrame(object):
     def test_ping_frame_has_only_one_flag(self):

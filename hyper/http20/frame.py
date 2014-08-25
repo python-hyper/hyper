@@ -376,6 +376,11 @@ class PushPromiseFrame(Padding, Frame):
         self.promised_stream_id = struct.unpack("!L", data[padding_data_length:padding_data_length + 4])[0]
         self.data = data[padding_data_length + 4:].tobytes()
 
+    def to_json_obj(self, dump_body=False):
+        data = super(PushPromiseFrame, self).to_json_obj(False)
+        data['PUSH_PROMISE'] = {'promised stream id': self.promised_stream_id}
+        return data
+
 
 class PingFrame(Frame):
     """
