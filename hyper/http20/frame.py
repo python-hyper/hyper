@@ -104,9 +104,6 @@ class Frame(object):
             'body': None,
         }
 
-        if hasattr(self, 'total_padding'):
-            data['padding length'] = self.total_padding
-
         if hasattr(self, 'depends_on'):
             data['priority'] = {
                 'depends on': self.depends_on,
@@ -145,6 +142,15 @@ class Padding(object):
             self.pad_length = struct.unpack('!B', data[:1])[0]
             return 1
         return 0
+
+    def to_json_obj(self, dump_body=False):
+        data = super(Padding, self).to_json_obj(dump_body)
+        data['padding length'] = self.total_padding
+
+        if 'PADDED' in self.flags:
+            data['padding length'] += 1
+
+        return data
 
     @property
     def total_padding(self):
