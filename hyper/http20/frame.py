@@ -86,42 +86,42 @@ class Frame(object):
 
         return header + body
 
-    def diag_serialize(self):
+    def to_json_obj(self, dump_body=False):
         """
-        Serialize a frame for diagnostic purposes. Prints a human-readable
-        representation of the frame.
+        Builds a JSON object suitable for being a representation of the
+        interesting data about a frame. Expected to be used primarily when
+        logging.
+
+        Subclasses override this, taking the original output and adding their
+        own specific data.
         """
-        name = self.__class__.__name__.upper()[:-5]  # Drop the 'FRAME' chars.
-        stream_id = '  Stream ID: %d' % self.stream_id
+        # Define the basic JSON structure.
+        data = {
+            'type': self.__class__.__name__.upper()[:-5],
+            'stream id': self.stream_id,
+            'flags': self.flags,
+            'length': len(self.serialize_body()),
+            'padding length': None,
+            'body': None,
+            'priority': None,
+        }
 
-        if self.flags:
-            flags = '  Flags: %s' % (', '.join(self.flags))
-        else:
-            flags = '  Flags: None'
+        if hasattr(self, 'total_padding'):
+            data['padding length'] = self.total_padding
 
-        length = '  Length: %d' % len(self.serialize_body())
+        if hasattr(self, 'depends_on'):
+            data['padding'] = {
+                'depends on': self.depends_on,
+                'stream weight': self.stream_weight,
+                'exclusive': self.exclusive,
+            }
 
-        if hasattr(self, 'diag_serialize_padding_data'):
-            length += self.diag_serialize_padding_data()
+        if dump_body:
+            data['body'] = hexlify(self.serialize_body())
 
-        parts = [name, stream_id, flags, length]
-
-        body = self.diag_serialize_body()
-
-        if body:
-            parts.append(body)
-
-        if hasattr(self, 'diag_serialize_priority_data'):
-            parts.append(self.diag_serialize_priority_data())
-
-        parts.append('')
-
-        return '\n'.join(parts)
+        return data
 
     def serialize_body(self):
-        raise NotImplementedError()
-
-    def diag_serialize_body(self):  # pragma: no cover
         raise NotImplementedError()
 
     def parse_body(self, data):
@@ -147,12 +147,6 @@ class Padding(object):
             self.pad_length = struct.unpack('!B', data[:1])[0]
             return 1
         return 0
-
-    def diag_serialize_padding_data(self):
-        # Make sure to add 1 to the padding length to include the length byte.
-        if 'PADDED' in self.flags:
-            return ' (%d padding bytes)' % (self.pad_length + 1)
-        return ''
 
     @property
     def total_padding(self):
@@ -192,17 +186,6 @@ class Priority(object):
         self.depends_on &= ~MASK
         return 5
 
-    def diag_serialize_priority_data(self):
-        base = '  Priority: Depends on %d, weight %d' % (
-            self.depends_on, self.stream_weight
-        )
-        if self.exclusive:
-            exclusive = ' (Exclusive)'
-        else:
-            exclusive = ''
-
-        return ''.join([base, exclusive])
-
 
 class DataFrame(Padding, Frame):
     """
@@ -233,13 +216,6 @@ class DataFrame(Padding, Frame):
         padding_data_length = self.parse_padding_data(data)
         self.data = data[padding_data_length:len(data)-self.total_padding].tobytes()
 
-    def diag_serialize_body(self):
-        def chunks(string):
-            chunk_size = 68
-            for i in range(0, len(string), chunk_size):
-                yield '  ' + string[i:i+chunk_size]
-        return '\n'.join(chunks(hexlify(self.data).decode('utf-8')))
-
     @property
     def flow_controlled_length(self):
         """
@@ -267,9 +243,6 @@ class PriorityFrame(Priority, Frame):
 
     def parse_body(self, data):
         self.parse_priority_data(data)
-
-    def diag_serialize_body(self):
-        return ''
 
 
 class RstStreamFrame(Frame):
