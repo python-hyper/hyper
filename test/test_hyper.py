@@ -248,6 +248,22 @@ class TestRstStreamFrame(object):
         with pytest.raises(ValueError):
             f.parse_body(b'\x01')
 
+    def test_rst_stream_to_json(self):
+        f = RstStreamFrame(1)
+        f.error_code = 420
+        result = {
+            'type': 'RSTSTREAM',
+            'stream id': 1,
+            'flags': [],
+            'length': 4,
+            'body': None,
+            'RST_STREAM': {
+                'error code': 420,
+            }
+        }
+
+        assert f.to_json_obj() == result
+
 
 class TestSettingsFrame(object):
     serialized = (

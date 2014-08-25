@@ -280,6 +280,18 @@ class RstStreamFrame(Frame):
 
         self.error_code = struct.unpack("!L", data)[0]
 
+    def to_json_obj(self, dump_body=False):
+        # Never serialize the body
+        dump_body = False
+        data = super(RstStreamFrame, self).to_json_obj(dump_body)
+
+        # Add the custom data.
+        data['RST_STREAM'] = {
+            'error code': self.error_code
+        }
+
+        return data
+
 
 class SettingsFrame(Frame):
     """
