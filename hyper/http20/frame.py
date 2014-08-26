@@ -413,6 +413,13 @@ class PingFrame(Frame):
 
         self.opaque_data = data.tobytes()
 
+    def to_json_obj(self, dump_body=False):
+        data = super(PingFrame, self).to_json_obj(False)
+        data['PING'] = {
+            'opaque data': hexlify(self.opaque_data).decode('ascii')
+        }
+        return data
+
 
 class GoAwayFrame(Frame):
     """

@@ -416,6 +416,20 @@ class TestPingFrame(object):
         assert f.flags == set(['ACK'])
         assert f.opaque_data == b'\x01\x02\x00\x00\x00\x00\x00\x00'
 
+    def test_ping_frame_json_serializes_properly(self):
+        f = PingFrame(0)
+        f.opaque_data = b'\x01\x02\x03\x04'
+        result = {
+            'type': 'PING',
+            'stream id': 0,
+            'flags': [],
+            'length': 8,
+            'body': None,
+            'PING': {'opaque data': '01020304'}
+        }
+
+        assert f.to_json_obj() == result
+
     def test_ping_frame_never_has_a_stream(self):
         with pytest.raises(ValueError):
             PingFrame(1)
