@@ -455,6 +455,15 @@ class GoAwayFrame(Frame):
         if len(data) > 8:
             self.additional_data = data[8:].tobytes()
 
+    def to_json_obj(self, dump_body=False):
+        data = super(GoAwayFrame, self).to_json_obj(False)
+        data['GOAWAY'] = {
+            'last stream id': self.last_stream_id,
+            'error code': self.error_code,
+            'additional data': hexlify(self.additional_data).decode('ascii'),
+        }
+        return data
+
 
 class WindowUpdateFrame(Frame):
     """

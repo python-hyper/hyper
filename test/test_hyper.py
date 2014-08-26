@@ -475,6 +475,26 @@ class TestGoAwayFrame(object):
         assert f.flags == set()
         assert f.additional_data == b'hello'
 
+    def test_goaway_frame_json_serializes_properly(self):
+        f = GoAwayFrame(0)
+        f.last_stream_id = 64
+        f.error_code = 32
+        f.additional_data = b'\x01\x02\x03\x04'
+        result = {
+            'type': 'GOAWAY',
+            'stream id': 0,
+            'flags': [],
+            'length': 12,
+            'body': None,
+            'GOAWAY': {
+                'last stream id': 64,
+                'error code': 32,
+                'additional data': '01020304',
+            }
+        }
+
+        assert f.to_json_obj() == result
+
     def test_goaway_frame_never_has_a_stream(self):
         with pytest.raises(ValueError):
             GoAwayFrame(1)
