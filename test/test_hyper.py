@@ -523,6 +523,22 @@ class TestWindowUpdateFrame(object):
         assert f.flags == set()
         assert f.window_increment == 512
 
+    def test_goaway_frame_json_serializes_properly(self):
+        f = WindowUpdateFrame(0)
+        f.window_increment = 512
+        result = {
+            'type': 'WINDOWUPDATE',
+            'stream id': 0,
+            'flags': [],
+            'length': 4,
+            'body': None,
+            'WINDOWUPDATE': {
+                'window increment': 512,
+            }
+        }
+
+        assert f.to_json_obj() == result
+
 
 class TestHeadersFrame(object):
     def test_headers_frame_flags(self):

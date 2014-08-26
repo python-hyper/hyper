@@ -493,6 +493,13 @@ class WindowUpdateFrame(Frame):
     def parse_body(self, data):
         self.window_increment = struct.unpack("!L", data)[0]
 
+    def to_json_obj(self, dump_body=False):
+        data = super(WindowUpdateFrame, self).to_json_obj(False)
+        data['WINDOWUPDATE'] = {
+            'window increment': self.window_increment,
+        }
+        return data
+
 
 class HeadersFrame(Padding, Priority, Frame):
     """
