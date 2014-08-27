@@ -602,6 +602,26 @@ class TestHeadersFrame(object):
 
         assert f.serialize() == s
 
+    def test_headers_frame_without_priority_json_serializes_properly(self):
+        f = HeadersFrame(1)
+        f.flags = ['END_STREAM', 'END_HEADERS']
+        f.data = b'\x01\x02\x03\x04'
+        result = {
+            'type': 'HEADERS',
+            'stream id': 1,
+            'flags': ['END_STREAM', 'END_HEADERS'],
+            'length': 4,
+            'body': None,
+            'padding length': 0,
+            'priority': {
+                'depends on': None,
+                'exclusive': None,
+                'stream weight': None,
+            }
+        }
+
+        assert f.to_json_obj() == result
+
 
 class TestContinuationFrame(object):
     def test_continuation_frame_flags(self):
