@@ -649,6 +649,20 @@ class TestContinuationFrame(object):
         assert f.flags == set(['END_HEADERS'])
         assert f.data == b'hello world'
 
+    def test_headers_frame_without_priority_json_serializes_properly(self):
+        f = ContinuationFrame(1)
+        f.flags = ['END_HEADERS']
+        f.data = b'\x01\x02\x03\x04'
+        result = {
+            'type': 'CONTINUATION',
+            'stream id': 1,
+            'flags': ['END_HEADERS'],
+            'length': 4,
+            'body': None,
+        }
+
+        assert f.to_json_obj() == result
+
 
 class TestAltSvcFrame(object):
     payload_with_origin = (
