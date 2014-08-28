@@ -52,9 +52,11 @@ def main(infile=None, outfile=None):
         body = infile.read(length)
         frame.parse_body(memoryview(body))
 
+        frame_data = frame.to_json_obj()
+
         # Done! In this early iteration of the script, we'll just print the
         # frame types to stdout.
-        print(frame.__class__.__name__)
+        print(frame_data['type'])
 
 
 if __name__ == '__main__':
