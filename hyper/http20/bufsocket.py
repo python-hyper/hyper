@@ -61,6 +61,20 @@ class BufferedSocket(object):
         """
         return self._index + self._bytes_in_buffer
 
+    @property
+    def can_read(self):
+        """
+        Whether or not there is more data to read from the socket.
+        """
+        if self._bytes_in_buffer:
+            return True
+
+        read = select.select([self._sck], [], [], 0)[0]
+        if read:
+            return True
+
+        return False
+
     def recv(self, amt):
         """
         Read some data from the socket.
