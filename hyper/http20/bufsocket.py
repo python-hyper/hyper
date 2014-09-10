@@ -105,6 +105,11 @@ class BufferedSocket(object):
         if ((self._remaining_capacity > self._bytes_in_buffer) and
             (should_read)):
             count = self._sck.recv_into(self._buffer_view[self._buffer_end:])
+
+            # The socket just got closed. We should throw an exception if we
+            # were asked for more data than we can return.
+            if not count and amt > self._bytes_in_buffer:
+                raise ConnectionResetError()
             self._bytes_in_buffer += count
 
         # Read out the bytes and update the index.
