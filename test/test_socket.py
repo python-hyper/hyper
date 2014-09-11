@@ -63,16 +63,16 @@ class TestBufferedSocket(object):
 
         assert d == b'Herebeginsthetestdata'
 
-    def test_receive_empty_packet(self, monkeypatch):
+    def test_receive_small_packets(self, monkeypatch):
         monkeypatch.setattr(
             hyper.http20.bufsocket.select, 'select', dummy_select
         )
         s = DummySocket()
         b = BufferedSocket(s)
-        s.inbound_packets = [b'Here', b'begins', b'', b'the', b'', b'test', b'data']
+        s.inbound_packets = [b'Here', b'begins', b'the', b'test', b'data']
 
         d = b''
-        for _ in range(7):
+        for _ in range(5):
             d += b.recv(100).tobytes()
 
         assert d == b'Herebeginsthetestdata'
