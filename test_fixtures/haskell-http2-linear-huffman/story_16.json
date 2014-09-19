@@ -2,7 +2,7 @@
     "cases": [
         {
             "seqno": 0,
-            "wire": "308287438c2d4bf8375356590c35cf64df877ebcd07f66a281b0dae053fad0321aa49d13fda992a49685340c8a6adca7e28102ef7da9677b8171707f6a62293a9d810020004015309ac2ca7f2c05c5c158b0497ca589d34d1f43aeba0c41a4c7a98f33a69a3fdf9a68fa1d75d0620d263d4c79a68fbed00177febe58f9fbed00177b578b2d4b70ddf45abefb4005db97408721eaa8a4498f5788ea52d6b0e83772ff69ff3d216a4d83a2a3a4c42c51da4ea54c01fb5094189d5360c9d4d54cb20a8418f5405cbd4ee64370260a5c7cb3ec9463ebb28cb29b3fa7e8dd3e9d7f6a52590c3e46ea65ed416c5e3b49d4a955984be52b8ec4989417094b246327559360c9d4d54d0040ab30a6c193afda9496430f91ba997b505b17349060d0f33d11d07db5fbc9a33f8bbbcd9b0b23ce636fcc5f052fbfb5292c861f237532f6a0b62f1da4ea54aacc25f295c7624c4a0b84a5923193aac7ad263d4881e55985139fc7",
+            "wire": "8286418c2d4bf8375356590c35cf64df847abcd07f66a281b0dae053fad0321aa49d13fda992a49685340c8a6adca7e28102ef7da9677b8171707f6a62293a9d810020004015309ac2ca7f2c05c5c153b0497ca589d34d1f43aeba0c41a4c7a98f33a69a3fdf9a68fa1d75d0620d263d4c79a68fbed00177febe58f9fbed00177b518b2d4b70ddf45abefb4005db90408721eaa8a4498f5788ea52d6b0e83772ff60ff3d216a4d83a2a3a4c42c51da4ea54c01fb5094189d5360c9d4d54cb20a8418f5405cbd4ee64370260a5c7cb3ec9463ebb28cb29b3fa7e8dd3e9d7f6a52590c3e46ea65ed416c5e3b49d4a955984be52b8ec4989417094b246327559360c9d4d54d0040ab30a6c193afda9496430f91ba997b505b17349060d0f33d11d07db5fbc9a33f8bbbcd9b0b23ce636fcc5f052fbfb5292c861f237532f6a0b62f1da4ea54aacc25f295c7624c4a0b84a5923193aac7ad263d4881e55985139fc7",
             "headers": [
                 {
                     ":method": "GET"
@@ -38,7 +38,7 @@
         },
         {
             "seqno": 1,
-            "wire": "308a8988078b63c1ba998d0335516b1cc5868584838281",
+            "wire": "8286c3048b63c1ba998d0335516b1cc5c2c1c090bfbe",
             "headers": [
                 {
                     ":method": "GET"
@@ -74,7 +74,7 @@
         },
         {
             "seqno": 2,
-            "wire": "308a89488d8cc942fe0dd4d496430d73d937089360b52fe0dd4d596430d73d933141c722f5cf5f87468e497ca582211f5f2c7cfdf6800b878685847f009c9d29aee30c16a5fc1ba9ab2c861ae7b2663c1ba998d0335516b1cc5f7596e4593e94642a6a225410022502edc6c5700d298b46ff",
+            "wire": "8286418d8cc942fe0dd4d496430d73d937049360b52fe0dd4d596430d73d933141c722f5cf5fc3538e497ca582211f5f2c7cfdf6800b87c290c1739c9d29aee30c16a5fc1ba9ab2c861ae7b2663c1ba998d0335516b1cc5f6896e4593e94642a6a225410022502edc6c5700d298b46ff",
             "headers": [
                 {
                     ":method": "GET"
@@ -113,7 +113,7 @@
         },
         {
             "seqno": 3,
-            "wire": "308e8d840b9360b52fe0dd4d596430d73d933141c722f5cf5f8a83888786824196df3dbf4a002a693f75040089403f71966e09d53168df",
+            "wire": "8286c1049360b52fe0dd4d596430d73d933141c722f5cf5fc6c0c490c3bf6896df3dbf4a002a693f75040089403f71966e09d53168df",
             "headers": [
                 {
                     ":method": "GET"
@@ -152,7 +152,7 @@
         },
         {
             "seqno": 4,
-            "wire": "308f8e850c9360b52fe0dd4d596430d73d933141c722f5cf5f8b4483f963e78a8988844296dc34fd280654d27eea0801128115c6d9b82754c5a37f",
+            "wire": "8286c2049360b52fe0dd4d596430d73d933141c722f5cf5fc75383f963e7c690c5c16896dc34fd280654d27eea0801128115c6d9b82754c5a37f",
             "headers": [
                 {
                     ":method": "GET"
@@ -191,7 +191,7 @@
         },
         {
             "seqno": 5,
-            "wire": "309190870e9360b52fe0dd4d596430d73d933141c722f5cf5f8d828b8a898584",
+            "wire": "8286c4049360b52fe0dd4d596430d73d933141c722f5cf5fc9bfc790c6c2c1",
             "headers": [
                 {
                     ":method": "GET"
@@ -230,7 +230,7 @@
         },
         {
             "seqno": 6,
-            "wire": "309190870e9360b52fe0dd4d596430d73d933141c722f5cf5f8d828b8a898583",
+            "wire": "8286c4049360b52fe0dd4d596430d73d933141c722f5cf5fc9bfc790c6c2c0",
             "headers": [
                 {
                     ":method": "GET"
@@ -269,7 +269,7 @@
         },
         {
             "seqno": 7,
-            "wire": "309190478fb6ba0e3917f06ea6a4b2186b9ec9bf0f009e63c1ba9ab2c861b05a9823041b198752673583ee388961ebacb22f5d537f8e439a352398ac5754df46a473158f9fbed00177bebe58f9fbed00176f8d8c8b874396c361be940094d27eea0801128266e34e5c6df53168df7d9713cf4724629646cad8da95d13a295b7a524607991ba50f",
+            "wire": "8286418fb6ba0e3917f06ea6a4b2186b9ec9bf049e63c1ba9ab2c861b05a9823041b198752673583ee388961ebacb22f5d537fca539a352398ac5754df46a473158f9fbed00177bebe58f9fbed00176fc990c8c46896c361be940094d27eea0801128266e34e5c6df53168df699713cf4724629646cad8da95d13a295b7a524607991ba50f",
             "headers": [
                 {
                     ":method": "GET"
@@ -311,7 +311,7 @@
         },
         {
             "seqno": 8,
-            "wire": "309594840f03cf63c1ba9ab2c861b043d349ea43099eda636246241317c7510d54d14c6b28887d07524712a278961ebacb22a27d7e95ccc3a2afcad7c7510d54d14c6b28887d07524712a278961ebacb22a27d7e95cd91838f8e8d894296df697e94640a6a225410022502edc65db816d4c5a37f429770af48db924afc6565b69f6a36a47e50146e88b2046c97",
+            "wire": "8286c104cf63c1ba9ab2c861b043d349ea43099eda636246241317c7510d54d14c6b28887d07524712a278961ebacb22a27d7e95ccc3a2afcad7c7510d54d14c6b28887d07524712a278961ebacb22a27d7e95cdcdc0cb90cac66896df697e94640a6a225410022502edc65db816d4c5a37f699770af48db924afc6565b69f6a36a47e50146e88b2046c97",
             "headers": [
                 {
                     ":method": "GET"
@@ -353,7 +353,7 @@
         },
         {
             "seqno": 9,
-            "wire": "3097968d0f059360b52fe0dd4d596430d73d933141c722f5cf5f938891908f8b87",
+            "wire": "8286ca049360b52fe0dd4d596430d73d933141c722f5cf5fcfc5cd90ccc8c4",
             "headers": [
                 {
                     ":method": "GET"
@@ -391,6 +391,6 @@
             ]
         }
     ],
-    "draft": 8,
-    "description": "http2 in Haskell: LinearH - index=no, reference set=no, huffman=yes"
+    "draft": 9,
+    "description": "http2 in Haskell: LinearH - static table=yes, header table=yes, huffman=yes"
 }

@@ -2,7 +2,7 @@
     "cases": [
         {
             "seqno": 0,
-            "wire": "308287438d98a75c960cd32283212b9ec9bf877ebcd07f66a281b0dae053fad0321aa49d13fda992a49685340c8a6adca7e28102ef7da9677b8171707f6a62293a9d810020004015309ac2ca7f2c05c5c158b0497ca589d34d1f43aeba0c41a4c7a98f33a69a3fdf9a68fa1d75d0620d263d4c79a68fbed00177febe58f9fbed00177b578b2d4b70ddf45abefb4005db97408721eaa8a4498f5788ea52d6b0e83772ff699a251147043745773468a1a9f168774355636f5f3e534fbf4370ff",
+            "wire": "8286418d98a75c960cd32283212b9ec9bf847abcd07f66a281b0dae053fad0321aa49d13fda992a49685340c8a6adca7e28102ef7da9677b8171707f6a62293a9d810020004015309ac2ca7f2c05c5c153b0497ca589d34d1f43aeba0c41a4c7a98f33a69a3fdf9a68fa1d75d0620d263d4c79a68fbed00177febe58f9fbed00177b518b2d4b70ddf45abefb4005db90408721eaa8a4498f5788ea52d6b0e83772ff609a251147043745773468a1a9f168774355636f5f3e534fbf4370ff",
             "headers": [
                 {
                     ":method": "GET"
@@ -38,7 +38,7 @@
         },
         {
             "seqno": 1,
-            "wire": "308a89488df1e3c2e4b066991419095cf64d088960719ed4b08324a863878685848382",
+            "wire": "8286418df1e3c2e4b066991419095cf64d048960719ed4b08324a863c3c2c190c0bf",
             "headers": [
                 {
                     ":method": "GET"
@@ -74,7 +74,7 @@
         },
         {
             "seqno": 2,
-            "wire": "308b8a81088f6109f54150c10f6d49b0c542e4423f87468e497ca582211f5f2c7cfdf6800b878685847f009b9d29aee30c78f1e17258334c8a0c84ae7b2660719ed4b08324a86384",
+            "wire": "8286be048f6109f54150c10f6d49b0c542e4423fc3538e497ca582211f5f2c7cfdf6800b87c290c1739b9d29aee30c78f1e17258334c8a0c84ae7b2660719ed4b08324a863c1",
             "headers": [
                 {
                     ":method": "GET"
@@ -113,7 +113,7 @@
         },
         {
             "seqno": 3,
-            "wire": "308d8c830a8a63a21894f65234a17e88894283f963e78887868285",
+            "wire": "8286c0048a63a21894f65234a17e88c55383f963e7c490c3bfc2",
             "headers": [
                 {
                     ":method": "GET"
@@ -152,7 +152,7 @@
         },
         {
             "seqno": 4,
-            "wire": "308e8d840b8f63a218e9dad2d9e960aed2e25fa23f8a818887868285",
+            "wire": "8286c1048f63a218e9dad2d9e960aed2e25fa23fc6bec490c3bfc2",
             "headers": [
                 {
                     ":method": "GET"
@@ -191,7 +191,7 @@
         },
         {
             "seqno": 5,
-            "wire": "308e8d840b896251f7310f52e621ff8a419a352398ac5754df46a473158f9fbed00177bebe58f9fbed00176f89888786",
+            "wire": "8286c104896251f7310f52e621ffc6539a352398ac5754df46a473158f9fbed00177bebe58f9fbed00176fc590c4c3",
             "headers": [
                 {
                     ":method": "GET"
@@ -227,7 +227,7 @@
         },
         {
             "seqno": 6,
-            "wire": "308f8e458f44e71d085c960cd32283212b9ec9bf8d8c8b8a89888487",
+            "wire": "8286418f44e71d085c960cd32283212b9ec9bf84c8c7c690c5c1c4",
             "headers": [
                 {
                     ":method": "GET"
@@ -266,7 +266,7 @@
         },
         {
             "seqno": 7,
-            "wire": "30908f860d8f6109f54150c12c19a64506425722118c858a898844959d29aee30c22738e842e4b066991419095cf64cc7f48b2251147043745773468a1a9f168774355636f5f3e534fbf4370fda84a2290b2c540ea9a02d5f6a1288a42cb14f5c089ce3a11",
+            "wire": "8286c3048f6109f54150c12c19a6450642572211c8c2c690c573959d29aee30c22738e842e4b066991419095cf64cc7f60b2251147043745773468a1a9f168774355636f5f3e534fbf4370fda84a2290b2c540ea9a02d5f6a1288a42cb14f5c089ce3a11",
             "headers": [
                 {
                     ":method": "GET"
@@ -305,7 +305,7 @@
         },
         {
             "seqno": 8,
-            "wire": "309291880f008a63a21894f65234a17e888e858c8b8a8281",
+            "wire": "8286c5048a63a21894f65234a17e88cac2c890c7bfbe",
             "headers": [
                 {
                     ":method": "GET"
@@ -344,7 +344,7 @@
         },
         {
             "seqno": 9,
-            "wire": "309291880f008b63a2189cf496b1cc55fa238e858c8b8a8281",
+            "wire": "8286c5048b63a2189cf496b1cc55fa23cac2c890c7bfbe",
             "headers": [
                 {
                     ":method": "GET"
@@ -382,6 +382,6 @@
             ]
         }
     ],
-    "draft": 8,
-    "description": "http2 in Haskell: LinearH - index=no, reference set=no, huffman=yes"
+    "draft": 9,
+    "description": "http2 in Haskell: LinearH - static table=yes, header table=yes, huffman=yes"
 }

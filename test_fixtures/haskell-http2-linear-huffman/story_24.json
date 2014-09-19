@@ -2,7 +2,7 @@
     "cases": [
         {
             "seqno": 0,
-            "wire": "30488264026095497ca589d34d1f6a1271d882a60320eb3cf36fac1f408721eaa8a4498f57842507417f0f229b9d29aee30c78f1e17258334c8a0c84ae7b2660719ed4b08324a8637c8624f6d5d4b27f6596dc34fd280654d27eea0801128166e32d5c0b8a62d1bf7b8586b19272ff",
+            "wire": "488264025f95497ca589d34d1f6a1271d882a60320eb3cf36fac1f408721eaa8a4498f57842507417f0f1f9b9d29aee30c78f1e17258334c8a0c84ae7b2660719ed4b08324a863798624f6d5d4b27f6196dc34fd280654d27eea0801128166e32d5c0b8a62d1bf768586b19272ff",
             "headers": [
                 {
                     ":status": "302"
@@ -29,7 +29,7 @@
         },
         {
             "seqno": 1,
-            "wire": "3046821001855f90aed8e8313e94a47e561cc5802d34007f7496dc34fd280654d27eea0801128105c03371a6d4c5a37f4596dc34fd280654d27eea0801128105c03371a6d4c5a37f64839bd9ab7f078b84842d695b05443c86aa6f0f1984081969af8b408bf2b4b60e92ac7ad263d48f9d868a0fe16c361e95274a6b45c61894f65b4a17258334c8a0c84ae7b26f887196d07abe94032a5f2914100225020b8066e34da98b46ff",
+            "wire": "88c15890aed8e8313e94a47e561cc5802d34007f6c96dc34fd280654d27eea0801128105c03371a6d4c5a37f6196dc34fd280654d27eea0801128105c03371a6d4c5a37f5a839bd9ab7b8b84842d695b05443c86aa6f0f0d84081969afc7408bf2b4b60e92ac7ad263d48f9d868a0fe16c361e95274a6b45c61894f65b4a17258334c8a0c84ae7b26fc46496d07abe94032a5f2914100225020b8066e34da98b46ff",
             "headers": [
                 {
                     ":status": "200"
@@ -71,7 +71,7 @@
         },
         {
             "seqno": 2,
-            "wire": "30888c4791a47e561cc5804dbe20001f4a576c74189f4796df697e940b8a6a2254100225042b8066e000a62d1bff4796df697e940b8a6a2254100225042b8066e000a62d1bff87860f1e83081f7f5094497ca582211f6a1271d882a60320eb3cf36fac1f868d4596df3dbf4a05b5349fba820044a085700cdc0014c5a37f",
+            "wire": "88c85891a47e561cc5804dbe20001f4a576c74189f6c96df697e940b8a6a2254100225042b8066e000a62d1bff6196df697e940b8a6a2254100225042b8066e000a62d1bffc4c30f0d83081f7f5f94497ca582211f6a1271d882a60320eb3cf36fac1fc3c96496df3dbf4a05b5349fba820044a085700cdc0014c5a37f",
             "headers": [
                 {
                     ":status": "200"
@@ -113,7 +113,7 @@
         },
         {
             "seqno": 3,
-            "wire": "308d91458ea47e561cc5802dfd295db1d0627f4596dc34fd280654d27eea0801128166e32cdc6df53168df4596dc34fd280654d27eea0801128166e32cdc6df53168df8c8b0f238371969a4599497ca58e83ee3412c3569fb50938ec41530190759e79b7d60f8b924596dc34fd280654d27eea0801128166e32d5c0b4a62d1bf",
+            "wire": "88cd588ea47e561cc5802dfd295db1d0627f6c96dc34fd280654d27eea0801128166e32cdc6df53168df6196dc34fd280654d27eea0801128166e32cdc6df53168dfc9c80f0d8371969a5f99497ca58e83ee3412c3569fb50938ec41530190759e79b7d60fc8ce6496dc34fd280654d27eea0801128166e32d5c0b4a62d1bf",
             "headers": [
                 {
                     ":status": "200"
@@ -155,7 +155,7 @@
         },
         {
             "seqno": 4,
-            "wire": "3092968a4496df697e9403ea6a225410022500e5c0b3704f298b46ff4496df697e9403ea6a225410022500e5c0b3704f298b46ff908f0f278413c00bbf848e954396df3dbf4a01e5349fba820044a01cb8166e09e53168df",
+            "wire": "88d2c76c96df697e9403ea6a225410022500e5c0b3704f298b46ff6196df697e9403ea6a225410022500e5c0b3704f298b46ffcdcc0f0d8413c00bbfc1cbd16496df3dbf4a01e5349fba820044a01cb8166e09e53168df",
             "headers": [
                 {
                     ":status": "200"
@@ -197,7 +197,7 @@
         },
         {
             "seqno": 5,
-            "wire": "3095994396d07abe94132a65b6a504003ca099b8072e042a62d1bf4992aed8e8313e94a47e561cc58190b6cb8000016f848fd24a8f4596df697e9403ea6a225410022500ddc659b800298b46ff940f2c83085b074987497ca58ae819aa9b4696c361be9403aa6a225410042500ddc659b800298b46ff",
+            "wire": "88d56c96d07abe94132a65b6a504003ca099b8072e042a62d1bf5892aed8e8313e94a47e561cc58190b6cb80000152848fd24a8f6196df697e9403ea6a225410022500ddc659b800298b46ffd10f0d83085b075f87497ca58ae819aad76496c361be9403aa6a225410042500ddc659b800298b46ff",
             "headers": [
                 {
                     ":status": "200"
@@ -236,7 +236,7 @@
         },
         {
             "seqno": 6,
-            "wire": "309b9f458fa47e561cc58197000fa52bb63a0c4f4796dc34fd280654d27eea0801128115c65cb8db4a62d1bf0f4bbf25114859629eb81139c7423ed490f48cd540b92c19a6450642573d937da958d33c0c7da85f359ac2a20dd6d5f4a0195b49fbac165408ae32e5c6da53168dff4596dc34fd280654d27eea0801128115c65cb8db4a62d1bf9a990f3183704d37a3989f4496dc34fd280654d27eea0801128166e32e5c6da53168df",
+            "wire": "88db588fa47e561cc58197000fa52bb63a0c4f6c96dc34fd280654d27eea0801128115c65cb8db4a62d1bf0f28bf25114859629eb81139c7423ed490f48cd540b92c19a6450642573d937da958d33c0c7da85f359ac2a20dd6d5f4a0195b49fbac165408ae32e5c6da53168dff6196dc34fd280654d27eea0801128115c65cb8db4a62d1bfd7d60f0d83704d37dfd5db6496dc34fd280654d27eea0801128166e32e5c6da53168df",
             "headers": [
                 {
                     ":status": "200"
@@ -281,7 +281,7 @@
         },
         {
             "seqno": 7,
-            "wire": "309fa3974396df3dbf4a002a693f750400894102e36cdc65d53168df4396df3dbf4a002a693f750400894102e36cdc65d53168df9d9c0f3483700d3b969ba24396dc34fd2800a97ca450400894102e36cdc65d53168dff",
+            "wire": "88dfd46c96df3dbf4a002a693f750400894102e36cdc65d53168df6196df3dbf4a002a693f750400894102e36cdc65d53168dfdad90f0d83700d3bd3d8de6496dc34fd2800a97ca450400894102e36cdc65d53168dff",
             "headers": [
                 {
                     ":status": "200"
@@ -323,7 +323,7 @@
         },
         {
             "seqno": 8,
-            "wire": "30a2a69a4396df3dbf4a002a693f750400894102e36cdc0baa62d1bf4396df3dbf4a002a693f750400894102e36cdc0baa62d1bfa09f0f378371969a949ea54396dc34fd2800a97ca450400894102e36cdc0baa62d1bff",
+            "wire": "88e2d76c96df3dbf4a002a693f750400894102e36cdc0baa62d1bf6196df3dbf4a002a693f750400894102e36cdc0baa62d1bfdddc0f0d8371969ad1dbe16496dc34fd2800a97ca450400894102e36cdc0baa62d1bff",
             "headers": [
                 {
                     ":status": "200"
@@ -365,7 +365,7 @@
         },
         {
             "seqno": 9,
-            "wire": "30a5a99d4396df697e9403ea6a225410022500e5c006e36153168dff4396df697e9403ea6a225410022500e5c006e36153168dffa3a20f3a8369d67f97a1a84396df3dbf4a01e5349fba820044a01cb800dc6c2a62d1bf",
+            "wire": "88e5da6c96df697e9403ea6a225410022500e5c006e36153168dff6196df697e9403ea6a225410022500e5c006e36153168dffe0df0f0d8369d67fd4dee46496df3dbf4a01e5349fba820044a01cb800dc6c2a62d1bf",
             "headers": [
                 {
                     ":status": "200"
@@ -407,7 +407,7 @@
         },
         {
             "seqno": 10,
-            "wire": "30a8aca04396df697e9403ea6a225410022500e5c006e36da98b46ff4396df697e9403ea6a225410022500e5c006e36da98b46ffa6a50f3d8413c00bbf9aa4ab4396df3dbf4a01e5349fba820044a01cb800dc6db53168df",
+            "wire": "88e8dd6c96df697e9403ea6a225410022500e5c006e36da98b46ff6196df697e9403ea6a225410022500e5c006e36da98b46ffe3e20f0d8413c00bbfd7e1e76496df3dbf4a01e5349fba820044a01cb800dc6db53168df",
             "headers": [
                 {
                     ":status": "200"
@@ -449,7 +449,7 @@
         },
         {
             "seqno": 11,
-            "wire": "30abaf96959493a60f3e83085b0792ac91",
+            "wire": "88ebd3d2d1d0e30f0d83085b07cfe8ce",
             "headers": [
                 {
                     ":status": "200"
@@ -488,7 +488,7 @@
         },
         {
             "seqno": 12,
-            "wire": "30abaf508eaed8e8313e94a47e561cc581c0034496dc34fd280654d27eea0801128166e32d5c1054c5a37f4496dc34fd280654d27eea0801128166e32d5c1054c5a37faaa90f41837dc701b3a8af4496dc34fd280654d27eea0801128166e34fdc1054c5a37f",
+            "wire": "88eb588eaed8e8313e94a47e561cc581c0036c96dc34fd280654d27eea0801128166e32d5c1054c5a37f6196dc34fd280654d27eea0801128166e32d5c1054c5a37fe7e60f0d837dc701efe5eb6496dc34fd280654d27eea0801128166e34fdc1054c5a37f",
             "headers": [
                 {
                     ":status": "200"
@@ -530,7 +530,7 @@
         },
         {
             "seqno": 13,
-            "wire": "30afb3a74396df697e9403ea6a225410022500e5c106e32f298b46ff4396df697e9403ea6a225410022500e5c106e32f298b46ffadac0f4482109ba1abb24396df3dbf4a01e5349fba820044a01cb820dc65e53168df",
+            "wire": "88efe46c96df697e9403ea6a225410022500e5c106e32f298b46ff6196df697e9403ea6a225410022500e5c106e32f298b46ffeae90f0d82109bdee8ee6496df3dbf4a01e5349fba820044a01cb820dc65e53168df",
             "headers": [
                 {
                     ":status": "200"
@@ -572,7 +572,7 @@
         },
         {
             "seqno": 14,
-            "wire": "30b2b6aa4396df697e9403ea6a225410022500edc102e05e53168dff4396df697e9403ea6a225410022500edc102e05e53168dffb0af0f478313cdbba4aeb54396df3dbf4a01e5349fba820044a01db8205c0bca62d1bf",
+            "wire": "88f2e76c96df697e9403ea6a225410022500edc102e05e53168dff6196df697e9403ea6a225410022500edc102e05e53168dffedec0f0d8313cdbbe1ebf16496df3dbf4a01e5349fba820044a01db8205c0bca62d1bf",
             "headers": [
                 {
                     ":status": "200"
@@ -614,7 +614,7 @@
         },
         {
             "seqno": 15,
-            "wire": "30b5b9ad4396df697e94640a6a2254100225041b8d82e36053168dff4396df697e94640a6a2254100225041b8d82e36053168dffb3b20f4a830b2fbda7b1b84396df3dbf4a09f5349fba820044a08371b05c6c0a62d1bf",
+            "wire": "88f5ea6c96df697e94640a6a2254100225041b8d82e36053168dff6196df697e94640a6a2254100225041b8d82e36053168dfff0ef0f0d830b2fbde4eef46496df3dbf4a09f5349fba820044a08371b05c6c0a62d1bf",
             "headers": [
                 {
                     ":status": "200"
@@ -656,7 +656,7 @@
         },
         {
             "seqno": 16,
-            "wire": "30b8bcb04396df3dbf4a002a693f750400894106e09cb8d3ca62d1bf4396df3dbf4a002a693f750400894106e09cb8d3ca62d1bfb6b50f4a84680cb6cfaab4bb4396dc34fd2800a97ca450400894106e09cb8d3ca62d1bff",
+            "wire": "88f8ed6c96df3dbf4a002a693f750400894106e09cb8d3ca62d1bf6196df3dbf4a002a693f750400894106e09cb8d3ca62d1bff3f20f0d84680cb6cfe7f1f76496dc34fd2800a97ca450400894106e09cb8d3ca62d1bff",
             "headers": [
                 {
                     ":status": "200"
@@ -698,7 +698,7 @@
         },
         {
             "seqno": 17,
-            "wire": "30bb408721eaa8a4498f57842507417fb44496c361be940094d27eea080112820dc69cb82754c5a37f4496c361be940094d27eea080112820dc69cb82754c5a37fbab90f4983134dbd6595497ca589d34d1f6a1271d882a60320eb3cf36fac1fb97f338586b19272ff4696dd6d5f4a004a5f2914100225041b8d39704ea98b46ff",
+            "wire": "88408721eaa8a4498f57842507417ff16c96c361be940094d27eea080112820dc69cb82754c5a37f6196c361be940094d27eea080112820dc69cb82754c5a37ff7f60f0d83134dbd5f95497ca589d34d1f6a1271d882a60320eb3cf36fac1ff6768586b19272ff6496dd6d5f4a004a5f2914100225041b8d39704ea98b46ff",
             "headers": [
                 {
                     ":status": "200"
@@ -740,7 +740,7 @@
         },
         {
             "seqno": 18,
-            "wire": "30c487ba4696d07abe940b6a6a2254100225042b8076e05d53168dff4696d07abe940b6a6a2254100225042b8076e05d53168dff7f17839bd9ab7f398b84842d695b05443c86aa6f0f4a83744effb6408bf2b4b60e92ac7ad263d48f9d868a0fe16c361e95274a6b45c61894f65b4a17258334c8a0c84ae7b26f884796e4593e940b4a693f75040089410ae01db81754c5a37f",
+            "wire": "88c3f66c96d07abe940b6a6a2254100225042b8076e05d53168dff6196d07abe940b6a6a2254100225042b8076e05d53168dff5a839bd9ab7b8b84842d695b05443c86aa6f0f0d83744efff2408bf2b4b60e92ac7ad263d48f9d868a0fe16c361e95274a6b45c61894f65b4a17258334c8a0c84ae7b26fc46496e4593e940b4a693f75040089410ae01db81754c5a37f",
             "headers": [
                 {
                     ":status": "200"
@@ -782,7 +782,7 @@
         },
         {
             "seqno": 19,
-            "wire": "30874a88352398ac74acb37f8e5e91aed8e8313e94a47e561cc5804dbe20001f7f378624f6d5d4b27f4896c361be940094d27eea080112820dc69cb82794c5a37f8d",
+            "wire": "885f88352398ac74acb37fca5891aed8e8313e94a47e561cc5804dbe20001f798624f6d5d4b27f6196c361be940094d27eea080112820dc69cb82794c5a37fc9",
             "headers": [
                 {
                     ":status": "200"
@@ -809,7 +809,7 @@
         },
         {
             "seqno": 20,
-            "wire": "308b849183828f8d",
+            "wire": "88c1cdc0bfcbc9",
             "headers": [
                 {
                     ":status": "200"
@@ -836,7 +836,7 @@
         },
         {
             "seqno": 21,
-            "wire": "308b84918382818d",
+            "wire": "88c1cdc0bfbec9",
             "headers": [
                 {
                     ":status": "200"
@@ -863,7 +863,7 @@
         },
         {
             "seqno": 22,
-            "wire": "308b849183828f8d",
+            "wire": "88c1cdc0bfcbc9",
             "headers": [
                 {
                     ":status": "200"
@@ -890,7 +890,7 @@
         },
         {
             "seqno": 23,
-            "wire": "308b91a14a96dc34fd280654d27eea0801128166e32d5c0bca62d1bf4296dc34fd280654d27eea0801128166e32d5c0baa62d1bf8a890f4a84081d781f90888f4796dc34fd280654d27eea0801128166e34fdc0bca62d1bf",
+            "wire": "88cddd6c96dc34fd280654d27eea0801128166e32d5c0bca62d1bf6196dc34fd280654d27eea0801128166e32d5c0baa62d1bfc7c60f0d84081d781fccc5cb6496dc34fd280654d27eea0801128166e34fdc0bca62d1bf",
             "headers": [
                 {
                     ":status": "200"
@@ -932,7 +932,7 @@
         },
         {
             "seqno": 24,
-            "wire": "308e944691a47e561cc5804dbe20001f4a576c74189f4496dc34fd280654d27eea0801128166e05db8d814c5a37f4496dc34fd280654d27eea0801128166e05db8d814c5a37f8e8d0f4a83109a6f948c934496d07abe94032a5f291410022502cdc0bb71b0298b46ff",
+            "wire": "88d05891a47e561cc5804dbe20001f4a576c74189f6c96dc34fd280654d27eea0801128166e05db8d814c5a37f6196dc34fd280654d27eea0801128166e05db8d814c5a37fcbca0f0d83109a6fd0c9cf6496d07abe94032a5f291410022502cdc0bb71b0298b46ff",
             "headers": [
                 {
                     ":status": "200"
@@ -974,7 +974,7 @@
         },
         {
             "seqno": 25,
-            "wire": "30928b988a894295d07abe941094d444a820044a0857000b810a98b46f95",
+            "wire": "88c8d4c7c66195d07abe941094d444a820044a0857000b810a98b46fd1",
             "headers": [
                 {
                     ":status": "200"
@@ -1001,7 +1001,7 @@
         },
         {
             "seqno": 26,
-            "wire": "30938c998b8a4196dc34fd282754d444a820044a045700fdc036a62d1bff96",
+            "wire": "88c9d5c8c76196dc34fd282754d444a820044a045700fdc036a62d1bffd2",
             "headers": [
                 {
                     ":status": "200"
@@ -1028,7 +1028,7 @@
         },
         {
             "seqno": 27,
-            "wire": "30948d9a8c8b4196dc34fd282754d444a820044a01db8cb9702253168dff97",
+            "wire": "88cad6c9c86196dc34fd282754d444a820044a01db8cb9702253168dffd3",
             "headers": [
                 {
                     ":status": "200"
@@ -1055,7 +1055,7 @@
         },
         {
             "seqno": 28,
-            "wire": "30958e9b8d8c4195d07abe941094d444a820044a0857000b811298b46f98",
+            "wire": "88cbd7cac96195d07abe941094d444a820044a0857000b811298b46fd4",
             "headers": [
                 {
                     ":status": "200"
@@ -1082,7 +1082,7 @@
         },
         {
             "seqno": 29,
-            "wire": "30969c4890aed8e8313e94a47e561cc5802d34007f4896dc34fd280654d27eea0801128115c6d9b82654c5a37f4396dc34fd280654d27eea0801128115c6d9b82654c5a37f96950f4a836dd6595292497ca589d34d1f6a1271d882a60b532acf7f959c4996d07abe94032a5f2914100225022b8db3704ca98b46ff",
+            "wire": "88d85890aed8e8313e94a47e561cc5802d34007f6c96dc34fd280654d27eea0801128115c6d9b82654c5a37f6196dc34fd280654d27eea0801128115c6d9b82654c5a37fd3d20f0d836dd6595f92497ca589d34d1f6a1271d882a60b532acf7fd2d86496d07abe94032a5f2914100225022b8db3704ca98b46ff",
             "headers": [
                 {
                     ":status": "200"
@@ -1124,7 +1124,7 @@
         },
         {
             "seqno": 30,
-            "wire": "309ba1854496dc34fd280654d27eea0801128105c6deb8db6a62d1bf4496dc34fd280654d27eea0801128105c6deb8db6a62d1bf9a990f4a830b4f0384989f4396d07abe94032a5f2914100225020b8dbd71b6d4c5a37f",
+            "wire": "88ddc26c96dc34fd280654d27eea0801128105c6deb8db6a62d1bf6196dc34fd280654d27eea0801128105c6deb8db6a62d1bfd7d60f0d830b4f03c1d5db6496d07abe94032a5f2914100225020b8dbd71b6d4c5a37f",
             "headers": [
                 {
                     ":status": "200"
@@ -1166,7 +1166,7 @@
         },
         {
             "seqno": 31,
-            "wire": "309ea4884396dc34fd280654d27eea080112807ee36cdc65e53168df4396dc34fd280654d27eea080112807ee36cdc65e53168df9d9c0f4a84081a003fa39ba24396d07abe94032a5f291410022500fdc6d9b8cbca62d1bf",
+            "wire": "88e0c56c96dc34fd280654d27eea080112807ee36cdc65e53168df6196dc34fd280654d27eea080112807ee36cdc65e53168dfdad90f0d84081a003fdfd8de6496d07abe94032a5f291410022500fdc6d9b8cbca62d1bf",
             "headers": [
                 {
                     ":status": "200"
@@ -1208,7 +1208,7 @@
         },
         {
             "seqno": 32,
-            "wire": "30a1a7934396df697e9403ea6a225410022500e5c006e34ea98b46ff4396df697e9403ea6a225410022500e5c006e34ea98b46ffa09f0f4a8369e7034a94497ca582211f6a1271d882a60320eb3cf36fac1f9fa64496df3dbf4a01e5349fba820044a01cb800dc69d53168df",
+            "wire": "88e3d06c96df697e9403ea6a225410022500e5c006e34ea98b46ff6196df697e9403ea6a225410022500e5c006e34ea98b46ffdddc0f0d8369e7035f94497ca582211f6a1271d882a60320eb3cf36fac1fdce26496df3dbf4a01e5349fba820044a01cb800dc69d53168df",
             "headers": [
                 {
                     ":status": "200"
@@ -1249,6 +1249,6 @@
             ]
         }
     ],
-    "draft": 8,
-    "description": "http2 in Haskell: LinearH - index=no, reference set=no, huffman=yes"
+    "draft": 9,
+    "description": "http2 in Haskell: LinearH - static table=yes, header table=yes, huffman=yes"
 }

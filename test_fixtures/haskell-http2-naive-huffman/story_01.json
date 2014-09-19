@@ -2,7 +2,7 @@
     "cases": [
         {
             "seqno": 0,
-            "wire": "300085b8824e5a4b849d29ad1f0088b83b5339ec327d7f882f91d35d055c87a70084b958d33f81630085b9495339e483c5837f0087b505b161cc5a93879eb193aac92a13008421cfd4c587f3e7cf9f3e7c870086f2b4e5a283ff84f07b2893",
+            "wire": "0085b8824e5a4b849d29ad1f0088b83b5339ec327d7f882f91d35d055c87a70084b958d33f81630085b9495339e483c5837f0087b505b161cc5a93879eb193aac92a13008421cfd4c587f3e7cf9f3e7c870086f2b4e5a283ff84f07b2893",
             "headers": [
                 {
                     ":scheme": "https"
@@ -29,7 +29,7 @@
         },
         {
             "seqno": 1,
-            "wire": "300085b8824e5a4b849d29ad1f0088b83b5339ec327d7f882f91d35d055c87a70084b958d33f81630085b9495339e483c5837f0087b505b161cc5a93879eb193aac92a13008421cfd4c587f3e7cf9f3e7c8b",
+            "wire": "0085b8824e5a4b849d29ad1f0088b83b5339ec327d7f882f91d35d055c87a70084b958d33f81630085b9495339e483c5837f0087b505b161cc5a93879eb193aac92a13008421cfd4c587f3e7cf9f3e7c8b",
             "headers": [
                 {
                     ":scheme": "https"
@@ -52,6 +52,6 @@
             ]
         }
     ],
-    "draft": 8,
-    "description": "http2 in Haskell: NaiveH - index=no, reference set=no, huffman=yes"
+    "draft": 9,
+    "description": "http2 in Haskell: NaiveH - static table=no, header table=no, huffman=yes"
 }

@@ -2,7 +2,7 @@
     "cases": [
         {
             "seqno": 0,
-            "wire": "3082874388f439ce75c875fa5787",
+            "wire": "82864188f439ce75c875fa5784",
             "headers": [
                 {
                     ":method": "GET"
@@ -20,7 +20,7 @@
         },
         {
             "seqno": 1,
-            "wire": "308483428cf1e3c2fe8739ceb90ebf4aff82",
+            "wire": "8286418cf1e3c2fe8739ceb90ebf4aff84",
             "headers": [
                 {
                     ":method": "GET"
@@ -38,7 +38,7 @@
         },
         {
             "seqno": 2,
-            "wire": "3085844187eabfa35332fd2b039b60d48e62a1849eb611589825353141e63ad52160b206c4f2f5d537",
+            "wire": "82864187eabfa35332fd2b049b60d48e62a1849eb611589825353141e63ad52160b206c4f2f5d537",
             "headers": [
                 {
                     ":method": "GET"
@@ -55,6 +55,6 @@
             ]
         }
     ],
-    "draft": 8,
-    "description": "http2 in Haskell: LinearH - index=no, reference set=no, huffman=yes"
+    "draft": 9,
+    "description": "http2 in Haskell: LinearH - static table=yes, header table=yes, huffman=yes"
 }
