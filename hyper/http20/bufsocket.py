@@ -11,6 +11,7 @@ performance optimisation at the cost of burning some memory in the userspace
 process.
 """
 import select
+from .exceptions import ConnectionResetError
 
 class BufferedSocket(object):
     """
