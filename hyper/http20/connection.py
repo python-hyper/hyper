@@ -15,7 +15,7 @@ from .frame import (
 )
 from .response import HTTP20Response, HTTP20Push
 from .window import FlowControlManager
-from .exceptions import ConnectionError
+from .exceptions import ConnectionError, ConnectionResetError
 from .bufsocket import BufferedSocket
 
 import errno
