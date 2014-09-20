@@ -39,3 +39,13 @@ class ProtocolError(HTTP20Error):
     The remote party violated the HTTP/2 protocol.
     """
     pass
+
+
+# Create our own ConnectionResetError.
+try:  # pragma: no cover
+    ConnectionResetError = ConnectionResetError
+except NameError:  # pragma: no cover
+    class ConnectionResetError(Exception):
+        """
+        A HTTP/2 connection was unexpectedly reset.
+        """

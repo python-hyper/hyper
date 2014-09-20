@@ -2029,6 +2029,7 @@ class DummySocket(object):
     def __init__(self):
         self.queue = []
         self.buffer = BytesIO()
+        self.can_read = False
 
     def send(self, data):
         self.queue.append(data)

@@ -15,7 +15,7 @@ from .frame import (
 )
 from .response import HTTP20Response, HTTP20Push
 from .window import FlowControlManager
-from .exceptions import ConnectionError
+from .exceptions import ConnectionError, ConnectionResetError
 from .bufsocket import BufferedSocket
 
 import errno
@@ -468,15 +468,13 @@ class HTTP20Connection(object):
 
         return
 
-    def _recv_cb(self):
+    def _consume_single_frame(self):
         """
-        This is the callback used by streams to read data from the connection.
+        Consumes a single frame from the TCP stream.
 
-        It expects to read a single frame, and then to deserialize that frame
-        and pass it to the relevant stream. This is generally called by a
-        stream, not by the connection itself, and it's likely that streams will
-        read a frame that doesn't belong to them. That's ok: streams need to
-        make a decision to spin around again.
+        Right now this method really does a bit too much: it shouldn't be
+        responsible for determining if a frame is valid or to increase the
+        flow control window.
         """
         # Begin by reading 9 bytes from the socket.
         header = self._sock.recv(9)
@@ -521,6 +519,28 @@ class HTTP20Connection(object):
             self.streams[frame.stream_id].receive_frame(frame)
         else:
             self.receive_frame(frame)
+
+    def _recv_cb(self):
+        """
+        This is the callback used by streams to read data from the connection.
+
+        It expects to read a single frame, and then to deserialize that frame
+        and pass it to the relevant stream. It then attempts to optimistically
+        read further frames (in an attempt to ensure that we see control frames
+        as early as possible).
+
+        This is generally called by a stream, not by the connection itself, and
+        it's likely that streams will read a frame that doesn't belong to them.
+        """
+        self._consume_single_frame()
+        count = 9
+
+        while count and self._sock is not None and self._sock.can_read:
+            # If the connection has been closed, bail out.
+            try:
+                self._consume_single_frame()
+            except ConnectionResetError:
+                break
 
 
     # The following two methods are the implementation of the context manager

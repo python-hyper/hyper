@@ -11,6 +11,7 @@ performance optimisation at the cost of burning some memory in the userspace
 process.
 """
 import select
+from .exceptions import ConnectionResetError
 
 class BufferedSocket(object):
     """
@@ -61,6 +62,20 @@ class BufferedSocket(object):
         """
         return self._index + self._bytes_in_buffer
 
+    @property
+    def can_read(self):
+        """
+        Whether or not there is more data to read from the socket.
+        """
+        if self._bytes_in_buffer:
+            return True
+
+        read = select.select([self._sck], [], [], 0)[0]
+        if read:
+            return True
+
+        return False
+
     def recv(self, amt):
         """
         Read some data from the socket.
@@ -105,6 +120,11 @@ class BufferedSocket(object):
         if ((self._remaining_capacity > self._bytes_in_buffer) and
             (should_read)):
             count = self._sck.recv_into(self._buffer_view[self._buffer_end:])
+
+            # The socket just got closed. We should throw an exception if we
+            # were asked for more data than we can return.
+            if not count and amt > self._bytes_in_buffer:
+                raise ConnectionResetError()
             self._bytes_in_buffer += count
 
         # Read out the bytes and update the index.
