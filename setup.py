@@ -38,7 +38,7 @@ packages = ['hyper', 'hyper.http20']
 setup(
     name='hyper',
     version=version,
-    description='HTTP/2 client for Python',
+    description='HTTP/2 Client for Python',
     long_description=open('README.rst').read() + '\n\n' + open('HISTORY.rst').read(),
     author='Cory Benfield',
     author_email='cory@lukasa.co.uk',
