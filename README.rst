@@ -1,6 +1,6 @@
-========================
-Hyper: HTTP/2 for Python
-========================
+===============================
+Hyper: HTTP/2 client for Python
+===============================
 
 .. image:: https://travis-ci.org/Lukasa/hyper.png?branch=master
     :target: https://travis-ci.org/Lukasa/hyper
