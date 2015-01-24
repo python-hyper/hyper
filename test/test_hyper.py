@@ -1273,7 +1273,7 @@ class TestHyperConnection(object):
 
         def data_cb(frame, tolerate_peer_gone=False):
             assert False, 'should not be called'
-        c._data_cb = data_cb
+        c._send_cb = data_cb
         c.receive_frame(f)
 
     def test_ping_without_ack_gets_reply(self):
@@ -1285,7 +1285,7 @@ class TestHyperConnection(object):
 
         def data_cb(frame, tolerate_peer_gone=False):
             frames.append(frame)
-        c._data_cb = data_cb
+        c._send_cb = data_cb
         c.receive_frame(f)
 
         assert len(frames) == 1
