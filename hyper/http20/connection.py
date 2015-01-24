@@ -339,7 +339,7 @@ class HTTP20Connection(object):
                 p = PingFrame(0)
                 p.flags.add('ACK')
                 p.opaque_data = frame.opaque_data
-                self._data_cb(p, True)
+                self._send_cb(p, True)
         elif frame.type == SettingsFrame.type:
             if 'ACK' not in frame.flags:
                 self._update_settings(frame)
