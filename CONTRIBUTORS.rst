@@ -19,3 +19,7 @@ In chronological order:
   - Implemented Python 2.7 support.
   - Implemented HTTP/2 draft 10 support.
   - Implemented server push.
+
+- Tetsuya Morimoto (@t2y)
+
+  - Fixed a bug where large or incomplete frames were not handled correctly.
