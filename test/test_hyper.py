@@ -1072,6 +1072,23 @@ class TestHyperConnection(object):
         s = c.recent_stream
         assert s.data == [b'testdata']
 
+    def test_we_can_read_fitfully_from_the_socket(self):
+        sock = DummyFitfullySocket()
+        sock.buffer = BytesIO(
+            b'\x00\x00\x18\x00\x01\x00\x00\x00\x01'
+            b'testdata'
+            b'+payload'
+        )
+
+        c = HTTP20Connection('www.google.com')
+        c._sock = sock
+        c.putrequest('GET', '/')
+        c.endheaders()
+        c._recv_cb()
+
+        s = c.recent_stream
+        assert s.data == [b'testdata+payload']
+
     def test_putrequest_sends_data(self):
         sock = DummySocket()
 
@@ -2044,6 +2061,15 @@ class DummySocket(object):
 
     def close(self):
         pass
+
+
+class DummyFitfullySocket(DummySocket):
+    def recv(self, l):
+        length = l
+        if l != 9 and l >= 4:
+            length = int(round(l / 2))
+        return memoryview(self.buffer.read(length))
+
 
 class DummyStream(object):
     def __init__(self, data, trailers=None):
