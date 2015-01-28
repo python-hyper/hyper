@@ -483,11 +483,30 @@ class HTTP20Connection(object):
         frame, length = Frame.parse_frame_header(header)
 
         # Read the remaining data from the socket.
-        if length:
-            data = self._sock.recv(length)
-        else:
-            data = memoryview(b'')
+        data = self._recv_payload(length)
+        self._consume_frame_payload(frame, data)
 
+    def _recv_payload(self, length):
+        if not length:
+            return memoryview(b'')
+
+        buffer = bytearray(length)
+        buffer_view = memoryview(buffer)
+        index = 0
+        data_length = -1
+        # _sock.recv(length) might not read out all data if the given length
+        # is very large. So it should be to retrieve from socket repeatedly.
+        while length and data_length:
+            data = self._sock.recv(length)
+            data_length = len(data)
+            end = index + data_length
+            buffer_view[index:end] = data[:]
+            length -= data_length
+            index = end
+
+        return buffer_view[:end]
+
+    def _consume_frame_payload(self, frame, data):
         frame.parse_body(data)
 
         log.info(
