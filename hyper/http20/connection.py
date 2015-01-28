@@ -487,6 +487,16 @@ class HTTP20Connection(object):
         self._consume_frame_payload(frame, data)
 
     def _recv_payload(self, length):
+        """
+        This receive function handles the situation where the underlying socket
+        has not received the full set of data. It spins on calling `recv`
+        until the full quantity of data is available before returning.
+
+        Note that this function makes us vulnerable to a DoS attack, where a
+        server can send part of a frame and then swallow the rest. We should
+        add support for socket timeouts here at some stage.
+        """
+        # TODO: Fix DoS risk.
         if not length:
             return memoryview(b'')
 
@@ -507,6 +517,9 @@ class HTTP20Connection(object):
         return buffer_view[:end]
 
     def _consume_frame_payload(self, frame, data):
+        """
+        This builds and handles a frame.
+        """
         frame.parse_body(data)
 
         log.info(
