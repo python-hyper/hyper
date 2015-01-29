@@ -1919,8 +1919,8 @@ class TestResponse(object):
     def test_responses_are_context_managers(self):
         stream = DummyStream('')
 
-        with HTTP20Response([(':status', '200')], stream) as resp:  # noqa
-            pass
+        with HTTP20Response([(':status', '200')], stream) as resp:
+            assert resp
 
         assert stream.closed
 
