@@ -5,10 +5,12 @@ hyper/tls
 
 Contains the TLS/SSL logic for use in hyper.
 """
+import logging
 import os.path as path
 
 from ..compat import ignore_missing, ssl
 
+log = logging.getLogger(__name__)
 
 NPN_PROTOCOL = 'h2-16'
 H2_NPN_PROTOCOLS = [NPN_PROTOCOL, 'h2-15', 'h2-14']  # All h2s we support.
@@ -41,7 +43,9 @@ def wrap_socket(sock, server_hostname):
         ssl.match_hostname(ssl_sock.getpeercert(), server_hostname)
 
     with ignore_missing():
-        assert ssl_sock.selected_npn_protocol() in H2_NPN_PROTOCOLS
+        selected_npn = ssl_sock.selected_npn_protocol()
+        log.debug('Selected NPN: %s' % selected_npn)
+        assert selected_npn in H2_NPN_PROTOCOLS
 
     return ssl_sock
 

@@ -63,4 +63,9 @@ setup(
         'Programming Language :: Python :: Implementation :: CPython',
     ],
     install_requires=resolve_install_requires(),
+    entry_points={
+        'console_scripts': [
+            'hyper = hyper.cli:main',
+        ],
+    },
 )
