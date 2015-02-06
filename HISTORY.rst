@@ -1,6 +1,24 @@
 Release History
 ===============
 
+0.1.1 (2015-02-06)
+------------------
+
+*Minor Changes*
+
+- Support for HTTP/2 draft 15, and 16. No drop of support for draft 14.
+- Updated bundled certificate file.
+
+*Bugfixes *
+
+- Fixed ``AttributeError`` being raised when a PING frame was received, thanks
+  to @t2y. (`Issue #79`_)
+- Fixed bug where large frames could be incorrectly truncated by the buffered
+  socket implementation, thanks to @t2y. (`Issue #80`_)
+
+.. _Issue #79: https://github.com/Lukasa/hyper/issues/79
+.. _Issue #80: https://github.com/Lukasa/hyper/issues/80
+
 0.1.0 (2014-08-16)
 ------------------
 
