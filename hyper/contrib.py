@@ -72,6 +72,10 @@ class HTTP20Adapter(HTTPAdapter):
         Builds a Requests' response object.  This emulates most of the logic of
         the standard fuction but deals with the lack of the ``.headers``
         property on the HTTP20Response object.
+
+        Additionally, this function builds in a number of features that are
+        purely for HTTPie. This is to allow maximum compatibility with what
+        urllib3 does, so that HTTPie doesn't fall over when it uses us.
         """
         response = Response()
 
@@ -87,8 +91,45 @@ class HTTP20Adapter(HTTPAdapter):
         response.request = request
         response.connection = self
 
-        # One last horrible patch: Requests expects its raw responses to have a
+        # First horrible patch: Requests expects its raw responses to have a
         # release_conn method, which I don't. We should monkeypatch a no-op on.
         resp.release_conn = lambda: None
+
+        # Next, add the things HTTPie needs. It needs the following things:
+        #
+        # - The `raw` object has a property called `_original_response` that is
+        #   a `httplib` response object.
+        # - `raw._original_response` has three simple properties: `version`,
+        #   `status`, `reason`.
+        # - `raw._original_response.version` has one of three values: `9`,
+        #   `10`, `11`.
+        # - `raw._original_response.msg` exists.
+        # - `raw._original_response.msg._headers` exists and is an iterable of
+        #   two-tuples.
+        #
+        # We fake this out. Most of this exists on our response object already,
+        # and the rest can be faked.
+        class FakeOriginalResponse(object):
+            def __init__(self, headers):
+                self._headers = headers
+
+            def get_all(self, name, default=None):
+                values = []
+
+                for n, v in self._headers:
+                    if n == name.lower():
+                        values.append(v)
+
+                if not values:
+                    return default
+
+                return values
+
+
+        response.raw._original_response = orig = FakeOriginalResponse(resp.getheaders())
+        orig.version = 20
+        orig.status = resp.status
+        orig.reason = resp.reason
+        orig.msg = FakeOriginalResponse(resp.getheaders())
 
         return response
