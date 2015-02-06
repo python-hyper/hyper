@@ -11,7 +11,8 @@ from ..compat import ignore_missing, ssl
 
 
 NPN_PROTOCOL = 'h2-16'
-SUPPORTED_NPN_PROTOCOLS = ['http/1.1', NPN_PROTOCOL]
+H2_NPN_PROTOCOLS = [NPN_PROTOCOL, 'h2-15', 'h2-14']  # All h2s we support.
+SUPPORTED_NPN_PROTOCOLS = ['http/1.1'] + H2_NPN_PROTOCOLS
 
 
 # We have a singleton SSLContext object. There's no reason to be creating one
@@ -40,7 +41,7 @@ def wrap_socket(sock, server_hostname):
         ssl.match_hostname(ssl_sock.getpeercert(), server_hostname)
 
     with ignore_missing():
-        assert ssl_sock.selected_npn_protocol() == NPN_PROTOCOL
+        assert ssl_sock.selected_npn_protocol() in H2_NPN_PROTOCOLS
 
     return ssl_sock
 
