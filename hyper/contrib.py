@@ -128,6 +128,9 @@ class HTTP20Adapter(HTTPAdapter):
 
                 return values
 
+            def getheaders(self, name):
+                return self.get_all(name, [])
+
 
         response.raw._original_response = orig = FakeOriginalResponse(None)
         orig.version = 20
