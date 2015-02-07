@@ -10,6 +10,9 @@ socket.
 import collections
 import struct
 
+from binascii import hexlify
+
+
 # The maximum length of a frame. Some frames have shorter maximum lengths.
 FRAME_MAX_LEN = (2 ** 14) - 1
 
@@ -83,6 +86,29 @@ class Frame(object):
 
         return header + body
 
+    def to_json_obj(self, dump_body=False):
+        """
+        Builds a JSON object suitable for being a representation of the
+        interesting data about a frame. Expected to be used primarily when
+        logging.
+
+        Subclasses override this, taking the original output and adding their
+        own specific data.
+        """
+        # Define the basic JSON structure.
+        data = {
+            'type': self.__class__.__name__.upper()[:-5],
+            'stream id': self.stream_id,
+            'flags': list(self.flags),
+            'length': len(self.serialize_body()),
+            'body': None,
+        }
+
+        if dump_body:
+            data['body'] = hexlify(self.serialize_body()).decode('ascii')
+
+        return data
+
     def serialize_body(self):
         raise NotImplementedError()
 
@@ -109,6 +135,15 @@ class Padding(object):
             self.pad_length = struct.unpack('!B', data[:1])[0]
             return 1
         return 0
+
+    def to_json_obj(self, dump_body=False):
+        data = super(Padding, self).to_json_obj(dump_body)
+        data['padding length'] = self.total_padding
+
+        if 'PADDED' in self.flags:
+            data['padding length'] += 1
+
+        return data
 
     @property
     def total_padding(self):
@@ -147,6 +182,15 @@ class Priority(object):
         self.exclusive = bool(self.depends_on & MASK)
         self.depends_on &= ~MASK
         return 5
+
+    def to_json_obj(self, dump_body=False):
+        data = super(Priority, self).to_json_obj(dump_body)
+        data['priority'] = {
+            'depends on': self.depends_on,
+            'stream weight': self.stream_weight,
+            'exclusive': self.exclusive,
+        }
+        return data
 
 
 class DataFrame(Padding, Frame):
@@ -236,6 +280,18 @@ class RstStreamFrame(Frame):
 
         self.error_code = struct.unpack("!L", data)[0]
 
+    def to_json_obj(self, dump_body=False):
+        # Never serialize the body
+        dump_body = False
+        data = super(RstStreamFrame, self).to_json_obj(dump_body)
+
+        # Add the custom data.
+        data['RST_STREAM'] = {
+            'error code': self.error_code
+        }
+
+        return data
+
 
 class SettingsFrame(Frame):
     """
@@ -264,6 +320,16 @@ class SettingsFrame(Frame):
     SETTINGS_MAX_FRAME_SIZE       = 0x05
     SETTINGS_MAX_HEADER_LIST_SIZE = 0x06
 
+    # Define a reverse mapping as well.
+    text_names = {
+        0x01: 'HEADER_TABLE_SIZE',
+        0x02: 'ENABLE_PUSH',
+        0x03: 'MAX_CONCURRENT_STREAMS',
+        0x04: 'INITIAL_WINDOW_SIZE',
+        0x05: 'SETTINGS_MAX_FRAME_SIZE',
+        0x06: 'SETTINGS_MAX_HEADER_LIST_SIZE',
+    }
+
     def __init__(self, stream_id):
         super(SettingsFrame, self).__init__(stream_id)
 
@@ -279,6 +345,13 @@ class SettingsFrame(Frame):
         for i in range(0, len(data), 6):
             name, value = struct.unpack("!HL", data[i:i+6])
             self.settings[name] = value
+
+    def to_json_obj(self, dump_body=False):
+        data = super(SettingsFrame, self).to_json_obj(False)
+        data['SETTINGS'] = {
+            self.text_names[k]: v for k,v in self.settings.items()
+        }
+        return data
 
 
 class PushPromiseFrame(Padding, Frame):
@@ -302,6 +375,11 @@ class PushPromiseFrame(Padding, Frame):
         padding_data_length = self.parse_padding_data(data)
         self.promised_stream_id = struct.unpack("!L", data[padding_data_length:padding_data_length + 4])[0]
         self.data = data[padding_data_length + 4:].tobytes()
+
+    def to_json_obj(self, dump_body=False):
+        data = super(PushPromiseFrame, self).to_json_obj(False)
+        data['PUSH_PROMISE'] = {'promised stream id': self.promised_stream_id}
+        return data
 
 
 class PingFrame(Frame):
@@ -334,6 +412,13 @@ class PingFrame(Frame):
             raise ValueError()
 
         self.opaque_data = data.tobytes()
+
+    def to_json_obj(self, dump_body=False):
+        data = super(PingFrame, self).to_json_obj(False)
+        data['PING'] = {
+            'opaque data': hexlify(self.opaque_data).decode('ascii')
+        }
+        return data
 
 
 class GoAwayFrame(Frame):
@@ -370,6 +455,15 @@ class GoAwayFrame(Frame):
         if len(data) > 8:
             self.additional_data = data[8:].tobytes()
 
+    def to_json_obj(self, dump_body=False):
+        data = super(GoAwayFrame, self).to_json_obj(False)
+        data['GOAWAY'] = {
+            'last stream id': self.last_stream_id,
+            'error code': self.error_code,
+            'additional data': hexlify(self.additional_data).decode('ascii'),
+        }
+        return data
+
 
 class WindowUpdateFrame(Frame):
     """
@@ -398,6 +492,13 @@ class WindowUpdateFrame(Frame):
 
     def parse_body(self, data):
         self.window_increment = struct.unpack("!L", data)[0]
+
+    def to_json_obj(self, dump_body=False):
+        data = super(WindowUpdateFrame, self).to_json_obj(False)
+        data['WINDOWUPDATE'] = {
+            'window increment': self.window_increment,
+        }
+        return data
 
 
 class HeadersFrame(Padding, Priority, Frame):

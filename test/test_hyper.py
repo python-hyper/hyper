@@ -115,6 +115,55 @@ class TestDataFrame(object):
         with pytest.raises(ValueError):
             DataFrame(0)
 
+    def test_data_frame_without_padding_json_serializes_properly(self):
+        f = DataFrame(1)
+        f.flags = set(['END_STREAM'])
+        f.data = b'hi there sir'
+
+        result = {
+            'type': 'DATA',
+            'stream id': 1,
+            'flags': ['END_STREAM'],
+            'length': 12,
+            'padding length': 0,
+            'body': None,
+        }
+
+        assert f.to_json_obj() == result
+
+    def test_data_frame_with_padding_json_serializes_properly(self):
+        f = DataFrame(1)
+        f.flags = ['END_STREAM', 'PADDED']  # Don't use a set, be predictable
+        f.data = b'hi there sir'
+        f.pad_length = 10
+
+        result = {
+            'type': 'DATA',
+            'stream id': 1,
+            'flags': ['END_STREAM', 'PADDED'],
+            'length': 23,
+            'padding length': 11,
+            'body': None,
+        }
+
+        assert f.to_json_obj() == result
+
+    def test_data_frame_json_serializes_properly_with_data(self):
+        f = DataFrame(1)
+        f.flags = set(['END_STREAM'])
+        f.data = b'\x01\x02\x03\x04'
+
+        result = {
+            'type': 'DATA',
+            'stream id': 1,
+            'flags': ['END_STREAM'],
+            'length': 4,
+            'padding length': 0,
+            'body': '01020304',
+        }
+
+        assert f.to_json_obj(dump_body=True) == result
+
 
 class TestPriorityFrame(object):
     payload = b'\x00\x00\x05\x02\x00\x00\x00\x00\x01\x80\x00\x00\x04\x40'
@@ -145,6 +194,27 @@ class TestPriorityFrame(object):
     def test_priority_frame_comes_on_a_stream(self):
         with pytest.raises(ValueError):
             PriorityFrame(0)
+
+    def test_priority_frame_with_exclusive_json_serializes_properly(self):
+        f = PriorityFrame(1)
+        f.depends_on = 0x04
+        f.stream_weight = 64
+        f.exclusive = True
+
+        result = {
+            'type': 'PRIORITY',
+            'stream id': 1,
+            'flags': [],
+            'length': 5,
+            'body': None,
+            'priority': {
+                'depends on': 4,
+                'stream weight': 64,
+                'exclusive': True,
+            }
+        }
+
+        assert f.to_json_obj() == result
 
 
 class TestRstStreamFrame(object):
@@ -177,6 +247,22 @@ class TestRstStreamFrame(object):
         f = RstStreamFrame(1)
         with pytest.raises(ValueError):
             f.parse_body(b'\x01')
+
+    def test_rst_stream_to_json(self):
+        f = RstStreamFrame(1)
+        f.error_code = 420
+        result = {
+            'type': 'RSTSTREAM',
+            'stream id': 1,
+            'flags': [],
+            'length': 4,
+            'body': None,
+            'RST_STREAM': {
+                'error code': 420,
+            }
+        }
+
+        assert f.to_json_obj() == result
 
 
 class TestSettingsFrame(object):
@@ -219,6 +305,28 @@ class TestSettingsFrame(object):
         assert f.flags == set(['ACK'])
         assert f.settings == self.settings
 
+    def test_settings_frame_to_json(self):
+        f = SettingsFrame(0)
+        f.parse_flags(0xFF)
+        f.settings = self.settings
+        result = {
+            'type': 'SETTINGS',
+            'stream id': 0,
+            'flags': ['ACK'],
+            'length': 36,
+            'body': None,
+            'SETTINGS': {
+                'HEADER_TABLE_SIZE': 4096,
+                'ENABLE_PUSH': 0,
+                'MAX_CONCURRENT_STREAMS': 100,
+                'INITIAL_WINDOW_SIZE': 65535,
+                'SETTINGS_MAX_FRAME_SIZE': 16384,
+                'SETTINGS_MAX_HEADER_LIST_SIZE': 65535,
+            }
+        }
+
+        assert f.to_json_obj() == result
+
     def test_settings_frames_never_have_streams(self):
         with pytest.raises(ValueError):
             SettingsFrame(1)
@@ -257,6 +365,24 @@ class TestPushPromiseFrame(object):
         assert f.promised_stream_id == 4
         assert f.data == b'hello world'
 
+    def test_push_promise_frame_json_serializes_properly(self):
+        f = PushPromiseFrame(1)
+        f.flags = ['END_HEADERS', 'PADDED']
+        f.promised_stream_id = 4
+        f.data = b'\x01\x02\x03\x04'
+        f.pad_length = 10
+        result = {
+            'type': 'PUSHPROMISE',
+            'stream id': 1,
+            'flags': ['END_HEADERS', 'PADDED'],
+            'length': 19,
+            'body': None,
+            'padding length': 11,
+            'PUSH_PROMISE': {'promised stream id': 4}
+        }
+
+        assert f.to_json_obj() == result
+
 
 class TestPingFrame(object):
     def test_ping_frame_has_only_one_flag(self):
@@ -289,6 +415,20 @@ class TestPingFrame(object):
         assert isinstance(f, PingFrame)
         assert f.flags == set(['ACK'])
         assert f.opaque_data == b'\x01\x02\x00\x00\x00\x00\x00\x00'
+
+    def test_ping_frame_json_serializes_properly(self):
+        f = PingFrame(0)
+        f.opaque_data = b'\x01\x02\x03\x04'
+        result = {
+            'type': 'PING',
+            'stream id': 0,
+            'flags': [],
+            'length': 8,
+            'body': None,
+            'PING': {'opaque data': '01020304'}
+        }
+
+        assert f.to_json_obj() == result
 
     def test_ping_frame_never_has_a_stream(self):
         with pytest.raises(ValueError):
@@ -335,6 +475,26 @@ class TestGoAwayFrame(object):
         assert f.flags == set()
         assert f.additional_data == b'hello'
 
+    def test_goaway_frame_json_serializes_properly(self):
+        f = GoAwayFrame(0)
+        f.last_stream_id = 64
+        f.error_code = 32
+        f.additional_data = b'\x01\x02\x03\x04'
+        result = {
+            'type': 'GOAWAY',
+            'stream id': 0,
+            'flags': [],
+            'length': 12,
+            'body': None,
+            'GOAWAY': {
+                'last stream id': 64,
+                'error code': 32,
+                'additional data': '01020304',
+            }
+        }
+
+        assert f.to_json_obj() == result
+
     def test_goaway_frame_never_has_a_stream(self):
         with pytest.raises(ValueError):
             GoAwayFrame(1)
@@ -362,6 +522,22 @@ class TestWindowUpdateFrame(object):
         assert isinstance(f, WindowUpdateFrame)
         assert f.flags == set()
         assert f.window_increment == 512
+
+    def test_goaway_frame_json_serializes_properly(self):
+        f = WindowUpdateFrame(0)
+        f.window_increment = 512
+        result = {
+            'type': 'WINDOWUPDATE',
+            'stream id': 0,
+            'flags': [],
+            'length': 4,
+            'body': None,
+            'WINDOWUPDATE': {
+                'window increment': 512,
+            }
+        }
+
+        assert f.to_json_obj() == result
 
 
 class TestHeadersFrame(object):
@@ -426,6 +602,26 @@ class TestHeadersFrame(object):
 
         assert f.serialize() == s
 
+    def test_headers_frame_without_priority_json_serializes_properly(self):
+        f = HeadersFrame(1)
+        f.flags = ['END_STREAM', 'END_HEADERS']
+        f.data = b'\x01\x02\x03\x04'
+        result = {
+            'type': 'HEADERS',
+            'stream id': 1,
+            'flags': ['END_STREAM', 'END_HEADERS'],
+            'length': 4,
+            'body': None,
+            'padding length': 0,
+            'priority': {
+                'depends on': None,
+                'exclusive': None,
+                'stream weight': None,
+            }
+        }
+
+        assert f.to_json_obj() == result
+
 
 class TestContinuationFrame(object):
     def test_continuation_frame_flags(self):
@@ -452,6 +648,20 @@ class TestContinuationFrame(object):
         assert isinstance(f, ContinuationFrame)
         assert f.flags == set(['END_HEADERS'])
         assert f.data == b'hello world'
+
+    def test_headers_frame_without_priority_json_serializes_properly(self):
+        f = ContinuationFrame(1)
+        f.flags = ['END_HEADERS']
+        f.data = b'\x01\x02\x03\x04'
+        result = {
+            'type': 'CONTINUATION',
+            'stream id': 1,
+            'flags': ['END_HEADERS'],
+            'length': 4,
+            'body': None,
+        }
+
+        assert f.to_json_obj() == result
 
 
 class TestAltSvcFrame(object):

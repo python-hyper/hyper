@@ -1,0 +1,68 @@
+#!/usr/bin/env python
+# -*- coding: utf-8 -*-
+"""
+http2dump
+
+Decodes a binary stream of HTTP/2 data into a textual representation of the
+encoded frame data.
+
+Usage:
+  http2dump [options] <infile>
+  http2dump -h | --help
+  http2dump --version
+
+Options:
+  -o <outfile>, --output=<outfile>   File to write output to instead of stdout.
+  -h, --help                         Show this screen.
+  --version                          Show version.
+"""
+# Version compatibility
+from __future__ import print_function
+
+import sys
+
+from docopt import docopt
+import hyper
+
+
+def main(infile=None, outfile=None):
+    """
+    The main http2dump loop.
+
+    Generally, this loop executes as follows:
+      - Read from the binary file until a frame is decoded.
+      - Print the frame to stdout.
+      - Repeat
+
+    The loop terminates when the binary file is exhausted.
+    """
+    # Read the HTTP/2 preamble (24 byes).
+    # FIXME: This makes the assumption that we're looking at a client stream.
+    # For now that's fine, but we'll need to fix it later.
+    infile.read(24)
+
+    while True:
+        # Parse the frame.
+        frame_header = infile.read(9)
+
+        if not frame_header:
+            break
+
+        frame, length = hyper.http20.frame.Frame.parse_frame_header(frame_header)
+        body = infile.read(length)
+        frame.parse_body(memoryview(body))
+
+        frame_data = frame.to_json_obj()
+
+        # Done! In this early iteration of the script, we'll just print the
+        # frame types to stdout.
+        print(frame_data['type'])
+
+
+if __name__ == '__main__':
+    options = docopt(__doc__, help=True, version=hyper.__version__)
+    infile = options['<infile>']
+    outfile = options.get('output', sys.stdout)
+
+    with open(infile, 'rb') as infile:
+        main(infile, outfile)
