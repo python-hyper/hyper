@@ -17,6 +17,7 @@ except ImportError:
 
 _ver = sys.version_info
 is_py2 = _ver[0] == 2
+is_py2_7_9_or_later = _ver[0] >= 2 and _ver[1] >= 7 and _ver[2] >= 9
 is_py3 = _ver[0] == 3
 is_py3_3 = is_py3 and _ver[1] == 3
 
@@ -28,7 +29,11 @@ def ignore_missing():
         pass
 
 if is_py2:
-    ssl = ssl_compat
+    if is_py2_7_9_or_later:
+        import ssl
+    else:
+        ssl = ssl_compat
+
     from urlparse import urlparse
 
     def to_byte(char):
