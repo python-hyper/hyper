@@ -1,6 +1,19 @@
 Release History
 ===============
 
+0.1.2 (2015-02-07)
+------------------
+
+*Minor Changes*
+
+- We now remove the ``Connection`` header if it's given to us, as that header
+  is not valid in HTTP/2.
+
+*Bugfixes*
+
+- Adds workaround for HTTPie to make our responses look more like urllib3
+  responses.
+
 0.1.1 (2015-02-06)
 ------------------
 
