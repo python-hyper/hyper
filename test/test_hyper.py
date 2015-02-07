@@ -1011,6 +1011,20 @@ class TestHyperConnection(object):
             ('name', 'value'),
         ]
 
+    def test_putheader_ignores_connection(self):
+        c = HTTP20Connection("www.google.com")
+
+        c.putrequest('GET', '/')
+        c.putheader('Connection', 'keep-alive')
+        s = c.recent_stream
+
+        assert s.headers == [
+            (':method', 'GET'),
+            (':scheme', 'https'),
+            (':authority', 'www.google.com'),
+            (':path', '/'),
+        ]
+
     def test_endheaders_sends_data(self):
         frames = []
 
