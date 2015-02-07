@@ -265,6 +265,11 @@ class HTTP20Connection(object):
         to be sent when you call
         :meth:`endheaders() <hyper.HTTP20Connection.endheaders>`.
 
+        This method ensures that headers conform to the HTTP/2 specification.
+        In particular, it strips out the ``Connection`` header, as that header
+        is no longer valid in HTTP/2. This is to make it easy to write code
+        that runs correctly in both HTTP/1.1 and HTTP/2.
+
         :param header: The name of the header.
         :param argument: The value of the header.
         :param stream_id: (optional) The stream ID of the request to add the
@@ -272,6 +277,13 @@ class HTTP20Connection(object):
         :returns: Nothing.
         """
         stream = self._get_stream(stream_id)
+
+        # Initially, strip the Connection header. Note that we do this after
+        # the call to `_get_stream` to ensure that we don't accidentally hide
+        # bugs just because the user sent a connection header.
+        if header.lower() == 'connection':
+            return
+
         stream.add_header(header, argument)
 
         return
