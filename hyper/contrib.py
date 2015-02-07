@@ -109,7 +109,10 @@ class HTTP20Adapter(HTTPAdapter):
         #
         # We fake this out. Most of this exists on our response object already,
         # and the rest can be faked.
-        class FakeOriginalResponse(object):
+        #
+        # All of this exists for httpie, which I don't have any tests for,
+        # so I'm not going to bother adding test coverage for it.
+        class FakeOriginalResponse(object):  # pragma: no cover
             def __init__(self, headers):
                 self._headers = headers
 
@@ -126,7 +129,7 @@ class HTTP20Adapter(HTTPAdapter):
                 return values
 
 
-        response.raw._original_response = orig = FakeOriginalResponse(resp.getheaders())
+        response.raw._original_response = orig = FakeOriginalResponse(None)
         orig.version = 20
         orig.status = resp.status
         orig.reason = resp.reason
