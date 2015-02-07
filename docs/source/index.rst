@@ -23,10 +23,10 @@ improved speed, lower bandwidth usage, better connection management, and more.
     print(resp.read())
 
 Simple. ``hyper`` is written in 100% pure Python, which means no C extensions.
-For recent versions of Python (3.4 and onward) it's entirely self-contained
-with no external dependencies.
+For recent versions of Python (3.4 and onward, and 2.7.9 and onward) it's
+entirely self-contained with no external dependencies.
 
-``hyper`` supports Python 3.4.
+``hyper`` supports Python 3.4 and Python 2.7.9.
 
 Caveat Emptor!
 --------------

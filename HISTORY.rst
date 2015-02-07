@@ -22,7 +22,7 @@ Release History
 - Support for HTTP/2 draft 15, and 16. No drop of support for draft 14.
 - Updated bundled certificate file.
 
-*Bugfixes *
+*Bugfixes*
 
 - Fixed ``AttributeError`` being raised when a PING frame was received, thanks
   to @t2y. (`Issue #79`_)
