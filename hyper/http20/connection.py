@@ -282,6 +282,7 @@ class HTTP20Connection(object):
         # the call to `_get_stream` to ensure that we don't accidentally hide
         # bugs just because the user sent a connection header.
         if header.lower() == 'connection':
+            log.debug('Ignoring connection header with value %s', argument)
             return
 
         stream.add_header(header, argument)
