@@ -8,4 +8,4 @@ publish:
 	python setup.py bdist_wheel upload
 
 test:
-	py.test -n 4 hyper test/
+	py.test -n 4 --cov hyper test/
