@@ -15,12 +15,6 @@ except ImportError:
     # TODO log?
     ssl_compat = None
 
-try:
-    from urllib.parse import urlencode, urlsplit
-except ImportError:  # pragma: no cover
-    from urllib import urlencode
-    from urlparse import urlsplit
-
 _ver = sys.version_info
 is_py2 = _ver[0] == 2
 is_py2_7_9_or_later = _ver[0] >= 2 and _ver[1] >= 7 and _ver[2] >= 9
@@ -40,7 +34,8 @@ if is_py2:
     else:
         ssl = ssl_compat
 
-    from urlparse import urlparse
+    from urllib import urlencode
+    from urlparse import urlparse, urlsplit
 
     def to_byte(char):
         return ord(char)
@@ -54,7 +49,7 @@ if is_py2:
         return zlib.compressobj(level, method, wbits, memlevel, strategy)
 
 elif is_py3:
-    from urllib.parse import urlparse
+    from urllib.parse import urlencode, urlparse, urlsplit
 
     def to_byte(char):
         return char
