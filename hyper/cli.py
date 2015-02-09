@@ -130,7 +130,7 @@ def set_url_info(args):
         if value:
             setattr(info, attr, value)
 
-    if info.scheme == 'http':
+    if info.scheme == 'http' and not _result.port:
         info.port = 80
 
     if info.netloc:
