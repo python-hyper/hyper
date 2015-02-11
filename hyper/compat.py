@@ -34,7 +34,8 @@ if is_py2:
     else:
         ssl = ssl_compat
 
-    from urlparse import urlparse
+    from urllib import urlencode
+    from urlparse import urlparse, urlsplit
 
     def to_byte(char):
         return ord(char)
@@ -48,7 +49,7 @@ if is_py2:
         return zlib.compressobj(level, method, wbits, memlevel, strategy)
 
 elif is_py3:
-    from urllib.parse import urlparse
+    from urllib.parse import urlencode, urlparse, urlsplit
 
     def to_byte(char):
         return char
