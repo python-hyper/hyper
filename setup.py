@@ -30,9 +30,9 @@ py_version = sys.version_info[:2]
 py_long_version = sys.version_info[:3]
 
 def resolve_install_requires():
-    if py_version == (3,3):
+    if py_version == (3, 3):
         return ['pyOpenSSL>=0.14']
-    elif py_version == (2,7) and py_long_version < (2,7,9):
+    elif py_version == (2, 7) and py_long_version < (2, 7, 9):
         return ['pyOpenSSL>=0.14']
     return []
 

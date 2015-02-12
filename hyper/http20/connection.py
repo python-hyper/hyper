@@ -357,7 +357,7 @@ class HTTP20Connection(object):
             if 'ACK' not in frame.flags:
                 self._update_settings(frame)
 
-                # Need to return an ack.
+                # Need to return an ack.
                 f = SettingsFrame(0)
                 f.flags.add('ACK')
                 self._send_cb(f)
@@ -413,7 +413,7 @@ class HTTP20Connection(object):
         """
         Returns a new stream object for this connection.
         """
-        window_size = self._settings[SettingsFrame.INITIAL_WINDOW_SIZE]
+        window_size = self._settings[SettingsFrame.INITIAL_WINDOW_SIZE] # noqa
         s = Stream(
             stream_id or self.next_stream_id, self._send_cb, self._recv_cb,
             self._close_stream, self.encoder, self.decoder,
@@ -586,7 +586,6 @@ class HTTP20Connection(object):
                 self._consume_single_frame()
             except ConnectionResetError:
                 break
-
 
     # The following two methods are the implementation of the context manager
     # protocol.

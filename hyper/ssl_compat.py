@@ -247,7 +247,7 @@ class SSLSocket(object):
         def to_components(name):
             # TODO Verify that these are actually *supposed* to all be single-element
             # tuples, and that's not just a quirk of the examples I've seen.
-            return tuple([((resolve_alias(name.decode('utf-8')), value.decode('utf-8')),) for name, value in name.get_components()])
+            return tuple([((resolve_alias(key.decode('utf-8')), value.decode('utf-8')),) for key, value in name.get_components()])
 
         # The standard getpeercert() takes the nice X509 object tree returned
         # by OpenSSL and turns it into a dict according to some format it seems

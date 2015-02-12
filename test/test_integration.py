@@ -234,7 +234,7 @@ class TestHyperIntegration(SocketLevelTest):
             send_event.wait()
 
         # Check that we closed the connection.
-        assert conn._sock == None
+        assert conn._sock is None
 
         self.tear_down()
 
@@ -382,8 +382,8 @@ class TestHyperIntegration(SocketLevelTest):
             # We should get two packets: one connection header string, one
             # SettingsFrame. Rather than respond to the packets, send a GOAWAY
             # frame with error code 0 indicating clean shutdown.
-            first = sock.recv(65535)
-            second = sock.recv(65535)
+            first = sock.recv(65535)  # pragma: no flakes
+            second = sock.recv(65535)  # pragma: no flakes
 
             # Now, send the shut down.
             f = GoAwayFrame(0)
@@ -417,8 +417,8 @@ class TestHyperIntegration(SocketLevelTest):
             # We should get two packets: one connection header string, one
             # SettingsFrame. Rather than respond to the packets, send a GOAWAY
             # frame with error code 0 indicating clean shutdown.
-            first = sock.recv(65535)
-            second = sock.recv(65535)
+            first = sock.recv(65535)  # pragma: no flakes
+            second = sock.recv(65535)  # pragma: no flakes
 
             # Now, send the shut down.
             f = GoAwayFrame(0)

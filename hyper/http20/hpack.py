@@ -13,7 +13,7 @@ import logging
 from ..compat import to_byte
 from .huffman import HuffmanDecoder, HuffmanEncoder
 from hyper.http20.huffman_constants import (
-    REQUEST_CODES, REQUEST_CODES_LENGTH, REQUEST_CODES, REQUEST_CODES_LENGTH
+    REQUEST_CODES, REQUEST_CODES_LENGTH
 )
 from .exceptions import HPACKEncodingError
 
@@ -54,7 +54,9 @@ def decode_integer(data, prefix_bits):
     number of bytes that were consumed from ``data`` in order to get that
     integer.
     """
-    multiple = lambda index: 128 ** (index - 1)
+    def multiple(index):
+        return 128 ** (index - 1)
+
     max_number = (2 ** prefix_bits) - 1
     mask = 0xFF >> (8 - prefix_bits)
     index = 0
