@@ -286,7 +286,7 @@ class PushPromiseFrame(Padding, Frame):
     The PUSH_PROMISE frame is used to notify the peer endpoint in advance of
     streams the sender intends to initiate.
     """
-    defined_flags = [('END_HEADERS', 0x04), ('PADDED', 0x08),]
+    defined_flags = [('END_HEADERS', 0x04), ('PADDED', 0x08)]
 
     type = 0x05
 
@@ -460,7 +460,7 @@ class ContinuationFrame(Frame):
 
     stream_association = 'has-stream'
 
-    defined_flags = [('END_HEADERS', 0x04),]
+    defined_flags = [('END_HEADERS', 0x04)]
 
     def serialize_body(self):
         return self.data

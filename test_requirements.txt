@@ -1,4 +1,6 @@
 pytest
-pytest-xdist
 pytest-cov
+pytest-flakes
+pytest-pep8
+pytest-xdist
 requests

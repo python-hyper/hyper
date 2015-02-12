@@ -140,7 +140,7 @@ class TestPriorityFrame(object):
         assert f.flags == set()
         assert f.depends_on == 4
         assert f.stream_weight == 64
-        assert f.exclusive == True
+        assert f.exclusive is True
 
     def test_priority_frame_comes_on_a_stream(self):
         with pytest.raises(ValueError):
@@ -408,7 +408,7 @@ class TestHeadersFrame(object):
         assert f.data == b''
         assert f.depends_on == 4
         assert f.stream_weight == 64
-        assert f.exclusive == True
+        assert f.exclusive is True
 
     def test_headers_frame_with_priority_serializes_properly(self):
         # This test also tests that we can receive a HEADERS frame with no
@@ -868,7 +868,6 @@ class TestHPACKDecoder(object):
             (':path', '/',),
             (':authority', 'www.example.com'),
         ]
-        first_header_table = first_header_set[::-1]
         first_data = (
             b'\x82\x86\x84\x01\x8c\xf1\xe3\xc2\xe5\xf2:k\xa0\xab\x90\xf4\xff'
         )
@@ -966,7 +965,7 @@ class TestIntegerDecoding(object):
 class TestHyperConnection(object):
     def test_connections_accept_hosts_and_ports(self):
         c = HTTP20Connection(host='www.google.com', port=8080)
-        assert c.host =='www.google.com'
+        assert c.host == 'www.google.com'
         assert c.port == 8080
 
     def test_connections_can_parse_hosts_and_ports(self):
@@ -1921,7 +1920,7 @@ class TestResponse(object):
         stream = DummyStream('')
 
         with HTTP20Response([(':status', '200')], stream) as resp:
-            pass
+            assert resp
 
         assert stream.closed
 
