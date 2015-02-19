@@ -13,7 +13,7 @@ import logging
 from ..compat import to_byte
 from .huffman import HuffmanDecoder, HuffmanEncoder
 from hyper.http20.huffman_constants import (
-    REQUEST_CODES, REQUEST_CODES_LENGTH, REQUEST_CODES, REQUEST_CODES_LENGTH
+    REQUEST_CODES, REQUEST_CODES_LENGTH
 )
 from .exceptions import HPACKEncodingError
 
