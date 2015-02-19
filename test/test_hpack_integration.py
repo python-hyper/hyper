@@ -7,7 +7,7 @@ run before every change to HPACK.
 from hyper.http20.hpack import Decoder, Encoder
 from hyper.http20.huffman import HuffmanDecoder, HuffmanEncoder
 from hyper.http20.huffman_constants import (
-    REQUEST_CODES, REQUEST_CODES_LENGTH, REQUEST_CODES, REQUEST_CODES_LENGTH
+    REQUEST_CODES, REQUEST_CODES_LENGTH
 )
 from binascii import unhexlify
 from pytest import skip
