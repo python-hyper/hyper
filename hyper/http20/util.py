@@ -74,3 +74,17 @@ def split_repeated_headers(kvset):
         headers[key] = value.split(b'\x00')
 
     return dict(headers)
+
+
+def h2_safe_headers(headers):
+    """
+    This method takes a set of headers that are provided by the user and
+    transforms them into a form that is safe for emitting over HTTP/2.
+
+    Currently, this strips the Connection header and any header it refers to.
+    """
+    stripped = {i.lower().strip() for k, v in headers if k == 'connection'
+                                  for i in v.split(',')}
+    stripped.add('connection')
+
+    return [header for header in headers if header[0] not in stripped]

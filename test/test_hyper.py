@@ -16,7 +16,9 @@ from hyper.http20.exceptions import (
     HPACKDecodingError, HPACKEncodingError, ProtocolError
 )
 from hyper.http20.window import FlowControlManager
-from hyper.http20.util import combine_repeated_headers, split_repeated_headers
+from hyper.http20.util import (
+    combine_repeated_headers, split_repeated_headers, h2_safe_headers
+)
 from hyper.compat import zlib_compressobj
 from hyper.contrib import HTTP20Adapter
 import errno
@@ -1009,20 +1011,6 @@ class TestHyperConnection(object):
             (':authority', 'www.google.com'),
             (':path', '/'),
             ('name', 'value'),
-        ]
-
-    def test_putheader_ignores_connection(self):
-        c = HTTP20Connection("www.google.com")
-
-        c.putrequest('GET', '/')
-        c.putheader('Connection', 'keep-alive')
-        s = c.recent_stream
-
-        assert s.headers == [
-            (':method', 'GET'),
-            (':scheme', 'https'),
-            (':authority', 'www.google.com'),
-            (':path', '/'),
         ]
 
     def test_endheaders_sends_data(self):
@@ -2047,6 +2035,32 @@ class TestUtilities(object):
                 import nghttp2
 
         assert True
+
+    def test_stripping_connection_header(self):
+        headers = [('one', 'two'), ('connection', 'close')]
+        stripped = [('one', 'two')]
+
+        assert h2_safe_headers(headers) == stripped
+
+    def test_stripping_related_headers(self):
+        headers = [
+            ('one', 'two'), ('three', 'four'), ('five', 'six'),
+            ('connection', 'close, three, five')
+        ]
+        stripped = [('one', 'two')]
+
+        assert h2_safe_headers(headers) == stripped
+
+    def test_stripping_multiple_connection_headers(self):
+        headers = [
+            ('one', 'two'), ('three', 'four'), ('five', 'six'),
+            ('connection', 'close'),
+            ('connection', 'three, five')
+        ]
+        stripped = [('one', 'two')]
+
+        assert h2_safe_headers(headers) == stripped
+
 
 # Some utility classes for the tests.
 class NullEncoder(object):

@@ -18,7 +18,7 @@ from .frame import (
     FRAME_MAX_LEN, FRAMES, HeadersFrame, DataFrame, PushPromiseFrame,
     WindowUpdateFrame, ContinuationFrame, BlockedFrame
 )
-from .util import get_from_key_value_set
+from .util import get_from_key_value_set, h2_safe_headers
 import collections
 import logging
 import zlib
@@ -250,8 +250,10 @@ class Stream(object):
         The `end` flag controls whether this will be the end of the stream, or
         whether data will follow.
         """
+        # Strip any headers invalid in H2.
+        headers = h2_safe_headers(self.headers)
         # Encode the headers.
-        encoded_headers = self._encoder.encode(self.headers)
+        encoded_headers = self._encoder.encode(headers)
 
         # It's possible that there is a substantial amount of data here. The
         # data needs to go into one HEADERS frame, followed by a number of

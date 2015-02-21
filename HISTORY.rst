@@ -1,6 +1,13 @@
 Release History
 ===============
 
+Upcoming
+--------
+
+*Minor Changes*
+
+- We not only remove the Connection header but all headers it refers to.
+
 0.2.0 (2015-02-07)
 ------------------
 

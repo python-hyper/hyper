@@ -277,14 +277,6 @@ class HTTP20Connection(object):
         :returns: Nothing.
         """
         stream = self._get_stream(stream_id)
-
-        # Initially, strip the Connection header. Note that we do this after
-        # the call to `_get_stream` to ensure that we don't accidentally hide
-        # bugs just because the user sent a connection header.
-        if header.lower() == 'connection':
-            log.debug('Ignoring connection header with value %s', argument)
-            return
-
         stream.add_header(header, argument)
 
         return
