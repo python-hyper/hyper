@@ -4,6 +4,11 @@ Release History
 Upcoming
 --------
 
+*New Features*
+
+- There is now a `hyper` command-line client that supports making HTTP/2
+  requests directly from the command-line.
+
 *Minor Changes*
 
 - We not only remove the Connection header but all headers it refers to.

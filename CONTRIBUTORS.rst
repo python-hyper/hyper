@@ -23,3 +23,5 @@ In chronological order:
 - Tetsuya Morimoto (@t2y)
 
   - Fixed a bug where large or incomplete frames were not handled correctly.
+  - Added hyper command-line tool.
+  - General code cleanups.
