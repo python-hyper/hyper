@@ -16,11 +16,11 @@ For example:
 
 .. code-block:: bash
 
-    $ hyper GET https://nghttp2.org/httpbin/get
+    $ hyper GET https://http2bin.org/get
     {'args': {},
-     'headers': {'Connection': 'close', 'Host': 'httpbin', 'Via': '2.0 nghttpx'},
+     'headers': {'Connection': 'close', 'Host': 'http2bin.org', 'Via': '2.0 nghttpx'},
      'origin': '81.129.184.72',
-     'url': 'https://httpbin/get'}
+     'url': 'https://http2bin.org/get'}
 
 This allows making basic queries to confirm that ``hyper`` is functioning
 correctly, or to perform very basic interop testing with other services.
@@ -33,31 +33,31 @@ add extra headers by passing them as colon-separated data:
 
 .. code-block:: bash
 
-    $ hyper GET https://nghttp2.org/httpbin/get User-Agent:hyper/0.2.0 X-Totally-Real-Header:someval
+    $ hyper GET https://http2bin.org/get User-Agent:hyper/0.2.0 X-Totally-Real-Header:someval
     {'args': {},
      'headers': {'Connection': 'close',
-                 'Host': 'httpbin',
+                 'Host': 'http2bin.org',
                  'User-Agent': 'hyper/0.2.0',
                  'Via': '2.0 nghttpx',
                  'X-Totally-Real-Header': 'someval'},
      'origin': '81.129.184.72',
-     'url': 'https://httpbin/get'}
+     'url': 'https://http2bin.org/get'}
 
 You can add query-string parameters:
 
 .. code-block:: bash
 
-    $ hyper GET https://nghttp2.org/httpbin/get search==hyper
+    $ hyper GET https://http2bin.org/get search==hyper
     {'args': {'search': 'hyper'},
-     'headers': {'Connection': 'close', 'Host': 'httpbin', 'Via': '2.0 nghttpx'},
+     'headers': {'Connection': 'close', 'Host': 'http2bin.org', 'Via': '2.0 nghttpx'},
      'origin': '81.129.184.72',
-     'url': 'https://httpbin/get?search=hyper'}
+     'url': 'https://http2bin.org/get?search=hyper'}
 
 And you can upload JSON objects:
 
 .. code-block:: bash
 
-    $ hyper POST https://nghttp2.org/httpbin/post name=Hyper language=Python description='CLI HTTP client'
+    $ hyper POST https://http2bin.org/post name=Hyper language=Python description='CLI HTTP client'
     {'args': {},
      'data': '{"name": "Hyper", "description": "CLI HTTP client", "language": '
              '"Python"}',
@@ -66,13 +66,13 @@ And you can upload JSON objects:
      'headers': {'Connection': 'close',
                  'Content-Length': '73',
                  'Content-Type': 'application/json; charset=utf-8',
-                 'Host': 'httpbin',
+                 'Host': 'http2bin.org',
                  'Via': '2.0 nghttpx'},
      'json': {'description': 'CLI HTTP client',
               'language': 'Python',
               'name': 'Hyper'},
      'origin': '81.129.184.72',
-     'url': 'https://httpbin/post'}
+     'url': 'https://http2bin.org/post'}
 
 Debugging and Detail
 --------------------
