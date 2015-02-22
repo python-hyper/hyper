@@ -16,9 +16,9 @@ class TestHPACKDecoderIntegration(object):
     def test_can_decode_a_story(self, story):
         d = Decoder()
 
-        # We support draft 9 of the HPACK spec.
+        # We test against draft 9 of the HPACK spec.
         if story['draft'] != 9:
-            skip("We support draft 9, not draft %d" % story['draft'])
+            skip("We test against draft 9, not draft %d" % story['draft'])
 
         for case in story['cases']:
             try:

@@ -3,7 +3,7 @@ import os
 
 from binascii import hexlify
 from invoke import task
-from hyper.http20.hpack import Encoder, DRAFT
+from hyper.http20.hpack import Encoder
 
 @task
 def hpack():
@@ -36,7 +36,6 @@ def hpack():
 
         # Prepare the output and the encoder.
         output = {
-            'draft': DRAFT,
             'description': 'Encoded by hyper. See github.com/Lukasa/hyper for more information.',
             'cases': []
         }

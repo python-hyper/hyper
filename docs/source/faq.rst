@@ -12,12 +12,12 @@ an email. My email address can be found `on my GitHub profile page`_.
 
 .. _on my GitHub profile page: https://github.com/Lukasa
 
-What version of the HTTP/2 draft specification does ``hyper`` support?
-----------------------------------------------------------------------
+What version of the HTTP/2 specification does ``hyper`` support?
+----------------------------------------------------------------
 
-Currently, ``hyper`` supports versions 14, 15, and 16 of the HTTP/2 draft
-specification, and version 9 of the HPACK draft specification. ``hyper`` will
-be updated to keep up with the HTTP/2 draft specifications as they progress.
+``hyper`` suports the final version of the HTTP/2 draft specification. It also
+supports versions 14, 15, and 16 of the specification. It supports the final
+version of the HPACK draft specification.
 
 Does ``hyper`` support HTTP/2 flow control?
 -------------------------------------------

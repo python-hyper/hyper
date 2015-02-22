@@ -19,9 +19,6 @@ from .exceptions import HPACKEncodingError
 
 log = logging.getLogger(__name__)
 
-# The implementation draft of HPACK we support.
-DRAFT = 9
-
 
 def encode_integer(integer, prefix_bits):
     """
