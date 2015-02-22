@@ -9,6 +9,11 @@ Upcoming
 - There is now a `hyper` command-line client that supports making HTTP/2
   requests directly from the command-line.
 
+*Major Changes*
+
+- Support for the final drafts of HTTP/2 and HPACK. Updated to offer the 'h2'
+  ALPN token.
+
 *Minor Changes*
 
 - We not only remove the Connection header but all headers it refers to.
