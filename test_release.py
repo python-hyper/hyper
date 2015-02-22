@@ -54,7 +54,7 @@ class TestHyperActuallyWorks(object):
         assert text_data
         assert all(map(lambda r: r.status == 200, responses))
         assert all(map(lambda p: p.scheme == 'https', pushes))
-        assert all(map(lambda p: p.method == 'get', pushes))
+        assert all(map(lambda p: p.method.lower() == 'get', pushes))
 
     def test_hitting_twitter(self):
         """
