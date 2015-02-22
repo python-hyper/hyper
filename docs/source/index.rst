@@ -55,6 +55,7 @@ More advanced topics are covered here.
    :maxdepth: 2
 
    advanced
+   CLI
 
 Contributing
 ------------

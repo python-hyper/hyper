@@ -141,3 +141,26 @@ you're interested in::
     >>> s.mount('https://www.twitter.com', a)
 
 .. _requests: http://python-requests.org/
+
+HTTPie Integration
+------------------
+
+`HTTPie`_ is a popular tool for making HTTP requests from the command line, as
+an alternative to the ever-popular `cURL`_. Collaboration between the ``hyper``
+authors and the HTTPie authors allows HTTPie to support making HTTP/2 requests.
+
+To add this support, follow the instructions in the `GitHub repository`_.
+
+.. _HTTPie: http://httpie.org/
+.. _cURL: http://curl.haxx.se/
+.. _GitHub repository: https://github.com/jakubroztocil/httpie-http2
+
+hyper CLI
+---------
+
+For testing purposes, ``hyper`` provides a command-line tool that can make
+HTTP/2 requests directly from the CLI. This is useful for debugging purposes,
+and to avoid having to use the Python interactive interpreter to execute basic
+queries.
+
+For more information, see the CLI section.
