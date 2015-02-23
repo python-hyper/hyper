@@ -43,6 +43,10 @@ if is_py2:
     def decode_hex(b):
         return b.decode('hex')
 
+    def write_to_stdout(data):
+        sys.stdout.write(data + '\n')
+        sys.stdout.flush()
+
     # The standard zlib.compressobj() accepts only positional arguments.
     def zlib_compressobj(level=6, method=zlib.DEFLATED, wbits=15, memlevel=8,
                          strategy=zlib.Z_DEFAULT_STRATEGY):
@@ -56,6 +60,10 @@ elif is_py3:
 
     def decode_hex(b):
         return bytes.fromhex(b)
+
+    def write_to_stdout(data):
+        sys.stdout.buffer.write(data + b'\n')
+        sys.stdout.buffer.flush()
 
     zlib_compressobj = zlib.compressobj
 
