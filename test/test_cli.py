@@ -3,7 +3,7 @@ import json
 
 import pytest
 
-from hyper.cli import FILESYSTEM_ENCODING as FENC, KeyValue
+from hyper.cli import PREFERRED_ENCODING as PENC, KeyValue
 from hyper.cli import get_content_type_and_charset, main, parse_argument
 from hyper.cli import set_request_data, set_url_info
 
@@ -155,7 +155,7 @@ def test_get_content_type_and_charset(response, expected):
                 KeyValue('data2', 'test2', '=', ''),
             ]}
         ),
-        {'headers': {'content-type': 'application/json; charset=%s' % FENC},
+        {'headers': {'content-type': 'application/json; charset=%s' % PENC},
          'method': 'POST',
          'body': json.dumps({'data1': 'test1', 'data2': 'test2'}),
          }

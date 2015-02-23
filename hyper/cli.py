@@ -6,6 +6,7 @@ hyper/cli
 Command line interface for Hyper inspired by Httpie.
 """
 import json
+import locale
 import logging
 import sys
 from argparse import ArgumentParser, RawTextHelpFormatter
@@ -20,7 +21,7 @@ from hyper.compat import urlencode, urlsplit
 
 log = logging.getLogger('hyper')
 
-FILESYSTEM_ENCODING = sys.getfilesystemencoding()
+PREFERRED_ENCODING = locale.getpreferredencoding()
 
 # Various separators used in args
 SEP_HEADERS = ':'
@@ -166,7 +167,7 @@ def set_request_data(args):
         args.url.path += '?' + urlencode(params)
 
     if body:
-        content_type = 'application/json; charset=%s' % FILESYSTEM_ENCODING
+        content_type = 'application/json; charset=%s' % PREFERRED_ENCODING
         headers.setdefault('content-type', content_type)
         args.body = json.dumps(body)
 
@@ -224,7 +225,10 @@ def request(args):
 def main(argv=None):
     args = parse_argument(argv)
     log.debug('Commandline Argument: %s', args)
-    print(request(args))
+    data = request(args)
+    sys.stdout.buffer.write(data.encode(PREFERRED_ENCODING, errors='replace'))
+    sys.stdout.buffer.write(b'\n')
+    sys.stdout.buffer.flush()
 
 
 if __name__ == '__main__':  # pragma: no cover
