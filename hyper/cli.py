@@ -16,7 +16,7 @@ from textwrap import dedent
 
 from hyper import HTTP20Connection
 from hyper import __version__
-from hyper.compat import urlencode, urlsplit
+from hyper.compat import is_py2, urlencode, urlsplit, write_to_stdout
 
 
 log = logging.getLogger('hyper')
@@ -161,13 +161,16 @@ def set_request_data(args):
         elif i.sep == SEP_QUERY:
             params[i.key] = i.value
         elif i.sep == SEP_DATA:
-            body[i.key] = i.value
+            value = i.value
+            if is_py2:  # pragma: no cover
+                value = value.decode(PREFERRED_ENCODING)
+            body[i.key] = value
 
     if params:
         args.url.path += '?' + urlencode(params)
 
     if body:
-        content_type = 'application/json; charset=%s' % PREFERRED_ENCODING
+        content_type = 'application/json; charset=utf-8'
         headers.setdefault('content-type', content_type)
         args.body = json.dumps(body)
 
@@ -226,9 +229,7 @@ def main(argv=None):
     args = parse_argument(argv)
     log.debug('Commandline Argument: %s', args)
     data = request(args)
-    sys.stdout.buffer.write(data.encode(PREFERRED_ENCODING, errors='replace'))
-    sys.stdout.buffer.write(b'\n')
-    sys.stdout.buffer.flush()
+    write_to_stdout(data.encode(PREFERRED_ENCODING, errors='replace'))
 
 
 if __name__ == '__main__':  # pragma: no cover
