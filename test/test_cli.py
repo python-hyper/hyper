@@ -155,7 +155,7 @@ def test_get_content_type_and_charset(response, expected):
                 KeyValue('data2', 'test2', '=', ''),
             ]}
         ),
-        {'headers': {'content-type': 'application/json; charset=utf-8'},
+        {'headers': {'content-type': 'application/json'},
          'method': 'POST',
          'body': json.dumps({'data1': 'test1', 'data2': 'test2'}),
          }

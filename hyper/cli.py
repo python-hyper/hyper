@@ -170,7 +170,7 @@ def set_request_data(args):
         args.url.path += '?' + urlencode(params)
 
     if body:
-        content_type = 'application/json; charset=utf-8'
+        content_type = 'application/json'
         headers.setdefault('content-type', content_type)
         args.body = json.dumps(body)
 
