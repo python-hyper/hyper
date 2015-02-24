@@ -2,6 +2,8 @@
 Hyper: HTTP/2 Client for Python
 ===============================
 
+.. image:: https://raw.github.com/Lukasa/hyper/docs/source/images/hyper.png
+
 .. image:: https://travis-ci.org/Lukasa/hyper.png?branch=master
     :target: https://travis-ci.org/Lukasa/hyper
 
