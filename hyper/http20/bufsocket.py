@@ -11,7 +11,7 @@ performance optimisation at the cost of burning some memory in the userspace
 process.
 """
 import select
-from .exceptions import ConnectionResetError
+from .exceptions import ConnectionResetError, LineTooLongError
 
 class BufferedSocket(object):
     """
@@ -76,6 +76,25 @@ class BufferedSocket(object):
 
         return False
 
+    def new_buffer(self):
+        """
+        This method moves all the data in the backing buffer to the start of
+        a new, fresh buffer. This gives the ability to read much more data.
+        """
+        def read_all_from_buffer():
+            end = self._index + self._bytes_in_buffer
+            return self._buffer_view[self._index:end]
+
+        new_buffer = bytearray(self._buffer_size)
+        new_buffer_view = memoryview(new_buffer)
+        new_buffer_view[0:self._bytes_in_buffer] = read_all_from_buffer()
+
+        self._index = 0
+        self._backing_buffer = new_buffer
+        self._buffer_view = new_buffer_view
+
+        return
+
     def recv(self, amt):
         """
         Read some data from the socket.
@@ -85,10 +104,6 @@ class BufferedSocket(object):
             bytes. The data *must* be copied out by the caller before the next
             call to this function.
         """
-        def read_all_from_buffer():
-            end = self._index + self._bytes_in_buffer
-            return self._buffer_view[self._index:end]
-
         # In this implementation you can never read more than the number of
         # bytes in the buffer.
         if amt > self._buffer_size:
@@ -96,15 +111,9 @@ class BufferedSocket(object):
 
         # If the amount of data we've been asked to read is less than the
         # remaining space in the buffer, we need to clear out the buffer and
-        # start over. Copy the data into the new array.
+        # start over.
         if amt > self._remaining_capacity:
-            new_buffer = bytearray(self._buffer_size)
-            new_buffer_view = memoryview(new_buffer)
-            new_buffer_view[0:self._bytes_in_buffer] = read_all_from_buffer()
-
-            self._index = 0
-            self._backing_buffer = new_buffer
-            self._buffer_view = new_buffer_view
+            self.new_buffer()
 
         # If there's still some room in the buffer, opportunistically attempt
         # to read into it.
@@ -135,6 +144,67 @@ class BufferedSocket(object):
         self._bytes_in_buffer -= amt
 
         return data
+
+    def readline(self):
+        """
+        Read up to a newline from the network and returns it. The implicit
+        maximum line length is the buffer size of the buffered socket.
+
+        :returns: A ``memoryview`` object containing the appropriate number of
+            bytes. The data *must* be copied out by the caller before the next
+            call to this function.
+        """
+        # First, check if there's anything in the buffer. This is one of those
+        # rare circumstances where this will work correctly on all platforms.
+        index = self._backing_buffer.find(
+            b'\n',
+            self._index,
+            self._index + self._bytes_in_buffer
+        )
+
+        if index != -1:
+            length = index + 1 - self._index
+            data = self._buffer_view[self._index:self._index+length]
+            self._index += length
+            self._bytes_in_buffer -= length
+            return data
+
+        # In this case, we didn't find a newline in the buffer. To fix that,
+        # read some data into the buffer. To do our best to satisfy the read,
+        # we should shunt the data down in the buffer so that it's right at
+        # the start. We don't bother if we're already at the start of the
+        # buffer.
+        if self._index != 0:
+            self.new_buffer()
+
+        while self._bytes_in_buffer < self._buffer_size:
+            count = self._sck.recv_into(self._buffer_view[self._buffer_end:])
+            if not count:
+                raise ConnectionResetError()
+
+            # We have some more data. Again, look for a newline in that gap.
+            first_new_byte = self._buffer_end
+            self._bytes_in_buffer += count
+            index = self._backing_buffer.find(
+                b'\n',
+                first_new_byte,
+                first_new_byte + count,
+            )
+
+            if index != -1:
+                # The length of the buffer is the index into the
+                # buffer at which we found the newline plus 1, minus the start
+                # index of the buffer, which really should be zero.
+                assert not self._index
+                length = index + 1
+                data = self._buffer_view[:length]
+                self._index += length
+                self._bytes_in_buffer -= length
+                return data
+
+        # If we got here, it means we filled the buffer without ever getting
+        # a newline. Time to throw an exception.
+        raise LineTooLongError()
 
     def __getattr__(self, name):
         return getattr(self._sck, name)

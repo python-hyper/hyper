@@ -5,6 +5,21 @@ hyper/http20/exceptions
 
 This defines exceptions used in the HTTP/2 portion of hyper.
 """
+class SocketError(Exception):
+    """
+    An error occurred during socket operation.
+    """
+    pass
+
+
+class LineTooLongError(Exception):
+    """
+    An attempt to read a line from a socket failed because no newline was
+    found.
+    """
+    pass
+
+
 class HTTP20Error(Exception):
     """
     The base class for all of ``hyper``'s HTTP/2-related exceptions.

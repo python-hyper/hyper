@@ -120,6 +120,67 @@ class TestBufferedSocket(object):
         d = b.recv(1200).tobytes()
         assert d == b'a' * 600
 
+    def test_readline_from_buffer(self, monkeypatch):
+        monkeypatch.setattr(
+            hyper.http20.bufsocket.select, 'select', dummy_select
+        )
+        s = DummySocket()
+        b = BufferedSocket(s)
+
+        one = b'hi there\r\n'
+        two = b'this is another line\r\n'
+        three = b'\r\n'
+        combined = b''.join([one, two, three])
+        b._buffer_view[0:len(combined)] = combined
+        b._bytes_in_buffer += len(combined)
+
+        assert b.readline().tobytes() == one
+        assert b.readline().tobytes() == two
+        assert b.readline().tobytes() == three
+
+    def test_readline_from_socket(self, monkeypatch):
+        monkeypatch.setattr(
+            hyper.http20.bufsocket.select, 'select', dummy_select
+        )
+        s = DummySocket()
+        b = BufferedSocket(s)
+
+        one = b'hi there\r\n'
+        two = b'this is another line\r\n'
+        three = b'\r\n'
+        combined = b''.join([one, two, three])
+
+        for i in range(0, len(combined), 5):
+            s.inbound_packets.append(combined[i:i+5])
+
+        assert b.readline().tobytes() == one
+        assert b.readline().tobytes() == two
+        assert b.readline().tobytes() == three
+
+    def test_readline_both(self, monkeypatch):
+        monkeypatch.setattr(
+            hyper.http20.bufsocket.select, 'select', dummy_select
+        )
+        s = DummySocket()
+        b = BufferedSocket(s)
+
+        one = b'hi there\r\n'
+        two = b'this is another line\r\n'
+        three = b'\r\n'
+        combined = b''.join([one, two, three])
+
+        split_index = int(len(combined) / 2)
+
+        b._buffer_view[0:split_index] = combined[0:split_index]
+        b._bytes_in_buffer += split_index
+
+        for i in range(split_index, len(combined), 5):
+            s.inbound_packets.append(combined[i:i+5])
+
+        assert b.readline().tobytes() == one
+        assert b.readline().tobytes() == two
+        assert b.readline().tobytes() == three
+
 
 class DummySocket(object):
     def __init__(self):
