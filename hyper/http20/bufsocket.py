@@ -150,6 +150,9 @@ class BufferedSocket(object):
         Read up to a newline from the network and returns it. The implicit
         maximum line length is the buffer size of the buffered socket.
 
+        Note that, unlike recv, this method absolutely *does* block until it
+        can read the line.
+
         :returns: A ``memoryview`` object containing the appropriate number of
             bytes. The data *must* be copied out by the caller before the next
             call to this function.

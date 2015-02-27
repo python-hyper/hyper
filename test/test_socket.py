@@ -5,8 +5,11 @@ test/socket
 
 Test the BufferedSocket implementation in hyper.
 """
+import pytest
+
 import hyper.http20.bufsocket
 from hyper.http20.bufsocket import BufferedSocket
+from hyper.http20.exceptions import ConnectionResetError, LineTooLongError
 
 # Patch the select method in bufsocket to make sure that it always returns
 # the dummy socket as readable.
@@ -180,6 +183,29 @@ class TestBufferedSocket(object):
         assert b.readline().tobytes() == one
         assert b.readline().tobytes() == two
         assert b.readline().tobytes() == three
+
+    def test_socket_error_on_readline(self, monkeypatch):
+        monkeypatch.setattr(
+            hyper.http20.bufsocket.select, 'select', dummy_select
+        )
+        s = DummySocket()
+        b = BufferedSocket(s)
+
+        with pytest.raises(ConnectionResetError):
+            b.readline()
+
+    def test_socket_readline_too_long(self, monkeypatch):
+        monkeypatch.setattr(
+            hyper.http20.bufsocket.select, 'select', dummy_select
+        )
+        s = DummySocket()
+        b = BufferedSocket(s)
+
+        b._buffer_view[0:b._buffer_size] = b'0' * b._buffer_size
+        b._bytes_in_buffer = b._buffer_size
+
+        with pytest.raises(LineTooLongError):
+            b.readline()
 
 
 class DummySocket(object):
