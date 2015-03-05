@@ -50,7 +50,7 @@ class HTTPHeaderMap(collections.MutableMapping):
                 values.append(v)
 
         if not values:
-            raise KeyError()
+            raise KeyError("Nonexistent header key: {}".format(key))
 
         return values
 
@@ -73,7 +73,7 @@ class HTTPHeaderMap(collections.MutableMapping):
                 indices.append(i)
 
         if not indices:
-            raise KeyError()
+            raise KeyError("Nonexistent header key: {}".format(key))
 
         for i in indices[::-1]:
             self._items.pop(i)
