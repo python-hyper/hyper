@@ -214,3 +214,14 @@ class TestHTTPHeaderMap(object):
         h = HTTPHeaderMap(items)
 
         assert list(h.iter_raw()) == items
+
+    def test_headers_must_be_strings(self):
+        with pytest.raises(ValueError):
+            HTTPHeaderMap(key=1)
+
+        h = HTTPHeaderMap()
+        with pytest.raises(ValueError):
+            h['k'] = 1
+
+        with pytest.raises(ValueError):
+            h[1] = 'v'
