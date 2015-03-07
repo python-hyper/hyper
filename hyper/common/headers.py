@@ -29,25 +29,35 @@ class HTTPHeaderMap(collections.MutableMapping):
         # The meat of the structure. In practice, headers are an ordered list
         # of tuples. This early version of the data structure simply uses this
         # directly under the covers.
+        #
+        # An important curiosity here is that the headers are not stored in
+        # 'canonical form', but are instead stored in the form they were
+        # provided in. This is to ensure that it is always possible to
+        # reproduce the original header structure if necessary. This leads to
+        # some unfortunate performance costs on structure access where it is
+        # often necessary to transform the data into canonical form on access.
+        # This cost is judged acceptable in low-level code like `hyper`, but
+        # higher-level abstractions should consider if they really require this
+        # logic.
         self._items = []
 
         for arg in args:
-            for item in arg:
-                self._items.extend(canonical_form(*item))
+            self._items.extend(arg)
 
         for k, v in kwargs.items():
-            self._items.extend(canonical_form(k, v))
+            self._items.append((k, v))
 
     def __getitem__(self, key):
         """
         Unlike the dict __getitem__, this returns a list of items in the order
-        they were added.
+        they were added. These items are returned in 'canonical form', meaning
+        that comma-separated values are split into multiple values.
         """
         values = []
 
         for k, v in self._items:
             if _keys_equal(k, key):
-                values.append(v)
+                values.extend(x[1] for x in canonical_form(k, v))
 
         if not values:
             raise KeyError("Nonexistent header key: {}".format(key))
@@ -56,10 +66,9 @@ class HTTPHeaderMap(collections.MutableMapping):
 
     def __setitem__(self, key, value):
         """
-        Unlike the dict __setitem__, this appends to the list of items. It also
-        splits out headers that can be split on the comma.
+        Unlike the dict __setitem__, this appends to the list of items.
         """
-        self._items.extend(canonical_form(key, value))
+        self._items.append((key, value))
 
     def __delitem__(self, key):
         """
@@ -80,16 +89,23 @@ class HTTPHeaderMap(collections.MutableMapping):
 
     def __iter__(self):
         """
-        This mapping iterates like the list of tuples it is.
+        This mapping iterates like the list of tuples it is. The headers are
+        returned in canonical form.
         """
         for pair in self._items:
-            yield pair
+            for value in canonical_form(*pair):
+                yield value
 
     def __len__(self):
         """
-        The length of this mapping is the number of individual headers.
+        The length of this mapping is the number of individual headers in
+        canonical form. Sadly, this is a somewhat expensive operation.
         """
-        return len(self._items)
+        size = 0
+        for _ in self:
+            size += 1
+
+        return size
 
     def __contains__(self, key):
         """
@@ -103,22 +119,21 @@ class HTTPHeaderMap(collections.MutableMapping):
         does not filter duplicates, ensuring that it's the same length as
         len().
         """
-        for n, _ in self._items:
+        for n, _ in self:
             yield n
 
     def items(self):
         """
         This mapping iterates like the list of tuples it is.
         """
-        for item in self:
-            yield item
+        return self.__iter__()
 
     def values(self):
         """
         This is an almost nonsensical query on a header dictionary, but we
         satisfy it in the exact same way we satisfy 'keys'.
         """
-        for _, v in self._items:
+        for _, v in self:
             yield v
 
     def get(self, name, default=None):

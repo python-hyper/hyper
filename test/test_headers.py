@@ -129,12 +129,25 @@ class TestHTTPHeaderMap(object):
         h1['k1'] = 'v4'
 
         h2 = HTTPHeaderMap()
+        h2['k1'] = 'v1, v2'
+        h2['k2'] = 'v3'
+        h2['k1'] = 'v4'
+
+        assert h1 == h2
+
+    def test_inequality_of_raw_ordering(self):
+        h1 = HTTPHeaderMap()
+        h1['k1'] = 'v1, v2'
+        h1['k2'] = 'v3'
+        h1['k1'] = 'v4'
+
+        h2 = HTTPHeaderMap()
         h2['k1'] = 'v1'
         h2['k1'] = 'v2'
         h2['k2'] = 'v3'
         h2['k1'] = 'v4'
 
-        assert h1 == h2
+        assert h1 != h2
 
     def test_inequality(self):
         h1 = HTTPHeaderMap()
@@ -182,6 +195,11 @@ class TestHTTPHeaderMap(object):
             ('k2', 'v2'),
             ('k2', 'v3'),
         ]
-        h = HTTPHeaderMap(items, k3='v4', k4='v5')
+        h = list(HTTPHeaderMap(items, k3='v4', k4='v5'))
 
-        assert list(h) == items + [('k3', 'v4'), ('k4', 'v5')]
+        # kwargs are an unordered dictionary, so allow for both possible
+        # iteration orders.
+        assert (
+            h == items + [('k3', 'v4'), ('k4', 'v5')] or
+            h == items + [('k4', 'v5'), ('k3', 'v4')]
+        )
