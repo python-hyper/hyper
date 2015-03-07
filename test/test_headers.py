@@ -1,3 +1,4 @@
+from __future__ import unicode_literals
 from hyper.common.headers import HTTPHeaderMap
 
 import pytest
