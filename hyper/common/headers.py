@@ -25,7 +25,9 @@ class HTTPHeaderMap(collections.MutableMapping):
     - they logically contain a form of ordering
 
     This data structure is an attempt to preserve all of that information
-    while being as user-friendly as possible.
+    while being as user-friendly as possible. It retains all of the mapping
+    convenience methods (allowing by-name indexing), while avoiding using a
+    dictionary for storage.
 
     When iterated over, this structure returns headers in 'canonical form'.
     This form is a tuple, where the first entry is the header name (in

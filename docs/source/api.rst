@@ -19,6 +19,12 @@ Primary HTTP/2 Interface
 .. autoclass:: hyper.HTTP20Push
    :inherited-members:
 
+Headers
+-------
+
+.. autoclass:: hyper.common.headers.HTTPHeaderMap
+   :inherited-members:
+
 Requests Transport Adapter
 --------------------------
 
