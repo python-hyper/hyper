@@ -146,6 +146,16 @@ class HTTPHeaderMap(collections.MutableMapping):
         except KeyError:
             return default
 
+    def iter_raw(self):
+        """
+        Allows iterating over the headers in 'raw' form: that is, the form in
+        which they were added to the structure. This iteration is in order,
+        and can be used to rebuild the original headers (e.g. to determine
+        exactly what a server sent).
+        """
+        for item in self._items:
+            yield item
+
     def __eq__(self, other):
         return self._items == other._items
 

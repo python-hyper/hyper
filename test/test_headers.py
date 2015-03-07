@@ -203,3 +203,13 @@ class TestHTTPHeaderMap(object):
             h == items + [('k3', 'v4'), ('k4', 'v5')] or
             h == items + [('k4', 'v5'), ('k3', 'v4')]
         )
+
+    def test_raw_iteration(self):
+        items = [
+            ('k1', 'v2'),
+            ('k2', 'v2, v3, v4'),
+            ('k2', 'v3'),
+        ]
+        h = HTTPHeaderMap(items)
+
+        assert list(h.iter_raw()) == items
