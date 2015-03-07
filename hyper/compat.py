@@ -36,6 +36,7 @@ if is_py2:
 
     from urllib import urlencode
     from urlparse import urlparse, urlsplit
+    from itertools import imap
 
     def to_byte(char):
         return ord(char)
@@ -52,8 +53,13 @@ if is_py2:
                          strategy=zlib.Z_DEFAULT_STRATEGY):
         return zlib.compressobj(level, method, wbits, memlevel, strategy)
 
+    unicode = unicode
+    bytes = str
+
 elif is_py3:
     from urllib.parse import urlencode, urlparse, urlsplit
+
+    imap = map
 
     def to_byte(char):
         return char
@@ -71,3 +77,6 @@ elif is_py3:
         ssl = ssl_compat
     else:
         import ssl
+
+    unicode = str
+    bytes = bytes

@@ -6,19 +6,19 @@ class TestHTTPHeaderMap(object):
     def test_header_map_can_insert_single_header(self):
         h = HTTPHeaderMap()
         h['key'] = 'value'
-        assert h['key'] == ['value']
+        assert h['key'] == [b'value']
 
     def test_header_map_insensitive_key(self):
         h = HTTPHeaderMap()
         h['KEY'] = 'value'
-        assert h['key'] == ['value']
+        assert h['key'] == [b'value']
 
     def test_header_map_is_iterable_in_order(self):
         h = HTTPHeaderMap()
         items = [
-            ('k1', 'v2'),
-            ('k2', 'v2'),
-            ('k2', 'v3'),
+            (b'k1', b'v2'),
+            (b'k2', b'v2'),
+            (b'k2', b'v3'),
         ]
 
         for k, v in items:
@@ -29,18 +29,18 @@ class TestHTTPHeaderMap(object):
 
     def test_header_map_allows_multiple_values(self):
         h = HTTPHeaderMap()
-        h['key'] = 'v1'
-        h['Key'] = 'v2'
+        h['key'] = b'v1'
+        h[b'Key'] = b'v2'
 
-        assert h['key'] == ['v1', 'v2']
+        assert h['key'] == [b'v1', b'v2']
 
     def test_header_map_can_delete_value(self):
         h = HTTPHeaderMap()
-        h['key'] = 'v1'
-        del h['key']
+        h['key'] = b'v1'
+        del h[b'key']
 
         with pytest.raises(KeyError):
-            h['key']
+            h[b'key']
 
     def test_header_map_deletes_all_values(self):
         h = HTTPHeaderMap()
@@ -55,13 +55,14 @@ class TestHTTPHeaderMap(object):
         h = HTTPHeaderMap()
         h['key'] = 'v1, v2'
 
-        assert h['key'] == ['v1', 'v2']
+        assert h[b'key'] == [b'v1', b'v2']
 
     def test_containment(self):
         h = HTTPHeaderMap()
         h['key'] = 'val'
 
         assert 'key' in h
+        assert b'key' in h
         assert 'nonkey' not in h
 
     def test_length_counts_lines_separately(self):
@@ -79,7 +80,7 @@ class TestHTTPHeaderMap(object):
         h['k1'] = 'v4'
 
         assert len(list(h.keys())) == 4
-        assert list(h.keys()) == ['k1', 'k1', 'k2', 'k1']
+        assert list(h.keys()) == [b'k1', b'k1', b'k2', b'k1']
 
     def test_values(self):
         h = HTTPHeaderMap()
@@ -88,14 +89,14 @@ class TestHTTPHeaderMap(object):
         h['k1'] = 'v4'
 
         assert len(list(h.values())) == 4
-        assert list(h.values()) == ['v1', 'v2', 'v3', 'v4']
+        assert list(h.values()) == [b'v1', b'v2', b'v3', b'v4']
 
     def test_items(self):
         h = HTTPHeaderMap()
         items = [
-            ('k1', 'v2'),
-            ('k2', 'v2'),
-            ('k2', 'v3'),
+            (b'k1', b'v2'),
+            (b'k2', b'v2'),
+            (b'k2', b'v3'),
         ]
 
         for k, v in items:
@@ -114,13 +115,13 @@ class TestHTTPHeaderMap(object):
         h['k2'] = 'v3'
         h['k1'] = 'v4'
 
-        assert h.get('k1') == ['v1', 'v2', 'v4']
+        assert h.get('k1') == [b'v1', b'v2', b'v4']
 
     def test_doesnt_split_set_cookie(self):
         h = HTTPHeaderMap()
         h['Set-Cookie'] = 'v1, v2'
-        assert h['set-cookie'] == ['v1, v2']
-        assert h.get('set-cookie') == ['v1, v2']
+        assert h['set-cookie'] == [b'v1, v2']
+        assert h.get(b'set-cookie') == [b'v1, v2']
 
     def test_equality(self):
         h1 = HTTPHeaderMap()
@@ -171,9 +172,9 @@ class TestHTTPHeaderMap(object):
 
     def test_can_create_from_iterable(self):
         items = [
-            ('k1', 'v2'),
-            ('k2', 'v2'),
-            ('k2', 'v3'),
+            (b'k1', b'v2'),
+            (b'k2', b'v2'),
+            (b'k2', b'v3'),
         ]
         h = HTTPHeaderMap(items)
 
@@ -181,9 +182,9 @@ class TestHTTPHeaderMap(object):
 
     def test_can_create_from_multiple_iterables(self):
         items = [
-            ('k1', 'v2'),
-            ('k2', 'v2'),
-            ('k2', 'v3'),
+            (b'k1', b'v2'),
+            (b'k2', b'v2'),
+            (b'k2', b'v3'),
         ]
         h = HTTPHeaderMap(items, items, items)
 
@@ -191,24 +192,24 @@ class TestHTTPHeaderMap(object):
 
     def test_create_from_iterables_and_kwargs(self):
         items = [
-            ('k1', 'v2'),
-            ('k2', 'v2'),
-            ('k2', 'v3'),
+            (b'k1', b'v2'),
+            (b'k2', b'v2'),
+            (b'k2', b'v3'),
         ]
         h = list(HTTPHeaderMap(items, k3='v4', k4='v5'))
 
         # kwargs are an unordered dictionary, so allow for both possible
         # iteration orders.
         assert (
-            h == items + [('k3', 'v4'), ('k4', 'v5')] or
-            h == items + [('k4', 'v5'), ('k3', 'v4')]
+            h == items + [(b'k3', b'v4'), (b'k4', b'v5')] or
+            h == items + [(b'k4', b'v5'), (b'k3', b'v4')]
         )
 
     def test_raw_iteration(self):
         items = [
-            ('k1', 'v2'),
-            ('k2', 'v2, v3, v4'),
-            ('k2', 'v3'),
+            (b'k1', b'v2'),
+            (b'k2', b'v2, v3, v4'),
+            (b'k2', b'v3'),
         ]
         h = HTTPHeaderMap(items)
 

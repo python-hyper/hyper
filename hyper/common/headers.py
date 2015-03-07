@@ -7,6 +7,8 @@ Contains hyper's structures for storing and working with HTTP headers.
 """
 import collections
 
+from hyper.compat import unicode, bytes, imap
+
 
 class HTTPHeaderMap(collections.MutableMapping):
     """
@@ -24,6 +26,24 @@ class HTTPHeaderMap(collections.MutableMapping):
 
     This data structure is an attempt to preserve all of that information
     while being as user-friendly as possible.
+
+    When iterated over, this structure returns headers in 'canonical form'.
+    This form is a tuple, where the first entry is the header name (in
+    lower-case), and the second entry is a list of header values (in original
+    case).
+
+    The mapping always emits both names and values in the form of bytestrings:
+    never unicode strings. It can accept names and values in unicode form, and
+    will automatically be encoded to bytestrings using UTF-8. The reason for
+    what appears to be a user-unfriendly decision here is primarily to allow
+    the broadest-possible compatibility (to make it possible to send headers in
+    unusual encodings) while ensuring that users are never confused about what
+    type of data they will receive.
+
+    ..warning:: Note that this data structure makes none of the performance
+                guarantees of a dictionary. Lookup and deletion is not an O(1)
+                operation. Inserting a new value *is* O(1), all other
+                operations are O(n), including *replacing* a header entirely.
     """
     def __init__(self, *args, **kwargs):
         # The meat of the structure. In practice, headers are an ordered list
@@ -42,10 +62,10 @@ class HTTPHeaderMap(collections.MutableMapping):
         self._items = []
 
         for arg in args:
-            self._items.extend(arg)
+            self._items.extend(map(lambda x: _to_bytestring_tuple(*x), arg))
 
         for k, v in kwargs.items():
-            self._items.append((k, v))
+            self._items.append(_to_bytestring_tuple(k, v))
 
     def __getitem__(self, key):
         """
@@ -53,6 +73,7 @@ class HTTPHeaderMap(collections.MutableMapping):
         they were added. These items are returned in 'canonical form', meaning
         that comma-separated values are split into multiple values.
         """
+        key = _to_bytestring(key)
         values = []
 
         for k, v in self._items:
@@ -68,7 +89,7 @@ class HTTPHeaderMap(collections.MutableMapping):
         """
         Unlike the dict __setitem__, this appends to the list of items.
         """
-        self._items.append((key, value))
+        self._items.append(_to_bytestring_tuple(key, value))
 
     def __delitem__(self, key):
         """
@@ -76,6 +97,7 @@ class HTTPHeaderMap(collections.MutableMapping):
         delete all headers with a given key. To correctly achieve the 'KeyError
         on missing key' logic from dictionaries, we need to do this slowly.
         """
+        key = _to_bytestring(key)
         indices = []
         for (i, (k, v)) in enumerate(self._items):
             if _keys_equal(k, key):
@@ -111,6 +133,7 @@ class HTTPHeaderMap(collections.MutableMapping):
         """
         If any header is present with this key, returns True.
         """
+        key = _to_bytestring(key)
         return any(_keys_equal(key, k) for k, _ in self._items)
 
     def keys(self):
@@ -169,15 +192,36 @@ def canonical_form(k, v):
     canonical form. This means that the header is split on commas unless for
     any reason it's a super-special snowflake (I'm looking at you Set-Cookie).
     """
-    SPECIAL_SNOWFLAKES = set(['set-cookie', 'set-cookie2'])
+    SPECIAL_SNOWFLAKES = set([b'set-cookie', b'set-cookie2'])
 
     k = k.lower()
 
     if k in SPECIAL_SNOWFLAKES:
         yield k, v
     else:
-        for sub_val in v.split(','):
+        for sub_val in v.split(b','):
             yield k, sub_val.strip()
+
+
+def _to_bytestring(element):
+    """
+    Converts a single string to a bytestring, encoding via UTF-8 if needed.
+    """
+    if isinstance(element, unicode):
+        return element.encode('utf-8')
+    elif isinstance(element, bytes):
+        return element
+    else:
+        raise ValueError("Non string type.")
+
+
+def _to_bytestring_tuple(*x):
+    """
+    Converts the given strings to a bytestring if necessary, returning a
+    tuple.
+    """
+    return tuple(imap(_to_bytestring, x))
+
 
 def _keys_equal(x, y):
     """
