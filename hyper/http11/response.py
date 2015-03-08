@@ -64,9 +64,9 @@ class HTTP11Response(object):
         #: The status code returned by the server.
         self.status = 0
 
-        # The response headers. These are determined upon creation, assigned
-        # once, and never assigned again.
-        self._headers = headers
+        #: The response headers. These are determined upon creation, assigned
+        #: once, and never assigned again.
+        self.headers = headers
 
         # The response trailers. These are always intially ``None``.
         self._trailers = None
@@ -77,6 +77,19 @@ class HTTP11Response(object):
         # We always read in one-data-frame increments from the stream, so we
         # may need to buffer some for incomplete reads.
         self._data_buffer = b''
+
+        # This object is used for decompressing gzipped request bodies. Right
+        # now we only support gzip because that's all the RFC mandates of us.
+        # Later we'll add support for more encodings.
+        # This 16 + MAX_WBITS nonsense is to force gzip. See this
+        # Stack Overflow answer for more:
+        # http://stackoverflow.com/a/2695466/1401686
+        if b'gzip' in self.headers.get('content-encoding', []):
+            self._decompressobj = zlib.decompressobj(16 + zlib.MAX_WBITS)
+        elif b'deflate' in self.headers.get('content-encoding', []):
+            self._decompressobj = DeflateDecoder()
+        else:
+            self._decompressobj = None
 
     def read(self, amt=None, decode_content=True):
         """
@@ -94,13 +107,13 @@ class HTTP11Response(object):
         # then, read content-length. This obviously doesn't work longer term,
         # we need to do some content-length processing there.
         if amt is None:
-            amt = self.headers.get(b'content-length', 0)
+            amt = int(self.headers.get(b'content-length', [0])[0])
 
         # Return early if we've lost our connection.
         if self._sock is None:
             return b''
 
-        data = self._sock.read(amt)
+        data = self._sock.recv(amt).tobytes()
 
         # We may need to decode the body.
         if decode_content and self._decompressobj and data:

@@ -7,12 +7,25 @@ Objects that build hyper's connection-level HTTP/1.1 abstraction.
 """
 import io
 import logging
+import re
 import socket
 
 from .response import HTTP11Response
 from ..http20.bufsocket import BufferedSocket
+from ..common.headers import HTTPHeaderMap
+from ..common.util import to_bytestring
 
 log = logging.getLogger(__name__)
+
+# This regular expression provides a fairly generous parsing of a HTTP status
+# line. It matches any amount of leading LWS, followed by a three-digit status
+# code, followed by LWS, followed by a reason phrase (allowing only space
+# separators), followed by the version (must be HTTP/1.1).
+#
+# For now this is a 'good enough' way to parse the status line. We may want a
+# dedicated parsing implementation later on, though it'd have to be faster than
+# this regex to be worthwhile.
+STATUS_LINE_REGEX = re.compile(rb'[ \t]*(?P<code>\d{3})[ \t]+(?P<reason>[\S ]+)[ \t]+HTTP/1\.1[ \t]*\r?\n')
 
 
 class HTTP11Connection(object):
@@ -72,6 +85,9 @@ class HTTP11Connection(object):
         :param headers: (optional) The headers to send on the request.
         :returns: Nothing.
         """
+        method = to_bytestring(method)
+        url = to_bytestring(url)
+
         if self._sock is None:
             self.connect()
 
@@ -101,10 +117,18 @@ class HTTP11Connection(object):
         This is an early beta, so the response object is pretty stupid. That's
         ok, we'll fix it later.
         """
-        headers = {}
+        headers = HTTPHeaderMap()
 
-        # First read the header line and drop it on the floor.
-        self._sock.readline()
+        # First read the header line and 'parse' it. This particular part of
+        # the response can safely be parsed by regular expression, so do that.
+        status_line = self._sock.readline()
+        match = STATUS_LINE_REGEX.match(status_line)
+        if match is None:
+            raise RuntimeError("Invalid status line")
+
+        code, reason = int(match.group('code')), match.group('reason')
+        print(code)
+        print(reason)
 
         while True:
             line = self._sock.readline().tobytes()
