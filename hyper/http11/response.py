@@ -68,15 +68,11 @@ class HTTP11Response(object):
         #: once, and never assigned again.
         self.headers = headers
 
-        # The response trailers. These are always intially ``None``.
-        self._trailers = None
+        #: The response trailers. These are always intially ``None``.
+        self.trailers = None
 
         # The socket this response is being sent over.
         self._sock = sock
-
-        # We always read in one-data-frame increments from the stream, so we
-        # may need to buffer some for incomplete reads.
-        self._data_buffer = b''
 
         # This object is used for decompressing gzipped request bodies. Right
         # now we only support gzip because that's all the RFC mandates of us.
@@ -130,19 +126,14 @@ class HTTP11Response(object):
 
         return data
 
-    def fileno(self):
-        """
-        Return the ``fileno`` of the underlying socket. This function is
-        currently not implemented.
-        """
-        raise NotImplementedError("Not currently implemented.")
-
     def close(self):
         """
-        Close the response. In effect this closes the backing HTTP/2 stream.
+        Close the response. In effect this closes the backing socket.
 
         :returns: Nothing.
         """
+        # FIXME: This should notify the parent connection object if possible.
+        self._sock.close()
         self._sock = None
 
     # The following methods implement the context manager protocol.
