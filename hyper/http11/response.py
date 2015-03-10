@@ -57,12 +57,12 @@ class HTTP11Response(object):
     provides access to the response headers and the entity body. The response
     is an iterable object and can be used in a with statement.
     """
-    def __init__(self, headers, sock):
+    def __init__(self, code, reason, headers, sock):
         #: The reason phrase returned by the server.
-        self.reason = ''
+        self.reason = reason
 
         #: The status code returned by the server.
-        self.status = 0
+        self.status = code
 
         #: The response headers. These are determined upon creation, assigned
         #: once, and never assigned again.

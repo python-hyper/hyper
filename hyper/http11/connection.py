@@ -17,16 +17,6 @@ from ..common.util import to_bytestring
 
 log = logging.getLogger(__name__)
 
-# This regular expression provides a fairly generous parsing of a HTTP status
-# line. It matches any amount of leading LWS, followed by a three-digit status
-# code, followed by LWS, followed by a reason phrase (allowing only space
-# separators), followed by the version (must be HTTP/1.1).
-#
-# For now this is a 'good enough' way to parse the status line. We may want a
-# dedicated parsing implementation later on, though it'd have to be faster than
-# this regex to be worthwhile.
-STATUS_LINE_REGEX = re.compile(rb'[ \t]*(?P<code>\d{3})[ \t]+(?P<reason>[\S ]+)[ \t]+HTTP/1\.1[ \t]*\r?\n')
-
 
 class HTTP11Connection(object):
     """
@@ -119,16 +109,10 @@ class HTTP11Connection(object):
         """
         headers = HTTPHeaderMap()
 
-        # First read the header line and 'parse' it. This particular part of
-        # the response can safely be parsed by regular expression, so do that.
-        status_line = self._sock.readline()
-        match = STATUS_LINE_REGEX.match(status_line)
-        if match is None:
-            raise RuntimeError("Invalid status line")
-
-        code, reason = int(match.group('code')), match.group('reason')
-        print(code)
-        print(reason)
+        # First read the header line and 'parse' it.
+        status_line = self._sock.readline().tobytes().rstrip()
+        version, code, reason = status_line.split(b' ', 2)
+        code = int(code)
 
         while True:
             line = self._sock.readline().tobytes()
@@ -139,4 +123,4 @@ class HTTP11Connection(object):
             val = val.lstrip().rstrip(b'\r\n')
             headers[name] = val
 
-        return HTTP11Response(headers, self._sock)
+        return HTTP11Response(code, reason, headers, self._sock)
