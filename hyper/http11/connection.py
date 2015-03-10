@@ -100,10 +100,9 @@ class HTTP11Connection(object):
         self._sock.send(b' '.join([method, url, b'HTTP/1.1\r\n']))
 
         for name, value in headers.items():
-            self._sock.send(name)
-            self._sock.send(b': ')
-            self._sock.send(value)
-            self._sock.send(b'\r\n')
+            name, value = to_bytestring(name), to_bytestring(value)
+            header = b''.join([name, b': ', value, b'\r\n'])
+            self._sock.send(header)
 
         self._sock.send(b'\r\n')
 
