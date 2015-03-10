@@ -26,17 +26,30 @@ class HTTP11Connection(object):
         hostname, and optionally may include a port: for example,
         ``'twitter.com'``, ``'twitter.com:443'`` or ``'127.0.0.1'``.
     :param port: (optional) The port to connect to. If not provided and one also
-        isn't provided in the ``host`` parameter, defaults to 443.
+        isn't provided in the ``host`` parameter, defaults to 80.
+    :param secure: (optional) Whether the request should use TLS. Defaults to
+        ``False`` for most requests, but to ``True`` for any request issued to
+        port 443.
     """
-    def __init__(self, host, port):
+    def __init__(self, host, port=None, secure=None):
         if port is None:
             try:
                 self.host, self.port = host.split(':')
                 self.port = int(self.port)
             except ValueError:
-                self.host, self.port = host, 443
+                self.host, self.port = host, 80
         else:
             self.host, self.port = host, port
+
+        # Record whether we plan to secure the request. In future this should
+        # be extended to a security profile, but a bool will do for now.
+        # TODO: Actually do something with this!
+        if secure is not None:
+            self.secure = secure
+        elif self.port == 443:
+            self.secure = True
+        else:
+            self.secure = False
 
         self._sock = None
 
