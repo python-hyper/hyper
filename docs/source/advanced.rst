@@ -15,8 +15,8 @@ very confident you won't need the connection again anytime soon. However, if
 you decide you want to avoid keeping the connection open, you can use the
 :class:`HTTP20Connection <hyper.HTTP20Connection>` as a context manager::
 
-    with HTTP20Connection('twitter.com:443') as conn:
-        conn.request('GET', '/')
+    with HTTP20Connection('http2bin.org') as conn:
+        conn.request('GET', '/get')
         data = conn.getresponse().read()
 
     analyse(data)

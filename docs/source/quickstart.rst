@@ -53,12 +53,12 @@ With ``hyper`` installed, you can start making HTTP/2 requests. At this
 stage, ``hyper`` can only be used with services that *definitely* support
 HTTP/2. Before you begin, ensure that whichever service you're contacting
 definitely supports HTTP/2. For the rest of these examples, we'll use
-Twitter.
+http2bin.org, a HTTP/1.1 and HTTP/2 testing service.
 
-Begin by getting the Twitter homepage::
+Begin by getting the homepage::
 
     >>> from hyper import HTTP20Connection
-    >>> c = HTTP20Connection('twitter.com:443')
+    >>> c = HTTP20Connection('http2bin.org')
     >>> c.request('GET', '/')
     1
     >>> resp = c.getresponse()
@@ -75,15 +75,16 @@ come back to it.
 Once you've got the data, things continue to behave exactly like
 ``http.client``::
 
-    >>> resp.getheader('content-encoding')
-    'deflate'
+    >>> resp.getheader('content-type')
+    'text/html; charset=utf-8'
     >>> resp.getheaders()
-    [('x-xss-protection', '1; mode=block')...
+    [('server', 'h2o/1.0.2-alpha1')...
     >>> resp.status
     200
 
-We know that Twitter has compressed the response body. ``hyper`` will
-automatically decompress that body for you, no input required::
+If http2bin had compressed the response body. ``hyper`` would automatically
+decompress that body for you, no input required. This means you can always get
+the body by simply reading it::
 
     >>> body = resp.read()
     b'<!DOCTYPE html>\n<!--[if IE 8]><html clas ....
@@ -100,10 +101,10 @@ the response from any of them, and switch between them using their stream IDs.
 For example::
 
     >>> from hyper import HTTP20Connection
-    >>> c = HTTP20Connection('twitter.com:443')
-    >>> first = c.request('GET', '/')
-    >>> second = c.request('GET', '/lukasaoz')
-    >>> third = c.request('GET', '/about')
+    >>> c = HTTP20Connection('http2bin.org')
+    >>> first = c.request('GET', '/get')
+    >>> second = c.request('POST', '/post', data='key=value')
+    >>> third = c.request('GET', '/ip')
     >>> second_response = c.getresponse(second)
     >>> first_response = c.getresponse(first)
     >>> third_response = c.getresponse(third)
@@ -124,8 +125,8 @@ HTTP/2. Once you've worked that out, you can get started straight away::
     >>> import requests
     >>> from hyper.contrib import HTTP20Adapter
     >>> s = requests.Session()
-    >>> s.mount('https://twitter.com', HTTP20Adapter())
-    >>> r = s.get('https://twitter.com')
+    >>> s.mount('https://http2bin.org', HTTP20Adapter())
+    >>> r = s.get('https://http2bin.org/get')
     >>> print(r.status_code)
     200
 
