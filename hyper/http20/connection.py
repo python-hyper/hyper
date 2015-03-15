@@ -5,9 +5,9 @@ hyper/http20/connection
 
 Objects that build hyper's connection-level HTTP/2 abstraction.
 """
+from ..tls import wrap_socket
 from .hpack_compat import Encoder, Decoder
 from .stream import Stream
-from .tls import wrap_socket
 from .frame import (
     FRAMES, DataFrame, HeadersFrame, PushPromiseFrame, RstStreamFrame,
     SettingsFrame, Frame, WindowUpdateFrame, GoAwayFrame, PingFrame,

@@ -7,7 +7,7 @@ Contains the TLS/SSL logic for use in hyper.
 """
 import os.path as path
 
-from ..compat import ignore_missing, ssl
+from .compat import ignore_missing, ssl
 
 
 NPN_PROTOCOL = 'h2'
@@ -20,7 +20,7 @@ SUPPORTED_NPN_PROTOCOLS = ['http/1.1'] + H2_NPN_PROTOCOLS
 _context = None
 
 # Work out where our certificates are.
-cert_loc = path.join(path.dirname(__file__), '..', 'certs.pem')
+cert_loc = path.join(path.dirname(__file__), 'certs.pem')
 
 def wrap_socket(sock, server_hostname):
     """

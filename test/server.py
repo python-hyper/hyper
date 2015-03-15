@@ -23,7 +23,7 @@ from hyper.http20.huffman import HuffmanEncoder
 from hyper.http20.huffman_constants import (
     REQUEST_CODES, REQUEST_CODES_LENGTH
 )
-from hyper.http20.tls import NPN_PROTOCOL
+from hyper.tls import NPN_PROTOCOL
 
 class SocketServerThread(threading.Thread):
     """
