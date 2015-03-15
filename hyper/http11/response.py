@@ -7,6 +7,7 @@ Contains the HTTP/2 equivalent of the HTTPResponse object defined in
 httplib/http.client.
 """
 import logging
+import zlib
 
 log = logging.getLogger(__name__)
 
@@ -74,6 +75,28 @@ class HTTP11Response(object):
         # The socket this response is being sent over.
         self._sock = sock
 
+        # Whether we expect the connection to be closed. If we do, we don't
+        # bother checking for content-length, we just keep reading until
+        # we no longer can.
+        self._expect_close = False
+        if b'close' in self.headers.get('connection', []):
+            self._expect_close = True
+
+        # The expected length of the body.
+        try:
+            self._length = int(self.headers.get(b'content-length', [0])[0])
+        except KeyError:
+            self._length = None
+
+        # Whether we expect a chunked response.
+        self._chunked = b'chunked' in self.headers.get('transfer-encoding', [])
+
+        # One of the following must be true: we must expect that the connection
+        # will be closed following the body, or that a content-length was sent,
+        # or that we're getting a chunked response.
+        # FIXME: Remove naked assert, replace with something better.
+        assert self._expect_close or self._length is not None or self._chunked
+
         # This object is used for decompressing gzipped request bodies. Right
         # now we only support gzip because that's all the RFC mandates of us.
         # Later we'll add support for more encodings.
@@ -99,17 +122,58 @@ class HTTP11Response(object):
             ``True``, the actual amount of data returned may be different to
             the amount requested.
         """
-        # For now, just read what we're asked, unless we're not asked:
-        # then, read content-length. This obviously doesn't work longer term,
-        # we need to do some content-length processing there.
-        if amt is None:
-            amt = int(self.headers.get(b'content-length', [0])[0])
-
         # Return early if we've lost our connection.
         if self._sock is None:
             return b''
 
-        data = self._sock.recv(amt).tobytes()
+        # FIXME: Handle chunked transfer encoding
+        assert not self._chunked
+
+        # If we're asked to do a read without a length, we need to read
+        # everything. That means either the entire content length, or until the
+        # socket is closed, depending.
+        if amt is None:
+            if self._length is not None:
+                amt = self._length
+            elif self._expect_close:
+                return self._read_expect_closed()
+            else:
+                raise RuntimeError("Unbounded read!")
+
+        # Otherwise, we've been asked to do a bounded read. We should read no
+        # more than the remaining length, obviously.
+        # FIXME: Handle cases without _length
+        assert self._length is not None
+        amt = min(amt, self._length)
+
+        # If we are now going to read nothing, exit early.
+        if not amt:
+            return b''
+
+        # Now, issue reads until we read that length. This is to account for
+        # the fact that it's possible that we'll be asked to read more than
+        # 65kB in one shot.
+        to_read = amt
+        chunks = []
+
+        # Ideally I'd like this to read 'while to_read', but I want to be
+        # defensive against the admittedly unlikely case that the socket
+        # returns *more* data than I want.
+        while to_read > 0:
+            chunk = self._sock.recv(amt).tobytes()
+
+            # If we got an empty read, but were expecting more, the remote end
+            # has hung up. Raise an exception.
+            # FIXME: Real exception, not RuntimeError
+            if not chunk:
+                self.close()
+                raise RuntimeError("Remote end hung up!")
+
+            to_read -= len(chunk)
+            chunks.append(chunk)
+
+        data = b''.join(chunks)
+        self._length -= len(data)
 
         # We may need to decode the body.
         if decode_content and self._decompressobj and data:
@@ -117,11 +181,11 @@ class HTTP11Response(object):
 
         # If we're at the end of the request, we have some cleaning up to do.
         # Close the stream, and if necessary flush the buffer.
-        if decode_content and self._decompressobj:
+        if decode_content and self._decompressobj and not self._length:
             data += self._decompressobj.flush()
 
         # We're at the end. Close the connection.
-        if not data:
+        if not self._length:
             self.close()
 
         return data
@@ -135,6 +199,31 @@ class HTTP11Response(object):
         # FIXME: This should notify the parent connection object if possible.
         self._sock.close()
         self._sock = None
+
+    def _read_expect_closed(self):
+        """
+        Implements the logic for an unbounded read on a socket that we expect
+        to be closed by the remote end.
+        """
+        # In this case, just read until we cannot read anymore. Then, close the
+        # socket, becuase we know we have to.
+        chunks = []
+        while True:
+            chunk = self._sock.recv(65535).tobytes()
+            if not chunk:
+                break
+
+            chunks.append(chunk)
+
+        self.close()
+
+        # We may need to decompress the data.
+        data = b''.join(chunks)
+        if decode_content and self._decompressobj:
+            data = self._decompressobj.decompress(data)
+            data += self._decompressobj.flush()
+
+        return data
 
     # The following methods implement the context manager protocol.
     def __enter__(self):
