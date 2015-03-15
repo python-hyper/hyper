@@ -29,6 +29,7 @@ if ssl is not None:
     hyper.tls._context = hyper.tls._init_context()
     hyper.tls._context.check_hostname = False
     hyper.tls._context.verify_mode = ssl.CERT_NONE
+    hyper.http20.connection.H2_NPN_PROTOCOLS += ['']
 
 def decode_frame(frame_data):
     f, length = Frame.parse_frame_header(frame_data[:9])
