@@ -40,17 +40,18 @@ def wrap_socket(sock, server_hostname):
     if _context.check_hostname:  # pragma: no cover
         ssl.match_hostname(ssl_sock.getpeercert(), server_hostname)
 
+    proto = ''
     with ignore_missing():
-        assert ssl_sock.selected_npn_protocol() in H2_NPN_PROTOCOLS
+        proto = ssl_sock.selected_npn_protocol()
 
-    return ssl_sock
+    return (ssl_sock, proto)
 
 
 def _init_context():
     """
     Creates the singleton SSLContext we use.
     """
-    context = ssl.SSLContext(ssl.PROTOCOL_TLSv1_2)
+    context = ssl.SSLContext(ssl.PROTOCOL_SSLv23)
     context.set_default_verify_paths()
     context.load_verify_locations(cafile=cert_loc)
     context.verify_mode = ssl.CERT_REQUIRED

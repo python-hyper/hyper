@@ -5,7 +5,7 @@ hyper/http20/connection
 
 Objects that build hyper's connection-level HTTP/2 abstraction.
 """
-from ..tls import wrap_socket
+from ..tls import wrap_socket, H2_NPN_PROTOCOLS
 from .hpack_compat import Encoder, Decoder
 from .stream import Stream
 from .frame import (
@@ -201,7 +201,10 @@ class HTTP20Connection(object):
         """
         if self._sock is None:
             sock = socket.create_connection((self.host, self.port), 5)
-            sock = wrap_socket(sock, self.host)
+
+            sock, proto = wrap_socket(sock, self.host)
+            assert proto in H2_NPN_PROTOCOLS
+
             self._sock = BufferedSocket(sock, self.network_buffer_size)
 
             # We need to send the connection header immediately on this
