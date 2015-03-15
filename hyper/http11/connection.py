@@ -10,6 +10,7 @@ import os
 import socket
 
 from .response import HTTP11Response
+from ..tls import wrap_socket, H2_NPN_PROTOCOLS
 from ..http20.bufsocket import BufferedSocket
 from ..common.headers import HTTPHeaderMap
 from ..common.util import to_bytestring
@@ -71,6 +72,11 @@ class HTTP11Connection(object):
         """
         if self._sock is None:
             sock = socket.create_connection((self.host, self.port), 5)
+
+            if self.secure:
+                sock, proto = wrap_socket(sock, self.host)
+                assert proto not in H2_NPN_PROTOCOLS
+
             self._sock = BufferedSocket(sock, self.network_buffer_size)
 
         return
