@@ -41,7 +41,7 @@ class SocketServerThread(threading.Thread):
         self.host = host
         self.ready_event = ready_event
 
-        self.cxt = ssl.SSLContext(ssl.PROTOCOL_TLSv1_2)
+        self.cxt = ssl.SSLContext(ssl.PROTOCOL_SSLv23)
         if ssl.HAS_NPN:
             self.cxt.set_npn_protocols([NPN_PROTOCOL])
         self.cxt.load_cert_chain(certfile='test/certs/server.crt',
