@@ -48,6 +48,7 @@ class TestHTTP11Connection(object):
         expected = (
             b"GET /get HTTP/1.1\r\n"
             b"User-Agent: hyper\r\n"
+            b"host: http2bin.org\r\n"
             b"\r\n"
         )
         received = b''.join(sock.queue)
@@ -69,6 +70,7 @@ class TestHTTP11Connection(object):
             b"POST /post HTTP/1.1\r\n"
             b"User-Agent: hyper\r\n"
             b"content-length: 2\r\n"
+            b"host: http2bin.org\r\n"
             b"\r\n"
             b"hi"
         )
@@ -97,6 +99,7 @@ class TestHTTP11Connection(object):
             expected = (
                 b"POST /post HTTP/1.1\r\n"
                 b"content-length: 16\r\n"
+                b"host: http2bin.org\r\n"
                 b"\r\n"
                 b"some binary data"
             )
@@ -121,6 +124,7 @@ class TestHTTP11Connection(object):
         expected = (
             b"POST /post HTTP/1.1\r\n"
             b"transfer-encoding: chunked\r\n"
+            b"host: http2bin.org\r\n"
             b"\r\n"
             b"2\r\nhi\r\n"
             b"5\r\nthere\r\n"
@@ -146,6 +150,7 @@ class TestHTTP11Connection(object):
         expected = (
             b"POST /post HTTP/1.1\r\n"
             b"content-length: 10\r\n"
+            b"host: http2bin.org\r\n"
             b"\r\n"
             b"hitheresir"
         )
@@ -169,6 +174,7 @@ class TestHTTP11Connection(object):
         expected = (
             b"POST /post HTTP/1.1\r\n"
             b"transfer-encoding: chunked\r\n"
+            b"host: http2bin.org\r\n"
             b"\r\n"
             b"8\r\noneline\n\r\n"
             b"b\r\nanotherline\r\n"

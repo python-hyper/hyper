@@ -101,10 +101,12 @@ class HTTP11Connection(object):
         if self._sock is None:
             self.connect()
 
-        # We may need extra headers. For now, we only add headers based on
-        # body content.
+        # We may need extra headers.
         if body:
             body_type = self._add_body_headers(headers, body)
+
+        if b'host' not in headers:
+            headers[b'host'] = self.host
 
         # Begin by emitting the header block.
         self._send_headers(method, url, headers)
