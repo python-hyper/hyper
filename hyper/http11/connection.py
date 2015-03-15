@@ -5,17 +5,20 @@ hyper/http11/connection
 
 Objects that build hyper's connection-level HTTP/1.1 abstraction.
 """
-import io
 import logging
-import re
+import os
 import socket
 
 from .response import HTTP11Response
 from ..http20.bufsocket import BufferedSocket
 from ..common.headers import HTTPHeaderMap
 from ..common.util import to_bytestring
+from ..compat import bytes
 
 log = logging.getLogger(__name__)
+
+BODY_CHUNKED = 1
+BODY_FLAT = 2
 
 
 class HTTP11Connection(object):
@@ -91,24 +94,24 @@ class HTTP11Connection(object):
         method = to_bytestring(method)
         url = to_bytestring(url)
 
+        if not isinstance(headers, HTTPHeaderMap):
+            # FIXME: Handle things that aren't dictionaries here.
+            headers = HTTPHeaderMap(headers.items())
+
         if self._sock is None:
             self.connect()
 
-        # In this initial implementation, let's just write straight to the
-        # socket. We'll fix this up as we go.
-        # TODO: Fix fix fix.
-        self._sock.send(b' '.join([method, url, b'HTTP/1.1\r\n']))
-
-        for name, value in headers.items():
-            name, value = to_bytestring(name), to_bytestring(value)
-            header = b''.join([name, b': ', value, b'\r\n'])
-            self._sock.send(header)
-
-        self._sock.send(b'\r\n')
-
+        # We may need extra headers. For now, we only add headers based on
+        # body content.
         if body:
-            # TODO: Come back here to support non-string bodies.
-            self._sock.send(body)
+            body_type = self._add_body_headers(headers, body)
+
+        # Begin by emitting the header block.
+        self._send_headers(method, url, headers)
+
+        # Next, send the request body.
+        if body:
+            self._send_body(body, body_type)
 
         return
 
@@ -136,3 +139,107 @@ class HTTP11Connection(object):
             headers[name] = val
 
         return HTTP11Response(code, reason, headers, self._sock)
+
+    def _send_headers(self, method, url, headers):
+        """
+        Handles the logic of sending the header block.
+        """
+        self._sock.send(b' '.join([method, url, b'HTTP/1.1\r\n']))
+
+        for name, value in headers.iter_raw():
+            name, value = to_bytestring(name), to_bytestring(value)
+            header = b''.join([name, b': ', value, b'\r\n'])
+            self._sock.send(header)
+
+        self._sock.send(b'\r\n')
+
+    def _add_body_headers(self, headers, body):
+        """
+        Adds any headers needed for sending the request body. This will always
+        defer to the user-supplied header content.
+
+        :returns: One of (BODY_CHUNKED, BODY_FLAT), indicating what type of
+            request body should be used.
+        """
+        if b'content-length' in headers:
+            return BODY_FLAT
+
+        if b'chunked' in headers.get(b'transfer-encoding', []):
+            return BODY_CHUNKED
+
+        # For bytestring bodies we upload the content with a fixed length.
+        # For file objects, we use the length of the file object.
+        if isinstance(body, bytes):
+            length = str(len(body)).encode('utf-8')
+        elif hasattr(body, 'fileno'):
+            length = str(os.fstat(body.fileno()).st_size).encode('utf-8')
+        else:
+            length = None
+
+        if length:
+            headers[b'content-length'] = length
+            return BODY_FLAT
+
+        headers[b'transfer-encoding'] = b'chunked'
+        return BODY_CHUNKED
+
+    def _send_body(self, body, body_type):
+        """
+        Handles the HTTP/1.1 logic for sending HTTP bodies. This does magical
+        different things in different cases.
+        """
+        if body_type == BODY_FLAT:
+            # Special case for files and other 'readable' objects.
+            if hasattr(body, 'read'):
+                while True:
+                    block = body.read(16*1024)
+                    if not block:
+                        break
+
+                    try:
+                        self._sock.send(block)
+                    except TypeError:
+                        raise ValueError(
+                            "File objects must return bytestrings"
+                        )
+
+                return
+
+            # Case for bytestrings.
+            elif isinstance(body, bytes):
+                try:
+                    self._sock.send(body)
+                except TypeError:
+                    raise ValueError("Body must be a bytestring")
+
+                return
+
+            # Iterables that set a specific content length.
+            else:
+                for item in body:
+                    try:
+                        self._sock.send(item)
+                    except TypeError:
+                        raise ValueError("Body must be a bytestring")
+
+                return
+
+        # Chunked! For chunked bodies we don't special-case, we just iterate
+        # over what we have and send stuff out.
+        for chunk in body:
+            length = '{0:x}'.format(len(chunk)).encode('ascii')
+
+            # For now write this as four 'send' calls. That's probably
+            # inefficient, let's come back to it.
+            try:
+                self._sock.send(length)
+                self._sock.send(b'\r\n')
+                self._sock.send(chunk)
+                self._sock.send(b'\r\n')
+            except TypeError:
+                raise ValueError(
+                    "Iterable bodies must always iterate in bytestrings"
+                )
+
+        self._sock.send(b'0\r\n\r\n')
+        return
