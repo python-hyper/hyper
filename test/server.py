@@ -51,7 +51,7 @@ class SocketServerThread(threading.Thread):
         sock = socket.socket(socket.AF_INET6)
         if sys.platform != 'win32':
             sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-        sock, proto = self.cxt.wrap_socket(sock, server_side=True)
+        sock = self.cxt.wrap_socket(sock, server_side=True)
         sock.bind((self.host, 0))
         self.port = sock.getsockname()[1]
 
