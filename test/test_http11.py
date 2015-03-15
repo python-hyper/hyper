@@ -6,12 +6,15 @@ test_http11.py
 Unit tests for hyper's HTTP/1.1 implementation.
 """
 from collections import namedtuple
-from io import BytesIO
+from io import BytesIO, StringIO
+
+import pytest
 
 import hyper
 from hyper.http11.connection import HTTP11Connection
 from hyper.http11.response import HTTP11Response
 from hyper.common.headers import HTTPHeaderMap
+from hyper.compat import bytes
 
 
 class TestHTTP11Connection(object):
@@ -218,6 +221,69 @@ class TestHTTP11Connection(object):
         assert r.read(5) == b'champ'
         assert r.read(5) == b''
 
+    def test_request_with_unicodestring_body(self):
+        c = HTTP11Connection('http2bin.org')
+        c._sock = DummySocket()
+
+        with pytest.raises(ValueError):
+            c.request(
+                'POST',
+                '/post',
+                headers=HTTPHeaderMap([('User-Agent', 'hyper')]),
+                body=u'hi'
+            )
+
+    def test_request_with_file_body_in_text_mode(self):
+        # Testing this is tricksy: in practice, we do this by passing a fake
+        # file and monkeypatching out 'os.fstat'. This makes it look like a
+        # real file.
+        FstatRval = namedtuple('FstatRval', ['st_size'])
+        def fake_fstat(*args):
+            return FstatRval(16)
+
+        old_fstat = hyper.http11.connection.os.fstat
+
+        try:
+            hyper.http11.connection.os.fstat = fake_fstat
+            c = HTTP11Connection('http2bin.org')
+            c._sock = DummySocket()
+
+            f = DummyFile(b'')
+            f.buffer = StringIO(u'some binary data')
+
+            with pytest.raises(ValueError):
+                c.request('POST', '/post',  body=f)
+        finally:
+            # Put back the monkeypatch.
+            hyper.http11.connection.os.fstat = old_fstat
+
+    def test_request_with_unicode_generator_body(self):
+        c = HTTP11Connection('http2bin.org')
+        c._sock = DummySocket()
+        def body():
+            yield u'hi'
+            yield u'there'
+            yield u'sir'
+
+        with pytest.raises(ValueError):
+            c.request('POST', '/post', body=body())
+
+    def test_content_length_overrides_generator_unicode(self):
+        c = HTTP11Connection('http2bin.org')
+        c._sock = DummySocket()
+        def body():
+            yield u'hi'
+            yield u'there'
+            yield u'sir'
+
+        with pytest.raises(ValueError):
+            c.request(
+                'POST',
+                '/post',
+                headers={b'content-length': b'10'},
+                body=body()
+            )
+
 
 class TestHTTP11Response(object):
     def test_short_circuit_read(self):
@@ -233,6 +299,9 @@ class DummySocket(object):
         self.can_read = False
 
     def send(self, data):
+        if not isinstance(data, bytes):
+            raise TypeError()
+
         self.queue.append(data)
 
     def recv(self, l):
