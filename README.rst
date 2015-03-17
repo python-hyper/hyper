@@ -15,8 +15,8 @@ improved speed, lower bandwidth usage, better connection management, and more.
 
     from hyper import HTTP20Connection
 
-    conn = HTTP20Connection('twitter.com:443')
-    conn.request('GET', '/')
+    conn = HTTP20Connection('http2bin.org:443')
+    conn.request('GET', '/get')
     resp = conn.getresponse()
 
     print(resp.read())
