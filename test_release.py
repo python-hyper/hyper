@@ -56,29 +56,22 @@ class TestHyperActuallyWorks(object):
         assert all(map(lambda p: p.scheme == 'https', pushes))
         assert all(map(lambda p: p.method.lower() == 'get', pushes))
 
-    def test_hitting_twitter(self):
+    def test_hitting_nghttp2_org(self):
         """
-        This test function uses the requests adapter and requests to talk to
-        Twitter. We can't use Twython and the API here because I don't want to
-        expose my app keys, and remembering to use environment variables is a
-        pain in the neck.
+        This test function uses the requests adapter and requests to talk to nghttp2.
         """
         s = requests.Session()
         a = HTTP20Adapter()
-        s.mount('https://twitter', a)
-        s.mount('https://www.twitter', a)
+        s.mount('http://nghttp2', a)
+        s.mount('http://www.nghttp2', a)
 
         # Here are some nice URLs.
         urls = [
-            'https://twitter.com/',
-            'https://twitter.com/Lukasaoz',
-            'https://twitter.com/hynek',
-            'https://twitter.com/bitprophet',
-            'https://twitter.com/jessicamckellar',
-            'https://twitter.com/shazow',
-            'https://twitter.com/sigmavirus24',
-            'https://twitter.com/jillysciarilly',
-            'https://twitter.com/kennethreitz',
+            'http://www.nghttp2.org',
+            'http://www.nghttp2.org/blog/',
+            'http://www.nghttp2.org/blog/archives/',
+            'http://www.nghttp2.org/documentation/',
+            'http://www.nghttp2.org/httpbin',
         ]
 
         # Go get everything.
