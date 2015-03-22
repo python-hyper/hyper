@@ -6,6 +6,7 @@ test_http11.py
 Unit tests for hyper's HTTP/1.1 implementation.
 """
 import os
+import zlib
 
 from collections import namedtuple
 from io import BytesIO, StringIO
@@ -17,7 +18,7 @@ from hyper.http11.connection import HTTP11Connection
 from hyper.http11.response import HTTP11Response
 from hyper.http20.exceptions import ConnectionResetError
 from hyper.common.headers import HTTPHeaderMap
-from hyper.compat import bytes
+from hyper.compat import bytes, zlib_compressobj
 
 
 class TestHTTP11Connection(object):
@@ -343,6 +344,44 @@ class TestHTTP11Response(object):
             assert r.read() == b''
 
         assert r._sock == None
+
+    def test_response_transparently_decrypts_gzip(self):
+        d = DummySocket()
+        headers = {b'content-encoding': [b'gzip'], b'connection': [b'close']}
+        r = HTTP11Response(200, 'OK', headers, d)
+
+        c = zlib_compressobj(wbits=24)
+        body = c.compress(b'this is test data')
+        body += c.flush()
+        d._buffer = BytesIO(body)
+
+        assert r.read() == b'this is test data'
+
+    def test_response_transparently_decrypts_real_deflate(self):
+        d = DummySocket()
+        headers = {b'content-encoding': [b'deflate'], b'connection': [b'close']}
+        r = HTTP11Response(200, 'OK', headers, d)
+        c = zlib_compressobj(wbits=zlib.MAX_WBITS)
+        body = c.compress(b'this is test data')
+        body += c.flush()
+        d._buffer = BytesIO(body)
+
+        assert r.read() == b'this is test data'
+
+    def test_response_transparently_decrypts_wrong_deflate(self):
+        c = zlib_compressobj(wbits=-zlib.MAX_WBITS)
+        body = c.compress(b'this is test data')
+        body += c.flush()
+        body_len = ('%s' % len(body)).encode('ascii')
+
+        headers = {
+            b'content-encoding': [b'deflate'], b'content-length': [body_len]
+        }
+        d = DummySocket()
+        d._buffer = BytesIO(body)
+        r = HTTP11Response(200, 'OK', headers, d)
+
+        assert r.read() == b'this is test data'
 
 class DummySocket(object):
     def __init__(self):
