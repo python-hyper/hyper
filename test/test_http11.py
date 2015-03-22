@@ -15,6 +15,7 @@ import pytest
 import hyper
 from hyper.http11.connection import HTTP11Connection
 from hyper.http11.response import HTTP11Response
+from hyper.http20.exceptions import ConnectionResetError
 from hyper.common.headers import HTTPHeaderMap
 from hyper.compat import bytes
 
@@ -320,6 +321,28 @@ class TestHTTP11Response(object):
 
         assert r.read() == b''
 
+    def test_aborted_reads(self):
+        d = DummySocket()
+        r = HTTP11Response(200, 'OK', {b'content-length': [b'15']}, d)
+
+        with pytest.raises(ConnectionResetError):
+            r.read()
+
+    def test_read_expect_close(self):
+        d = DummySocket()
+        r = HTTP11Response(200, 'OK', {b'connection': [b'close']}, d)
+
+        assert r.read() == b''
+
+    def test_response_as_context_manager(self):
+        r = HTTP11Response(
+            200, 'OK', {b'content-length': [b'0']}, DummySocket()
+        )
+
+        with r:
+            assert r.read() == b''
+
+        assert r._sock == None
 
 class DummySocket(object):
     def __init__(self):

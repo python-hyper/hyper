@@ -42,7 +42,7 @@ class HTTP11Response(object):
         # bother checking for content-length, we just keep reading until
         # we no longer can.
         self._expect_close = False
-        if b'close' in self.headers.get('connection', []):
+        if b'close' in self.headers.get(b'connection', []):
             self._expect_close = True
 
         # The expected length of the body.
