@@ -188,7 +188,7 @@ class TestHTTP11Connection(object):
         c = HTTP11Connection('http2bin.org')
         c._sock = sock = DummySocket()
 
-        sock.buffer= BytesIO(
+        sock._buffer= BytesIO(
             b"HTTP/1.1 201 No Content\r\n"
             b"Connection: close\r\n"
             b"Server: Socket\r\n"
@@ -211,7 +211,7 @@ class TestHTTP11Connection(object):
         c = HTTP11Connection('http2bin.org')
         c._sock = sock = DummySocket()
 
-        sock.buffer= BytesIO(
+        sock._buffer= BytesIO(
             b"HTTP/1.1 200 OK\r\n"
             b"Content-Length: 15\r\n"
             b"\r\n"
@@ -301,8 +301,15 @@ class TestHTTP11Response(object):
 class DummySocket(object):
     def __init__(self):
         self.queue = []
-        self.buffer = BytesIO()
+        self._buffer = BytesIO()
         self.can_read = False
+
+    @property
+    def buffer(self):
+        return memoryview(self._buffer.getvalue())
+
+    def advance_buffer(self, amt):
+        self._buffer.read(amt)
 
     def send(self, data):
         if not isinstance(data, bytes):
@@ -311,13 +318,16 @@ class DummySocket(object):
         self.queue.append(data)
 
     def recv(self, l):
-        return memoryview(self.buffer.read(l))
+        return memoryview(self._buffer.read(l))
 
     def close(self):
         pass
 
     def readline(self):
-        return memoryview(self.buffer.readline())
+        return memoryview(self._buffer.readline())
+
+    def fill(self):
+        pass
 
 
 class DummyFile(object):

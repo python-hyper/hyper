@@ -10,6 +10,7 @@ import os
 import socket
 
 from .response import HTTP11Response
+from .parser import Parser
 from ..tls import wrap_socket, H2_NPN_PROTOCOLS
 from ..http20.bufsocket import BufferedSocket
 from ..common.headers import HTTPHeaderMap
@@ -62,6 +63,10 @@ class HTTP11Connection(object):
         #: size to improve performance: decrease it to conserve memory.
         #: Defaults to 64kB.
         self.network_buffer_size = 65536
+
+        #: The object used to perform HTTP/1.1 parsing. Needs to conform to
+        #: the standard hyper parsing interface.
+        self.parser = Parser()
 
     def connect(self):
         """
@@ -132,21 +137,23 @@ class HTTP11Connection(object):
         """
         headers = HTTPHeaderMap()
 
-        # First read the header line and 'parse' it.
-        status_line = self._sock.readline().tobytes().rstrip()
-        version, code, reason = status_line.split(b' ', 2)
-        code = int(code)
+        response = None
+        while response is None:
+            # 'encourage' the socket to receive data.
+            self._sock.fill()
+            response = self.parser.parse_response(self._sock.buffer)
 
-        while True:
-            line = self._sock.readline().tobytes()
-            if len(line) <= 2:
-                break
+        for n, v in response.headers:
+            headers[n.tobytes()] = v.tobytes()
 
-            name, val = line.split(b':', 1)
-            val = val.lstrip().rstrip(b'\r\n')
-            headers[name] = val
+        self._sock.advance_buffer(response.consumed)
 
-        return HTTP11Response(code, reason, headers, self._sock)
+        return HTTP11Response(
+            response.status,
+            response.msg.tobytes(),
+            headers,
+            self._sock
+        )
 
     def _send_headers(self, method, url, headers):
         """
