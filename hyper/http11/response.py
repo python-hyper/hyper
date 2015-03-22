@@ -10,6 +10,7 @@ import logging
 import zlib
 
 from ..common.decoder import DeflateDecoder
+from ..common.exceptions import ChunkedDecodeError
 from ..http20.exceptions import ConnectionResetError
 
 log = logging.getLogger(__name__)
@@ -52,7 +53,7 @@ class HTTP11Response(object):
             self._length = None
 
         # Whether we expect a chunked response.
-        self._chunked = b'chunked' in self.headers.get('transfer-encoding', [])
+        self._chunked = b'chunked' in self.headers.get(b'transfer-encoding', [])
 
         # One of the following must be true: we must expect that the connection
         # will be closed following the body, or that a content-length was sent,
@@ -150,6 +151,44 @@ class HTTP11Response(object):
         # We're at the end. Close the connection.
         if not self._length:
             self.close()
+
+        return data
+
+    def read_chunked(self):
+        """
+        Reads chunked transfer encoded bodies. Each read returns a single
+        chunk.
+        """
+        if not self._chunked:
+            raise ChunkedDecodeError(
+                "Attempted chunked read of non-chunked body."
+            )
+
+        # Return early if possible.
+        if self._sock is None:
+            return b''
+
+        # Read to the newline to get the chunk length. This is a hexadecimal
+        # integer.
+        chunk_length = int(self._sock.readline().tobytes().strip(), 16)
+
+        # If the chunk length is zero, consume the newline and then we're done.
+        if not chunk_length:
+            self._sock.readline()
+            return b''
+
+        # Then read that many bytes.
+        data = b''
+
+        while chunk_length > 0:
+            chunk = self._sock.recv(chunk_length).tobytes()
+            data += chunk
+            chunk_length -= len(chunk)
+
+        assert chunk_length == 0
+
+        # Now, consume the newline.
+        self._sock.readline()
 
         return data
 

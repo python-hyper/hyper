@@ -18,6 +18,7 @@ from hyper.http11.connection import HTTP11Connection
 from hyper.http11.response import HTTP11Response
 from hyper.http20.exceptions import ConnectionResetError
 from hyper.common.headers import HTTPHeaderMap
+from hyper.common.exceptions import ChunkedDecodeError
 from hyper.compat import bytes, zlib_compressobj
 
 
@@ -382,6 +383,43 @@ class TestHTTP11Response(object):
         r = HTTP11Response(200, 'OK', headers, d)
 
         assert r.read() == b'this is test data'
+
+    def test_basic_chunked_read(self):
+        d = DummySocket()
+        r = HTTP11Response(200, 'OK', {b'transfer-encoding': [b'chunked']}, d)
+
+        data = (
+            b'4\r\nwell\r\n'
+            b'4\r\nwell\r\n'
+            b'4\r\nwhat\r\n'
+            b'4\r\nhave\r\n'
+            b'2\r\nwe\r\n'
+            b'a\r\nhereabouts\r\n'
+            b'0\r\n\r\n'
+        )
+        d._buffer = BytesIO(data)
+        results = [
+            b'well', b'well', b'what', b'have', b'we', b'hereabouts'
+        ]
+
+        for c in results:
+            assert r.read_chunked() == c
+
+        assert not r.read_chunked()
+
+    def test_chunked_read_of_non_chunked(self):
+        r = HTTP11Response(200, 'OK', {b'content-length': [b'0']}, None)
+
+        with pytest.raises(ChunkedDecodeError):
+            r.read_chunked()
+
+    def test_chunked_read_aborts_early(self):
+        r = HTTP11Response(
+            200, 'OK', {b'transfer-encoding': [b'chunked']}, None
+        )
+
+        assert not r.read_chunked()
+
 
 class DummySocket(object):
     def __init__(self):
