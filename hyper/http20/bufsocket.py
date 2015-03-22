@@ -76,6 +76,20 @@ class BufferedSocket(object):
 
         return False
 
+    @property
+    def buffer(self):
+        """
+        Get access to the buffer itself.
+        """
+        return self._buffer_view[self._index:self._buffer_end]
+
+    def advance_buffer(self, count):
+        """
+        Advances the buffer by the amount of data consumed outside the socket.
+        """
+        self._index += count
+        self._bytes_in_buffer -= count
+
     def new_buffer(self):
         """
         This method moves all the data in the backing buffer to the start of
@@ -144,6 +158,23 @@ class BufferedSocket(object):
         self._bytes_in_buffer -= amt
 
         return data
+
+    def fill(self):
+        """
+        Attempts to fill the buffer as much as possible. It will block for at
+        most the time required to have *one* ``recv_into`` call return.
+        """
+        if not self._remaining_capacity:
+            self.new_buffer()
+
+        count = self._sck.recv_into(self._buffer_view[self._buffer_end:])
+        if not count:
+            raise ConnectionResetError()
+
+        self._bytes_in_buffer += count
+
+        return
+
 
     def readline(self):
         """

@@ -207,6 +207,47 @@ class TestBufferedSocket(object):
         with pytest.raises(LineTooLongError):
             b.readline()
 
+    def test_socket_fill_basic(self):
+        s = DummySocket()
+        b = BufferedSocket(s)
+        s.inbound_packets = [b'Here', b'begins', b'the']
+
+        assert not len(b.buffer)
+
+        b.fill()
+        assert len(b.buffer) == 4
+
+        b.fill()
+        assert len(b.buffer) == 10
+
+        b.fill()
+        assert len(b.buffer) == 13
+
+    def test_socket_fill_resizes_if_needed(self):
+        s = DummySocket()
+        b = BufferedSocket(s)
+        s.inbound_packets = [b'Here']
+        b._index = 1000
+
+        assert not len(b.buffer)
+
+        b.fill()
+        assert len(b.buffer) == 4
+        assert b._index == 0
+
+    def test_advancing_sockets(self):
+        s = DummySocket()
+        b = BufferedSocket(s)
+        b._buffer_view[0:5] = b'abcde'
+        b._bytes_in_buffer += 5
+
+        assert len(b.buffer) == 5
+
+        b.advance_buffer(3)
+        assert len(b.buffer) == 2
+
+        assert b.buffer.tobytes() == b'de'
+
 
 class DummySocket(object):
     def __init__(self):
