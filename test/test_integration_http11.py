@@ -29,12 +29,14 @@ class TestHyperH11Integration(SocketLevelTest):
         self.set_up()
 
         data = []
+        send_event = threading.Event()
 
         def socket_handler(listener):
             sock = listener.accept()[0]
 
             # We should get the initial request.
             data.append(sock.recv(65535))
+            send_event.wait()
 
             # We need to send back a response.
             resp = (
@@ -51,6 +53,7 @@ class TestHyperH11Integration(SocketLevelTest):
         self._start_server(socket_handler)
         c = self.get_connection()
         c.request('GET', '/')
+        send_event.set()
         r = c.get_response()
 
         assert r.status == 201
@@ -66,12 +69,14 @@ class TestHyperH11Integration(SocketLevelTest):
         self.set_up()
 
         data = []
+        send_event = threading.Event()
 
         def socket_handler(listener):
             sock = listener.accept()[0]
 
             # We should get the initial request.
             data.append(sock.recv(65535))
+            send_event.wait()
 
             # We need to send back a response.
             resp = (
@@ -97,6 +102,7 @@ class TestHyperH11Integration(SocketLevelTest):
         self._start_server(socket_handler)
         c = self.get_connection()
         c.request('GET', '/')
+        send_event.set()
         r = c.get_response()
 
         assert r.status == 200
@@ -111,12 +117,14 @@ class TestHyperH11Integration(SocketLevelTest):
         self.set_up()
 
         data = []
+        send_event = threading.Event()
 
         def socket_handler(listener):
             sock = listener.accept()[0]
 
             # We should get the initial request.
             data.append(sock.recv(65535))
+            send_event.wait()
 
             # We need to send back a response.
             resp = (
@@ -141,6 +149,7 @@ class TestHyperH11Integration(SocketLevelTest):
         self._start_server(socket_handler)
         c = self.get_connection()
         c.request('GET', '/')
+        send_event.set()
         r = c.get_response()
 
         assert r.status == 200
