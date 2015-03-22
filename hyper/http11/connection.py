@@ -229,10 +229,7 @@ class HTTP11Connection(object):
 
             # Case for bytestrings.
             elif isinstance(body, bytes):
-                try:
-                    self._sock.send(body)
-                except TypeError:
-                    raise ValueError("Body must be a bytestring")
+                self._sock.send(body)
 
                 return
 
