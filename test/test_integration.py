@@ -59,6 +59,9 @@ def receive_preamble(sock):
 
 
 class TestHyperIntegration(SocketLevelTest):
+    # These are HTTP/2 tests.
+    h2 = True
+
     def test_connection_string(self):
         self.set_up()
 

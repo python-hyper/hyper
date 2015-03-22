@@ -55,6 +55,13 @@ class TestHTTP11Connection(object):
         assert c.port == 8080
         assert not c.secure
 
+    def test_can_override_security(self):
+        c = HTTP11Connection('localhost', 443, secure=False)
+
+        assert c.host == 'localhost'
+        assert c.port == 443
+        assert not c.secure
+
     def test_basic_request(self):
         c = HTTP11Connection('http2bin.org')
         c._sock = sock = DummySocket()
@@ -309,7 +316,7 @@ class TestHTTP11Connection(object):
 
 class TestHTTP11Response(object):
     def test_short_circuit_read(self):
-        r = HTTP11Response(200, 'OK', {}, None)
+        r = HTTP11Response(200, 'OK', {b'content-length': [b'0']}, None)
 
         assert r.read() == b''
 

@@ -47,7 +47,7 @@ class HTTP11Response(object):
 
         # The expected length of the body.
         try:
-            self._length = int(self.headers.get(b'content-length', [0])[0])
+            self._length = int(self.headers[b'content-length'][0])
         except KeyError:
             self._length = None
 
@@ -99,8 +99,8 @@ class HTTP11Response(object):
             if self._length is not None:
                 amt = self._length
             elif self._expect_close:
-                return self._read_expect_closed()
-            else:
+                return self._read_expect_closed(decode_content)
+            else:  # pragma: no cover
                 raise RuntimeError("Unbounded read!")
 
         # Otherwise, we've been asked to do a bounded read. We should read no
@@ -130,7 +130,7 @@ class HTTP11Response(object):
             # FIXME: Real exception, not RuntimeError
             if not chunk:
                 self.close()
-                raise RuntimeError("Remote end hung up!")
+                raise ConnectionResetError("Remote end hung up!")
 
             to_read -= len(chunk)
             chunks.append(chunk)
@@ -163,7 +163,7 @@ class HTTP11Response(object):
         self._sock.close()
         self._sock = None
 
-    def _read_expect_closed(self):
+    def _read_expect_closed(self, decode_content):
         """
         Implements the logic for an unbounded read on a socket that we expect
         to be closed by the remote end.
@@ -172,11 +172,14 @@ class HTTP11Response(object):
         # socket, becuase we know we have to.
         chunks = []
         while True:
-            chunk = self._sock.recv(65535).tobytes()
-            if not chunk:
+            try:
+                chunk = self._sock.recv(65535).tobytes()
+                if not chunk:
+                    break
+            except ConnectionResetError:
                 break
-
-            chunks.append(chunk)
+            else:
+                chunks.append(chunk)
 
         self.close()
 
