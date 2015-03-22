@@ -84,13 +84,13 @@ class TestHyperIntegration(SocketLevelTest):
             f = SettingsFrame(0)
             sock.send(f.serialize())
 
-            send_event.set()
+            send_event.wait()
             sock.close()
 
         self._start_server(socket_handler)
         conn = self.get_connection()
         conn.connect()
-        send_event.wait()
+        send_event.set()
 
         assert data[0] == b'PRI * HTTP/2.0\r\n\r\nSM\r\n\r\n'
 
@@ -118,13 +118,13 @@ class TestHyperIntegration(SocketLevelTest):
             f = SettingsFrame(0)
             sock.send(f.serialize())
 
-            send_event.set()
+            send_event.wait()
             sock.close()
 
         self._start_server(socket_handler)
         conn = self.get_connection()
         conn.connect()
-        send_event.wait()
+        send_event.set()
 
         # Get the second chunk of data and decode it into a frame.
         data = data[1]
@@ -229,13 +229,13 @@ class TestHyperIntegration(SocketLevelTest):
             f = SettingsFrame(0)
             sock.send(f.serialize())
 
-            send_event.set()
+            send_event.wait()
             sock.close()
 
         self._start_server(socket_handler)
         with self.get_connection() as conn:
             conn.connect()
-            send_event.wait()
+            send_event.set()
 
         # Check that we closed the connection.
         assert conn._sock == None
