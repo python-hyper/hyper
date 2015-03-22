@@ -18,6 +18,7 @@ if ssl is not None:
     hyper.tls._context = hyper.tls._init_context()
     hyper.tls._context.check_hostname = False
     hyper.tls._context.verify_mode = ssl.CERT_NONE
+    hyper.http11.connection.H2_NPN_PROTOCOLS += ['']
 
 
 class TestHyperH11Integration(SocketLevelTest):
