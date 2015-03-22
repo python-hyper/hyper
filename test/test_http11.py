@@ -26,7 +26,7 @@ class TestHTTP11Connection(object):
         # hide the import failure, so let's discover it here.
         # Alternatively, if we are *not* testing with nghttp2, this test should
         # confirm that it's not available.
-        if os.environ.get('HYPER_FAST_PARSE'):
+        if os.environ.get('HYPER_FAST_PARSE') == 'true':
             import pycohttpparser
         else:
             with pytest.raises(ImportError):
