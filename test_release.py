@@ -70,7 +70,7 @@ class TestHyperActuallyWorks(object):
             'http://www.http2bin.org/',
             'http://www.http2bin.org/ip',
             'http://www.http2bin.org/user-agent',
-	    'http://www.http2bin.org/headers',
+            'http://www.http2bin.org/headers',
             'http://www.http2bin.org/get',
         ]
 
