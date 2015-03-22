@@ -450,7 +450,7 @@ class TestHyperIntegration(SocketLevelTest):
 
 class TestRequestsAdapter(SocketLevelTest):
     # This uses HTTP/2.
-    self.h2 = True
+    h2 = True
 
     def test_adapter_received_values(self):
         self.set_up()
