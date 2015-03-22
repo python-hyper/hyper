@@ -5,6 +5,8 @@ test_http11.py
 
 Unit tests for hyper's HTTP/1.1 implementation.
 """
+import os
+
 from collections import namedtuple
 from io import BytesIO, StringIO
 
