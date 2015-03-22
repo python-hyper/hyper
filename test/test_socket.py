@@ -235,6 +235,13 @@ class TestBufferedSocket(object):
         assert len(b.buffer) == 4
         assert b._index == 0
 
+    def test_socket_fill_raises_connection_errors(self):
+        s = DummySocket()
+        b = BufferedSocket(s)
+
+        with pytest.raises(ConnectionResetError):
+            b.fill()
+
     def test_advancing_sockets(self):
         s = DummySocket()
         b = BufferedSocket(s)
