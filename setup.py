@@ -69,6 +69,6 @@ setup(
         ],
     },
     extras_require={
-        'fast': ['pycohttpparser~=1.0'],
+        'fast': ['pycohttpparser'],
     }
 )
