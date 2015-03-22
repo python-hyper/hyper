@@ -15,7 +15,8 @@ env:
 
 matrix:
   allow_failures:
-    - env: TEST_RELEASE=true
+    - env: TEST_RELEASE=true HYPER_FAST_PARSE=true
+    - env: TEST_RELEASE=true HYPER_FAST_PARSE=false
   exclude:
     - env: NGHTTP2=true
       python: pypy
