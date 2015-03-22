@@ -10,12 +10,19 @@ import os
 import socket
 
 from .response import HTTP11Response
-from .parser import Parser
 from ..tls import wrap_socket, H2_NPN_PROTOCOLS
 from ..http20.bufsocket import BufferedSocket
 from ..common.headers import HTTPHeaderMap
 from ..common.util import to_bytestring
 from ..compat import bytes
+
+
+# We prefer pycohttpparser to the pure-Python interpretation
+try:  # pragma: no cover
+    from pycohttpparser.api import Parser
+except ImportError:  # pragma: no cover
+    from .parser import Parser
+
 
 log = logging.getLogger(__name__)
 

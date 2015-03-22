@@ -10,6 +10,7 @@ env:
   - TEST_RELEASE=false
   - TEST_RELEASE=true
   - NGHTTP2=true
+  - HYPER_FAST_PARSE=true
 
 matrix:
   allow_failures:

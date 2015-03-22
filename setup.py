@@ -68,4 +68,7 @@ setup(
             'hyper = hyper.cli:main',
         ],
     },
+    extras_require={
+        'fast': ['pycohttpparser~=1.0'],
+    }
 )

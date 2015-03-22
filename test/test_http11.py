@@ -18,6 +18,20 @@ from hyper.compat import bytes
 
 
 class TestHTTP11Connection(object):
+    def test_pycohttpparser_installs_correctly(self):
+        # This test is a debugging tool: if pycohttpparser is being tested by
+        # Travis, we need to confirm it imports correctly. Hyper will normally
+        # hide the import failure, so let's discover it here.
+        # Alternatively, if we are *not* testing with nghttp2, this test should
+        # confirm that it's not available.
+        if os.environ.get('HYPER_FAST_PARSE'):
+            import pycohttpparser
+        else:
+            with pytest.raises(ImportError):
+                import pycohttpparser
+
+        assert True
+
     def test_initialization_no_port(self):
         c = HTTP11Connection('http2bin.org')
 
