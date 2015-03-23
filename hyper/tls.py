@@ -40,7 +40,7 @@ def wrap_socket(sock, server_hostname):
     if _context.check_hostname:  # pragma: no cover
         ssl.match_hostname(ssl_sock.getpeercert(), server_hostname)
 
-    proto = ''
+    proto = None
     with ignore_missing():
         proto = ssl_sock.selected_npn_protocol()
 
