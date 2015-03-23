@@ -138,8 +138,8 @@ you away from HTTP/2. Make sure you install the adapter for all the hostnames
 you're interested in::
 
     >>> a = HTTP20Adapter()
-    >>> s.mount('https://twitter.com', a)
-    >>> s.mount('https://www.twitter.com', a)
+    >>> s.mount('https://http2bin.org', a)
+    >>> s.mount('https://www.http2bin.org', a)
 
 .. _requests: http://python-requests.org/
 
