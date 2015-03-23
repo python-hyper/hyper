@@ -26,14 +26,16 @@ class TestHyperH11Integration(SocketLevelTest):
     def test_basic_request_response(self):
         self.set_up()
 
-        data = []
         send_event = threading.Event()
 
         def socket_handler(listener):
             sock = listener.accept()[0]
 
             # We should get the initial request.
-            data.append(sock.recv(65535))
+            data = b''
+            while not data.endswith(b'\r\n\r\n'):
+                data += sock.recv(65535)
+
             send_event.wait()
 
             # We need to send back a response.
@@ -66,14 +68,16 @@ class TestHyperH11Integration(SocketLevelTest):
     def test_closing_response(self):
         self.set_up()
 
-        data = []
         send_event = threading.Event()
 
         def socket_handler(listener):
             sock = listener.accept()[0]
 
             # We should get the initial request.
-            data.append(sock.recv(65535))
+            data = b''
+            while not data.endswith(b'\r\n\r\n'):
+                data += sock.recv(65535)
+
             send_event.wait()
 
             # We need to send back a response.
@@ -114,14 +118,16 @@ class TestHyperH11Integration(SocketLevelTest):
     def test_response_with_body(self):
         self.set_up()
 
-        data = []
         send_event = threading.Event()
 
         def socket_handler(listener):
             sock = listener.accept()[0]
 
             # We should get the initial request.
-            data.append(sock.recv(65535))
+            data = b''
+            while not data.endswith(b'\r\n\r\n'):
+                data += sock.recv(65535)
+
             send_event.wait()
 
             # We need to send back a response.
