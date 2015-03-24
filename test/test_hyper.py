@@ -1984,8 +1984,8 @@ class TestResponse(object):
 class TestHTTP20Adapter(object):
     def test_adapter_reuses_connections(self):
         a = HTTP20Adapter()
-        conn1 = a.get_connection('twitter.com')
-        conn2 = a.get_connection('twitter.com')
+        conn1 = a.get_connection('http2bin.org')
+        conn2 = a.get_connection('http2bin.org')
 
         assert conn1 is conn2
 
