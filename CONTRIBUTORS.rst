@@ -25,3 +25,8 @@ In chronological order:
   - Fixed a bug where large or incomplete frames were not handled correctly.
   - Added hyper command-line tool.
   - General code cleanups.
+
+- Jerome De Cuyper (@jdecuyper)
+
+  - Updated documentation and tests.
+
