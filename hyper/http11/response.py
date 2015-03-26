@@ -74,6 +74,9 @@ class HTTP11Response(object):
         else:
             self._decompressobj = None
 
+        self._buffered_data = b''
+        self._chunker = None
+
     def read(self, amt=None, decode_content=True):
         """
         Reads the response body, or up to the next ``amt`` bytes.
@@ -90,8 +93,32 @@ class HTTP11Response(object):
         if self._sock is None:
             return b''
 
-        # FIXME: Handle chunked transfer encoding
-        assert not self._chunked
+        if self._chunked:
+            # If we're doing a full read, read it as chunked and then just join
+            # the chunks together!
+            if amt is None:
+                return self._buffered_data + b''.join(self.read_chunked())
+
+            if self._chunker is None:
+                self._chunker = self.read_chunked()
+
+            # Otherwise, we have a certain amount of data we want to read.
+            current_amount = len(self._buffered_data)
+
+            extra_data = [self._buffered_data]
+            while current_amount < amt:
+                try:
+                    chunk = next(self._chunker)
+                except StopIteration:
+                    self.close()
+                    break
+
+                current_amount += len(chunk)
+                extra_data.append(chunk)
+
+            data = b''.join(extra_data)
+            self._buffered_data = data[amt:]
+            return data[:amt]
 
         # If we're asked to do a read without a length, we need to read
         # everything. That means either the entire content length, or until the

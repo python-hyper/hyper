@@ -445,6 +445,43 @@ class TestHTTP11Response(object):
 
         assert received_body == b'this is test data'
 
+    def test_chunked_normal_read(self):
+        d = DummySocket()
+        r = HTTP11Response(200, 'OK', {b'transfer-encoding': [b'chunked']}, d)
+
+        data = (
+            b'4\r\nwell\r\n'
+            b'4\r\nwell\r\n'
+            b'4\r\nwhat\r\n'
+            b'4\r\nhave\r\n'
+            b'2\r\nwe\r\n'
+            b'a\r\nhereabouts\r\n'
+            b'0\r\n\r\n'
+        )
+        d._buffer = BytesIO(data)
+
+        assert r.read() == b'wellwellwhathavewehereabouts'
+
+    def test_chunk_length_read(self):
+        d = DummySocket()
+        r = HTTP11Response(200, 'OK', {b'transfer-encoding': [b'chunked']}, d)
+
+        data = (
+            b'4\r\nwell\r\n'
+            b'4\r\nwell\r\n'
+            b'4\r\nwhat\r\n'
+            b'4\r\nhave\r\n'
+            b'2\r\nwe\r\n'
+            b'a\r\nhereabouts\r\n'
+            b'0\r\n\r\n'
+        )
+        d._buffer = BytesIO(data)
+
+        assert r.read(5) == b'wellw'
+        assert r.read(15) == b'ellwhathavewehe'
+        assert r.read(20) == b'reabouts'
+        assert r.read() == b''
+
 class DummySocket(object):
     def __init__(self):
         self.queue = []
