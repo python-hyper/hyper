@@ -154,10 +154,15 @@ class HTTP11Response(object):
 
         return data
 
-    def read_chunked(self):
+    def read_chunked(self, decode_content=True):
         """
-        Reads chunked transfer encoded bodies. Each read returns a single
-        chunk.
+        Reads chunked transfer encoded bodies. This method returns a generator:
+        each iteration of which yields one chunk *unless* the chunks are
+        compressed, in which case it yields whatever the decompressor provides
+        for each chunk.
+
+        .. warning:: This may yield the empty string, without that being the
+                     end of the body!
         """
         if not self._chunked:
             raise ChunkedDecodeError(
@@ -166,31 +171,42 @@ class HTTP11Response(object):
 
         # Return early if possible.
         if self._sock is None:
-            return b''
+            return
 
-        # Read to the newline to get the chunk length. This is a hexadecimal
-        # integer.
-        chunk_length = int(self._sock.readline().tobytes().strip(), 16)
+        while True:
+            # Read to the newline to get the chunk length. This is a
+            # hexadecimal integer.
+            chunk_length = int(self._sock.readline().tobytes().strip(), 16)
+            data = b''
 
-        # If the chunk length is zero, consume the newline and then we're done.
-        if not chunk_length:
+            # If the chunk length is zero, consume the newline and then we're
+            # done. If we were decompressing data, return the remaining data.
+            if not chunk_length:
+                self._sock.readline()
+
+                if decode_content and self._decompressobj:
+                    yield self._decompressobj.flush()
+
+                break
+
+            # Then read that many bytes.
+            while chunk_length > 0:
+                chunk = self._sock.recv(chunk_length).tobytes()
+                data += chunk
+                chunk_length -= len(chunk)
+
+            assert chunk_length == 0
+
+            # Now, consume the newline.
             self._sock.readline()
-            return b''
 
-        # Then read that many bytes.
-        data = b''
+            # We may need to decode the body.
+            if decode_content and self._decompressobj and data:
+                data = self._decompressobj.decompress(data)
 
-        while chunk_length > 0:
-            chunk = self._sock.recv(chunk_length).tobytes()
-            data += chunk
-            chunk_length -= len(chunk)
+            yield data
 
-        assert chunk_length == 0
-
-        # Now, consume the newline.
-        self._sock.readline()
-
-        return data
+        return
 
     def close(self):
         """

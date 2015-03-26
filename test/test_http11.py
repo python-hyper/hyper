@@ -402,24 +402,48 @@ class TestHTTP11Response(object):
             b'well', b'well', b'what', b'have', b'we', b'hereabouts'
         ]
 
-        for c in results:
-            assert r.read_chunked() == c
+        for c1, c2 in zip(results, r.read_chunked()):
+            assert c1 == c2
 
-        assert not r.read_chunked()
+        assert not list(r.read_chunked())
 
     def test_chunked_read_of_non_chunked(self):
         r = HTTP11Response(200, 'OK', {b'content-length': [b'0']}, None)
 
         with pytest.raises(ChunkedDecodeError):
-            r.read_chunked()
+            list(r.read_chunked())
 
     def test_chunked_read_aborts_early(self):
         r = HTTP11Response(
             200, 'OK', {b'transfer-encoding': [b'chunked']}, None
         )
 
-        assert not r.read_chunked()
+        assert not list(r.read_chunked())
 
+    def test_response_transparently_decrypts_chunked_gzip(self):
+        d = DummySocket()
+        headers = {
+            b'content-encoding': [b'gzip'],
+            b'transfer-encoding': [b'chunked'],
+        }
+        r = HTTP11Response(200, 'OK', headers, d)
+
+        c = zlib_compressobj(wbits=24)
+        body = c.compress(b'this is test data')
+        body += c.flush()
+
+        data = b''
+        for index in range(0, len(body), 2):
+            data += '2\r\n' + body[index:index+2] + '\r\n'
+
+        data += b'0\r\n\r\n'
+        d._buffer = BytesIO(data)
+
+        received_body = b''
+        for chunk in r.read_chunked():
+            received_body += chunk
+
+        assert received_body == b'this is test data'
 
 class DummySocket(object):
     def __init__(self):
