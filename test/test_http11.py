@@ -434,7 +434,7 @@ class TestHTTP11Response(object):
 
         data = b''
         for index in range(0, len(body), 2):
-            data += '2\r\n' + body[index:index+2] + '\r\n'
+            data += b'2\r\n' + body[index:index+2] + b'\r\n'
 
         data += b'0\r\n\r\n'
         d._buffer = BytesIO(data)
