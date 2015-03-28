@@ -1,9 +1,9 @@
 # -*- coding: utf-8 -*-
 """
-hyper/http20/response
+hyper/http11/response
 ~~~~~~~~~~~~~~~~~~~~~
 
-Contains the HTTP/2 equivalent of the HTTPResponse object defined in
+Contains the HTTP/1.1 equivalent of the HTTPResponse object defined in
 httplib/http.client.
 """
 import logging
