@@ -132,7 +132,6 @@ class HTTP11Response(object):
 
             # If we got an empty read, but were expecting more, the remote end
             # has hung up. Raise an exception.
-            # FIXME: Real exception, not RuntimeError
             if not chunk:
                 self.close()
                 raise ConnectionResetError("Remote end hung up!")
