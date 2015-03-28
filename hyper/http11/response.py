@@ -10,7 +10,7 @@ import logging
 import zlib
 
 from ..common.decoder import DeflateDecoder
-from ..common.exceptions import ChunkedDecodeError
+from ..common.exceptions import ChunkedDecodeError, InvalidResponseError
 from ..http20.exceptions import ConnectionResetError
 
 log = logging.getLogger(__name__)
@@ -96,7 +96,6 @@ class HTTP11Response(object):
         if self._chunked:
             return self._normal_read_chunked(amt, decode_content)
 
-
         # If we're asked to do a read without a length, we need to read
         # everything. That means either the entire content length, or until the
         # socket is closed, depending.
@@ -106,7 +105,9 @@ class HTTP11Response(object):
             elif self._expect_close:
                 return self._read_expect_closed(decode_content)
             else:  # pragma: no cover
-                raise RuntimeError("Unbounded read!")
+                raise InvalidResponseError(
+                    "Response must either have length or Connection: close"
+                )
 
         # Otherwise, we've been asked to do a bounded read. We should read no
         # more than the remaining length, obviously.
