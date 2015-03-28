@@ -62,16 +62,21 @@ class TestHyperActuallyWorks(object):
         """
         s = requests.Session()
         a = HTTP20Adapter()
-        s.mount('http://http2bin', a)
-        s.mount('http://www.http2bin', a)
+        s.mount('https://http2bin', a)
+        s.mount('https://www.http2bin', a)
 
         # Here are some nice URLs.
         urls = [
-            'http://www.http2bin.org/',
-            'http://www.http2bin.org/ip',
-            'http://www.http2bin.org/user-agent',
-            'http://www.http2bin.org/headers',
-            'http://www.http2bin.org/get',
+            'https://www.http2bin.org/',
+            'https://www.http2bin.org/ip',
+            'https://www.http2bin.org/user-agent',
+            'https://www.http2bin.org/headers',
+            'https://www.http2bin.org/get',
+            'https://http2bin.org/',
+            'https://http2bin.org/ip',
+            'https://http2bin.org/user-agent',
+            'https://http2bin.org/headers',
+            'https://http2bin.org/get',
         ]
 
         # Go get everything.
