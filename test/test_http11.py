@@ -482,6 +482,56 @@ class TestHTTP11Response(object):
         assert r.read(20) == b'reabouts'
         assert r.read() == b''
 
+    def test_bounded_read_expect_close_no_content_length(self):
+        d = DummySocket()
+        r = HTTP11Response(200, 'OK', {b'connection': [b'close']}, d)
+        d._buffer = BytesIO(b'hello there sir')
+
+        assert r.read(5) == b'hello'
+        assert r.read(6) == b' there'
+        assert r.read(8) == b' sir'
+        assert r.read(9) == b''
+
+        assert r._sock is None
+
+    def test_bounded_read_expect_close_with_content_length(self):
+        headers = {b'connection': [b'close'], b'content-length': [b'15']}
+        d = DummySocket()
+        r = HTTP11Response(200, 'OK', headers, d)
+        d._buffer = BytesIO(b'hello there sir')
+
+        assert r.read(5) == b'hello'
+        assert r.read(6) == b' there'
+        assert r.read(8) == b' sir'
+        assert r.read(9) == b''
+
+        assert r._sock is None
+
+    def test_compressed_bounded_read_expect_close(self):
+        headers = {b'connection': [b'close'], b'content-encoding': [b'gzip']}
+
+        c = zlib_compressobj(wbits=24)
+        body = c.compress(b'hello there sir')
+        body += c.flush()
+
+        d = DummySocket()
+        r = HTTP11Response(200, 'OK', headers, d)
+        d._buffer = BytesIO(body)
+
+        response = b''
+        while True:
+            # 12 is magic here: it's the smallest read that actually
+            # decompresses immediately.
+            chunk = r.read(15)
+            if not chunk:
+                break
+
+            response += chunk
+
+        assert response == b'hello there sir'
+
+        assert r._sock is None
+
 class DummySocket(object):
     def __init__(self):
         self.queue = []

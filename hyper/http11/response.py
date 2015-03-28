@@ -112,8 +112,8 @@ class HTTP11Response(object):
         # Otherwise, we've been asked to do a bounded read. We should read no
         # more than the remaining length, obviously.
         # FIXME: Handle cases without _length
-        assert self._length is not None
-        amt = min(amt, self._length)
+        if self._length is not None:
+            amt = min(amt, self._length)
 
         # If we are now going to read nothing, exit early.
         if not amt:
@@ -132,28 +132,41 @@ class HTTP11Response(object):
             chunk = self._sock.recv(amt).tobytes()
 
             # If we got an empty read, but were expecting more, the remote end
-            # has hung up. Raise an exception.
+            # has hung up. Raise an exception if we were expecting more data,
+            # but if we were expecting the remote end to close then it's ok.
             if not chunk:
-                self.close()
-                raise ConnectionResetError("Remote end hung up!")
+                if self._length is not None or not self._expect_close:
+                    self.close()
+                    raise ConnectionResetError("Remote end hung up!")
+
+                break
 
             to_read -= len(chunk)
             chunks.append(chunk)
 
         data = b''.join(chunks)
-        self._length -= len(data)
+        if self._length is not None:
+            self._length -= len(data)
+
+        # If we're at the end of the request, we have some cleaning up to do.
+        # Close the stream, and if necessary flush the buffer. Checking that
+        # we're at the end is actually obscenely complex: either we've read the
+        # full content-length or, if we were expecting a closed connection,
+        # we've had a read shorter than the requested amount. We also have to
+        # do this before we try to decompress the body.
+        end_of_request = (self._length == 0 or
+                          (self._expect_close and len(data) < amt))
 
         # We may need to decode the body.
         if decode_content and self._decompressobj and data:
             data = self._decompressobj.decompress(data)
 
-        # If we're at the end of the request, we have some cleaning up to do.
-        # Close the stream, and if necessary flush the buffer.
-        if decode_content and self._decompressobj and not self._length:
+        if decode_content and self._decompressobj and end_of_request:
             data += self._decompressobj.flush()
 
-        # We're at the end. Close the connection.
-        if not self._length:
+        # We're at the end. Close the connection. Explicit check for zero here
+        # because self._length might be None.
+        if end_of_request:
             self.close()
 
         return data
