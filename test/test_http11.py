@@ -11,6 +11,7 @@ import zlib
 from collections import namedtuple
 from io import BytesIO, StringIO
 
+import mock
 import pytest
 
 import hyper
@@ -319,26 +320,26 @@ class TestHTTP11Connection(object):
 
 class TestHTTP11Response(object):
     def test_short_circuit_read(self):
-        r = HTTP11Response(200, 'OK', {b'content-length': [b'0']}, None)
+        r = HTTP11Response(200, 'OK', {b'content-length': [b'0']}, None, None)
 
         assert r.read() == b''
 
     def test_aborted_reads(self):
         d = DummySocket()
-        r = HTTP11Response(200, 'OK', {b'content-length': [b'15']}, d)
+        r = HTTP11Response(200, 'OK', {b'content-length': [b'15']}, d, None)
 
         with pytest.raises(ConnectionResetError):
             r.read()
 
     def test_read_expect_close(self):
         d = DummySocket()
-        r = HTTP11Response(200, 'OK', {b'connection': [b'close']}, d)
+        r = HTTP11Response(200, 'OK', {b'connection': [b'close']}, d, None)
 
         assert r.read() == b''
 
     def test_response_as_context_manager(self):
         r = HTTP11Response(
-            200, 'OK', {b'content-length': [b'0']}, DummySocket()
+            200, 'OK', {b'content-length': [b'0']}, DummySocket(), None
         )
 
         with r:
@@ -349,7 +350,7 @@ class TestHTTP11Response(object):
     def test_response_transparently_decrypts_gzip(self):
         d = DummySocket()
         headers = {b'content-encoding': [b'gzip'], b'connection': [b'close']}
-        r = HTTP11Response(200, 'OK', headers, d)
+        r = HTTP11Response(200, 'OK', headers, d, None)
 
         c = zlib_compressobj(wbits=24)
         body = c.compress(b'this is test data')
@@ -361,7 +362,7 @@ class TestHTTP11Response(object):
     def test_response_transparently_decrypts_real_deflate(self):
         d = DummySocket()
         headers = {b'content-encoding': [b'deflate'], b'connection': [b'close']}
-        r = HTTP11Response(200, 'OK', headers, d)
+        r = HTTP11Response(200, 'OK', headers, d, None)
         c = zlib_compressobj(wbits=zlib.MAX_WBITS)
         body = c.compress(b'this is test data')
         body += c.flush()
@@ -380,13 +381,15 @@ class TestHTTP11Response(object):
         }
         d = DummySocket()
         d._buffer = BytesIO(body)
-        r = HTTP11Response(200, 'OK', headers, d)
+        r = HTTP11Response(200, 'OK', headers, d, None)
 
         assert r.read() == b'this is test data'
 
     def test_basic_chunked_read(self):
         d = DummySocket()
-        r = HTTP11Response(200, 'OK', {b'transfer-encoding': [b'chunked']}, d)
+        r = HTTP11Response(
+            200, 'OK', {b'transfer-encoding': [b'chunked']}, d, None
+        )
 
         data = (
             b'4\r\nwell\r\n'
@@ -408,14 +411,14 @@ class TestHTTP11Response(object):
         assert not list(r.read_chunked())
 
     def test_chunked_read_of_non_chunked(self):
-        r = HTTP11Response(200, 'OK', {b'content-length': [b'0']}, None)
+        r = HTTP11Response(200, 'OK', {b'content-length': [b'0']}, None, None)
 
         with pytest.raises(ChunkedDecodeError):
             list(r.read_chunked())
 
     def test_chunked_read_aborts_early(self):
         r = HTTP11Response(
-            200, 'OK', {b'transfer-encoding': [b'chunked']}, None
+            200, 'OK', {b'transfer-encoding': [b'chunked']}, None, None
         )
 
         assert not list(r.read_chunked())
@@ -426,7 +429,7 @@ class TestHTTP11Response(object):
             b'content-encoding': [b'gzip'],
             b'transfer-encoding': [b'chunked'],
         }
-        r = HTTP11Response(200, 'OK', headers, d)
+        r = HTTP11Response(200, 'OK', headers, d, None)
 
         c = zlib_compressobj(wbits=24)
         body = c.compress(b'this is test data')
@@ -447,7 +450,8 @@ class TestHTTP11Response(object):
 
     def test_chunked_normal_read(self):
         d = DummySocket()
-        r = HTTP11Response(200, 'OK', {b'transfer-encoding': [b'chunked']}, d)
+        r = HTTP11Response(
+            200, 'OK', {b'transfer-encoding': [b'chunked']}, d, None)
 
         data = (
             b'4\r\nwell\r\n'
@@ -464,7 +468,9 @@ class TestHTTP11Response(object):
 
     def test_chunk_length_read(self):
         d = DummySocket()
-        r = HTTP11Response(200, 'OK', {b'transfer-encoding': [b'chunked']}, d)
+        r = HTTP11Response(
+            200, 'OK', {b'transfer-encoding': [b'chunked']}, d, None
+        )
 
         data = (
             b'4\r\nwell\r\n'
@@ -484,7 +490,7 @@ class TestHTTP11Response(object):
 
     def test_bounded_read_expect_close_no_content_length(self):
         d = DummySocket()
-        r = HTTP11Response(200, 'OK', {b'connection': [b'close']}, d)
+        r = HTTP11Response(200, 'OK', {b'connection': [b'close']}, d, None)
         d._buffer = BytesIO(b'hello there sir')
 
         assert r.read(5) == b'hello'
@@ -497,7 +503,7 @@ class TestHTTP11Response(object):
     def test_bounded_read_expect_close_with_content_length(self):
         headers = {b'connection': [b'close'], b'content-length': [b'15']}
         d = DummySocket()
-        r = HTTP11Response(200, 'OK', headers, d)
+        r = HTTP11Response(200, 'OK', headers, d, None)
         d._buffer = BytesIO(b'hello there sir')
 
         assert r.read(5) == b'hello'
@@ -515,7 +521,7 @@ class TestHTTP11Response(object):
         body += c.flush()
 
         d = DummySocket()
-        r = HTTP11Response(200, 'OK', headers, d)
+        r = HTTP11Response(200, 'OK', headers, d, None)
         d._buffer = BytesIO(body)
 
         response = b''
@@ -531,6 +537,110 @@ class TestHTTP11Response(object):
         assert response == b'hello there sir'
 
         assert r._sock is None
+
+    def test_expect_close_reads_call_close_callback(self):
+        connection = mock.MagicMock()
+
+        d = DummySocket()
+        r = HTTP11Response(
+            200, 'OK', {b'connection': [b'close']}, d, connection
+        )
+        d._buffer = BytesIO(b'hello there sir')
+
+        assert r.read(5) == b'hello'
+        assert r.read(6) == b' there'
+        assert r.read(8) == b' sir'
+        assert r.read(9) == b''
+
+        assert r._sock is None
+        assert connection.close.call_count == 1
+
+    def test_expect_close_unbounded_reads_call_close_callback(self):
+        connection = mock.MagicMock()
+
+        d = DummySocket()
+        r = HTTP11Response(
+            200, 'OK', {b'connection': [b'close']}, d, connection
+        )
+        d._buffer = BytesIO(b'hello there sir')
+
+        r.read()
+
+        assert r._sock is None
+        assert connection.close.call_count == 1
+
+    def test_content_length_expect_close_reads_call_close_callback(self):
+        connection = mock.MagicMock()
+        headers = {b'connection': [b'close'], b'content-length': [b'15']}
+
+        d = DummySocket()
+        r = HTTP11Response(200, 'OK', headers, d, connection)
+        d._buffer = BytesIO(b'hello there sir')
+
+        r.read()
+
+        assert r._sock is None
+        assert connection.close.call_count == 1
+
+    def test_content_length_reads_dont_call_close_callback(self):
+        connection = mock.MagicMock()
+        headers = {b'content-length': [b'15']}
+
+        d = DummySocket()
+        r = HTTP11Response(200, 'OK', headers, d, connection)
+        d._buffer = BytesIO(b'hello there sir')
+
+        r.read()
+
+        assert r._sock is None
+        assert connection.close.call_count == 0
+
+    def test_chunked_reads_dont_call_close_callback(self):
+        connection = mock.MagicMock()
+        headers = {b'transfer-encoding': [b'chunked']}
+
+        d = DummySocket()
+        r = HTTP11Response(200, 'OK', headers, d, connection)
+
+        data = (
+            b'4\r\nwell\r\n'
+            b'4\r\nwell\r\n'
+            b'4\r\nwhat\r\n'
+            b'4\r\nhave\r\n'
+            b'2\r\nwe\r\n'
+            b'a\r\nhereabouts\r\n'
+            b'0\r\n\r\n'
+        )
+        d._buffer = BytesIO(data)
+        list(r.read_chunked())
+
+        assert r._sock is None
+        assert connection.close.call_count == 0
+
+    def test_closing_chunked_reads_dont_call_close_callback(self):
+        connection = mock.MagicMock()
+        headers = {
+            b'transfer-encoding': [b'chunked'], b'connection': [b'close']
+        }
+
+        d = DummySocket()
+        r = HTTP11Response(200, 'OK', headers, d, connection)
+
+        data = (
+            b'4\r\nwell\r\n'
+            b'4\r\nwell\r\n'
+            b'4\r\nwhat\r\n'
+            b'4\r\nhave\r\n'
+            b'2\r\nwe\r\n'
+            b'a\r\nhereabouts\r\n'
+            b'0\r\n\r\n'
+        )
+        d._buffer = BytesIO(data)
+        list(r.read_chunked())
+
+        assert r._sock is None
+        assert connection.close.call_count == 1
+
 
 class DummySocket(object):
     def __init__(self):

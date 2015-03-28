@@ -65,6 +65,8 @@ class TestHyperH11Integration(SocketLevelTest):
 
         assert r.read() == b''
 
+        assert c._sock is None
+
     def test_closing_response(self):
         self.set_up()
 

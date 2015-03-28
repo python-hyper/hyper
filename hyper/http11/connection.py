@@ -159,7 +159,8 @@ class HTTP11Connection(object):
             response.status,
             response.msg.tobytes(),
             headers,
-            self._sock
+            self._sock,
+            self
         )
 
     def _send_headers(self, method, url, headers):
@@ -262,3 +263,18 @@ class HTTP11Connection(object):
 
         self._sock.send(b'0\r\n\r\n')
         return
+
+    def close(self):
+        """
+        Closes the connection. This closes the socket and then abandons the
+        reference to it. After calling this method, it any outstanding
+        :class:`Response <hyper.http11.response.Response>` objects will throw
+        exceptions if attempts are made to read their bodies.
+
+        This method should absolutely only be called when you are certain the
+        connection object is no longer needed.
+
+        In some cases this method will automatically be called.
+        """
+        self._sock.close()
+        self._sock = None

@@ -7,6 +7,7 @@ Contains the HTTP/1.1 equivalent of the HTTPResponse object defined in
 httplib/http.client.
 """
 import logging
+import weakref
 import zlib
 
 from ..common.decoder import DeflateDecoder
@@ -22,7 +23,7 @@ class HTTP11Response(object):
     provides access to the response headers and the entity body. The response
     is an iterable object and can be used in a with statement.
     """
-    def __init__(self, code, reason, headers, sock):
+    def __init__(self, code, reason, headers, sock, connection=None):
         #: The reason phrase returned by the server.
         self.reason = reason
 
@@ -74,6 +75,17 @@ class HTTP11Response(object):
         else:
             self._decompressobj = None
 
+        # This is a reference that allows for the Response class to tell the
+        # parent connection object to throw away its socket object. This is to
+        # be used when the connection is genuinely closed, so that the user
+        # can keep using the Connection object.
+        # Strictly, we take a weakreference to this so that we don't set up a
+        # reference cycle.
+        if connection is not None:
+            self._parent = weakref.ref(connection)
+        else:
+            self._parent = None
+
         self._buffered_data = b''
         self._chunker = None
 
@@ -115,8 +127,10 @@ class HTTP11Response(object):
         if self._length is not None:
             amt = min(amt, self._length)
 
-        # If we are now going to read nothing, exit early.
+        # If we are now going to read nothing, exit early. We still need to
+        # close the socket.
         if not amt:
+            self.close(socket_close=self._expect_close)
             return b''
 
         # Now, issue reads until we read that length. This is to account for
@@ -136,7 +150,7 @@ class HTTP11Response(object):
             # but if we were expecting the remote end to close then it's ok.
             if not chunk:
                 if self._length is not None or not self._expect_close:
-                    self.close()
+                    self.close(socket_close=True)
                     raise ConnectionResetError("Remote end hung up!")
 
                 break
@@ -167,7 +181,7 @@ class HTTP11Response(object):
         # We're at the end. Close the connection. Explicit check for zero here
         # because self._length might be None.
         if end_of_request:
-            self.close()
+            self.close(socket_close=self._expect_close)
 
         return data
 
@@ -204,6 +218,7 @@ class HTTP11Response(object):
                 if decode_content and self._decompressobj:
                     yield self._decompressobj.flush()
 
+                self.close(socket_close=self._expect_close)
                 break
 
             # Then read that many bytes.
@@ -225,14 +240,23 @@ class HTTP11Response(object):
 
         return
 
-    def close(self):
+    def close(self, socket_close=False):
         """
-        Close the response. In effect this closes the backing socket.
+        Close the response. This causes the Response to lose access to the
+        backing socket. In some cases, it can also cause the backing connection
+        to be torn down.
 
+        :param socket_close: Whether to close the backing socket.
         :returns: Nothing.
         """
-        # FIXME: This should notify the parent connection object if possible.
-        self._sock.close()
+        if socket_close and self._parent is not None:
+            # The double call is necessary because we need to dereference the
+            # weakref. If the weakref is no longer valid, that's fine, there's
+            # no connection object to tell.
+            parent = self._parent()
+            if parent is not None:
+                parent.close()
+
         self._sock = None
 
     def _read_expect_closed(self, decode_content):
@@ -253,7 +277,7 @@ class HTTP11Response(object):
             else:
                 chunks.append(chunk)
 
-        self.close()
+        self.close(socket_close=True)
 
         # We may need to decompress the data.
         data = b''.join(chunks)
@@ -283,7 +307,7 @@ class HTTP11Response(object):
             try:
                 chunk = next(self._chunker)
             except StopIteration:
-                self.close()
+                self.close(socket_close=self._expect_close)
                 break
 
             current_amount += len(chunk)
