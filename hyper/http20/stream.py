@@ -13,12 +13,13 @@ stream is an independent, bi-directional sequence of HTTP headers and data.
 Each stream is identified by a monotonically increasing integer, assigned to
 the stream by the endpoint that initiated the stream.
 """
+from ..common.headers import HTTPHeaderMap
 from .exceptions import ProtocolError
 from .frame import (
     FRAME_MAX_LEN, FRAMES, HeadersFrame, DataFrame, PushPromiseFrame,
     WindowUpdateFrame, ContinuationFrame, BlockedFrame
 )
-from .util import get_from_key_value_set, h2_safe_headers
+from .util import h2_safe_headers
 import collections
 import logging
 import zlib
@@ -296,7 +297,7 @@ class Stream(object):
 
         # Find the Content-Length header if present.
         self._in_window_manager.document_size = (
-            int(get_from_key_value_set(self.response_headers, 'content-length', 0))
+            int(self.response_headers.get(b'content-length', [0])[0])
         )
 
         return self.response_headers
@@ -379,9 +380,9 @@ class Stream(object):
         # The header block may be for trailers or headers. If we've already
         # received headers these _must_ be for trailers.
         if self.response_headers is None:
-            self.response_headers = headers
+            self.response_headers = HTTPHeaderMap(headers)
         elif self.response_trailers is None:
-            self.response_trailers = headers
+            self.response_trailers = HTTPHeaderMap(headers)
         else:
             # Received too many headers blocks.
             raise ProtocolError("Too many header blocks.")

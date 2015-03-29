@@ -80,7 +80,7 @@ class HTTP20Adapter(HTTPAdapter):
         response = Response()
 
         response.status_code = resp.status
-        response.headers = CaseInsensitiveDict(resp.getheaders())
+        response.headers = CaseInsensitiveDict(resp.headers.iter_raw())
         response.raw = resp
         response.reason = resp.reason
         response.encoding = get_encoding_from_headers(response.headers)
@@ -136,6 +136,6 @@ class HTTP20Adapter(HTTPAdapter):
         orig.version = 20
         orig.status = resp.status
         orig.reason = resp.reason
-        orig.msg = FakeOriginalResponse(resp.getheaders())
+        orig.msg = FakeOriginalResponse(resp.headers.iter_raw())
 
         return response

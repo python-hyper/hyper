@@ -8,40 +8,6 @@ Utility functions for use with hyper.
 from collections import defaultdict
 
 
-def get_from_key_value_set(kvset, key, default=None):
-    """
-    Returns a value from a key-value set, or the default if the value isn't
-    present.
-    """
-    value = pop_from_key_value_set(kvset[:], key)[0]
-    return value if value is not None else default
-
-def pop_from_key_value_set(kvset, *keys):
-    """
-    Pops the values of ``keys`` from ``kvset`` and returns them as a tuple. If a
-    key is not found in ``kvset``, ``None`` is used instead.
-
-    >>> kvset = [('a',0), ('b',1), ('c',2)]
-    >>> pop_from_key_value_set(kvset, 'a', 'foo', 'c')
-    (0, None, 2)
-    >>> kvset
-    [('b', 1)]
-    """
-    extracted = [None] * len(keys)
-    indices_to_remove = []
-    for index, elem in enumerate(kvset):
-        key, value = elem
-        try:
-            extracted[keys.index(key)] = value
-            indices_to_remove.append(index)
-        except ValueError:
-            pass
-
-    for index in indices_to_remove[::-1]:
-        kvset.pop(index)
-
-    return tuple(extracted)
-
 def combine_repeated_headers(kvset):
     """
     Given a list of key-value pairs (like for HTTP headers!), combines pairs

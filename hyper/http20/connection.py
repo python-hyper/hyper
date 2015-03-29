@@ -8,6 +8,7 @@ Objects that build hyper's connection-level HTTP/2 abstraction.
 from ..tls import wrap_socket, H2_NPN_PROTOCOLS
 from ..common.exceptions import ConnectionResetError
 from ..common.bufsocket import BufferedSocket
+from ..common.headers import HTTPHeaderMap
 from .hpack_compat import Encoder, Decoder
 from .stream import Stream
 from .frame import (
@@ -191,7 +192,9 @@ class HTTP20Connection(object):
         """
         stream = self._get_stream(stream_id)
         for promised_stream_id, headers in stream.getpushes(capture_all):
-            yield HTTP20Push(headers, self.streams[promised_stream_id])
+            yield HTTP20Push(
+                HTTPHeaderMap(headers), self.streams[promised_stream_id]
+            )
 
     def connect(self):
         """

@@ -367,10 +367,10 @@ class TestHyperIntegration(SocketLevelTest):
 
         # Confirm that we got the trailing headers, and that they don't contain
         # reserved headers.
-        assert resp.gettrailer('trailing') == 'sure'
-        assert resp.gettrailer(':res') is None
-        assert len(resp.getheaders()) == 1
-        assert len(resp.gettrailers()) == 1
+        assert resp.trailers['trailing'] == [b'sure']
+        assert resp.trailers.get(':res') is None
+        assert len(resp.headers) == 1
+        assert len(resp.trailers) == 1
 
         # Awesome, we're done now.
         recv_event.set()
@@ -490,7 +490,7 @@ class TestRequestsAdapter(SocketLevelTest):
 
         # Assert about the received values.
         assert r.status_code == 200
-        assert r.headers['Content-Type'] == 'not/real'
+        assert r.headers[b'Content-Type'] == b'not/real'
         assert r.content == b'1234567890' * 2
 
         self.tear_down()
