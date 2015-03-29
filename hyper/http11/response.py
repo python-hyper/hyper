@@ -12,7 +12,7 @@ import zlib
 
 from ..common.decoder import DeflateDecoder
 from ..common.exceptions import ChunkedDecodeError, InvalidResponseError
-from ..http20.exceptions import ConnectionResetError
+from ..common.exceptions import ConnectionResetError
 
 log = logging.getLogger(__name__)
 

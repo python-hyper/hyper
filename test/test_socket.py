@@ -7,9 +7,9 @@ Test the BufferedSocket implementation in hyper.
 """
 import pytest
 
-import hyper.http20.bufsocket
-from hyper.http20.bufsocket import BufferedSocket
-from hyper.http20.exceptions import ConnectionResetError, LineTooLongError
+import hyper.common.bufsocket
+from hyper.common.bufsocket import BufferedSocket
+from hyper.common.exceptions import ConnectionResetError, LineTooLongError
 
 # Patch the select method in bufsocket to make sure that it always returns
 # the dummy socket as readable.
@@ -22,7 +22,7 @@ class TestBufferedSocket(object):
     """
     def test_can_create_buffered_sockets(self, monkeypatch):
         monkeypatch.setattr(
-            hyper.http20.bufsocket.select, 'select', dummy_select
+            hyper.common.bufsocket.select, 'select', dummy_select
         )
         s = DummySocket()
         b = BufferedSocket(s)
@@ -32,7 +32,7 @@ class TestBufferedSocket(object):
 
     def test_can_send_on_buffered_socket(self, monkeypatch):
         monkeypatch.setattr(
-            hyper.http20.bufsocket.select, 'select', dummy_select
+            hyper.common.bufsocket.select, 'select', dummy_select
         )
         s = DummySocket()
         b = BufferedSocket(s)
@@ -43,7 +43,7 @@ class TestBufferedSocket(object):
 
     def test_receive_single_packet(self, monkeypatch):
         monkeypatch.setattr(
-            hyper.http20.bufsocket.select, 'select', dummy_select
+            hyper.common.bufsocket.select, 'select', dummy_select
         )
         s = DummySocket()
         b = BufferedSocket(s)
@@ -54,7 +54,7 @@ class TestBufferedSocket(object):
 
     def test_receive_multiple_packets_one_at_a_time(self, monkeypatch):
         monkeypatch.setattr(
-            hyper.http20.bufsocket.select, 'select', dummy_select
+            hyper.common.bufsocket.select, 'select', dummy_select
         )
         s = DummySocket()
         b = BufferedSocket(s)
@@ -68,7 +68,7 @@ class TestBufferedSocket(object):
 
     def test_receive_small_packets(self, monkeypatch):
         monkeypatch.setattr(
-            hyper.http20.bufsocket.select, 'select', dummy_select
+            hyper.common.bufsocket.select, 'select', dummy_select
         )
         s = DummySocket()
         b = BufferedSocket(s)
@@ -82,7 +82,7 @@ class TestBufferedSocket(object):
 
     def test_receive_multiple_packets_at_once(self, monkeypatch):
         monkeypatch.setattr(
-            hyper.http20.bufsocket.select, 'select', dummy_select
+            hyper.common.bufsocket.select, 'select', dummy_select
         )
         s = DummySocket()
         b = BufferedSocket(s)
@@ -97,7 +97,7 @@ class TestBufferedSocket(object):
 
     def test_filling_the_buffer(self, monkeypatch):
         monkeypatch.setattr(
-            hyper.http20.bufsocket.select, 'select', dummy_select
+            hyper.common.bufsocket.select, 'select', dummy_select
         )
         s = DummySocket()
         b = BufferedSocket(s)
@@ -114,7 +114,7 @@ class TestBufferedSocket(object):
 
     def test_oversized_read(self, monkeypatch):
         monkeypatch.setattr(
-            hyper.http20.bufsocket.select, 'select', dummy_select
+            hyper.common.bufsocket.select, 'select', dummy_select
         )
         s = DummySocket()
         b = BufferedSocket(s)
@@ -125,7 +125,7 @@ class TestBufferedSocket(object):
 
     def test_readline_from_buffer(self, monkeypatch):
         monkeypatch.setattr(
-            hyper.http20.bufsocket.select, 'select', dummy_select
+            hyper.common.bufsocket.select, 'select', dummy_select
         )
         s = DummySocket()
         b = BufferedSocket(s)
@@ -143,7 +143,7 @@ class TestBufferedSocket(object):
 
     def test_readline_from_socket(self, monkeypatch):
         monkeypatch.setattr(
-            hyper.http20.bufsocket.select, 'select', dummy_select
+            hyper.common.bufsocket.select, 'select', dummy_select
         )
         s = DummySocket()
         b = BufferedSocket(s)
@@ -162,7 +162,7 @@ class TestBufferedSocket(object):
 
     def test_readline_both(self, monkeypatch):
         monkeypatch.setattr(
-            hyper.http20.bufsocket.select, 'select', dummy_select
+            hyper.common.bufsocket.select, 'select', dummy_select
         )
         s = DummySocket()
         b = BufferedSocket(s)
@@ -186,7 +186,7 @@ class TestBufferedSocket(object):
 
     def test_socket_error_on_readline(self, monkeypatch):
         monkeypatch.setattr(
-            hyper.http20.bufsocket.select, 'select', dummy_select
+            hyper.common.bufsocket.select, 'select', dummy_select
         )
         s = DummySocket()
         b = BufferedSocket(s)
@@ -196,7 +196,7 @@ class TestBufferedSocket(object):
 
     def test_socket_readline_too_long(self, monkeypatch):
         monkeypatch.setattr(
-            hyper.http20.bufsocket.select, 'select', dummy_select
+            hyper.common.bufsocket.select, 'select', dummy_select
         )
         s = DummySocket()
         b = BufferedSocket(s)

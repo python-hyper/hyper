@@ -11,7 +11,7 @@ import socket
 
 from .response import HTTP11Response
 from ..tls import wrap_socket
-from ..http20.bufsocket import BufferedSocket
+from ..common.bufsocket import BufferedSocket
 from ..common.headers import HTTPHeaderMap
 from ..common.util import to_bytestring
 from ..compat import bytes

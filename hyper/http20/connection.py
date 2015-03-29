@@ -6,6 +6,8 @@ hyper/http20/connection
 Objects that build hyper's connection-level HTTP/2 abstraction.
 """
 from ..tls import wrap_socket, H2_NPN_PROTOCOLS
+from ..common.exceptions import ConnectionResetError
+from ..common.bufsocket import BufferedSocket
 from .hpack_compat import Encoder, Decoder
 from .stream import Stream
 from .frame import (
@@ -15,8 +17,7 @@ from .frame import (
 )
 from .response import HTTP20Response, HTTP20Push
 from .window import FlowControlManager
-from .exceptions import ConnectionError, ConnectionResetError
-from .bufsocket import BufferedSocket
+from .exceptions import ConnectionError
 
 import errno
 import logging

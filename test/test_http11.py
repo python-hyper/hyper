@@ -17,9 +17,8 @@ import pytest
 import hyper
 from hyper.http11.connection import HTTP11Connection
 from hyper.http11.response import HTTP11Response
-from hyper.http20.exceptions import ConnectionResetError
 from hyper.common.headers import HTTPHeaderMap
-from hyper.common.exceptions import ChunkedDecodeError
+from hyper.common.exceptions import ChunkedDecodeError, ConnectionResetError
 from hyper.compat import bytes, zlib_compressobj
 
 
