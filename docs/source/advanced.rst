@@ -143,7 +143,7 @@ the original response, or when also processing the original response in a
 separate thread (N.B. do not do this; ``hyper`` is not yet thread-safe)::
 
     conn.request('GET', '/')
-    response = conn.getheaders()
+    response = conn.getresponse()
     for push in conn.getpushes(): # all pushes promised before response headers
         print(push.path)
     conn.read()

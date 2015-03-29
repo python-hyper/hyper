@@ -72,13 +72,12 @@ HTTP/2 *stream identifier*. If you're planning to use ``hyper`` in this very
 simple way, you can choose to ignore it, but it's potentially useful. We'll
 come back to it.
 
-Once you've got the data, things continue to behave exactly like
-``http.client``::
+Once you've got the data, things diverge a little bit::
 
     >>> resp.getheader('content-encoding')
     'deflate'
-    >>> resp.getheaders()
-    [('x-xss-protection', '1; mode=block')...
+    >>> resp.headers
+    HTTPHeaderMap([(b'x-xss-protection', b'1; mode=block')...
     >>> resp.status
     200
 
