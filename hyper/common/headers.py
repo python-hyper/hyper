@@ -181,6 +181,22 @@ class HTTPHeaderMap(collections.MutableMapping):
         for item in self._items:
             yield item
 
+    def merge(self, other):
+        """
+        Merge another header set or any other dict-like into this one.
+        """
+        # Short circuit to avoid infinite loops in case we try to merge into
+        # ourselves.
+        if other is self:
+            return
+
+        if isinstance(other, HTTPHeaderMap):
+            self._items.extend(other.iter_raw())
+            return
+
+        for k, v in other.items():
+            self._items.append(to_bytestring_tuple(k, v))
+
     def __eq__(self, other):
         return self._items == other._items
 
