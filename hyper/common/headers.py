@@ -203,6 +203,12 @@ class HTTPHeaderMap(collections.MutableMapping):
     def __ne__(self, other):
         return self._items != other._items
 
+    def __str__(self):  # pragma: no cover
+        return 'HTTPHeaderMap(%s)' % self._items
+
+    def __repr__(self):  # pragma: no cover
+        return str(self)
+
 
 def canonical_form(k, v):
     """
