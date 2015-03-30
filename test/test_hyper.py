@@ -1213,8 +1213,8 @@ class TestHyperConnection(object):
         r1 = c.request('GET', '/a')
         r3 = c.request('GET', '/b')
 
-        assert c.getresponse(r3).headers == HTTPHeaderMap([('content-type', 'baz/qux')])
-        assert c.getresponse(r1).headers == HTTPHeaderMap([('content-type', 'foo/bar')])
+        assert c.get_response(r3).headers == HTTPHeaderMap([('content-type', 'baz/qux')])
+        assert c.get_response(r1).headers == HTTPHeaderMap([('content-type', 'foo/bar')])
 
     def test_headers_with_continuation(self):
         e = Encoder()
@@ -1233,7 +1233,7 @@ class TestHyperConnection(object):
         c._sock = sock
         r = c.request('GET', '/')
 
-        assert set(c.getresponse(r).headers.iter_raw()) == set([(b'content-type', b'foo/bar'), (b'content-length', b'0')])
+        assert set(c.get_response(r).headers.iter_raw()) == set([(b'content-type', b'foo/bar'), (b'content-length', b'0')])
 
     def test_receive_unexpected_frame(self):
         # RST_STREAM frames are never defined on connections, so send one of
@@ -1275,7 +1275,7 @@ class TestHyperConnection(object):
         c.window_manager.window_size = 1000
         c.window_manager.initial_window_size = 1000
         c.request('GET', '/')
-        resp = c.getresponse()
+        resp = c.get_response()
         resp.read()
 
         queue = list(map(decode_frame, map(memoryview, sock.queue)))
@@ -1371,12 +1371,12 @@ class TestServerPush(object):
         self.conn.request('GET', '/')
 
     def assert_response(self):
-        self.response = self.conn.getresponse()
+        self.response = self.conn.get_response()
         assert self.response.status == 200
         assert dict(self.response.headers) == {b'content-type': [b'text/html']}
 
     def assert_pushes(self):
-        self.pushes = list(self.conn.getpushes())
+        self.pushes = list(self.conn.get_pushes())
         assert len(self.pushes) == 1
         assert self.pushes[0].method == b'GET'
         assert self.pushes[0].scheme == b'https'
@@ -1386,7 +1386,7 @@ class TestServerPush(object):
         assert dict(self.pushes[0].request_headers) == expected_headers
 
     def assert_push_response(self):
-        push_response = self.pushes[0].getresponse()
+        push_response = self.pushes[0].get_response()
         assert push_response.status == 200
         assert dict(push_response.headers) == {b'content-type': [b'application/javascript']}
         assert push_response.read() == b'bar'
@@ -1399,7 +1399,7 @@ class TestServerPush(object):
         self.add_data_frame(2, b'bar', end_stream=True)
 
         self.request()
-        assert len(list(self.conn.getpushes())) == 0
+        assert len(list(self.conn.get_pushes())) == 0
         self.assert_response()
         self.assert_pushes()
         assert self.response.read() == b'foo'
@@ -1413,9 +1413,9 @@ class TestServerPush(object):
         self.add_data_frame(2, b'bar', end_stream=True)
 
         self.request()
-        assert len(list(self.conn.getpushes())) == 0
+        assert len(list(self.conn.get_pushes())) == 0
         self.assert_response()
-        assert len(list(self.conn.getpushes())) == 0
+        assert len(list(self.conn.get_pushes())) == 0
         assert self.response.read() == b'foo'
         self.assert_pushes()
         self.assert_push_response()
@@ -1429,9 +1429,9 @@ class TestServerPush(object):
         self.add_data_frame(2, b'bar', end_stream=True)
 
         self.request()
-        assert len(list(self.conn.getpushes())) == 0
+        assert len(list(self.conn.get_pushes())) == 0
         self.assert_response()
-        assert len(list(self.conn.getpushes())) == 0
+        assert len(list(self.conn.get_pushes())) == 0
         assert self.response.read() == b'foo'
         self.assert_pushes()
         self.assert_push_response()
@@ -1447,13 +1447,13 @@ class TestServerPush(object):
         self.add_data_frame(2, b'one', end_stream=True)
 
         self.request()
-        assert len(list(self.conn.getpushes())) == 0
-        pushes = list(self.conn.getpushes(capture_all=True))
+        assert len(list(self.conn.get_pushes())) == 0
+        pushes = list(self.conn.get_pushes(capture_all=True))
         assert len(pushes) == 2
         assert pushes[0].path == b'/one'
         assert pushes[1].path == b'/two'
-        assert pushes[0].getresponse().read() == b'one'
-        assert pushes[1].getresponse().read() == b'two'
+        assert pushes[0].get_response().read() == b'one'
+        assert pushes[1].get_response().read() == b'two'
         self.assert_response()
         assert self.response.read() == b'foo'
 
@@ -1462,8 +1462,8 @@ class TestServerPush(object):
         self.add_headers_frame(1, [(':status', '200'), ('content-type', 'text/html')])
 
         self.request()
-        self.conn.getresponse()
-        list(self.conn.getpushes())[0].cancel()
+        self.conn.get_response()
+        list(self.conn.get_pushes())[0].cancel()
 
         f = RstStreamFrame(2)
         f.error_code = 8
@@ -1475,7 +1475,7 @@ class TestServerPush(object):
 
         self.request()
         self.conn._enable_push = False
-        self.conn.getresponse()
+        self.conn.get_response()
 
         f = RstStreamFrame(2)
         f.error_code = 7

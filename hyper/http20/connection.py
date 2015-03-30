@@ -50,7 +50,7 @@ class HTTP20Connection(object):
         will be used.
     :param enable_push: (optional) Whether the server is allowed to push
         resources to the client (see
-        :meth:`getpushes() <hyper.HTTP20Connection.getpushes>`).
+        :meth:`get_pushes() <hyper.HTTP20Connection.get_pushes>`).
     """
     def __init__(self, host, port=None, window_manager=None, enable_push=False,
                  **kwargs):
@@ -156,7 +156,7 @@ class HTTP20Connection(object):
         return (self.streams[stream_id] if stream_id is not None
                 else self.recent_stream)
 
-    def getresponse(self, stream_id=None):
+    def get_response(self, stream_id=None):
         """
         Should be called after a request is sent to get a response from the
         server. If sending multiple parallel requests, pass the stream ID of
@@ -172,7 +172,7 @@ class HTTP20Connection(object):
         stream = self._get_stream(stream_id)
         return HTTP20Response(stream.getheaders(), stream)
 
-    def getpushes(self, stream_id=None, capture_all=False):
+    def get_pushes(self, stream_id=None, capture_all=False):
         """
         Returns a generator that yields push promises from the server. **Note
         that this method is not idempotent**: promises returned in one call
@@ -191,7 +191,7 @@ class HTTP20Connection(object):
             corresponding to the streams pushed by the server.
         """
         stream = self._get_stream(stream_id)
-        for promised_stream_id, headers in stream.getpushes(capture_all):
+        for promised_stream_id, headers in stream.get_pushes(capture_all):
             yield HTTP20Push(
                 HTTPHeaderMap(headers), self.streams[promised_stream_id]
             )

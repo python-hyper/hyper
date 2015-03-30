@@ -181,7 +181,7 @@ class HTTP20Push(object):
 
         self._stream = stream
 
-    def getresponse(self):
+    def get_response(self):
         """
         Get the pushed response provided by the server.
 

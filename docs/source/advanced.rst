@@ -17,7 +17,7 @@ you decide you want to avoid keeping the connection open, you can use the
 
     with HTTP20Connection('twitter.com:443') as conn:
         conn.request('GET', '/')
-        data = conn.getresponse().read()
+        data = conn.get_response().read()
 
     analyse(data)
 
@@ -130,7 +130,7 @@ In order to receive pushed resources, the
 with ``enable_push=True``.
 
 You may retrieve the push promises that the server has sent *so far* by calling
-:meth:`getpushes() <hyper.HTTP20Connection.getpushes>`, which returns a
+:meth:`get_pushes() <hyper.HTTP20Connection.get_pushes>`, which returns a
 generator that yields :class:`HTTP20Push <hyper.HTTP20Push>` objects. Note that
 this method is not idempotent; promises returned in one call will not be
 returned in subsequent calls. If ``capture_all=False`` is passed (the default),
@@ -143,11 +143,11 @@ the original response, or when also processing the original response in a
 separate thread (N.B. do not do this; ``hyper`` is not yet thread-safe)::
 
     conn.request('GET', '/')
-    response = conn.getresponse()
-    for push in conn.getpushes(): # all pushes promised before response headers
+    response = conn.get_response()
+    for push in conn.get_pushes(): # all pushes promised before response headers
         print(push.path)
     conn.read()
-    for push in conn.getpushes(): # all other pushes
+    for push in conn.get_pushes(): # all other pushes
         print(push.path)
 
 To cancel an in-progress pushed stream (for example, if the user already has

@@ -61,7 +61,7 @@ Begin by getting the Twitter homepage::
     >>> c = HTTP20Connection('twitter.com:443')
     >>> c.request('GET', '/')
     1
-    >>> resp = c.getresponse()
+    >>> resp = c.get_response()
 
 Used in this way, ``hyper`` behaves exactly like ``http.client``. You can make
 sequential requests using the exact same API you're accustomed to. The only
@@ -103,9 +103,9 @@ For example::
     >>> first = c.request('GET', '/')
     >>> second = c.request('GET', '/lukasaoz')
     >>> third = c.request('GET', '/about')
-    >>> second_response = c.getresponse(second)
-    >>> first_response = c.getresponse(first)
-    >>> third_response = c.getresponse(third)
+    >>> second_response = c.get_response(second)
+    >>> first_response = c.get_response(first)
+    >>> third_response = c.get_response(third)
 
 ``hyper`` will ensure that each response is matched to the correct request.
 

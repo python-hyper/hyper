@@ -324,7 +324,7 @@ class Stream(object):
 
         return self.response_trailers
 
-    def getpushes(self, capture_all=False):
+    def get_pushes(self, capture_all=False):
         """
         Returns a generator that yields push promises from the server. Note that
         this method is not idempotent; promises returned in one call will not be

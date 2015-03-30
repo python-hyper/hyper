@@ -216,7 +216,7 @@ def get_content_type_and_charset(response):
 def request(args):
     conn = HTTP20Connection(args.url.host, args.url.port)
     conn.request(args.method, args.url.path, args.body, args.headers)
-    response = conn.getresponse()
+    response = conn.get_response()
     log.debug('Response Headers:\n%s', pformat(response.getheaders()))
     ctype, charset = get_content_type_and_charset(response)
     data = response.read().decode(charset)

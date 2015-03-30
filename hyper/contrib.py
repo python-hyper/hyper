@@ -58,7 +58,7 @@ class HTTP20Adapter(HTTPAdapter):
             request.body,
             request.headers
         )
-        resp = conn.getresponse(stream_id)
+        resp = conn.get_response(stream_id)
 
         r = self.build_response(request, resp)
 

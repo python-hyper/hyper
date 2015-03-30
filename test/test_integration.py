@@ -268,7 +268,7 @@ class TestHyperIntegration(SocketLevelTest):
         self._start_server(socket_handler)
         conn = self.get_connection()
         conn.request('GET', '/')
-        resp = conn.getresponse()
+        resp = conn.get_response()
 
         # Close the response.
         resp.close()
@@ -304,7 +304,7 @@ class TestHyperIntegration(SocketLevelTest):
         self._start_server(socket_handler)
         conn = self.get_connection()
         conn.request('GET', '/')
-        resp = conn.getresponse()
+        resp = conn.get_response()
 
         # Confirm the status code.
         assert resp.status == 204
@@ -356,7 +356,7 @@ class TestHyperIntegration(SocketLevelTest):
         self._start_server(socket_handler)
         conn = self.get_connection()
         conn.request('GET', '/')
-        resp = conn.getresponse()
+        resp = conn.get_response()
 
         # Confirm the status code.
         assert resp.status == 200
