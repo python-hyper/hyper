@@ -39,13 +39,13 @@ class TestHyperActuallyWorks(object):
         # Make all the requests, then read the responses in a random order.
         stream_ids = [c.request('GET', path) for path in paths]
         random.shuffle(stream_ids)
-        responses = [c.getresponse(i) for i in stream_ids]
+        responses = [c.get_response(i) for i in stream_ids]
 
         # Also get anything that was pushed. Add the responses to the list of
         # responses.
-        pushes = [p for i in stream_ids for p in c.getpushes(i)]
+        pushes = [p for i in stream_ids for p in c.get_pushes(i)]
         for p in pushes:
-            responses.append(p.getresponse())
+            responses.append(p.get_response())
 
         text_data = b''.join([r.read() for r in responses])
 
