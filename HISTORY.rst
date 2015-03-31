@@ -1,6 +1,15 @@
 Release History
 ===============
 
+Upcoming
+--------
+
+*Bugfixes*
+
+- Hyper now correctly handles 'never indexed' header fields. (`Issue #110`_)
+
+.. _Issue #110: https://github.com/Lukasa/hyper/issues/110
+
 0.2.1 (2015-03-29)
 ------------------
 
