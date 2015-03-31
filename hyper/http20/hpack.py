@@ -598,13 +598,13 @@ class Decoder(object):
 
         # When should_index is true, if the low six bits of the first byte are
         # nonzero, the header name is indexed.
-        # When should_index is false, if the first byte is nonzero the header
-        # name is indexed.
+        # When should_index is false, if the low four bits of the first byte
+        # are nonzero the header name is indexed.
         if should_index:
             indexed_name = to_byte(data[0]) & 0x3F
             name_len = 6
         else:
-            indexed_name = to_byte(data[0])
+            indexed_name = to_byte(data[0]) & 0x0F
             name_len = 4
 
         if indexed_name:

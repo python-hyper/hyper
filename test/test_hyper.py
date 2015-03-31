@@ -931,6 +931,45 @@ class TestHPACKDecoder(object):
         d.header_table_size = 40
         assert len(d.header_table) == 0
 
+    def test_apache_trafficserver(self):
+        # This test reproduces the bug in #110, using exactly the same header
+        # data.
+        d = Decoder()
+        data = (
+            b'\x10\x07:status\x03200@\x06server\tATS/6.0.0'
+            b'@\x04date\x1dTue, 31 Mar 2015 08:09:51 GMT'
+            b'@\x0ccontent-type\ttext/html@\x0econtent-length\x0542468'
+            b'@\rlast-modified\x1dTue, 31 Mar 2015 01:55:51 GMT'
+            b'@\x04vary\x0fAccept-Encoding@\x04etag\x0f"5519fea7-a5e4"'
+            b'@\x08x-served\x05Nginx@\x14x-subdomain-tryfiles\x04True'
+            b'@\x07x-deity\thydra-lts@\raccept-ranges\x05bytes@\x03age\x010'
+            b'@\x19strict-transport-security\rmax-age=86400'
+            b'@\x03via2https/1.1 ATS (ApacheTrafficServer/6.0.0 [cSsNfU])'
+        )
+        expect = [
+            (':status', '200'),
+            ('server', 'ATS/6.0.0'),
+            ('date', 'Tue, 31 Mar 2015 08:09:51 GMT'),
+            ('content-type', 'text/html'),
+            ('content-length', '42468'),
+            ('last-modified', 'Tue, 31 Mar 2015 01:55:51 GMT'),
+            ('vary', 'Accept-Encoding'),
+            ('etag', '"5519fea7-a5e4"'),
+            ('x-served', 'Nginx'),
+            ('x-subdomain-tryfiles', 'True'),
+            ('x-deity', 'hydra-lts'),
+            ('accept-ranges', 'bytes'),
+            ('age', '0'),
+            ('strict-transport-security', 'max-age=86400'),
+            ('via', 'https/1.1 ATS (ApacheTrafficServer/6.0.0 [cSsNfU])'),
+        ]
+
+        result = d.decode(data)
+
+        assert result == expect
+        # The status header shouldn't be indexed.
+        assert len(d.header_table) == len(expect) - 1
+
 
 class TestIntegerEncoding(object):
     # These tests are stolen from the HPACK spec.
