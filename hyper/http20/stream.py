@@ -179,6 +179,19 @@ class Stream(object):
         self.data = []
         return result
 
+    def _read_one_frame(self):
+        """
+        Reads a single data frame from the stream and returns it.
+        """
+        # Keep reading until the stream is closed or we have a data frame.
+        while not self._remote_closed and not self.data:
+            self._recv_cb()
+
+        try:
+            return self.data.pop(0)
+        except IndexError:
+            return None
+
     def receive_frame(self, frame):
         """
         Handle a frame received on this stream.

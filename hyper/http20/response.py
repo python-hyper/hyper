@@ -135,6 +135,34 @@ class HTTP20Response(object):
 
         return data
 
+    def read_chunked(self, decode_content=True):
+        """
+        Reads chunked transfer encoded bodies. This method returns a generator:
+        each iteration of which yields one data frame *unless* the frames
+        contain compressed data and ``decode_content`` is ``True``, in which
+        case it yields whatever the decompressor provides for each chunk.
+
+        .. warning:: This may yield the empty string, without that being the
+                     end of the body!
+        """
+        while True:
+            data = self._stream._read_one_frame()
+
+            if data is None:
+                break
+
+            if decode_content and self._decompressobj:
+                data = self._decompressobj.decompress(data)
+
+            yield data
+
+        if decode_content and self._decompressobj:
+            yield self._decompressobj.flush()
+
+        self.close()
+
+        return
+
     def fileno(self):
         """
         Return the ``fileno`` of the underlying socket. This function is

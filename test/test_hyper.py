@@ -1861,6 +1861,44 @@ class TestHyperStream(object):
         assert s.gettrailers() == HTTPHeaderMap(trailers)
         assert s.data == [b'testdata']
 
+    def test_can_read_single_frames_from_streams(self):
+        out_frames = []
+        in_frames = []
+
+        def send_cb(frame, tolerate_peer_gone=False):
+            out_frames.append(frame)
+
+        def recv_cb(s):
+            def inner():
+                s.receive_frame(in_frames.pop(0))
+            return inner
+
+        s = Stream(1, send_cb, None, None, None, None, FlowControlManager(800))
+        s._recv_cb = recv_cb(s)
+        s.state = STATE_HALF_CLOSED_LOCAL
+
+        # Provide two data frames to read.
+        f = DataFrame(1)
+        f.data = b'hi there!'
+        in_frames.append(f)
+
+        f = DataFrame(1)
+        f.data = b'hi there again!'
+        f.flags.add('END_STREAM')
+        in_frames.append(f)
+
+        data = s._read_one_frame()
+        assert data == b'hi there!'
+
+        data = s._read_one_frame()
+        assert data == b'hi there again!'
+
+        data = s._read_one_frame()
+        assert data is None
+
+        data = s._read()
+        assert data == b''
+
 
 class TestResponse(object):
     def test_status_is_stripped_from_headers(self):
@@ -1967,6 +2005,33 @@ class TestResponse(object):
         assert resp.trailers == trailers
         assert resp.trailers['a'] == [b'b']
         assert resp.trailers['c'] == [b'd']
+
+    def test_read_frames(self):
+        headers = HTTPHeaderMap([(':status', '200')])
+        stream = DummyStream(None)
+        chunks = [b'12', b'3456', b'78', b'9']
+        stream.data_frames = chunks
+        resp = HTTP20Response(headers, stream)
+
+        for recv, expected in zip(resp.read_chunked(), chunks[:]):
+            assert recv == expected
+
+    def test_read_compressed_frames(self):
+        headers = HTTPHeaderMap([(':status', '200'), ('content-encoding', 'gzip')])
+        c = zlib_compressobj(wbits=24)
+        body = c.compress(b'this is test data')
+        body += c.flush()
+
+        stream = DummyStream(None)
+        chunks = [body[x:x+2] for x in range(0, len(body), 2)]
+        stream.data_frames = chunks
+        resp = HTTP20Response(headers, stream)
+
+        received = b''
+        for chunk in resp.read_chunked():
+            received += chunk
+
+        assert received == b'this is test data'
 
 
 class TestHTTP20Adapter(object):
@@ -2090,6 +2155,7 @@ class DummyFitfullySocket(DummySocket):
 class DummyStream(object):
     def __init__(self, data, trailers=None):
         self.data = data
+        self.data_frames = []
         self.closed = False
         self.response_headers = {}
         self._remote_closed = False
@@ -2111,6 +2177,12 @@ class DummyStream(object):
             self._remote_closed = True
 
         return d
+
+    def _read_one_frame(self):
+        try:
+            return self.data_frames.pop(0)
+        except IndexError:
+            return None
 
     def close(self):
         if not self.closed:
