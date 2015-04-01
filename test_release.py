@@ -56,29 +56,27 @@ class TestHyperActuallyWorks(object):
         assert all(map(lambda p: p.scheme == b'https', pushes))
         assert all(map(lambda p: p.method.lower() == b'get', pushes))
 
-    def test_hitting_twitter(self):
+    def test_hitting_http2bin_org(self):
         """
-        This test function uses the requests adapter and requests to talk to
-        Twitter. We can't use Twython and the API here because I don't want to
-        expose my app keys, and remembering to use environment variables is a
-        pain in the neck.
+        This test function uses the requests adapter and requests to talk to http2bin.
         """
         s = requests.Session()
         a = HTTP20Adapter()
-        s.mount('https://twitter', a)
-        s.mount('https://www.twitter', a)
+        s.mount('https://http2bin', a)
+        s.mount('https://www.http2bin', a)
 
         # Here are some nice URLs.
         urls = [
-            'https://twitter.com/',
-            'https://twitter.com/Lukasaoz',
-            'https://twitter.com/hynek',
-            'https://twitter.com/bitprophet',
-            'https://twitter.com/jessicamckellar',
-            'https://twitter.com/shazow',
-            'https://twitter.com/sigmavirus24',
-            'https://twitter.com/jillysciarilly',
-            'https://twitter.com/kennethreitz',
+            'https://www.http2bin.org/',
+            'https://www.http2bin.org/ip',
+            'https://www.http2bin.org/user-agent',
+            'https://www.http2bin.org/headers',
+            'https://www.http2bin.org/get',
+            'https://http2bin.org/',
+            'https://http2bin.org/ip',
+            'https://http2bin.org/user-agent',
+            'https://http2bin.org/headers',
+            'https://http2bin.org/get',
         ]
 
         # Go get everything.

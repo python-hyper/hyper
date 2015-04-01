@@ -39,7 +39,7 @@ class HTTP20Connection(object):
 
     :param host: The host to connect to. This may be an IP address or a
         hostname, and optionally may include a port: for example,
-        ``'twitter.com'``, ``'twitter.com:443'`` or ``'127.0.0.1'``.
+        ``'http2bin.org'``, ``'http2bin.org:443'`` or ``'127.0.0.1'``.
     :param port: (optional) The port to connect to. If not provided and one also
         isn't provided in the ``host`` parameter, defaults to 443.
     :param window_manager: (optional) The class to use to manage flow control

@@ -16,9 +16,9 @@ you decide you want to avoid keeping the connection open, you can use the
 :class:`HTTP20Connection <hyper.HTTP20Connection>` and
 :class:`HTTP11Connection <hyper.HTTP11Connection>` as context managers::
 
-    with HTTP20Connection('twitter.com:443') as conn:
-        conn.request('GET', '/')
-        data = conn.get_response().read()
+    with HTTP20Connection('http2bin.org') as conn:
+        conn.request('GET', '/get')
+        data = conn.getresponse().read()
 
     analyse(data)
 
@@ -131,7 +131,7 @@ that always resizes the window in response to incoming data like this::
 
 The *class* can then be plugged straight into a connection object::
 
-    HTTP20Connection('twitter.com:443', window_manager=StupidFlowControlManager)
+    HTTP20Connection('http2bin.org', window_manager=StupidFlowControlManager)
 
 Note that we don't plug an instance of the class in, we plug the class itself
 in. We do this because the connection object will spawn instances of the class
