@@ -3,8 +3,10 @@
 Quickstart Guide
 ================
 
-First, congratulations on picking ``hyper`` for your HTTP/2 needs. ``hyper``
-is the premier (and, as far as we're aware, the only) Python HTTP/2 library.
+First, congratulations on picking ``hyper`` for your HTTP needs. ``hyper``
+is the premier (and, as far as we're aware, the only) Python HTTP/2 library,
+as well as a very servicable HTTP/1.1 library.
+
 In this section, we'll walk you through using ``hyper``.
 
 Installing hyper
@@ -46,8 +48,8 @@ instructions from the `cryptography`_ project, replacing references to
 
 .. _cryptography: https://cryptography.io/en/latest/installation/#installation
 
-Making Your First Request
--------------------------
+Making Your First HTTP/2 Request
+--------------------------------
 
 With ``hyper`` installed, you can start making HTTP/2 requests. At this
 stage, ``hyper`` can only be used with services that *definitely* support
@@ -108,6 +110,41 @@ For example::
     >>> third_response = c.get_response(third)
 
 ``hyper`` will ensure that each response is matched to the correct request.
+
+Making Your First HTTP/1.1 Request
+-----------------------------------
+
+With ``hyper`` installed, you can start making HTTP/2 requests. At this
+stage, ``hyper`` can only be used with services that *definitely* support
+HTTP/2. Before you begin, ensure that whichever service you're contacting
+definitely supports HTTP/2. For the rest of these examples, we'll use
+Twitter.
+
+You can also use ``hyper`` to make HTTP/1.1 requests. The code is very similar.
+For example, to get the Twitter homepage::
+
+    >>> from hyper import HTTP11Connection
+    >>> c = HTTP11Connection('twitter.com:443')
+    >>> c.request('GET', '/')
+    >>> resp = c.get_response()
+
+The key difference between HTTP/1.1 and HTTP/2 is that when you make HTTP/1.1
+requests you do not get a stream ID. This is, of course, because HTTP/1.1 does
+not have streams.
+
+Things behave exactly like they do in the HTTP/2 case, right down to the data
+reading::
+
+    >>> resp.getheader('content-encoding')
+    'deflate'
+    >>> resp.headers
+    HTTPHeaderMap([(b'x-xss-protection', b'1; mode=block')...
+    >>> resp.status
+    200
+    >>> body = resp.read()
+    b'<!DOCTYPE html>\n<!--[if IE 8]><html clas ....
+
+That's all it takes.
 
 Requests Integration
 --------------------

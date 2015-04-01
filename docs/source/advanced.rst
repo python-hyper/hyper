@@ -13,7 +13,8 @@ may want to keep your connections alive only as long as you know you'll need
 them. In HTTP/2 this is generally not something you should do unless you're
 very confident you won't need the connection again anytime soon. However, if
 you decide you want to avoid keeping the connection open, you can use the
-:class:`HTTP20Connection <hyper.HTTP20Connection>` as a context manager::
+:class:`HTTP20Connection <hyper.HTTP20Connection>` and
+:class:`HTTP11Connection <hyper.HTTP11Connection>` as context managers::
 
     with HTTP20Connection('twitter.com:443') as conn:
         conn.request('GET', '/')
@@ -21,17 +22,45 @@ you decide you want to avoid keeping the connection open, you can use the
 
     analyse(data)
 
-You may not use any :class:`HTTP20Response <hyper.HTTP20Response>` objects
-obtained from a connection after that connection is closed. Interacting with
-these objects when a connection has been closed is considered undefined
-behaviour.
+You may not use any :class:`HTTP20Response <hyper.HTTP20Response>` or
+:class:`HTTP11Response <hyper.HTTP11Response>` objects obtained from a
+connection after that connection is closed. Interacting with these objects when
+a connection has been closed is considered undefined behaviour.
+
+Chunked Responses
+-----------------
+
+Plenty of APIs return chunked data, and it's often useful to iterate directly
+over the chunked data. ``hyper`` lets you iterate over each data frame of a
+HTTP/2 response, and each chunk of a HTTP/1.1 response delivered with
+``Transfer-Encoding: chunked``::
+
+    for chunk in response.read_chunked():
+        do_something_with_chunk(chunk)
+
+There are some important caveats with this iteration: mostly, it's not
+guaranteed that each chunk will be non-empty. In HTTP/2, it's entirely legal to
+send zero-length data frames, and this API will pass those through unchanged.
+Additionally, by default this method will decompress a response that has a
+compressed ``Content-Encoding``: if you do that, each element of the iterator
+will no longer be a single chunk, but will instead be whatever the decompressor
+returns for that chunk.
+
+If that's problematic, you can set the ``decode_content`` parameter to
+``False`` and, if necessary, handle the decompression yourself::
+
+    for compressed_chunk in response.read_chunked(decode_content=False):
+        decompress(compressed_chunk)
+
+Very easy!
 
 Multithreading
 --------------
 
-Currently, ``hyper``'s :class:`HTTP20Connection <hyper.HTTP20Connection>` class
-is **not** thread-safe. Thread-safety is planned for ``hyper``'s core objects,
-but in this early alpha it is not a high priority.
+Currently, ``hyper``'s :class:`HTTP20Connection <hyper.HTTP20Connection>` and
+:class:`HTTP11Connection <hyper.HTTP11Connection>` classes are **not**
+thread-safe. Thread-safety is planned for ``hyper``'s core objects, but in this
+early alpha it is not a high priority.
 
 To use ``hyper`` in a multithreaded context the recommended thing to do is to
 place each connection in its own thread. Each thread should then have a request

@@ -26,7 +26,8 @@ Simple. ``hyper`` is written in 100% pure Python, which means no C extensions.
 For recent versions of Python (3.4 and onward, and 2.7.9 and onward) it's
 entirely self-contained with no external dependencies.
 
-``hyper`` supports Python 3.4 and Python 2.7.9.
+``hyper`` supports Python 3.4 and Python 2.7.9, and can speak HTTP/2 and
+HTTP/1.1.
 
 Caveat Emptor!
 --------------
