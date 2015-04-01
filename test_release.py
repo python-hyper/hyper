@@ -12,7 +12,7 @@ capable of achieving basic tasks.
 import logging
 import random
 import requests
-from hyper import HTTP20Connection
+from hyper import HTTP20Connection, HTTP11Connection
 from hyper.contrib import HTTP20Adapter
 
 logging.basicConfig(level=logging.INFO)
@@ -87,3 +87,26 @@ class TestHyperActuallyWorks(object):
         # Confirm all is well.
         assert all(map(lambda r: r.status_code == 200, responses))
         assert all(map(lambda r: r.text, responses))
+
+    def test_hitting_http2bin_org_http11(self):
+        """
+        This test function uses hyper's HTTP/1.1 support to talk to http2bin
+        """
+        c = HTTP11Connection('http2bin.org')
+
+        # Here are some nice URLs.
+        urls = [
+            '/',
+            '/ip',
+            '/user-agent',
+            '/headers',
+            '/get',
+        ]
+
+        # Go get everything.
+        for url in urls:
+            c.request('GET', url)
+            resp = c.get_response()
+
+            assert resp.status == 200
+            assert resp.read()
