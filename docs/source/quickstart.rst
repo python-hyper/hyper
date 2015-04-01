@@ -76,10 +76,10 @@ come back to it.
 
 Once you've got the data, things diverge a little bit::
 
-    >>> resp.header('content-type')
-    'text/html; charset=utf-8'
+    >>> resp.headers['content-type']
+    [b'text/html; charset=utf-8']
     >>> resp.headers
-    HTTPHeaderMap([('server', 'h2o/1.0.2-alpha1')...
+    HTTPHeaderMap([(b'server', b'h2o/1.0.2-alpha1')...
     >>> resp.status
     200
 
@@ -136,8 +136,8 @@ not have streams.
 Things behave exactly like they do in the HTTP/2 case, right down to the data
 reading::
 
-    >>> resp.getheader('content-encoding')
-    'deflate'
+    >>> resp.headers['content-encoding']
+    [b'deflate']
     >>> resp.headers
     HTTPHeaderMap([(b'x-xss-protection', b'1; mode=block')...
     >>> resp.status
