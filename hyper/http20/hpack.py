@@ -25,7 +25,7 @@ def encode_integer(integer, prefix_bits):
     This encodes an integer according to the wacky integer encoding rules
     defined in the HPACK spec.
     """
-    log.debug("Encoding %d with %d bits.", integer, prefix_bits)
+    log.debug("Encoding %d with %d bits", integer, prefix_bits)
 
     max_number = (2 ** prefix_bits) - 1
 
@@ -70,7 +70,7 @@ def decode_integer(data, prefix_bits):
                 number += next_byte * multiple(index)
                 break
 
-    log.debug("Decoded %d consuming %d bytes.", number, index + 1)
+    log.debug("Decoded %d, consumed %d bytes", number, index + 1)
 
     return (number, index + 1)
 
@@ -650,9 +650,9 @@ class Decoder(object):
             self._add_to_header_table(header)
 
         log.debug(
-            "Decoded %s, consumed %d, indexed %s",
+            "Decoded %s, total consumed %d bytes, indexed %s",
             header,
-            consumed,
+            total_consumed,
             should_index
         )
 
