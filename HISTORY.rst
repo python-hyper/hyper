@@ -1,6 +1,31 @@
 Release History
 ===============
 
+Upcoming
+--------
+
+*New Features*
+
+- HTTP/1.1 support! See the documentation for more. (`Issue #75`_)
+- Implementation of a ``HTTPHeaderMap`` data structure that provides dictionary
+  style lookups while retaining all the semantic information of HTTP headers.
+
+*Major Changes*
+
+- Various changes in the HTTP/2 APIs:
+
+  - The ``getheader``, ``getheaders``, ``gettrailer``, and ``gettrailers``
+    methods on the response object have been removed, replaced instead with
+    simple ``.headers`` and ``.trailers`` properties that contain
+    ``HTTPHeaderMap`` structures.
+  - Headers and trailers are now bytestrings, rather than unicode strings.
+  - An ``iter_chunked()`` method was added to repsonse objects that allows
+    iterating over data in units of individual data frames.
+  - Changed the name of ``getresponse()`` to ``get_response()``, because
+    ``getresponse()`` was a terrible name forced upon me by httplib.
+
+.. _Issue #75: https://github.com/Lukasa/hyper/issues/75
+
 0.2.2 (2015-04-03)
 ------------------
 
