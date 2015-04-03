@@ -36,7 +36,7 @@ def resolve_install_requires():
         return ['pyOpenSSL>=0.14']
     return []
 
-packages = ['hyper', 'hyper.http20']
+packages = ['hyper', 'hyper.http20', 'hyper.common', 'hyper.http11']
 
 setup(
     name='hyper',
