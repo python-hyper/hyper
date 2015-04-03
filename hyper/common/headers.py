@@ -42,10 +42,10 @@ class HTTPHeaderMap(collections.MutableMapping):
     unusual encodings) while ensuring that users are never confused about what
     type of data they will receive.
 
-    ..warning:: Note that this data structure makes none of the performance
-                guarantees of a dictionary. Lookup and deletion is not an O(1)
-                operation. Inserting a new value *is* O(1), all other
-                operations are O(n), including *replacing* a header entirely.
+    .. warning:: Note that this data structure makes none of the performance
+                 guarantees of a dictionary. Lookup and deletion is not an O(1)
+                 operation. Inserting a new value *is* O(1), all other
+                 operations are O(n), including *replacing* a header entirely.
     """
     def __init__(self, *args, **kwargs):
         # The meat of the structure. In practice, headers are an ordered list
