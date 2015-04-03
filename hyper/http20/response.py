@@ -9,84 +9,23 @@ httplib/http.client.
 import logging
 import zlib
 
-from .util import pop_from_key_value_set
+from ..common.decoder import DeflateDecoder
+from ..common.headers import HTTPHeaderMap
 
 log = logging.getLogger(__name__)
 
 
-class DeflateDecoder(object):
+def strip_headers(headers):
     """
-    This is a decoding object that wraps ``zlib`` and is used for decoding
-    deflated content.
-
-    This rationale for the existence of this object is pretty unpleasant.
-    The HTTP RFC specifies that 'deflate' is a valid content encoding. However,
-    the spec _meant_ the zlib encoding form. Unfortunately, people who didn't
-    read the RFC very carefully actually implemented a different form of
-    'deflate'. Insanely, ``zlib`` handles them using two wbits values. This is
-    such a mess it's hard to adequately articulate.
-
-    This class was lovingly borrowed from the excellent urllib3 library under
-    license: see NOTICES. If you ever see @shazow, you should probably buy him
-    a drink or something.
+    Strips the headers attached to the instance of any header beginning
+    with a colon that ``hyper`` doesn't understand. This method logs at
+    warning level about the deleted headers, for discoverability.
     """
-    def __init__(self):
-        self._first_try = True
-        self._data = b''
-        self._obj = zlib.decompressobj(zlib.MAX_WBITS)
-
-    def __getattr__(self, name):
-        return getattr(self._obj, name)
-
-    def decompress(self, data):
-        if not self._first_try:
-            return self._obj.decompress(data)
-
-        self._data += data
-        try:
-            return self._obj.decompress(data)
-        except zlib.error:
-            self._first_try = False
-            self._obj = zlib.decompressobj(-zlib.MAX_WBITS)
-            try:
-                return self.decompress(self._data)
-            finally:
-                self._data = None
-
-
-class Headers(object):
-    def __init__(self, pairs):
-        # This conversion to dictionary is unwise, as there may be repeated
-        # keys, but it's acceptable for an early alpha.
-        self._headers = dict(pairs)
-        self._strip_headers()
-
-    def getheader(self, name, default=None):
-        return self._headers.get(name, default)
-
-    def getheaders(self):
-        return list(self._headers.items())
-
-    def items(self):
-        return self._headers.items()
-
-    def merge(self, headers):
-        for n, v in headers:
-            self._headers[n] = v
-        self._strip_headers()
-
-    def _strip_headers(self):
-        """
-        Strips the headers attached to the instance of any header beginning
-        with a colon that ``hyper`` doesn't understand. This method logs at
-        warning level about the deleted headers, for discoverability.
-        """
-        # Convert to list to ensure that we don't mutate the headers while
-        # we iterate over them.
-        for name in list(self._headers.keys()):
-            if name.startswith(':'):
-                val = self._headers.pop(name)
-                log.warning("Unknown reserved header: %s: %s", name, val)
+    # Convert to list to ensure that we don't mutate the headers while
+    # we iterate over them.
+    for name in list(headers.keys()):
+        if name.startswith(b':'):
+            del headers[name]
 
 
 class HTTP20Response(object):
@@ -102,14 +41,15 @@ class HTTP20Response(object):
         #: HTTP/2, and so is always the empty string.
         self.reason = ''
 
-        status = pop_from_key_value_set(headers, ':status')[0]
+        status = headers[b':status'][0]
+        strip_headers(headers)
 
         #: The status code returned by the server.
         self.status = int(status)
 
-        # The response headers. These are determined upon creation, assigned
-        # once, and never assigned again.
-        self._headers = Headers(headers)
+        #: The response headers. These are determined upon creation, assigned
+        #: once, and never assigned again.
+        self.headers = headers
 
         # The response trailers. These are always intially ``None``.
         self._trailers = None
@@ -127,12 +67,28 @@ class HTTP20Response(object):
         # This 16 + MAX_WBITS nonsense is to force gzip. See this
         # Stack Overflow answer for more:
         # http://stackoverflow.com/a/2695466/1401686
-        if self._headers.getheader('content-encoding') == 'gzip':
+        if b'gzip' in self.headers.get(b'content-encoding', []):
             self._decompressobj = zlib.decompressobj(16 + zlib.MAX_WBITS)
-        elif self._headers.getheader('content-encoding') == 'deflate':
+        elif b'deflate' in self.headers.get(b'content-encoding', []):
             self._decompressobj = DeflateDecoder()
         else:
             self._decompressobj = None
+
+    @property
+    def trailers(self):
+        """
+        Trailers on the HTTP message, if any.
+
+        .. warning:: Note that this property requires that the stream is
+                     totally exhausted. This means that, if you have not
+                     completely read from the stream, all stream data will be
+                     read into memory.
+        """
+        if self._trailers is None:
+            self._trailers = self._stream.gettrailers() or HTTPHeaderMap()
+            strip_headers(self._trailers)
+
+        return self._trailers
 
     def read(self, amt=None, decode_content=True):
         """
@@ -171,7 +127,7 @@ class HTTP20Response(object):
                 data += self._decompressobj.flush()
 
             if self._stream.response_headers:
-                self._headers.merge(self._stream.response_headers)
+                self.headers.merge(self._stream.response_headers)
 
         # We're at the end. Close the connection.
         if not data:
@@ -179,69 +135,33 @@ class HTTP20Response(object):
 
         return data
 
-    def getheader(self, name, default=None):
+    def read_chunked(self, decode_content=True):
         """
-        Return the value of the header ``name``, or ``default`` if there is no
-        header matching ``name``. If there is more than one header with the
-        value ``name``, return all of the values joined by ', '. If ``default``
-        is any iterable other than a single string, its elements are similarly
-        returned joined by commas.
+        Reads chunked transfer encoded bodies. This method returns a generator:
+        each iteration of which yields one data frame *unless* the frames
+        contain compressed data and ``decode_content`` is ``True``, in which
+        case it yields whatever the decompressor provides for each chunk.
 
-        :param name: The name of the header to get the value of.
-        :param default: (optional) The return value if the header wasn't sent.
-        :returns: The value of the header.
+        .. warning:: This may yield the empty string, without that being the
+                     end of the body!
         """
-        return self._headers.getheader(name, default)
+        while True:
+            data = self._stream._read_one_frame()
 
-    def getheaders(self):
-        """
-        Get all the headers sent on the response.
+            if data is None:
+                break
 
-        :returns: A list of ``(header, value)`` tuples.
-        """
-        return list(self._headers.items())
+            if decode_content and self._decompressobj:
+                data = self._decompressobj.decompress(data)
 
-    def gettrailer(self, name, default=None):
-        """
-        Return the value of the trailer ``name``, or ``default`` if there is no
-        trailer matching ``name``. If there is more than one trailer with the
-        value ``name``, return all of the values joined by ', '. If ``default``
-        is any iterable other than a single string, its elements are similarly
-        returned joined by commas.
+            yield data
 
-        .. warning:: Note that this method requires that the stream is
-                     totally exhausted. This means that, if you have not
-                     completely read from the stream, all stream data will be
-                     read into memory.
+        if decode_content and self._decompressobj:
+            yield self._decompressobj.flush()
 
-        :param name: The name of the trailer to get the value of.
-        :param default: (optional) The return value if the trailer wasn't sent.
-        :returns: The value of the trailer.
-        """
-        # We need to get the trailers.
-        if self._trailers is None:
-            trailers = self._stream.gettrailers() or []
-            self._trailers = Headers(trailers)
+        self.close()
 
-        return self._trailers.getheader(name, default)
-
-    def gettrailers(self):
-        """
-        Get all the trailers sent on the response.
-
-        .. warning:: Note that this method requires that the stream is
-                     totally exhausted. This means that, if you have not
-                     completely read from the stream, all stream data will be
-                     read into memory.
-
-        :returns: A list of ``(header, value)`` tuples.
-        """
-        # We need to get the trailers.
-        if self._trailers is None:
-            trailers = self._stream.gettrailers() or []
-            self._trailers = Headers(trailers)
-
-        return list(self._trailers.items())
+        return
 
     def fileno(self):
         """
@@ -273,45 +193,23 @@ class HTTP20Push(object):
     push mechanism.
     """
     def __init__(self, request_headers, stream):
-        scheme, method, authority, path = (
-            pop_from_key_value_set(request_headers,
-                                   ':scheme', ':method', ':authority', ':path')
-        )
         #: The scheme of the simulated request
-        self.scheme = scheme
+        self.scheme = request_headers[b':scheme'][0]
         #: The method of the simulated request (must be safe and cacheable, e.g. GET)
-        self.method = method
+        self.method = request_headers[b':method'][0]
         #: The authority of the simulated request (usually host:port)
-        self.authority = authority
+        self.authority = request_headers[b':authority'][0]
         #: The path of the simulated request
-        self.path = path
+        self.path = request_headers[b':path'][0]
 
-        self._request_headers = Headers(request_headers)
+        strip_headers(request_headers)
+
+        #: The headers the server attached to the simulated request.
+        self.request_headers = request_headers
+
         self._stream = stream
 
-    def getrequestheader(self, name, default=None):
-        """
-        Return the value of the simulated request header ``name``, or ``default``
-        if there is no header matching ``name``. If there is more than one header
-        with the value ``name``, return all of the values joined by ``', '``.
-        If ``default`` is any iterable other than a single string, its elements
-        are similarly returned joined by commas.
-
-        :param name: The name of the header to get the value of.
-        :param default: (optional) The return value if the header wasn't sent.
-        :returns: The value of the header.
-        """
-        return self._request_headers.getheader(name, default)
-
-    def getrequestheaders(self):
-        """
-        Get all the simulated request headers.
-
-        :returns: A list of ``(header, value)`` tuples.
-        """
-        return self._request_headers.getheaders()
-
-    def getresponse(self):
+    def get_response(self):
         """
         Get the pushed response provided by the server.
 

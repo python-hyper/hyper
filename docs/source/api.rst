@@ -19,6 +19,12 @@ Primary HTTP/2 Interface
 .. autoclass:: hyper.HTTP20Push
    :inherited-members:
 
+.. autoclass:: hyper.HTTP11Connection
+   :inherited-members:
+
+.. autoclass:: hyper.HTTP11Response
+   :inherited-members:
+
 Headers
 -------
 

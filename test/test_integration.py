@@ -26,9 +26,12 @@ from server import SocketLevelTest
 
 # Turn off certificate verification for the tests.
 if ssl is not None:
-    hyper.http20.tls._context = hyper.http20.tls._init_context()
-    hyper.http20.tls._context.check_hostname = False
-    hyper.http20.tls._context.verify_mode = ssl.CERT_NONE
+    hyper.tls._context = hyper.tls._init_context()
+    hyper.tls._context.check_hostname = False
+    hyper.tls._context.verify_mode = ssl.CERT_NONE
+
+    # Cover our bases because NPN doesn't yet work on all our test platforms.
+    hyper.http20.connection.H2_NPN_PROTOCOLS += ['', None]
 
 def decode_frame(frame_data):
     f, length = Frame.parse_frame_header(frame_data[:9])
@@ -58,6 +61,9 @@ def receive_preamble(sock):
 
 
 class TestHyperIntegration(SocketLevelTest):
+    # These are HTTP/2 tests.
+    h2 = True
+
     def test_connection_string(self):
         self.set_up()
 
@@ -80,13 +86,13 @@ class TestHyperIntegration(SocketLevelTest):
             f = SettingsFrame(0)
             sock.send(f.serialize())
 
-            send_event.set()
+            send_event.wait()
             sock.close()
 
         self._start_server(socket_handler)
         conn = self.get_connection()
         conn.connect()
-        send_event.wait()
+        send_event.set()
 
         assert data[0] == b'PRI * HTTP/2.0\r\n\r\nSM\r\n\r\n'
 
@@ -114,13 +120,13 @@ class TestHyperIntegration(SocketLevelTest):
             f = SettingsFrame(0)
             sock.send(f.serialize())
 
-            send_event.set()
+            send_event.wait()
             sock.close()
 
         self._start_server(socket_handler)
         conn = self.get_connection()
         conn.connect()
-        send_event.wait()
+        send_event.set()
 
         # Get the second chunk of data and decode it into a frame.
         data = data[1]
@@ -225,13 +231,13 @@ class TestHyperIntegration(SocketLevelTest):
             f = SettingsFrame(0)
             sock.send(f.serialize())
 
-            send_event.set()
+            send_event.wait()
             sock.close()
 
         self._start_server(socket_handler)
         with self.get_connection() as conn:
             conn.connect()
-            send_event.wait()
+            send_event.set()
 
         # Check that we closed the connection.
         assert conn._sock == None
@@ -262,7 +268,7 @@ class TestHyperIntegration(SocketLevelTest):
         self._start_server(socket_handler)
         conn = self.get_connection()
         conn.request('GET', '/')
-        resp = conn.getresponse()
+        resp = conn.get_response()
 
         # Close the response.
         resp.close()
@@ -298,7 +304,7 @@ class TestHyperIntegration(SocketLevelTest):
         self._start_server(socket_handler)
         conn = self.get_connection()
         conn.request('GET', '/')
-        resp = conn.getresponse()
+        resp = conn.get_response()
 
         # Confirm the status code.
         assert resp.status == 204
@@ -350,7 +356,7 @@ class TestHyperIntegration(SocketLevelTest):
         self._start_server(socket_handler)
         conn = self.get_connection()
         conn.request('GET', '/')
-        resp = conn.getresponse()
+        resp = conn.get_response()
 
         # Confirm the status code.
         assert resp.status == 200
@@ -361,10 +367,10 @@ class TestHyperIntegration(SocketLevelTest):
 
         # Confirm that we got the trailing headers, and that they don't contain
         # reserved headers.
-        assert resp.gettrailer('trailing') == 'sure'
-        assert resp.gettrailer(':res') is None
-        assert len(resp.getheaders()) == 1
-        assert len(resp.gettrailers()) == 1
+        assert resp.trailers['trailing'] == [b'sure']
+        assert resp.trailers.get(':res') is None
+        assert len(resp.headers) == 1
+        assert len(resp.trailers) == 1
 
         # Awesome, we're done now.
         recv_event.set()
@@ -445,6 +451,9 @@ class TestHyperIntegration(SocketLevelTest):
 
 
 class TestRequestsAdapter(SocketLevelTest):
+    # This uses HTTP/2.
+    h2 = True
+
     def test_adapter_received_values(self):
         self.set_up()
 
@@ -481,7 +490,7 @@ class TestRequestsAdapter(SocketLevelTest):
 
         # Assert about the received values.
         assert r.status_code == 200
-        assert r.headers['Content-Type'] == 'not/real'
+        assert r.headers[b'Content-Type'] == b'not/real'
         assert r.content == b'1234567890' * 2
 
         self.tear_down()

@@ -13,12 +13,13 @@ stream is an independent, bi-directional sequence of HTTP headers and data.
 Each stream is identified by a monotonically increasing integer, assigned to
 the stream by the endpoint that initiated the stream.
 """
+from ..common.headers import HTTPHeaderMap
 from .exceptions import ProtocolError
 from .frame import (
     FRAME_MAX_LEN, FRAMES, HeadersFrame, DataFrame, PushPromiseFrame,
     WindowUpdateFrame, ContinuationFrame, BlockedFrame
 )
-from .util import get_from_key_value_set, h2_safe_headers
+from .util import h2_safe_headers
 import collections
 import logging
 import zlib
@@ -178,6 +179,19 @@ class Stream(object):
         self.data = []
         return result
 
+    def _read_one_frame(self):
+        """
+        Reads a single data frame from the stream and returns it.
+        """
+        # Keep reading until the stream is closed or we have a data frame.
+        while not self._remote_closed and not self.data:
+            self._recv_cb()
+
+        try:
+            return self.data.pop(0)
+        except IndexError:
+            return None
+
     def receive_frame(self, frame):
         """
         Handle a frame received on this stream.
@@ -296,7 +310,7 @@ class Stream(object):
 
         # Find the Content-Length header if present.
         self._in_window_manager.document_size = (
-            int(get_from_key_value_set(self.response_headers, 'content-length', 0))
+            int(self.response_headers.get(b'content-length', [0])[0])
         )
 
         return self.response_headers
@@ -323,7 +337,7 @@ class Stream(object):
 
         return self.response_trailers
 
-    def getpushes(self, capture_all=False):
+    def get_pushes(self, capture_all=False):
         """
         Returns a generator that yields push promises from the server. Note that
         this method is not idempotent; promises returned in one call will not be
@@ -379,9 +393,9 @@ class Stream(object):
         # The header block may be for trailers or headers. If we've already
         # received headers these _must_ be for trailers.
         if self.response_headers is None:
-            self.response_headers = headers
+            self.response_headers = HTTPHeaderMap(headers)
         elif self.response_trailers is None:
-            self.response_trailers = headers
+            self.response_trailers = HTTPHeaderMap(headers)
         else:
             # Received too many headers blocks.
             raise ProtocolError("Too many header blocks.")

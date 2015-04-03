@@ -51,7 +51,7 @@ class DummyConnection(object):
     def request(self, method, path, body, headers):
         return method, path, body, headers
 
-    def getresponse(self):
+    def get_response(self):
         return self.response
 
 

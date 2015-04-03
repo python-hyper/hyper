@@ -226,3 +226,35 @@ class TestHTTPHeaderMap(object):
 
         with pytest.raises(ValueError):
             h[1] = 'v'
+
+    def test_merge_self_is_no_op(self):
+        h = HTTPHeaderMap([(b'hi', b'there')])
+        h.merge(h)
+
+        assert h == HTTPHeaderMap([(b'hi', b'there')])
+
+    def test_merge_headermaps_preserves_raw(self):
+        h1 = HTTPHeaderMap([
+            (b'hi', b'there')
+        ])
+        h2 = HTTPHeaderMap([
+            (b'Hi', b'there, sir, maam')
+        ])
+
+        h1.merge(h2)
+
+        assert list(h1.iter_raw()) == [
+            (b'hi', b'there'),
+            (b'Hi', b'there, sir, maam'),
+        ]
+
+    def test_merge_header_map_dict(self):
+        h = HTTPHeaderMap([(b'hi', b'there')])
+        d = {'cat': 'dog'}
+
+        h.merge(d)
+
+        assert list(h.items()) == [
+            (b'hi', b'there'),
+            (b'cat', b'dog'),
+        ]

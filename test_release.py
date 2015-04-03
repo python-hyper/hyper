@@ -12,7 +12,7 @@ capable of achieving basic tasks.
 import logging
 import random
 import requests
-from hyper import HTTP20Connection
+from hyper import HTTP20Connection, HTTP11Connection
 from hyper.contrib import HTTP20Adapter
 
 logging.basicConfig(level=logging.INFO)
@@ -39,13 +39,13 @@ class TestHyperActuallyWorks(object):
         # Make all the requests, then read the responses in a random order.
         stream_ids = [c.request('GET', path) for path in paths]
         random.shuffle(stream_ids)
-        responses = [c.getresponse(i) for i in stream_ids]
+        responses = [c.get_response(i) for i in stream_ids]
 
         # Also get anything that was pushed. Add the responses to the list of
         # responses.
-        pushes = [p for i in stream_ids for p in c.getpushes(i)]
+        pushes = [p for i in stream_ids for p in c.get_pushes(i)]
         for p in pushes:
-            responses.append(p.getresponse())
+            responses.append(p.get_response())
 
         text_data = b''.join([r.read() for r in responses])
 
@@ -53,8 +53,8 @@ class TestHyperActuallyWorks(object):
         # are good. Also confirm that the pushes make sense.
         assert text_data
         assert all(map(lambda r: r.status == 200, responses))
-        assert all(map(lambda p: p.scheme == 'https', pushes))
-        assert all(map(lambda p: p.method.lower() == 'get', pushes))
+        assert all(map(lambda p: p.scheme == b'https', pushes))
+        assert all(map(lambda p: p.method.lower() == b'get', pushes))
 
     def test_hitting_http2bin_org(self):
         """
@@ -85,3 +85,26 @@ class TestHyperActuallyWorks(object):
         # Confirm all is well.
         assert all(map(lambda r: r.status_code == 200, responses))
         assert all(map(lambda r: r.text, responses))
+
+    def test_hitting_http2bin_org_http11(self):
+        """
+        This test function uses hyper's HTTP/1.1 support to talk to http2bin
+        """
+        c = HTTP11Connection('http2bin.org')
+
+        # Here are some nice URLs.
+        urls = [
+            '/',
+            '/ip',
+            '/user-agent',
+            '/headers',
+            '/get',
+        ]
+
+        # Go get everything.
+        for url in urls:
+            c.request('GET', url)
+            resp = c.get_response()
+
+            assert resp.status == 200
+            assert resp.read()

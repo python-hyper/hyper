@@ -7,7 +7,7 @@ Contains hyper's structures for storing and working with HTTP headers.
 """
 import collections
 
-from hyper.compat import unicode, bytes, imap
+from hyper.common.util import to_bytestring, to_bytestring_tuple
 
 
 class HTTPHeaderMap(collections.MutableMapping):
@@ -64,10 +64,10 @@ class HTTPHeaderMap(collections.MutableMapping):
         self._items = []
 
         for arg in args:
-            self._items.extend(map(lambda x: _to_bytestring_tuple(*x), arg))
+            self._items.extend(map(lambda x: to_bytestring_tuple(*x), arg))
 
         for k, v in kwargs.items():
-            self._items.append(_to_bytestring_tuple(k, v))
+            self._items.append(to_bytestring_tuple(k, v))
 
     def __getitem__(self, key):
         """
@@ -75,7 +75,7 @@ class HTTPHeaderMap(collections.MutableMapping):
         they were added. These items are returned in 'canonical form', meaning
         that comma-separated values are split into multiple values.
         """
-        key = _to_bytestring(key)
+        key = to_bytestring(key)
         values = []
 
         for k, v in self._items:
@@ -91,7 +91,7 @@ class HTTPHeaderMap(collections.MutableMapping):
         """
         Unlike the dict __setitem__, this appends to the list of items.
         """
-        self._items.append(_to_bytestring_tuple(key, value))
+        self._items.append(to_bytestring_tuple(key, value))
 
     def __delitem__(self, key):
         """
@@ -99,7 +99,7 @@ class HTTPHeaderMap(collections.MutableMapping):
         delete all headers with a given key. To correctly achieve the 'KeyError
         on missing key' logic from dictionaries, we need to do this slowly.
         """
-        key = _to_bytestring(key)
+        key = to_bytestring(key)
         indices = []
         for (i, (k, v)) in enumerate(self._items):
             if _keys_equal(k, key):
@@ -135,7 +135,7 @@ class HTTPHeaderMap(collections.MutableMapping):
         """
         If any header is present with this key, returns True.
         """
-        key = _to_bytestring(key)
+        key = to_bytestring(key)
         return any(_keys_equal(key, k) for k, _ in self._items)
 
     def keys(self):
@@ -181,11 +181,33 @@ class HTTPHeaderMap(collections.MutableMapping):
         for item in self._items:
             yield item
 
+    def merge(self, other):
+        """
+        Merge another header set or any other dict-like into this one.
+        """
+        # Short circuit to avoid infinite loops in case we try to merge into
+        # ourselves.
+        if other is self:
+            return
+
+        if isinstance(other, HTTPHeaderMap):
+            self._items.extend(other.iter_raw())
+            return
+
+        for k, v in other.items():
+            self._items.append(to_bytestring_tuple(k, v))
+
     def __eq__(self, other):
         return self._items == other._items
 
     def __ne__(self, other):
         return self._items != other._items
+
+    def __str__(self):  # pragma: no cover
+        return 'HTTPHeaderMap(%s)' % self._items
+
+    def __repr__(self):  # pragma: no cover
+        return str(self)
 
 
 def canonical_form(k, v):
@@ -203,26 +225,6 @@ def canonical_form(k, v):
     else:
         for sub_val in v.split(b','):
             yield k, sub_val.strip()
-
-
-def _to_bytestring(element):
-    """
-    Converts a single string to a bytestring, encoding via UTF-8 if needed.
-    """
-    if isinstance(element, unicode):
-        return element.encode('utf-8')
-    elif isinstance(element, bytes):
-        return element
-    else:
-        raise ValueError("Non string type.")
-
-
-def _to_bytestring_tuple(*x):
-    """
-    Converts the given strings to a bytestring if necessary, returning a
-    tuple.
-    """
-    return tuple(imap(_to_bytestring, x))
 
 
 def _keys_equal(x, y):

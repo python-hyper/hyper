@@ -2,3 +2,4 @@ pytest
 pytest-xdist
 pytest-cov
 requests
+mock

@@ -7,7 +7,7 @@ Contains the TLS/SSL logic for use in hyper.
 """
 import os.path as path
 
-from ..compat import ignore_missing, ssl
+from .compat import ignore_missing, ssl
 
 
 NPN_PROTOCOL = 'h2'
@@ -20,7 +20,7 @@ SUPPORTED_NPN_PROTOCOLS = ['http/1.1'] + H2_NPN_PROTOCOLS
 _context = None
 
 # Work out where our certificates are.
-cert_loc = path.join(path.dirname(__file__), '..', 'certs.pem')
+cert_loc = path.join(path.dirname(__file__), 'certs.pem')
 
 def wrap_socket(sock, server_hostname):
     """
@@ -40,17 +40,18 @@ def wrap_socket(sock, server_hostname):
     if _context.check_hostname:  # pragma: no cover
         ssl.match_hostname(ssl_sock.getpeercert(), server_hostname)
 
+    proto = None
     with ignore_missing():
-        assert ssl_sock.selected_npn_protocol() in H2_NPN_PROTOCOLS
+        proto = ssl_sock.selected_npn_protocol()
 
-    return ssl_sock
+    return (ssl_sock, proto)
 
 
 def _init_context():
     """
     Creates the singleton SSLContext we use.
     """
-    context = ssl.SSLContext(ssl.PROTOCOL_TLSv1_2)
+    context = ssl.SSLContext(ssl.PROTOCOL_SSLv23)
     context.set_default_verify_paths()
     context.load_verify_locations(cafile=cert_loc)
     context.verify_mode = ssl.CERT_REQUIRED

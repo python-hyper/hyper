@@ -39,5 +39,9 @@ if [[ "$NGHTTP2" = true ]]; then
     sudo ldconfig
 fi
 
+if [[ "$HYPER_FAST_PARSE" = true ]]; then
+    pip install pycohttpparser~=1.0
+fi
+
 pip install .
 pip install -r test_requirements.txt

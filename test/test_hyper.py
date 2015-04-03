@@ -19,6 +19,7 @@ from hyper.http20.window import FlowControlManager
 from hyper.http20.util import (
     combine_repeated_headers, split_repeated_headers, h2_safe_headers
 )
+from hyper.common.headers import HTTPHeaderMap
 from hyper.compat import zlib_compressobj
 from hyper.contrib import HTTP20Adapter
 import errno
@@ -1251,8 +1252,8 @@ class TestHyperConnection(object):
         r1 = c.request('GET', '/a')
         r3 = c.request('GET', '/b')
 
-        assert c.getresponse(r3).getheaders() == [('content-type', 'baz/qux')]
-        assert c.getresponse(r1).getheaders() == [('content-type', 'foo/bar')]
+        assert c.get_response(r3).headers == HTTPHeaderMap([('content-type', 'baz/qux')])
+        assert c.get_response(r1).headers == HTTPHeaderMap([('content-type', 'foo/bar')])
 
     def test_headers_with_continuation(self):
         e = Encoder()
@@ -1271,7 +1272,7 @@ class TestHyperConnection(object):
         c._sock = sock
         r = c.request('GET', '/')
 
-        assert set(c.getresponse(r).getheaders()) == set([('content-type', 'foo/bar'), ('content-length', '0')])
+        assert set(c.get_response(r).headers.iter_raw()) == set([(b'content-type', b'foo/bar'), (b'content-length', b'0')])
 
     def test_receive_unexpected_frame(self):
         # RST_STREAM frames are never defined on connections, so send one of
@@ -1313,7 +1314,7 @@ class TestHyperConnection(object):
         c.window_manager.window_size = 1000
         c.window_manager.initial_window_size = 1000
         c.request('GET', '/')
-        resp = c.getresponse()
+        resp = c.get_response()
         resp.read()
 
         queue = list(map(decode_frame, map(memoryview, sock.queue)))
@@ -1409,26 +1410,24 @@ class TestServerPush(object):
         self.conn.request('GET', '/')
 
     def assert_response(self):
-        self.response = self.conn.getresponse()
+        self.response = self.conn.get_response()
         assert self.response.status == 200
-        assert dict(self.response.getheaders()) == {'content-type': 'text/html'}
+        assert dict(self.response.headers) == {b'content-type': [b'text/html']}
 
     def assert_pushes(self):
-        self.pushes = list(self.conn.getpushes())
+        self.pushes = list(self.conn.get_pushes())
         assert len(self.pushes) == 1
-        assert self.pushes[0].method == 'GET'
-        assert self.pushes[0].scheme == 'https'
-        assert self.pushes[0].authority == 'www.google.com'
-        assert self.pushes[0].path == '/'
-        expected_headers = {'accept-encoding': 'gzip'}
-        for name, value in expected_headers.items():
-            assert self.pushes[0].getrequestheader(name) == value
-        assert dict(self.pushes[0].getrequestheaders()) == expected_headers
+        assert self.pushes[0].method == b'GET'
+        assert self.pushes[0].scheme == b'https'
+        assert self.pushes[0].authority == b'www.google.com'
+        assert self.pushes[0].path == b'/'
+        expected_headers = {b'accept-encoding': [b'gzip']}
+        assert dict(self.pushes[0].request_headers) == expected_headers
 
     def assert_push_response(self):
-        push_response = self.pushes[0].getresponse()
+        push_response = self.pushes[0].get_response()
         assert push_response.status == 200
-        assert dict(push_response.getheaders()) == {'content-type': 'application/javascript'}
+        assert dict(push_response.headers) == {b'content-type': [b'application/javascript']}
         assert push_response.read() == b'bar'
 
     def test_promise_before_headers(self):
@@ -1439,7 +1438,7 @@ class TestServerPush(object):
         self.add_data_frame(2, b'bar', end_stream=True)
 
         self.request()
-        assert len(list(self.conn.getpushes())) == 0
+        assert len(list(self.conn.get_pushes())) == 0
         self.assert_response()
         self.assert_pushes()
         assert self.response.read() == b'foo'
@@ -1453,9 +1452,9 @@ class TestServerPush(object):
         self.add_data_frame(2, b'bar', end_stream=True)
 
         self.request()
-        assert len(list(self.conn.getpushes())) == 0
+        assert len(list(self.conn.get_pushes())) == 0
         self.assert_response()
-        assert len(list(self.conn.getpushes())) == 0
+        assert len(list(self.conn.get_pushes())) == 0
         assert self.response.read() == b'foo'
         self.assert_pushes()
         self.assert_push_response()
@@ -1469,9 +1468,9 @@ class TestServerPush(object):
         self.add_data_frame(2, b'bar', end_stream=True)
 
         self.request()
-        assert len(list(self.conn.getpushes())) == 0
+        assert len(list(self.conn.get_pushes())) == 0
         self.assert_response()
-        assert len(list(self.conn.getpushes())) == 0
+        assert len(list(self.conn.get_pushes())) == 0
         assert self.response.read() == b'foo'
         self.assert_pushes()
         self.assert_push_response()
@@ -1487,13 +1486,13 @@ class TestServerPush(object):
         self.add_data_frame(2, b'one', end_stream=True)
 
         self.request()
-        assert len(list(self.conn.getpushes())) == 0
-        pushes = list(self.conn.getpushes(capture_all=True))
+        assert len(list(self.conn.get_pushes())) == 0
+        pushes = list(self.conn.get_pushes(capture_all=True))
         assert len(pushes) == 2
-        assert pushes[0].path == '/one'
-        assert pushes[1].path == '/two'
-        assert pushes[0].getresponse().read() == b'one'
-        assert pushes[1].getresponse().read() == b'two'
+        assert pushes[0].path == b'/one'
+        assert pushes[1].path == b'/two'
+        assert pushes[0].get_response().read() == b'one'
+        assert pushes[1].get_response().read() == b'two'
         self.assert_response()
         assert self.response.read() == b'foo'
 
@@ -1502,8 +1501,8 @@ class TestServerPush(object):
         self.add_headers_frame(1, [(':status', '200'), ('content-type', 'text/html')])
 
         self.request()
-        self.conn.getresponse()
-        list(self.conn.getpushes())[0].cancel()
+        self.conn.get_response()
+        list(self.conn.get_pushes())[0].cancel()
 
         f = RstStreamFrame(2)
         f.error_code = 8
@@ -1515,24 +1514,24 @@ class TestServerPush(object):
 
         self.request()
         self.conn._enable_push = False
-        self.conn.getresponse()
+        self.conn.get_response()
 
         f = RstStreamFrame(2)
         f.error_code = 7
         assert self.conn._sock.queue[-1] == f.serialize()
 
     def test_pushed_requests_ignore_unexpected_headers(self):
-        headers = [
+        headers = HTTPHeaderMap([
             (':scheme', 'http'),
             (':method', 'get'),
             (':authority', 'google.com'),
             (':path', '/'),
             (':reserved', 'no'),
             ('no', 'no'),
-        ]
+        ])
         p = HTTP20Push(headers, DummyStream(b''))
 
-        assert p.getrequestheaders() == [('no', 'no')]
+        assert p.request_headers == HTTPHeaderMap([('no', 'no')])
 
 
 class TestHyperStream(object):
@@ -1815,7 +1814,7 @@ class TestHyperStream(object):
         f.flags.add('END_HEADERS')
         s.receive_frame(f)
 
-        assert s.response_headers == headers
+        assert s.response_headers == HTTPHeaderMap(headers)
 
         # Now, replace the dummy decoder to ensure we get a new header block.
         s._decoder = FixedDecoder(trailers)
@@ -1828,7 +1827,7 @@ class TestHyperStream(object):
         s.receive_frame(f)
 
         # Now, check the trailers.
-        assert s.response_trailers == trailers
+        assert s.response_trailers == HTTPHeaderMap(trailers)
 
         # Confirm we closed the stream.
         assert s.state == STATE_CLOSED
@@ -1892,26 +1891,64 @@ class TestHyperStream(object):
         in_frames.append(f)
 
         # Begin by reading the first headers.
-        assert s.getheaders() == headers
+        assert s.getheaders() == HTTPHeaderMap(headers)
 
         # Now, replace the dummy decoder to ensure we get a new header block.
         s._decoder = FixedDecoder(trailers)
 
         # Ask for the trailers. This should also read the data frames.
-        assert s.gettrailers() == trailers
+        assert s.gettrailers() == HTTPHeaderMap(trailers)
         assert s.data == [b'testdata']
+
+    def test_can_read_single_frames_from_streams(self):
+        out_frames = []
+        in_frames = []
+
+        def send_cb(frame, tolerate_peer_gone=False):
+            out_frames.append(frame)
+
+        def recv_cb(s):
+            def inner():
+                s.receive_frame(in_frames.pop(0))
+            return inner
+
+        s = Stream(1, send_cb, None, None, None, None, FlowControlManager(800))
+        s._recv_cb = recv_cb(s)
+        s.state = STATE_HALF_CLOSED_LOCAL
+
+        # Provide two data frames to read.
+        f = DataFrame(1)
+        f.data = b'hi there!'
+        in_frames.append(f)
+
+        f = DataFrame(1)
+        f.data = b'hi there again!'
+        f.flags.add('END_STREAM')
+        in_frames.append(f)
+
+        data = s._read_one_frame()
+        assert data == b'hi there!'
+
+        data = s._read_one_frame()
+        assert data == b'hi there again!'
+
+        data = s._read_one_frame()
+        assert data is None
+
+        data = s._read()
+        assert data == b''
 
 
 class TestResponse(object):
     def test_status_is_stripped_from_headers(self):
-        headers = [(':status', '200')]
+        headers = HTTPHeaderMap([(':status', '200')])
         resp = HTTP20Response(headers, None)
 
         assert resp.status == 200
-        assert resp.getheaders() == []
+        assert not resp.headers
 
     def test_response_transparently_decrypts_gzip(self):
-        headers = [(':status', '200'), ('content-encoding', 'gzip')]
+        headers = HTTPHeaderMap([(':status', '200'), ('content-encoding', 'gzip')])
         c = zlib_compressobj(wbits=24)
         body = c.compress(b'this is test data')
         body += c.flush()
@@ -1920,7 +1957,7 @@ class TestResponse(object):
         assert resp.read() == b'this is test data'
 
     def test_response_transparently_decrypts_real_deflate(self):
-        headers = [(':status', '200'), ('content-encoding', 'deflate')]
+        headers = HTTPHeaderMap([(':status', '200'), ('content-encoding', 'deflate')])
         c = zlib_compressobj(wbits=zlib.MAX_WBITS)
         body = c.compress(b'this is test data')
         body += c.flush()
@@ -1929,7 +1966,7 @@ class TestResponse(object):
         assert resp.read() == b'this is test data'
 
     def test_response_transparently_decrypts_wrong_deflate(self):
-        headers = [(':status', '200'), ('content-encoding', 'deflate')]
+        headers = HTTPHeaderMap([(':status', '200'), ('content-encoding', 'deflate')])
         c = zlib_compressobj(wbits=-zlib.MAX_WBITS)
         body = c.compress(b'this is test data')
         body += c.flush()
@@ -1938,22 +1975,24 @@ class TestResponse(object):
         assert resp.read() == b'this is test data'
 
     def test_response_calls_stream_close(self):
+        headers = HTTPHeaderMap([(':status', '200')])
         stream = DummyStream('')
-        resp = HTTP20Response([(':status', '200')], stream)
+        resp = HTTP20Response(headers, stream)
         resp.close()
 
         assert stream.closed
 
     def test_responses_are_context_managers(self):
+        headers = HTTPHeaderMap([(':status', '200')])
         stream = DummyStream('')
 
-        with HTTP20Response([(':status', '200')], stream) as resp:
+        with HTTP20Response(headers, stream) as resp:
             pass
 
         assert stream.closed
 
     def test_read_small_chunks(self):
-        headers = [(':status', '200')]
+        headers = HTTPHeaderMap([(':status', '200')])
         stream = DummyStream(b'1234567890')
         chunks = [b'12', b'34', b'56', b'78', b'90']
         resp = HTTP20Response(headers, stream)
@@ -1964,7 +2003,7 @@ class TestResponse(object):
         assert resp.read() == b''
 
     def test_read_buffered(self):
-        headers = [(':status', '200')]
+        headers = HTTPHeaderMap([(':status', '200')])
         stream = DummyStream(b'1234567890')
         chunks = [b'12', b'34', b'56', b'78', b'90'] * 2
         resp = HTTP20Response(headers, stream)
@@ -1976,48 +2015,62 @@ class TestResponse(object):
         assert resp.read() == b''
 
     def test_getheader(self):
-        headers = [(':status', '200'), ('content-type', 'application/json')]
+        headers = HTTPHeaderMap([(':status', '200'), ('content-type', 'application/json')])
         stream = DummyStream(b'')
         resp = HTTP20Response(headers, stream)
 
-        assert resp.getheader('content-type') == 'application/json'
-
-    def test_getheader_default(self):
-        headers = [(':status', '200')]
-        stream = DummyStream(b'')
-        resp = HTTP20Response(headers, stream)
-
-        assert resp.getheader('content-type', 'text/html') == 'text/html'
+        assert resp.headers[b'content-type'] == [b'application/json']
 
     def test_response_ignores_unknown_headers(self):
-        headers = [(':status', '200'), (':reserved', 'yes'), ('no', 'no')]
+        headers = HTTPHeaderMap([(':status', '200'), (':reserved', 'yes'), ('no', 'no')])
         stream = DummyStream(b'')
         resp = HTTP20Response(headers, stream)
 
-        assert resp.getheaders() == [('no', 'no')]
+        assert resp.headers == HTTPHeaderMap([('no', 'no')])
 
     def test_fileno_not_implemented(self):
-        resp = HTTP20Response([(':status', '200')], DummyStream(b''))
+        headers = HTTPHeaderMap([(':status', '200')])
+        resp = HTTP20Response(headers, DummyStream(b''))
 
         with pytest.raises(NotImplementedError):
             resp.fileno()
 
     def test_trailers_are_read(self):
-        trailers = [('a', 'b'), ('c', 'd')]
+        headers = HTTPHeaderMap([(':status', '200')])
+        trailers = HTTPHeaderMap([('a', 'b'), ('c', 'd')])
         stream = DummyStream(b'', trailers=trailers)
-        resp = HTTP20Response([(':status', '200')], stream)
+        resp = HTTP20Response(headers, stream)
 
-        # Cast to dict in both places because we roundtrip through a dict
-        # anyway.
-        assert dict(resp.gettrailers()) == dict(trailers)
-        assert resp.gettrailer('a') == 'b'
-        assert resp.gettrailer('c') == 'd'
+        assert resp.trailers == trailers
+        assert resp.trailers['a'] == [b'b']
+        assert resp.trailers['c'] == [b'd']
 
-    def test_gettrailer_defaults_correctly(self):
-        resp = HTTP20Response([(':status', '200')], DummyStream(b''))
+    def test_read_frames(self):
+        headers = HTTPHeaderMap([(':status', '200')])
+        stream = DummyStream(None)
+        chunks = [b'12', b'3456', b'78', b'9']
+        stream.data_frames = chunks
+        resp = HTTP20Response(headers, stream)
 
-        assert resp.gettrailer('a') is None
-        assert resp.gettrailer('a', 'b') == 'b'
+        for recv, expected in zip(resp.read_chunked(), chunks[:]):
+            assert recv == expected
+
+    def test_read_compressed_frames(self):
+        headers = HTTPHeaderMap([(':status', '200'), ('content-encoding', 'gzip')])
+        c = zlib_compressobj(wbits=24)
+        body = c.compress(b'this is test data')
+        body += c.flush()
+
+        stream = DummyStream(None)
+        chunks = [body[x:x+2] for x in range(0, len(body), 2)]
+        stream.data_frames = chunks
+        resp = HTTP20Response(headers, stream)
+
+        received = b''
+        for chunk in resp.read_chunked():
+            received += chunk
+
+        assert received == b'this is test data'
 
 
 class TestHTTP20Adapter(object):
@@ -2141,6 +2194,7 @@ class DummyFitfullySocket(DummySocket):
 class DummyStream(object):
     def __init__(self, data, trailers=None):
         self.data = data
+        self.data_frames = []
         self.closed = False
         self.response_headers = {}
         self._remote_closed = False
@@ -2162,6 +2216,12 @@ class DummyStream(object):
             self._remote_closed = True
 
         return d
+
+    def _read_one_frame(self):
+        try:
+            return self.data_frames.pop(0)
+        except IndexError:
+            return None
 
     def close(self):
         if not self.closed:

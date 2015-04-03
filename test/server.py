@@ -18,12 +18,13 @@ import sys
 
 from hyper import HTTP20Connection
 from hyper.compat import ssl
+from hyper.http11.connection import HTTP11Connection
 from hyper.http20.hpack import Encoder
 from hyper.http20.huffman import HuffmanEncoder
 from hyper.http20.huffman_constants import (
     REQUEST_CODES, REQUEST_CODES_LENGTH
 )
-from hyper.http20.tls import NPN_PROTOCOL
+from hyper.tls import NPN_PROTOCOL
 
 class SocketServerThread(threading.Thread):
     """
@@ -34,15 +35,19 @@ class SocketServerThread(threading.Thread):
     :param ready_event: Event which gets set when the socket handler is
         ready to receive requests.
     """
-    def __init__(self, socket_handler, host='localhost', ready_event=None):
+    def __init__(self,
+                 socket_handler,
+                 host='localhost',
+                 ready_event=None,
+                 h2=True):
         threading.Thread.__init__(self)
 
         self.socket_handler = socket_handler
         self.host = host
         self.ready_event = ready_event
 
-        self.cxt = ssl.SSLContext(ssl.PROTOCOL_TLSv1_2)
-        if ssl.HAS_NPN:
+        self.cxt = ssl.SSLContext(ssl.PROTOCOL_SSLv23)
+        if ssl.HAS_NPN and h2:
             self.cxt.set_npn_protocols([NPN_PROTOCOL])
         self.cxt.load_cert_chain(certfile='test/certs/server.crt',
                                  keyfile='test/certs/server.key')
@@ -89,6 +94,7 @@ class SocketLevelTest(object):
         self.server_thread = SocketServerThread(
             socket_handler=socket_handler,
             ready_event=ready_event,
+            h2=self.h2,
         )
         self.server_thread.start()
         ready_event.wait()
@@ -96,7 +102,10 @@ class SocketLevelTest(object):
         self.port = self.server_thread.port
 
     def get_connection(self):
-        return HTTP20Connection(self.host, self.port)
+        if self.h2:
+            return HTTP20Connection(self.host, self.port)
+        else:
+            return HTTP11Connection(self.host, self.port, secure=True)
 
     def get_encoder(self):
         """
