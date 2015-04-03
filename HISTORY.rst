@@ -1,6 +1,15 @@
 Release History
 ===============
 
+0.3.1 (2015-04-03)
+------------------
+
+*Bugfixes*
+
+- Fix blocking ``ImportError``. (`Issue #114`_)
+
+.. _Issue #114: https://github.com/Lukasa/hyper/issues/114
+
 0.3.0 (2015-04-03)
 ------------------
 
