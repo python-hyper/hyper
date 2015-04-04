@@ -200,7 +200,7 @@ def parse_argument(argv=None):
 
 def get_content_type_and_charset(response):
     charset = 'utf-8'
-    content_type = response.getheader('content-type')
+    content_type = response.headers[b'content-type'][0].decode(charset)
     if content_type is None:
         return 'unknown', charset
 
@@ -217,7 +217,7 @@ def request(args):
     conn = HTTP20Connection(args.url.host, args.url.port)
     conn.request(args.method, args.url.path, args.body, args.headers)
     response = conn.get_response()
-    log.debug('Response Headers:\n%s', pformat(response.getheaders()))
+    log.debug('Response Headers:\n%s', pformat(response.headers))
     ctype, charset = get_content_type_and_charset(response)
     data = response.read().decode(charset)
     if 'json' in ctype:
