@@ -44,7 +44,7 @@ class HTTP11Connection(object):
         ``False`` for most requests, but to ``True`` for any request issued to
         port 443.
     """
-    def __init__(self, host, port=None, secure=None):
+    def __init__(self, host, port=None, secure=None, **kwargs):
         if port is None:
             try:
                 self.host, self.port = host.split(':')
