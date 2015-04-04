@@ -18,7 +18,7 @@ improved speed, lower bandwidth usage, better connection management, and more.
 
     conn = HTTP20Connection('http2bin.org:443')
     conn.request('GET', '/get')
-    resp = conn.getresponse()
+    resp = conn.get_response()
 
     print(resp.read())
 

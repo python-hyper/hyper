@@ -104,7 +104,7 @@ For example::
     >>> from hyper import HTTP20Connection
     >>> c = HTTP20Connection('http2bin.org')
     >>> first = c.request('GET', '/get')
-    >>> second = c.request('POST', '/post', data='key=value')
+    >>> second = c.request('POST', '/post', body='key=value')
     >>> third = c.request('GET', '/ip')
     >>> second_response = c.getresponse(second)
     >>> first_response = c.getresponse(first)
