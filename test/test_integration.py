@@ -9,6 +9,7 @@ hitting the network, so that's alright.
 import requests
 import threading
 import hyper
+import hyper.http11.connection
 import pytest
 from hyper.compat import ssl
 from hyper.contrib import HTTP20Adapter
@@ -495,8 +496,18 @@ class TestRequestsAdapter(SocketLevelTest):
 
         self.tear_down()
 
-    def test_adapter_sending_values(self):
+    def test_adapter_sending_values(self, monkeypatch):
         self.set_up()
+
+        # We need to patch the ssl_wrap_socket method to ensure that we
+        # forcefully upgrade.
+        old_wrap_socket = hyper.http11.connection.wrap_socket
+
+        def wrap(*args):
+            sock, _ = old_wrap_socket(*args)
+            return sock, 'h2'
+
+        monkeypatch.setattr(hyper.http11.connection, 'wrap_socket', wrap)
 
         data = []
         send_event = threading.Event()
@@ -527,9 +538,9 @@ class TestRequestsAdapter(SocketLevelTest):
         self._start_server(socket_handler)
 
         s = requests.Session()
-        s.mount('http://%s' % self.host, HTTP20Adapter())
+        s.mount('https://%s' % self.host, HTTP20Adapter())
         r = s.post(
-            'http://%s:%s/some/path' % (self.host, self.port),
+            'https://%s:%s/some/path' % (self.host, self.port),
             data='hi there',
         )
 
