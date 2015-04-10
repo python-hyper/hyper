@@ -14,7 +14,7 @@ try:
 except ImportError:  # pragma: no cover
     HTTPAdapter = object
 
-from hyper import HTTP20Connection
+from hyper.common.connection import HTTPConnection
 from hyper.compat import urlparse
 
 class HTTP20Adapter(HTTPAdapter):
@@ -27,15 +27,21 @@ class HTTP20Adapter(HTTPAdapter):
         #: A mapping between HTTP netlocs and ``HTTP20Connection`` objects.
         self.connections = {}
 
-    def get_connection(self, netloc):
+    def get_connection(self, host, port, scheme):
         """
-        Gets an appropriate HTTP/2 connection object based on netloc.
+        Gets an appropriate HTTP/2 connection object based on host/port/scheme
+        tuples.
         """
+        secure = scheme == 'https'
+
+        if port is None:
+            port = 80 if not secure else 443
+
         try:
-            conn = self.connections[netloc]
+            conn = self.connections[(host, port, scheme)]
         except KeyError:
-            conn = HTTP20Connection(netloc)
-            self.connections[netloc] = conn
+            conn = HTTPConnection(host, port, secure=secure)
+            self.connections[(host, port, scheme)] = conn
 
         return conn
 
@@ -45,20 +51,20 @@ class HTTP20Adapter(HTTPAdapter):
         """
         parsed = urlparse(request.url)
 
-        conn = self.get_connection(parsed.netloc)
+        conn = self.get_connection(parsed.hostname, parsed.port, parsed.scheme)
 
         # Build the selector.
         selector = parsed.path
         selector += '?' + parsed.query if parsed.query else ''
         selector += '#' + parsed.fragment if parsed.fragment else ''
 
-        stream_id = conn.request(
+        conn.request(
             request.method,
             selector,
             request.body,
             request.headers
         )
-        resp = conn.get_response(stream_id)
+        resp = conn.get_response()
 
         r = self.build_response(request, resp)
 
