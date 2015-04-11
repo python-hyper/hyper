@@ -211,17 +211,23 @@ class HTTP20Connection(object):
 
             self._sock = BufferedSocket(sock, self.network_buffer_size)
 
-            # We need to send the connection header immediately on this
-            # connection, followed by an initial settings frame.
-            sock.send(b'PRI * HTTP/2.0\r\n\r\nSM\r\n\r\n')
-            f = SettingsFrame(0)
-            f.settings[SettingsFrame.ENABLE_PUSH] = int(self._enable_push)
-            self._send_cb(f)
-
-            # The server will also send an initial settings frame, so get it.
-            self._recv_cb()
+            self._send_preamble()
 
         return
+
+    def _send_preamble(self):
+        """
+        Sends the necessary HTTP/2 preamble.
+        """
+        # We need to send the connection header immediately on this
+        # connection, followed by an initial settings frame.
+        self._sock.send(b'PRI * HTTP/2.0\r\n\r\nSM\r\n\r\n')
+        f = SettingsFrame(0)
+        f.settings[SettingsFrame.ENABLE_PUSH] = int(self._enable_push)
+        self._send_cb(f)
+
+        # The server will also send an initial settings frame, so get it.
+        self._recv_cb()
 
     def close(self):
         """

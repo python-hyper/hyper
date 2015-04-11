@@ -42,3 +42,12 @@ except NameError:  # pragma: no cover
         """
         A HTTP connection was unexpectedly reset.
         """
+
+class TLSUpgrade(Exception):
+    """
+    We upgraded to a new protocol in the NPN/ALPN handshake.
+    """
+    def __init__(self, negotiated, sock):
+        super(TLSUpgrade, self).__init__()
+        self.negotiated = negotiated
+        self.sock = sock

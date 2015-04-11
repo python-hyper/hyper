@@ -59,8 +59,8 @@ http2bin.org, a HTTP/1.1 and HTTP/2 testing service.
 
 Begin by getting the homepage::
 
-    >>> from hyper import HTTP20Connection
-    >>> c = HTTP20Connection('http2bin.org')
+    >>> from hyper import HTTPConnection
+    >>> c = HTTPConnection('http2bin.org')
     >>> c.request('GET', '/')
     1
     >>> resp = c.get_response()
@@ -68,11 +68,11 @@ Begin by getting the homepage::
 Used in this way, ``hyper`` behaves exactly like ``http.client``. You can make
 sequential requests using the exact same API you're accustomed to. The only
 difference is that
-:meth:`HTTP20Connection.request() <hyper.HTTP20Connection.request>` returns a
-value, unlike the equivalent ``http.client`` function. The return value is the
-HTTP/2 *stream identifier*. If you're planning to use ``hyper`` in this very
-simple way, you can choose to ignore it, but it's potentially useful. We'll
-come back to it.
+:meth:`HTTPConnection.request() <hyper.HTTPConnection.request>` may return a
+value, unlike the equivalent ``http.client`` function. If present, the return
+value is the HTTP/2 *stream identifier*. If you're planning to use ``hyper``
+in this very simple way, you can choose to ignore it, but it's potentially
+useful. We'll come back to it.
 
 Once you've got the data, things diverge a little bit::
 
@@ -101,8 +101,8 @@ the response from any of them, and switch between them using their stream IDs.
 
 For example::
 
-    >>> from hyper import HTTP20Connection
-    >>> c = HTTP20Connection('http2bin.org')
+    >>> from hyper import HTTPConnection
+    >>> c = HTTPConnection('http2bin.org')
     >>> first = c.request('GET', '/get')
     >>> second = c.request('POST', '/post', body='key=value')
     >>> third = c.request('GET', '/ip')
@@ -112,40 +112,18 @@ For example::
 
 ``hyper`` will ensure that each response is matched to the correct request.
 
-Making Your First HTTP/1.1 Request
------------------------------------
+Abstraction
+-----------
 
-With ``hyper`` installed, you can start making HTTP/2 requests. At this
-stage, ``hyper`` can only be used with services that *definitely* support
-HTTP/2. Before you begin, ensure that whichever service you're contacting
-definitely supports HTTP/2. For the rest of these examples, we'll use
-Twitter.
+When you use the :class:`HTTPConnection <hyper.HTTPConnection>` object, you
+don't have to know in advance whether your service supports HTTP/2 or not. If
+it doesn't, ``hyper`` will transparently fall back to HTTP/1.1.
 
-You can also use ``hyper`` to make HTTP/1.1 requests. The code is very similar.
-For example, to get the Twitter homepage::
+You can tell the difference: if :meth:`request <hyper.HTTPConnection.request>`
+returns a stream ID, then the connection is using HTTP/2: if it returns
+``None``, then HTTP/1.1 is being used.
 
-    >>> from hyper import HTTP11Connection
-    >>> c = HTTP11Connection('twitter.com:443')
-    >>> c.request('GET', '/')
-    >>> resp = c.get_response()
-
-The key difference between HTTP/1.1 and HTTP/2 is that when you make HTTP/1.1
-requests you do not get a stream ID. This is, of course, because HTTP/1.1 does
-not have streams.
-
-Things behave exactly like they do in the HTTP/2 case, right down to the data
-reading::
-
-    >>> resp.headers['content-encoding']
-    [b'deflate']
-    >>> resp.headers
-    HTTPHeaderMap([(b'x-xss-protection', b'1; mode=block')...
-    >>> resp.status
-    200
-    >>> body = resp.read()
-    b'<!DOCTYPE html>\n<!--[if IE 8]><html clas ....
-
-That's all it takes.
+Generally, though, you don't need to care.
 
 Requests Integration
 --------------------
@@ -155,8 +133,7 @@ requests doesn't support HTTP/2 though. To rectify that oversight, ``hyper``
 provides a transport adapter that can be plugged directly into Requests, giving
 it instant HTTP/2 support.
 
-All you have to do is identify a host that you'd like to communicate with over
-HTTP/2. Once you've worked that out, you can get started straight away::
+Using ``hyper`` with requests is super simple::
 
     >>> import requests
     >>> from hyper.contrib import HTTP20Adapter
@@ -168,14 +145,6 @@ HTTP/2. Once you've worked that out, you can get started straight away::
 
 This transport adapter is subject to all of the limitations that apply to
 ``hyper``, and provides all of the goodness of requests.
-
-A quick warning: some hosts will redirect to new hostnames, which may redirect
-you away from HTTP/2. Make sure you install the adapter for all the hostnames
-you're interested in::
-
-    >>> a = HTTP20Adapter()
-    >>> s.mount('https://http2bin.org', a)
-    >>> s.mount('https://www.http2bin.org', a)
 
 .. _requests: http://python-requests.org/
 

@@ -2076,8 +2076,8 @@ class TestResponse(object):
 class TestHTTP20Adapter(object):
     def test_adapter_reuses_connections(self):
         a = HTTP20Adapter()
-        conn1 = a.get_connection('http2bin.org')
-        conn2 = a.get_connection('http2bin.org')
+        conn1 = a.get_connection('http2bin.org', 80, 'http')
+        conn2 = a.get_connection('http2bin.org', 80, 'http')
 
         assert conn1 is conn2
 

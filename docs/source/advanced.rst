@@ -13,12 +13,11 @@ may want to keep your connections alive only as long as you know you'll need
 them. In HTTP/2 this is generally not something you should do unless you're
 very confident you won't need the connection again anytime soon. However, if
 you decide you want to avoid keeping the connection open, you can use the
-:class:`HTTP20Connection <hyper.HTTP20Connection>` and
-:class:`HTTP11Connection <hyper.HTTP11Connection>` as context managers::
+:class:`HTTPConnection <hyper.HTTPConnection>` as a context manager::
 
-    with HTTP20Connection('http2bin.org') as conn:
+    with HTTPConnection('http2bin.org') as conn:
         conn.request('GET', '/get')
-        data = conn.getresponse().read()
+        data = conn.get_response().read()
 
     analyse(data)
 
@@ -57,10 +56,9 @@ Very easy!
 Multithreading
 --------------
 
-Currently, ``hyper``'s :class:`HTTP20Connection <hyper.HTTP20Connection>` and
-:class:`HTTP11Connection <hyper.HTTP11Connection>` classes are **not**
-thread-safe. Thread-safety is planned for ``hyper``'s core objects, but in this
-early alpha it is not a high priority.
+Currently, ``hyper``'s :class:`HTTPConnection <hyper.HTTPConnection>` class
+is **not** thread-safe. Thread-safety is planned for ``hyper``'s core objects,
+but in this early alpha it is not a high priority.
 
 To use ``hyper`` in a multithreaded context the recommended thing to do is to
 place each connection in its own thread. Each thread should then have a request
@@ -155,8 +153,8 @@ headers for the original request, after, or in the middle of sending the
 response body.
 
 In order to receive pushed resources, the
-:class:`HTTP20Connection <hyper.HTTP20Connection>` object must be constructed
-with ``enable_push=True``.
+:class:`HTTPConnection <hyper.HTTPConnection>` object must be constructed with
+``enable_push=True``.
 
 You may retrieve the push promises that the server has sent *so far* by calling
 :meth:`get_pushes() <hyper.HTTP20Connection.get_pushes>`, which returns a

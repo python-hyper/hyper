@@ -12,6 +12,7 @@ import socket
 from .response import HTTP11Response
 from ..tls import wrap_socket
 from ..common.bufsocket import BufferedSocket
+from ..common.exceptions import TLSUpgrade
 from ..common.headers import HTTPHeaderMap
 from ..common.util import to_bytestring
 from ..compat import bytes
@@ -43,7 +44,7 @@ class HTTP11Connection(object):
         ``False`` for most requests, but to ``True`` for any request issued to
         port 443.
     """
-    def __init__(self, host, port=None, secure=None):
+    def __init__(self, host, port=None, secure=None, **kwargs):
         if port is None:
             try:
                 self.host, self.port = host.split(':')
@@ -84,12 +85,17 @@ class HTTP11Connection(object):
         """
         if self._sock is None:
             sock = socket.create_connection((self.host, self.port), 5)
+            proto = None
 
             if self.secure:
                 sock, proto = wrap_socket(sock, self.host)
-                assert proto in ('http/1.1', None)
 
-            self._sock = BufferedSocket(sock, self.network_buffer_size)
+            sock = BufferedSocket(sock, self.network_buffer_size)
+
+            if proto not in ('http/1.1', None):
+                raise TLSUpgrade(proto, sock)
+
+            self._sock = sock
 
         return
 
