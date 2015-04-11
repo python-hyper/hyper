@@ -32,7 +32,7 @@ class HTTP20Adapter(HTTPAdapter):
         Gets an appropriate HTTP/2 connection object based on host/port/scheme
         tuples.
         """
-        secure = scheme == 'https'
+        secure = (scheme == 'https')
 
         if port is None:
             port = 80 if not secure else 443
