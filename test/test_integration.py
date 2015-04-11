@@ -480,7 +480,7 @@ class TestRequestsAdapter(SocketLevelTest):
             d.flags.add('END_STREAM')
             sock.send(d.serialize())
 
-            send_event.set()
+            send_event.wait()
             sock.close()
 
         self._start_server(socket_handler)
@@ -493,6 +493,8 @@ class TestRequestsAdapter(SocketLevelTest):
         assert r.status_code == 200
         assert r.headers[b'Content-Type'] == b'not/real'
         assert r.content == b'1234567890' * 2
+
+        send_event.set()
 
         self.tear_down()
 
