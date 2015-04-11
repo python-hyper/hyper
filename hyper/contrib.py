@@ -17,6 +17,7 @@ except ImportError:  # pragma: no cover
 from hyper.common.connection import HTTPConnection
 from hyper.compat import urlparse
 
+
 class HTTP20Adapter(HTTPAdapter):
     """
     A Requests Transport Adapter that uses hyper to send requests over
