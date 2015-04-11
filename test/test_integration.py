@@ -455,8 +455,18 @@ class TestRequestsAdapter(SocketLevelTest):
     # This uses HTTP/2.
     h2 = True
 
-    def test_adapter_received_values(self):
+    def test_adapter_received_values(self, monkeypatch):
         self.set_up()
+
+        # We need to patch the ssl_wrap_socket method to ensure that we
+        # forcefully upgrade.
+        old_wrap_socket = hyper.http11.connection.wrap_socket
+
+        def wrap(*args):
+            sock, _ = old_wrap_socket(*args)
+            return sock, 'h2'
+
+        monkeypatch.setattr(hyper.http11.connection, 'wrap_socket', wrap)
 
         data = []
         send_event = threading.Event()
