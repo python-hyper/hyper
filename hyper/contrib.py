@@ -34,7 +34,7 @@ class HTTP20Adapter(HTTPAdapter):
         """
         secure = (scheme == 'https')
 
-        if port is None:
+        if port is None:  # pragma: no cover
             port = 80 if not secure else 443
 
         try:
