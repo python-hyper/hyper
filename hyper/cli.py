@@ -149,7 +149,7 @@ def set_url_info(args):
             if port is not None:
                 info.port = port
 
-    log.debug('url info: %s', vars(info))
+    log.debug('Url Info: %s', vars(info))
     args.url = info
 
 
@@ -200,11 +200,11 @@ def parse_argument(argv=None):
 
 def get_content_type_and_charset(response):
     charset = 'utf-8'
-    content_type = response.getheader('content-type')
+    content_type = response.headers.get('content-type')
     if content_type is None:
         return 'unknown', charset
 
-    content_type = content_type.lower()
+    content_type = content_type[0].decode('utf-8').lower()
     type_and_charset = content_type.split(';', 1)
     ctype = type_and_charset[0].strip()
     if len(type_and_charset) == 2:
@@ -217,7 +217,7 @@ def request(args):
     conn = HTTP20Connection(args.url.host, args.url.port)
     conn.request(args.method, args.url.path, args.body, args.headers)
     response = conn.get_response()
-    log.debug('Response Headers:\n%s', pformat(response.getheaders()))
+    log.debug('Response Headers:\n%s', pformat(response.headers))
     ctype, charset = get_content_type_and_charset(response)
     data = response.read().decode(charset)
     if 'json' in ctype:
