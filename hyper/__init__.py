@@ -8,6 +8,7 @@ HTTP/1.1 and HTTP/2.
 """
 __version__ = '0.3.1'
 
+from .common.connection import HTTPConnection
 from .http20.connection import HTTP20Connection
 from .http20.response import HTTP20Response, HTTP20Push
 from .http11.connection import HTTP11Connection
@@ -19,6 +20,7 @@ if _sys.version_info < (2,7) or (3,0) <= _sys.version_info < (3,3):
     raise ImportError("hyper only supports Python 2.7 and Python 3.3 or higher.")
 
 __all__ = [
+    HTTPConnection,
     HTTP20Response,
     HTTP20Push,
     HTTP20Connection,
