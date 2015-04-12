@@ -48,14 +48,11 @@ instructions from the `cryptography`_ project, replacing references to
 
 .. _cryptography: https://cryptography.io/en/latest/installation/#installation
 
-Making Your First HTTP/2 Request
---------------------------------
+Making Your First HTTP Request
+------------------------------
 
-With ``hyper`` installed, you can start making HTTP/2 requests. At this
-stage, ``hyper`` can only be used with services that *definitely* support
-HTTP/2. Before you begin, ensure that whichever service you're contacting
-definitely supports HTTP/2. For the rest of these examples, we'll use
-http2bin.org, a HTTP/1.1 and HTTP/2 testing service.
+With ``hyper`` installed, you can start making HTTP/2 requests. For the rest of
+these examples, we'll use http2bin.org, a HTTP/1.1 and HTTP/2 testing service.
 
 Begin by getting the homepage::
 
