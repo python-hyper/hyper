@@ -7,8 +7,14 @@ Interface
 
 This section of the documentation covers the interface portions of ``hyper``.
 
-Primary HTTP/2 Interface
-------------------------
+Primary HTTP Interface
+----------------------
+
+.. autoclass:: hyper.HTTPConnection
+   :inherited-members:
+
+HTTP/2
+------
 
 .. autoclass:: hyper.HTTP20Connection
    :inherited-members:
@@ -18,6 +24,9 @@ Primary HTTP/2 Interface
 
 .. autoclass:: hyper.HTTP20Push
    :inherited-members:
+
+HTTP/1.1
+--------
 
 .. autoclass:: hyper.HTTP11Connection
    :inherited-members:
