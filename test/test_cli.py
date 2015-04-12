@@ -6,6 +6,7 @@ import pytest
 from hyper.cli import KeyValue
 from hyper.cli import get_content_type_and_charset, main, parse_argument
 from hyper.cli import set_request_data, set_url_info
+from hyper.common.headers import HTTPHeaderMap
 
 
 # mock for testing
@@ -17,7 +18,7 @@ class DummyUrlInfo(object):
 class DummyNamespace(object):
     def __init__(self, attrs):
         self.body = {}
-        self.headers = {}
+        self.headers = HTTPHeaderMap()
         self.items = []
         self.method = None
         self._url = ''
@@ -28,11 +29,13 @@ class DummyNamespace(object):
 
 class DummyResponse(object):
     def __init__(self, headers):
-        self.headers = headers
+        self.headers = HTTPHeaderMap(headers.items())
 
     def read(self):
-        if 'json' in self.headers.get('content-type', ''):
-            return b'{"data": "dummy"}'
+        ctype = self.headers.get('content-type')
+        if ctype is not None:
+            if 'json' in ctype[0].decode('utf-8'):
+                return b'{"data": "dummy"}'
         return b'<html>dummy</html>'
 
     def getheader(self, name):
