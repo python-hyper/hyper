@@ -3,5 +3,4 @@ omit =
     hyper/compat.py
     hyper/httplib_compat.py
     hyper/ssl_compat.py
-    hyper/http20/hpack_compat.py
     hyper/packages/*

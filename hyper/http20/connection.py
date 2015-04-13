@@ -14,7 +14,7 @@ from ..packages.hyperframe.frame import (
     SettingsFrame, Frame, WindowUpdateFrame, GoAwayFrame, PingFrame,
     BlockedFrame
 )
-from .hpack_compat import Encoder, Decoder
+from ..packages.hpack.hpack_compat import Encoder, Decoder
 from .stream import Stream
 from .response import HTTP20Response, HTTP20Push
 from .window import FlowControlManager
