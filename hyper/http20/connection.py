@@ -9,13 +9,13 @@ from ..tls import wrap_socket, H2_NPN_PROTOCOLS
 from ..common.exceptions import ConnectionResetError
 from ..common.bufsocket import BufferedSocket
 from ..common.headers import HTTPHeaderMap
-from .hpack_compat import Encoder, Decoder
-from .stream import Stream
-from .frame import (
+from ..packages.hyperframe.frame import (
     FRAMES, DataFrame, HeadersFrame, PushPromiseFrame, RstStreamFrame,
     SettingsFrame, Frame, WindowUpdateFrame, GoAwayFrame, PingFrame,
     BlockedFrame
 )
+from .hpack_compat import Encoder, Decoder
+from .stream import Stream
 from .response import HTTP20Response, HTTP20Push
 from .window import FlowControlManager
 from .exceptions import ConnectionError

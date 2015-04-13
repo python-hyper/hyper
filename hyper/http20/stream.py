@@ -14,11 +14,11 @@ Each stream is identified by a monotonically increasing integer, assigned to
 the stream by the endpoint that initiated the stream.
 """
 from ..common.headers import HTTPHeaderMap
-from .exceptions import ProtocolError
-from .frame import (
+from ..packages.hyperframe.frame import (
     FRAME_MAX_LEN, FRAMES, HeadersFrame, DataFrame, PushPromiseFrame,
     WindowUpdateFrame, ContinuationFrame, BlockedFrame
 )
+from .exceptions import ProtocolError
 from .util import h2_safe_headers
 import collections
 import logging

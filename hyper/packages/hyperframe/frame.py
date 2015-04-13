@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 """
-hyper/http20/frame
-~~~~~~~~~~~~~~~~~~
+hyperframe/frame
+~~~~~~~~~~~~~~~~
 
 Defines framing logic for HTTP/2. Provides both classes to represent framed
 data and logic for aiding the connection when it comes to reading from the
@@ -12,6 +12,7 @@ import struct
 
 # The maximum length of a frame. Some frames have shorter maximum lengths.
 FRAME_MAX_LEN = (2 ** 14) - 1
+
 
 class Frame(object):
     """

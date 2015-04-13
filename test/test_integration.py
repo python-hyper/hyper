@@ -13,7 +13,7 @@ import hyper.http11.connection
 import pytest
 from hyper.compat import ssl
 from hyper.contrib import HTTP20Adapter
-from hyper.http20.frame import (
+from hyper.packages.hyperframe.frame import (
     Frame, SettingsFrame, WindowUpdateFrame, DataFrame, HeadersFrame,
     GoAwayFrame,
 )
