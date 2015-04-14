@@ -12,7 +12,7 @@ from .compat import ignore_missing, ssl
 
 NPN_PROTOCOL = 'h2'
 H2_NPN_PROTOCOLS = [NPN_PROTOCOL, 'h2-16,' 'h2-15', 'h2-14']  # All h2s we support.
-SUPPORTED_NPN_PROTOCOLS = ['http/1.1'] + H2_NPN_PROTOCOLS
+SUPPORTED_NPN_PROTOCOLS = H2_NPN_PROTOCOLS + ['http/1.1']
 
 
 # We have a singleton SSLContext object. There's no reason to be creating one

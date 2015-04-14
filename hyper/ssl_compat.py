@@ -323,7 +323,7 @@ class SSLContext(object):
             overlap = set(protos) & set(self.protocols)
 
             # Select the option that comes last in the list in the overlap.
-            for p in self.protocols[::-1]:
+            for p in self.protocols:
                 if p in overlap:
                     return p
             else:
