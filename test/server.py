@@ -19,9 +19,9 @@ import sys
 from hyper import HTTP20Connection
 from hyper.compat import ssl
 from hyper.http11.connection import HTTP11Connection
-from hyper.http20.hpack import Encoder
-from hyper.http20.huffman import HuffmanEncoder
-from hyper.http20.huffman_constants import (
+from hyper.packages.hpack.hpack import Encoder
+from hyper.packages.hpack.huffman import HuffmanEncoder
+from hyper.packages.hpack.huffman_constants import (
     REQUEST_CODES, REQUEST_CODES_LENGTH
 )
 from hyper.tls import NPN_PROTOCOL

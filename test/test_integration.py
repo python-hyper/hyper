@@ -13,13 +13,13 @@ import hyper.http11.connection
 import pytest
 from hyper.compat import ssl
 from hyper.contrib import HTTP20Adapter
-from hyper.http20.frame import (
+from hyper.packages.hyperframe.frame import (
     Frame, SettingsFrame, WindowUpdateFrame, DataFrame, HeadersFrame,
     GoAwayFrame,
 )
-from hyper.http20.hpack import Encoder
-from hyper.http20.huffman import HuffmanEncoder
-from hyper.http20.huffman_constants import (
+from hyper.packages.hpack.hpack import Encoder
+from hyper.packages.hpack.huffman import HuffmanEncoder
+from hyper.packages.hpack.huffman_constants import (
     REQUEST_CODES, REQUEST_CODES_LENGTH
 )
 from hyper.http20.exceptions import ConnectionError
