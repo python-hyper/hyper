@@ -232,7 +232,7 @@ class SSLSocket(object):
         return self._safe_ssl_call(False, self._conn.send, data, flags)
 
     def selected_npn_protocol(self):
-        raise NotImplementedError()
+        self._conn.get_next_proto_negotiated()
 
     def getpeercert(self):
         def resolve_alias(alias):
@@ -276,6 +276,7 @@ class SSLContext(object):
         self._ctx = ossl.Context(protocol)
         self.options = OP_ALL
         self.check_hostname = False
+        self.npn_protos = []
 
     @property
     def options(self):
@@ -315,8 +316,20 @@ class SSLContext(object):
         self._ctx.use_privatekey_file(keyfile or certfile)
 
     def set_npn_protocols(self, protocols):
-        # TODO
-        raise NotImplementedError()
+        self.protocols = protocols
+
+        def cb(conn, protos):
+            # Detect the overlapping set of protocols.
+            overlap = set(protos) & set(self.protocols)
+
+            # Select the option that comes last in the list in the overlap.
+            for p in self.protocols[::-1]:
+                if p in overlap:
+                    return p
+            else:
+                return b''
+
+        self._ctx.set_npn_select_callback(cb)
 
     def wrap_socket(self, sock, server_side=False, do_handshake_on_connect=True,
                     suppress_ragged_eofs=True, server_hostname=None):
