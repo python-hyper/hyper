@@ -38,7 +38,10 @@ def wrap_socket(sock, server_hostname):
     # post-handshake servername matches that of the certificate. We also need to
     # check that it matches the requested one.
     if _context.check_hostname:  # pragma: no cover
-        ssl.match_hostname(ssl_sock.getpeercert(), server_hostname)
+        try:
+            ssl.match_hostname(ssl_sock.getpeercert(), server_hostname)
+        except AttributeError:
+            ssl.verify_hostname(ssl_sock, server_hostname)  # pyopenssl
 
     proto = None
     with ignore_missing():

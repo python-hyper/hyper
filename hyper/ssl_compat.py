@@ -19,6 +19,7 @@ import time
 import re
 
 from OpenSSL import SSL as ossl
+from service_identity.pyopenssl import verify_hostname as _verify
 
 CERT_NONE = ossl.VERIFY_NONE
 CERT_REQUIRED = ossl.VERIFY_PEER | ossl.VERIFY_FAIL_IF_NO_PEER_CERT
@@ -51,102 +52,11 @@ class CertificateError(SSLError):
     pass
 
 
-# lifted from the Python 3.4 stdlib
-def _dnsname_match(dn, hostname, max_wildcards=1):
+def verify_hostname(ssl_sock, server_hostname):
     """
-    Matching according to RFC 6125, section 6.4.3.
-
-    See http://tools.ietf.org/html/rfc6125#section-6.4.3
+    A method nearly compatible with the stdlib's match_hostname.
     """
-    pats = []
-    if not dn:
-        return False
-
-    parts = dn.split(r'.')
-    leftmost = parts[0]
-    remainder = parts[1:]
-
-    wildcards = leftmost.count('*')
-    if wildcards > max_wildcards:
-        # Issue #17980: avoid denials of service by refusing more
-        # than one wildcard per fragment.  A survery of established
-        # policy among SSL implementations showed it to be a
-        # reasonable choice.
-        raise CertificateError(
-            "too many wildcards in certificate DNS name: " + repr(dn))
-
-    # speed up common case w/o wildcards
-    if not wildcards:
-        return dn.lower() == hostname.lower()
-
-    # RFC 6125, section 6.4.3, subitem 1.
-    # The client SHOULD NOT attempt to match a presented identifier in which
-    # the wildcard character comprises a label other than the left-most label.
-    if leftmost == '*':
-        # When '*' is a fragment by itself, it matches a non-empty dotless
-        # fragment.
-        pats.append('[^.]+')
-    elif leftmost.startswith('xn--') or hostname.startswith('xn--'):
-        # RFC 6125, section 6.4.3, subitem 3.
-        # The client SHOULD NOT attempt to match a presented identifier
-        # where the wildcard character is embedded within an A-label or
-        # U-label of an internationalized domain name.
-        pats.append(re.escape(leftmost))
-    else:
-        # Otherwise, '*' matches any dotless string, e.g. www*
-        pats.append(re.escape(leftmost).replace(r'\*', '[^.]*'))
-
-    # add the remaining fragments, ignore any wildcards
-    for frag in remainder:
-        pats.append(re.escape(frag))
-
-    pat = re.compile(r'\A' + r'\.'.join(pats) + r'\Z', re.IGNORECASE)
-    return pat.match(hostname)
-
-
-# lifted from the Python 3.4 stdlib
-def match_hostname(cert, hostname):
-    """
-    Verify that ``cert`` (in decoded format as returned by
-    ``SSLSocket.getpeercert())`` matches the ``hostname``.  RFC 2818 and RFC
-    6125 rules are followed, but IP addresses are not accepted for ``hostname``.
-
-    ``CertificateError`` is raised on failure. On success, the function returns
-    nothing.
-    """
-    if not cert:
-        raise ValueError("empty or no certificate, match_hostname needs a "
-                         "SSL socket or SSL context with either "
-                         "CERT_OPTIONAL or CERT_REQUIRED")
-    dnsnames = []
-    san = cert.get('subjectAltName', ())
-    for key, value in san:
-        if key == 'DNS':
-            if _dnsname_match(value, hostname):
-                return
-            dnsnames.append(value)
-    if not dnsnames:
-        # The subject is only checked when there is no dNSName entry
-        # in subjectAltName
-        for sub in cert.get('subject', ()):
-            for key, value in sub:
-                # XXX according to RFC 2818, the most specific Common Name
-                # must be used.
-                if key == 'commonName':
-                    if _dnsname_match(value, hostname):
-                        return
-                    dnsnames.append(value)
-    if len(dnsnames) > 1:
-        raise CertificateError("hostname %r "
-            "doesn't match either of %s"
-            % (hostname, ', '.join(map(repr, dnsnames))))
-    elif len(dnsnames) == 1:
-        raise CertificateError("hostname %r "
-            "doesn't match %r"
-            % (hostname, dnsnames[0]))
-    else:
-        raise CertificateError("no appropriate commonName or "
-            "subjectAltName fields were found")
+    return _verify(ssl_sock._conn, server_hostname)
 
 
 class SSLSocket(object):
@@ -165,6 +75,7 @@ class SSLSocket(object):
         else:
             if server_hostname:
                 self._conn.set_tlsext_host_name(server_hostname.encode('utf-8'))
+                self._server_hostname = server_hostname
             self._conn.set_connect_state() # FIXME does this override do_handshake_on_connect=False?
 
         if self.connected and self._do_handshake_on_connect:
@@ -211,7 +122,7 @@ class SSLSocket(object):
     def do_handshake(self):
         self._safe_ssl_call(False, self._conn.do_handshake)
         if self._check_hostname:
-            match_hostname(self.getpeercert(), self._conn.get_servername().decode('utf-8'))
+            verify_hostname(self, self._server_hostname)
 
     def recv(self, bufsize, flags=None):
         return self._safe_ssl_call(self._suppress_ragged_eofs, self._conn.recv,
