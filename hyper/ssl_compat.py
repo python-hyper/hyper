@@ -38,7 +38,7 @@ OP_ALL = 0
 for bit in [31] + list(range(10)): # TODO figure out the names of these other flags
     OP_ALL |= 1 << bit
 
-HAS_NPN = False # TODO
+HAS_NPN = True
 
 def _proxy(method):
     return lambda self, *args, **kwargs: getattr(self._conn, method)(*args, **kwargs)
