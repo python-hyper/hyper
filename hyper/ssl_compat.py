@@ -232,7 +232,11 @@ class SSLSocket(object):
         return self._safe_ssl_call(False, self._conn.send, data, flags)
 
     def selected_npn_protocol(self):
-        self._conn.get_next_proto_negotiated()
+        proto = self._conn.get_next_proto_negotiated()
+        if isinstance(proto, bytes):
+            return proto.decode('ascii')
+
+        return proto
 
     def getpeercert(self):
         def resolve_alias(alias):
@@ -316,7 +320,7 @@ class SSLContext(object):
         self._ctx.use_privatekey_file(keyfile or certfile)
 
     def set_npn_protocols(self, protocols):
-        self.protocols = protocols
+        self.protocols = list(map(lambda x:x.encode('ascii'), protocols))
 
         def cb(conn, protos):
             # Detect the overlapping set of protocols.
