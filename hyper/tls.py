@@ -11,7 +11,7 @@ from .compat import ignore_missing, ssl
 
 
 NPN_PROTOCOL = 'h2'
-H2_NPN_PROTOCOLS = [NPN_PROTOCOL, 'h2-16', 'h2-15', 'h2-14']  # All h2s we support.
+H2_NPN_PROTOCOLS = [NPN_PROTOCOL, 'h2-16', 'h2-15', 'h2-14']
 SUPPORTED_NPN_PROTOCOLS = H2_NPN_PROTOCOLS + ['http/1.1']
 
 
@@ -21,6 +21,7 @@ _context = None
 
 # Work out where our certificates are.
 cert_loc = path.join(path.dirname(__file__), 'certs.pem')
+
 
 def wrap_socket(sock, server_hostname):
     """
@@ -35,8 +36,8 @@ def wrap_socket(sock, server_hostname):
     # the spec requires SNI support
     ssl_sock = _context.wrap_socket(sock, server_hostname=server_hostname)
     # Setting SSLContext.check_hostname to True only verifies that the
-    # post-handshake servername matches that of the certificate. We also need to
-    # check that it matches the requested one.
+    # post-handshake servername matches that of the certificate. We also need
+    # to check that it matches the requested one.
     if _context.check_hostname:  # pragma: no cover
         try:
             ssl.match_hostname(ssl_sock.getpeercert(), server_hostname)
