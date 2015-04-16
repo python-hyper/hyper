@@ -11,7 +11,7 @@ from .compat import ignore_missing, ssl
 
 
 NPN_PROTOCOL = 'h2'
-H2_NPN_PROTOCOLS = [NPN_PROTOCOL, 'h2-16', 'h2-15', 'h2-14']  # All h2s we support.
+H2_NPN_PROTOCOLS = [NPN_PROTOCOL, 'h2-16', 'h2-15', 'h2-14']
 SUPPORTED_NPN_PROTOCOLS = H2_NPN_PROTOCOLS + ['http/1.1']
 
 
@@ -21,6 +21,7 @@ _context = None
 
 # Work out where our certificates are.
 cert_loc = path.join(path.dirname(__file__), 'certs.pem')
+
 
 def wrap_socket(sock, server_hostname):
     """
@@ -35,8 +36,8 @@ def wrap_socket(sock, server_hostname):
     # the spec requires SNI support
     ssl_sock = _context.wrap_socket(sock, server_hostname=server_hostname)
     # Setting SSLContext.check_hostname to True only verifies that the
-    # post-handshake servername matches that of the certificate. We also need to
-    # check that it matches the requested one.
+    # post-handshake servername matches that of the certificate. We also need
+    # to check that it matches the requested one.
     if _context.check_hostname:  # pragma: no cover
         try:
             ssl.match_hostname(ssl_sock.getpeercert(), server_hostname)
@@ -44,8 +45,15 @@ def wrap_socket(sock, server_hostname):
             ssl.verify_hostname(ssl_sock, server_hostname)  # pyopenssl
 
     proto = None
+
+    # ALPN is newer, so we prefer it over NPN. The odds of us getting different
+    # answers is pretty low, but let's be sure.
     with ignore_missing():
-        proto = ssl_sock.selected_npn_protocol()
+        proto = ssl_sock.selected_alpn_protocol()
+
+    with ignore_missing():
+        if proto is None:
+            proto = ssl_sock.selected_npn_protocol()
 
     return (ssl_sock, proto)
 
@@ -62,6 +70,9 @@ def _init_context():
 
     with ignore_missing():
         context.set_npn_protocols(SUPPORTED_NPN_PROTOCOLS)
+
+    with ignore_missing():
+        context.set_alpn_protocols(SUPPORTED_NPN_PROTOCOLS)
 
     # required by the spec
     context.options |= ssl.OP_NO_COMPRESSION
