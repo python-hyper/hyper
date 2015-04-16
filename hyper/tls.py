@@ -45,8 +45,15 @@ def wrap_socket(sock, server_hostname):
             ssl.verify_hostname(ssl_sock, server_hostname)  # pyopenssl
 
     proto = None
+
+    # ALPN is newer, so we prefer it over NPN. The odds of us getting different
+    # answers is pretty low, but let's be sure.
     with ignore_missing():
-        proto = ssl_sock.selected_npn_protocol()
+        proto = ssl_sock.selected_alpn_protocol()
+
+    with ignore_missing():
+        if proto is None:
+            proto = ssl_sock.selected_npn_protocol()
 
     return (ssl_sock, proto)
 
@@ -63,6 +70,9 @@ def _init_context():
 
     with ignore_missing():
         context.set_npn_protocols(SUPPORTED_NPN_PROTOCOLS)
+
+    with ignore_missing():
+        context.set_alpn_protocols(SUPPORTED_NPN_PROTOCOLS)
 
     # required by the spec
     context.options |= ssl.OP_NO_COMPRESSION
