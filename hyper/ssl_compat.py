@@ -147,7 +147,7 @@ class SSLSocket(object):
         if isinstance(proto, bytes):
             return proto.decode('ascii')
 
-        return proto
+        return proto if proto else None
 
     def getpeercert(self):
         def resolve_alias(alias):
