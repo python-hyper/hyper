@@ -145,7 +145,7 @@ class SSLSocket(object):
     def selected_npn_protocol(self):
         proto = self._conn.get_next_proto_negotiated()
         if isinstance(proto, bytes):
-            return proto.decode('ascii')
+            proto = proto.decode('ascii')
 
         return proto if proto else None
 
