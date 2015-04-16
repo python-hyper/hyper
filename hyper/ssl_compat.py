@@ -149,6 +149,13 @@ class SSLSocket(object):
 
         return proto if proto else None
 
+    def selected_alpn_protocol(self):
+        proto = self._conn.get_alpn_proto_negotiated()
+        if isinstance(proto, bytes):
+            proto = proto.decode('ascii')
+
+        return proto if proto else None
+
     def getpeercert(self):
         def resolve_alias(alias):
             return dict(
@@ -245,6 +252,10 @@ class SSLContext(object):
                 return b''
 
         self._ctx.set_npn_select_callback(cb)
+
+    def set_alpn_protocols(self, protocols):
+        protocols = list(map(lambda x: x.encode('ascii'), protocols))
+        self._ctx.set_alpn_protos(protocols)
 
     def wrap_socket(self, sock, server_side=False, do_handshake_on_connect=True,
                     suppress_ragged_eofs=True, server_hostname=None):
