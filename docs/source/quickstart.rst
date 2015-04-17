@@ -5,7 +5,7 @@ Quickstart Guide
 
 First, congratulations on picking ``hyper`` for your HTTP needs. ``hyper``
 is the premier (and, as far as we're aware, the only) Python HTTP/2 library,
-as well as a very servicable HTTP/1.1 library.
+as well as a very serviceable HTTP/1.1 library.
 
 In this section, we'll walk you through using ``hyper``.
 
@@ -80,7 +80,7 @@ Once you've got the data, things diverge a little bit::
     >>> resp.status
     200
 
-If http2bin had compressed the response body. ``hyper`` would automatically
+If http2bin had compressed the response body then ``hyper`` would automatically
 decompress that body for you, no input required. This means you can always get
 the body by simply reading it::
 

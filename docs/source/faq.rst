@@ -15,7 +15,7 @@ an email. My email address can be found `on my GitHub profile page`_.
 What version of the HTTP/2 specification does ``hyper`` support?
 ----------------------------------------------------------------
 
-``hyper`` suports the final version of the HTTP/2 draft specification. It also
+``hyper`` supports the final version of the HTTP/2 draft specification. It also
 supports versions 14, 15, and 16 of the specification. It supports the final
 version of the HPACK draft specification.
 
