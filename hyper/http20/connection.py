@@ -207,6 +207,7 @@ class HTTP20Connection(object):
             sock = socket.create_connection((self.host, self.port), 5)
 
             sock, proto = wrap_socket(sock, self.host)
+            log.debug("Selected NPN protocol: %s", proto)
             assert proto in H2_NPN_PROTOCOLS
 
             self._sock = BufferedSocket(sock, self.network_buffer_size)
