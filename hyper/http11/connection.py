@@ -90,6 +90,7 @@ class HTTP11Connection(object):
             if self.secure:
                 sock, proto = wrap_socket(sock, self.host)
 
+            log.debug("Selected NPN protocol: %s", proto)
             sock = BufferedSocket(sock, self.network_buffer_size)
 
             if proto not in ('http/1.1', None):
