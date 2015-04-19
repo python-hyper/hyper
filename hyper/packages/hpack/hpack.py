@@ -278,9 +278,13 @@ class Encoder(object):
             # Indexed representation.
             encoded = self._encode_indexed(index)
         else:
-            # Indexed literal. Since we have a partial match, don't add to
-            # the header table, it won't help us.
+            # Indexed literal. We are going to add header to the
+            # header table unconditionally. It is a future todo to
+            # filter out headers which are known to be ineffective for
+            # indexing since they just take space in the table and
+            # pushed out other valuable headers.
             encoded = self._encode_indexed_literal(index, value, huffman)
+            self._add_to_header_table(to_add)
 
         return encoded
 
@@ -362,9 +366,11 @@ class Encoder(object):
 
     def _encode_indexed_literal(self, index, value, huffman=False):
         """
-        Encodes a header with an indexed name and a literal value.
+        Encodes a header with an indexed name and a literal value and performs
+        incremental indexing.
         """
-        name = encode_integer(index, 4)
+        prefix = encode_integer(index, 6)
+        prefix[0] |= 0x40
 
         if huffman:
             value = self.huffman_coder.encode(value)
@@ -374,7 +380,7 @@ class Encoder(object):
         if huffman:
             value_len[0] |= 0x80
 
-        return b''.join([bytes(name), bytes(value_len), value])
+        return b''.join([bytes(prefix), bytes(value_len), value])
 
     def _encode_table_size_change(self):
         """
