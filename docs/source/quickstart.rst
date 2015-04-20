@@ -100,12 +100,12 @@ For example::
 
     >>> from hyper import HTTPConnection
     >>> c = HTTPConnection('http2bin.org')
-    >>> first = c.request('GET', '/get')
-    >>> second = c.request('POST', '/post', body='key=value')
+    >>> first = c.request('GET', '/get', body='hello')
+    >>> second = c.request('POST', '/post', headers={'key':'value'})
     >>> third = c.request('GET', '/ip')
-    >>> second_response = c.getresponse(second)
-    >>> first_response = c.getresponse(first)
-    >>> third_response = c.getresponse(third)
+    >>> second_response = c.get_response(second)
+    >>> first_response = c.get_response(first)
+    >>> third_response = c.get_response(third)
 
 ``hyper`` will ensure that each response is matched to the correct request.
 
