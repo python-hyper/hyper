@@ -100,8 +100,8 @@ For example::
 
     >>> from hyper import HTTPConnection
     >>> c = HTTPConnection('http2bin.org')
-    >>> first = c.request('GET', '/get', body='hello')
-    >>> second = c.request('POST', '/post', headers={'key':'value'})
+    >>> first = c.request('GET', '/get', headers={'key': 'value'})
+    >>> second = c.request('POST', '/post', body=b'hello')
     >>> third = c.request('GET', '/ip')
     >>> second_response = c.get_response(second)
     >>> first_response = c.get_response(first)
