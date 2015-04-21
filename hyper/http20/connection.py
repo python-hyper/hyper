@@ -51,8 +51,10 @@ class HTTP20Connection(object):
     :param enable_push: (optional) Whether the server is allowed to push
         resources to the client (see
         :meth:`get_pushes() <hyper.HTTP20Connection.get_pushes>`).
+    :SSLContext: (optional) A class with custom certificate settings. If not provided
+        then hyper's default SSLContext is used instead.
     """
-    def __init__(self, host, port=None, window_manager=None, enable_push=False,
+    def __init__(self, host, port=None, window_manager=None, enable_push=False, SSLContext=None,
                  **kwargs):
         """
         Creates an HTTP/2 connection to a specific server.
@@ -67,6 +69,7 @@ class HTTP20Connection(object):
             self.host, self.port = host, port
 
         self._enable_push = enable_push
+        self._SSLContext = SSLContext
 
         #: The size of the in-memory buffer used to store data from the
         #: network. This is used as a performance optimisation. Increase buffer
@@ -206,7 +209,7 @@ class HTTP20Connection(object):
         if self._sock is None:
             sock = socket.create_connection((self.host, self.port), 5)
 
-            sock, proto = wrap_socket(sock, self.host)
+            sock, proto = wrap_socket(sock, self.host, self._SSLContext)
             log.debug("Selected NPN protocol: %s", proto)
             assert proto in H2_NPN_PROTOCOLS
 
