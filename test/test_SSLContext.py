@@ -37,7 +37,6 @@ class TestSSLContext(object):
     def test_http20Connection_with_custom_context(self):
         context = ssl.SSLContext(ssl.PROTOCOL_SSLv23)
         context.set_default_verify_paths()
-        context.load_verify_locations(cafile='hyper\certs.pem')
         context.verify_mode = ssl.CERT_REQUIRED
         context.check_hostname = True
         context.set_npn_protocols(['h2', 'h2-15'])
