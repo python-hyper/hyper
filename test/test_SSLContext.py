@@ -4,7 +4,7 @@ Tests the hyper SSLContext.
 """
 import hyper
 from hyper import HTTP20Connection
-import ssl
+from hyper.compat import ssl
 import pytest
 
 class TestSSLContext(object):
@@ -43,8 +43,8 @@ class TestSSLContext(object):
         context.set_npn_protocols(['h2', 'h2-15'])
         context.options |= ssl.OP_NO_COMPRESSION
         
-        conn = HTTP20Connection('http2bin.org:443', SSLContext=context)
+        conn = HTTP20Connection('http2bin.org:443', ssl_context=context)
         
-        assert conn._SSLContext.check_hostname == True
-        assert conn._SSLContext.verify_mode == ssl.CERT_REQUIRED
-        assert conn._SSLContext.options & ssl.OP_NO_COMPRESSION != 0
+        assert conn.ssl_context.check_hostname == True
+        assert conn.ssl_context.verify_mode == ssl.CERT_REQUIRED
+        assert conn.ssl_context.options & ssl.OP_NO_COMPRESSION != 0
