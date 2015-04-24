@@ -51,11 +51,11 @@ class HTTP20Connection(object):
     :param enable_push: (optional) Whether the server is allowed to push
         resources to the client (see
         :meth:`get_pushes() <hyper.HTTP20Connection.get_pushes>`).
-    :ssl_context: (optional) A class with custom certificate settings. If not provided
-        then hyper's default SSLContext is used instead.
+    :param ssl_context: (optional) A class with custom certificate settings.
+        If not provided then hyper's default SSLContext is used instead.
     """
-    def __init__(self, host, port=None, window_manager=None, enable_push=False, ssl_context=None,
-                 **kwargs):
+    def __init__(self, host, port=None, window_manager=None, enable_push=False,
+                 ssl_context=None, **kwargs):
         """
         Creates an HTTP/2 connection to a specific server.
         """

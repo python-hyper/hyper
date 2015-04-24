@@ -31,10 +31,13 @@ def wrap_socket(sock, server_hostname, ssl_context=None):
     global _context
 
     if _context is None:  # pragma: no cover
-        _context = ssl_context or _init_context()
+        _context = _init_context()
+
+    # if an SSLContext is provided then use it instead of default context
+    _ssl_context = ssl_context or _context
 
     # the spec requires SNI support
-    ssl_sock = _context.wrap_socket(sock, server_hostname=server_hostname)
+    ssl_sock = _ssl_context.wrap_socket(sock, server_hostname=server_hostname)
     # Setting SSLContext.check_hostname to True only verifies that the
     # post-handshake servername matches that of the certificate. We also need
     # to check that it matches the requested one.
