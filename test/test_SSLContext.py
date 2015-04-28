@@ -3,7 +3,7 @@
 Tests the hyper SSLContext.
 """
 import hyper
-from hyper import HTTP20Connection
+from hyper.common.connection import HTTPConnection
 from hyper.compat import ssl
 import pytest
 
@@ -34,16 +34,16 @@ class TestSSLContext(object):
         assert hyper.tls._context.options & ssl.OP_NO_COMPRESSION == 0
 
 
-    def test_http20Connection_with_custom_context(self):
+    def test_HTTPConnection_with_custom_context(self):
         context = ssl.SSLContext(ssl.PROTOCOL_SSLv23)
         context.set_default_verify_paths()
         context.verify_mode = ssl.CERT_REQUIRED
         context.check_hostname = True
         context.set_npn_protocols(['h2', 'h2-15'])
         context.options |= ssl.OP_NO_COMPRESSION
-        
-        conn = HTTP20Connection('http2bin.org:443', ssl_context=context)
-        
+
+        conn = HTTPConnection('http2bin.org', 443, ssl_context=context)
+
         assert conn.ssl_context.check_hostname == True
         assert conn.ssl_context.verify_mode == ssl.CERT_REQUIRED
         assert conn.ssl_context.options & ssl.OP_NO_COMPRESSION != 0

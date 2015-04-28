@@ -30,6 +30,7 @@ def wrap_socket(sock, server_hostname, ssl_context=None):
     """
     global _context
 
+    # create the singleton SSLContext we use
     if _context is None:  # pragma: no cover
         _context = _init_context()
 
@@ -63,7 +64,7 @@ def wrap_socket(sock, server_hostname, ssl_context=None):
 
 def _init_context():
     """
-    Creates the singleton SSLContext we use.
+    Create a pre-configured SSLContext.
     """
     context = ssl.SSLContext(ssl.PROTOCOL_SSLv23)
     context.set_default_verify_paths()
