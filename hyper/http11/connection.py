@@ -43,8 +43,11 @@ class HTTP11Connection(object):
     :param secure: (optional) Whether the request should use TLS. Defaults to
         ``False`` for most requests, but to ``True`` for any request issued to
         port 443.
+    :param ssl_context: (optional) A class with custom certificate settings.
+        If not provided then hyper's default ``SSLContext`` is used instead.
     """
-    def __init__(self, host, port=None, secure=None, **kwargs):
+    def __init__(self, host, port=None, secure=None, ssl_context=None,
+                 **kwargs):
         if port is None:
             try:
                 self.host, self.port = host.split(':')
@@ -64,6 +67,7 @@ class HTTP11Connection(object):
         else:
             self.secure = False
 
+        self.ssl_context = ssl_context
         self._sock = None
 
         #: The size of the in-memory buffer used to store data from the
@@ -88,7 +92,7 @@ class HTTP11Connection(object):
             proto = None
 
             if self.secure:
-                sock, proto = wrap_socket(sock, self.host)
+                sock, proto = wrap_socket(sock, self.host, self.ssl_context)
 
             log.debug("Selected NPN protocol: %s", proto)
             sock = BufferedSocket(sock, self.network_buffer_size)

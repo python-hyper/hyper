@@ -39,6 +39,8 @@ class HTTPConnection(object):
     :param enable_push: (optional) Whether the server is allowed to push
         resources to the client (see
         :meth:`get_pushes() <hyper.HTTP20Connection.get_pushes>`).
+    :param ssl_context: (optional) A class with custom certificate settings.
+        If not provided then hyper's default ``SSLContext`` is used instead.
     """
     def __init__(self,
                  host,
@@ -46,13 +48,15 @@ class HTTPConnection(object):
                  secure=None,
                  window_manager=None,
                  enable_push=False,
+                 ssl_context=None,
                  **kwargs):
 
         self._host = host
         self._port = port
-        self._h1_kwargs = {'secure': secure}
+        self._h1_kwargs = {'secure': secure, 'ssl_context': ssl_context}
         self._h2_kwargs = {
-            'window_manager': window_manager, 'enable_push': enable_push
+            'window_manager': window_manager, 'enable_push': enable_push,
+            'ssl_context': ssl_context
         }
 
         # Add any unexpected kwargs to both dictionaries.
