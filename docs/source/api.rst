@@ -40,6 +40,11 @@ Headers
 .. autoclass:: hyper.common.headers.HTTPHeaderMap
    :inherited-members:
 
+SSLContext
+----------
+
+.. automethod:: hyper.tls.init_context
+
 Requests Transport Adapter
 --------------------------
 

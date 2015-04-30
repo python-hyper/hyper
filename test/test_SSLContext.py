@@ -13,7 +13,7 @@ class TestSSLContext(object):
     """
     def test_default_context(self):
         # Create default SSLContext
-        hyper.tls._context = hyper.tls._init_context()
+        hyper.tls._context = hyper.tls.init_context()
         assert hyper.tls._context.check_hostname == True
         assert hyper.tls._context.verify_mode == ssl.CERT_REQUIRED
         assert hyper.tls._context.options & ssl.OP_NO_COMPRESSION != 0

@@ -40,7 +40,7 @@ class HTTPConnection(object):
         resources to the client (see
         :meth:`get_pushes() <hyper.HTTP20Connection.get_pushes>`).
     :param ssl_context: (optional) A class with custom certificate settings.
-        If not provided then hyper's default SSLContext is used instead.
+        If not provided then hyper's default ``SSLContext`` is used instead.
     """
     def __init__(self,
                  host,

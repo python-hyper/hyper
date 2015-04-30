@@ -44,7 +44,7 @@ class HTTP11Connection(object):
         ``False`` for most requests, but to ``True`` for any request issued to
         port 443.
     :param ssl_context: (optional) A class with custom certificate settings.
-        If not provided then hyper's default SSLContext is used instead.
+        If not provided then hyper's default ``SSLContext`` is used instead.
     """
     def __init__(self, host, port=None, secure=None, ssl_context=None,
                  **kwargs):

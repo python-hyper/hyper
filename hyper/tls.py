@@ -32,7 +32,7 @@ def wrap_socket(sock, server_hostname, ssl_context=None):
 
     # create the singleton SSLContext we use
     if _context is None:  # pragma: no cover
-        _context = _init_context()
+        _context = init_context()
 
     # if an SSLContext is provided then use it instead of default context
     _ssl_context = ssl_context or _context
@@ -62,13 +62,21 @@ def wrap_socket(sock, server_hostname, ssl_context=None):
     return (ssl_sock, proto)
 
 
-def _init_context():
+def init_context(cert_path=None):
     """
-    Create a pre-configured SSLContext.
+    Create a new ``SSLContext`` that is correctly set up for an HTTP/2 connection.
+    This SSL context object can be customized and passed as a parameter to the
+    :class:`HTTPConnection <hyper.HTTPConnection>` class. Provide your
+    own certificate file in case you don’t want to use hyper’s default
+    certificate. The path to the certificate can be absolute or relative
+    to your working directory.
+
+    :param cert_path: (optional) The path to the certificate file.
+    :returns: An ``SSLContext`` correctly set up for HTTP/2.
     """
     context = ssl.SSLContext(ssl.PROTOCOL_SSLv23)
     context.set_default_verify_paths()
-    context.load_verify_locations(cafile=cert_loc)
+    context.load_verify_locations(cafile=cert_path or cert_loc)
     context.verify_mode = ssl.CERT_REQUIRED
     context.check_hostname = True
 
