@@ -2,7 +2,7 @@
 from hyper.packages.hyperframe.frame import (
     Frame, DataFrame, RstStreamFrame, SettingsFrame,
     PushPromiseFrame, PingFrame, WindowUpdateFrame, HeadersFrame,
-    ContinuationFrame, BlockedFrame,
+    ContinuationFrame, BlockedFrame, GoAwayFrame,
 )
 from hyper.packages.hpack.hpack_compat import Encoder, Decoder
 from hyper.http20.connection import HTTP20Connection
@@ -11,7 +11,7 @@ from hyper.http20.stream import (
 )
 from hyper.http20.response import HTTP20Response, HTTP20Push
 from hyper.http20.exceptions import (
-    HPACKDecodingError, HPACKEncodingError, ProtocolError
+    HPACKDecodingError, HPACKEncodingError, ProtocolError, ConnectionError,
 )
 from hyper.http20.window import FlowControlManager
 from hyper.http20.util import (
@@ -20,6 +20,7 @@ from hyper.http20.util import (
 from hyper.common.headers import HTTPHeaderMap
 from hyper.compat import zlib_compressobj
 from hyper.contrib import HTTP20Adapter
+from hyper.http20.error_code_registry import H2_ERROR_CODE_REGISTRY
 import errno
 import os
 import pytest
@@ -1183,6 +1184,96 @@ class TestUtilities(object):
 
         assert h2_safe_headers(headers) == stripped
 
+    def test_goaway_frame_PROTOCOL_ERROR(self):
+        f = GoAwayFrame(0)
+        # Set error code to PROTOCOL_ERROR
+        f.error_code = 1;
+
+        c = HTTP20Connection('www.google.com')
+        c._sock = DummySocket()
+
+        # 'Receive' the GOAWAY frame.
+        # Validate that the spec error name and description are used to throw
+        # the connection exception.
+        with pytest.raises(ConnectionError) as conn_err:
+            c.receive_frame(f)
+
+        err_msg = str(conn_err)
+        assert H2_ERROR_CODE_REGISTRY[f.error_code]['Name'] in err_msg
+        assert H2_ERROR_CODE_REGISTRY[f.error_code]['Description'] in err_msg
+        assert hex(f.error_code) in err_msg
+
+    def test_goaway_frame_HTTP_1_1_REQUIRED(self):
+        f = GoAwayFrame(0)
+        # Set error code to HTTP_1_1_REQUIRED
+        f.error_code = 13;
+
+        c = HTTP20Connection('www.google.com')
+        c._sock = DummySocket()
+
+        # 'Receive' the GOAWAY frame.
+        # Validate that the spec error name and description are used to throw
+        # the connection exception.
+        with pytest.raises(ConnectionError) as conn_err:
+            c.receive_frame(f)
+
+        err_msg = str(conn_err)
+        assert H2_ERROR_CODE_REGISTRY[f.error_code]['Name'] in err_msg
+        assert H2_ERROR_CODE_REGISTRY[f.error_code]['Description'] in err_msg
+        assert hex(f.error_code) in err_msg
+
+    def test_goaway_frame_NO_ERROR(self):
+        f = GoAwayFrame(0)
+        # Set error code to NO_ERROR
+        f.error_code = 0;
+
+        c = HTTP20Connection('www.google.com')
+        c._sock = DummySocket()
+
+        # 'Receive' the GOAWAY frame.
+        # Test makes sure no exception is raised; error code 0 means we are
+        # dealing with a standard and graceful shutdown.
+        c.receive_frame(f)
+
+    def test_goaway_frame_additional_data(self):
+        f = GoAwayFrame(0)
+        # Set error code to SETTINGS_TIMEOUT
+        f.error_code = 4;
+        f.additional_data = 'special additional data';
+
+        c = HTTP20Connection('www.google.com')
+        c._sock = DummySocket()
+
+        # 'Receive' the GOAWAY frame.
+        # The connection error contains the extra data if it's available and
+        # the description from the spec if it's not available. This test
+        # validates that the additional data replaces the standard description.
+        with pytest.raises(ConnectionError) as conn_err:
+            c.receive_frame(f)
+
+        err_msg = str(conn_err)
+        assert H2_ERROR_CODE_REGISTRY[f.error_code]['Name'] in err_msg
+        assert 'special additional data' in err_msg
+        assert hex(f.error_code) in err_msg
+
+    def test_goaway_frame_invalid_error_code(self):
+        f = GoAwayFrame(0)
+        # Set error code to non existing error
+        f.error_code = 100;
+        f.additional_data = 'data about non existing error code';
+
+        c = HTTP20Connection('www.google.com')
+        c._sock = DummySocket()
+
+        # 'Receive' the GOAWAY frame.
+        # If the error code does not exist in the spec then the additional
+        # data is used instead.
+        with pytest.raises(ConnectionError) as conn_err:
+            c.receive_frame(f)
+
+        err_msg = str(conn_err)
+        assert 'data about non existing error code' in err_msg
+        assert hex(f.error_code) in err_msg
 
 # Some utility classes for the tests.
 class NullEncoder(object):
