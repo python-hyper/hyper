@@ -19,6 +19,7 @@ from .stream import Stream
 from .response import HTTP20Response, HTTP20Push
 from .window import FlowControlManager
 from .exceptions import ConnectionError
+from . import errors
 
 import errno
 import logging
@@ -375,11 +376,20 @@ class HTTP20Connection(object):
             # shutdown and all is well. Otherwise, throw an exception.
             self.close()
 
+            # If an error occured, try to read the error description from
+            # code registry otherwise use the frame's additional data.
             if frame.error_code != 0:
-                raise ConnectionError(
-                    "Encountered error %d, extra data %s." %
-                    (frame.error_code, frame.additional_data)
-                )
+                try:
+                    name, number, description = errors.get_data(frame.error_code)
+                except ValueError:
+                    error_string = ("Encountered error code %d, extra data %s" %
+                                   (frame.error_code, frame.additional_data))
+                else:
+                    error_string = ("Encountered error %s %s: %s" %
+                                   (name, number, description))
+
+                raise ConnectionError(error_string)
+
         elif frame.type == BlockedFrame.type:
             increment = self.window_manager._blocked()
             if increment:
