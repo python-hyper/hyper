@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 """
-hyper/http20/errorserrors
+hyper/http20/errors
 ~~~~~~~~~~~~~~~~~~~
 
 Global error code registry containing the established HTTP/2 error codes.
