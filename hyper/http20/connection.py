@@ -19,8 +19,8 @@ from .stream import Stream
 from .response import HTTP20Response, HTTP20Push
 from .window import FlowControlManager
 from .exceptions import ConnectionError
+from . import errors
 
-import hyper.http20.errors as errors
 import errno
 import logging
 import socket
