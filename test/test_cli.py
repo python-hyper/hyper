@@ -82,7 +82,7 @@ def _get_value(obj, key):
     'specified host with url scheme https:// and path',
 ])
 def test_cli_normal(monkeypatch, argv):
-    monkeypatch.setattr('hyper.cli.HTTP20Connection', DummyConnection)
+    monkeypatch.setattr('hyper.cli.HTTPConnection', DummyConnection)
     main(argv)
     assert True
 

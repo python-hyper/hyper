@@ -14,7 +14,7 @@ from argparse import OPTIONAL, ZERO_OR_MORE
 from pprint import pformat
 from textwrap import dedent
 
-from hyper import HTTP20Connection
+from hyper import HTTPConnection
 from hyper import __version__
 from hyper.compat import is_py2, urlencode, urlsplit, write_to_stdout
 
@@ -214,7 +214,7 @@ def get_content_type_and_charset(response):
 
 
 def request(args):
-    conn = HTTP20Connection(args.url.host, args.url.port)
+    conn = HTTPConnection(args.url.host, args.url.port)
     conn.request(args.method, args.url.path, args.body, args.headers)
     response = conn.get_response()
     log.debug('Response Headers:\n%s', pformat(response.headers))
