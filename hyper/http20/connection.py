@@ -240,9 +240,14 @@ class HTTP20Connection(object):
 
         :returns: Nothing.
         """
-        # Todo: we should actually clean ourselves up if possible by sending
-        # GoAway frames and closing all outstanding streams. For now this will
-        # do.
+        # Close all streams
+        for stream in list(self.streams.values()):
+            log.debug("Close stream %d" % stream.stream_id)
+            stream.close()
+
+        # Send GoAway frame to the server
+        self._send_cb(GoAwayFrame(0), True)
+
         if self._sock is not None:
             self._sock.close()
             self.__init_state()
@@ -580,7 +585,15 @@ class HTTP20Connection(object):
 
         # Work out to whom this frame should go.
         if frame.stream_id != 0:
-            self.streams[frame.stream_id].receive_frame(frame)
+            try:
+                self.streams[frame.stream_id].receive_frame(frame)
+            except KeyError:
+                # If we receive an unexpected stream identifier then we
+                # cancel the stream with an error of type PROTOCOL_ERROR
+                f = RstStreamFrame(frame.stream_id)
+                f.error_code = 1 # PROTOCOL_ERROR
+                self._send_cb(f)
+                log.warning("Unexpected stream identifier %d", frame.stream_id)
         else:
             self.receive_frame(frame)
 
