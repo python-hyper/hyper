@@ -18,7 +18,7 @@ from ..packages.hpack.hpack_compat import Encoder, Decoder
 from .stream import Stream
 from .response import HTTP20Response, HTTP20Push
 from .window import FlowControlManager
-from .exceptions import ConnectionError
+from .exceptions import ConnectionError, ProtocolError
 from . import errors
 
 import errno
@@ -558,7 +558,6 @@ class HTTP20Connection(object):
         This builds and handles a frame.
         """
         frame.parse_body(data)
-
         log.info(
             "Received frame %s on stream %d",
             frame.__class__.__name__,
@@ -593,7 +592,9 @@ class HTTP20Connection(object):
                 f = RstStreamFrame(frame.stream_id)
                 f.error_code = 1 # PROTOCOL_ERROR
                 self._send_cb(f)
-                log.warning("Unexpected stream identifier %d", frame.stream_id)
+                error_string = ("Unexpected stream identifier %d" %
+                                  (frame.stream_id))
+                raise ProtocolError(error_string)
         else:
             self.receive_frame(frame)
 

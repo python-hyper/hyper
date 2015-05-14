@@ -1261,6 +1261,21 @@ class TestUtilities(object):
         assert 'data about non existing error code' in err_msg
         assert str(f.error_code) in err_msg
 
+    def test_receive_unexpected_stream_id(self):
+        frames = []
+
+        def data_callback(frame):
+            frames.append(frame)
+
+        c = HTTP20Connection('www.google.com')
+        c._send_cb = data_callback
+
+        f = DataFrame(-1)
+        data = memoryview(b"hi there sir")
+
+        with pytest.raises(ProtocolError):
+            c._consume_frame_payload(f, data)
+
 # Some utility classes for the tests.
 class NullEncoder(object):
     @staticmethod
