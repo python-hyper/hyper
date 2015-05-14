@@ -558,6 +558,7 @@ class HTTP20Connection(object):
         This builds and handles a frame.
         """
         frame.parse_body(data)
+
         log.info(
             "Received frame %s on stream %d",
             frame.__class__.__name__,
