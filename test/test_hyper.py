@@ -1272,9 +1272,16 @@ class TestUtilities(object):
 
         f = DataFrame(-1)
         data = memoryview(b"hi there sir")
+        c._consume_frame_payload(f, data)
 
-        with pytest.raises(ProtocolError):
-            c._consume_frame_payload(f, data)
+        # If we receive an unexpected stream id then we cancel the stream
+        # by sending a reset stream that contains the protocol error code (1)
+        f = frames[0]
+        assert len(frames) == 1
+        assert f.stream_id == -1
+        assert isinstance(f, RstStreamFrame)
+        assert f.error_code == 1 # PROTOCOL_ERROR
+
 
 # Some utility classes for the tests.
 class NullEncoder(object):

@@ -593,9 +593,8 @@ class HTTP20Connection(object):
                 f = RstStreamFrame(frame.stream_id)
                 f.error_code = 1 # PROTOCOL_ERROR
                 self._send_cb(f)
-                error_string = ("Unexpected stream identifier %d" %
-                                  (frame.stream_id))
-                raise ProtocolError(error_string)
+                log.warning("Unexpected stream identifier %d" %
+                               (frame.stream_id))
         else:
             self.receive_frame(frame)
 
