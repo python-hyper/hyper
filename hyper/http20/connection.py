@@ -246,7 +246,12 @@ class HTTP20Connection(object):
             stream.close()
 
         # Send GoAway frame to the server
-        self._send_cb(GoAwayFrame(0), True)
+        try:
+           self._send_cb(GoAwayFrame(0), True)
+        except:
+           log.warn(
+              "GoAway frame could not be sent: %s" % sys.exc_info()[0]
+           )
 
         if self._sock is not None:
             self._sock.close()
@@ -593,8 +598,9 @@ class HTTP20Connection(object):
                 f = RstStreamFrame(frame.stream_id)
                 f.error_code = 1 # PROTOCOL_ERROR
                 self._send_cb(f)
-                log.warning("Unexpected stream identifier %d" %
-                               (frame.stream_id))
+                log.warning(
+                    "Unexpected stream identifier %d" % (frame.stream_id)
+                )
         else:
             self.receive_frame(frame)
 

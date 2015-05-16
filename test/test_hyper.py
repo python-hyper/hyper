@@ -1270,7 +1270,7 @@ class TestUtilities(object):
         c = HTTP20Connection('www.google.com')
         c._send_cb = data_callback
 
-        f = DataFrame(-1)
+        f = DataFrame(2)
         data = memoryview(b"hi there sir")
         c._consume_frame_payload(f, data)
 
@@ -1278,7 +1278,7 @@ class TestUtilities(object):
         # by sending a reset stream that contains the protocol error code (1)
         f = frames[0]
         assert len(frames) == 1
-        assert f.stream_id == -1
+        assert f.stream_id == 2
         assert isinstance(f, RstStreamFrame)
         assert f.error_code == 1 # PROTOCOL_ERROR
 
