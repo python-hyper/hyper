@@ -8,7 +8,7 @@ The registry is based on a 32-bit space so we use the error code to index into
 the array.
 
 The current registry is available at:
-https://tools.ietf.org/html/draft-ietf-httpbis-http2-17#section-11.4
+https://tools.ietf.org/html/rfc7540#section-11.4
 """
 
 NO_ERROR =            {'Name': 'NO_ERROR',

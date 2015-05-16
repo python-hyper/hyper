@@ -1261,6 +1261,28 @@ class TestUtilities(object):
         assert 'data about non existing error code' in err_msg
         assert str(f.error_code) in err_msg
 
+    def test_receive_unexpected_stream_id(self):
+        frames = []
+
+        def data_callback(frame):
+            frames.append(frame)
+
+        c = HTTP20Connection('www.google.com')
+        c._send_cb = data_callback
+
+        f = DataFrame(2)
+        data = memoryview(b"hi there sir")
+        c._consume_frame_payload(f, data)
+
+        # If we receive an unexpected stream id then we cancel the stream
+        # by sending a reset stream that contains the protocol error code (1)
+        f = frames[0]
+        assert len(frames) == 1
+        assert f.stream_id == 2
+        assert isinstance(f, RstStreamFrame)
+        assert f.error_code == 1 # PROTOCOL_ERROR
+
+
 # Some utility classes for the tests.
 class NullEncoder(object):
     @staticmethod
