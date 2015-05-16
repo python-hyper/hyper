@@ -233,12 +233,14 @@ class TestHyperIntegration(SocketLevelTest):
             sock.send(f.serialize())
 
             send_event.wait()
+            sock.recv(65535)
             sock.close()
 
         self._start_server(socket_handler)
         with self.get_connection() as conn:
             conn.connect()
-            send_event.set()
+
+        send_event.set()
 
         # Check that we closed the connection.
         assert conn._sock == None
