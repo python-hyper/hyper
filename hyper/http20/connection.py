@@ -248,7 +248,7 @@ class HTTP20Connection(object):
         # Send GoAway frame to the server
         try:
             self._send_cb(GoAwayFrame(0), True)
-        except Exception as e:
+        except Exception as e:  # pragma: no cover
             log.warn("GoAway frame could not be sent: %s" % e)
 
         if self._sock is not None:
