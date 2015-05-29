@@ -2,7 +2,7 @@
 from hyper.packages.hyperframe.frame import (
     Frame, DataFrame, RstStreamFrame, SettingsFrame,
     PushPromiseFrame, PingFrame, WindowUpdateFrame, HeadersFrame,
-    ContinuationFrame, BlockedFrame, GoAwayFrame, FRAME_MAX_LEN
+    ContinuationFrame, BlockedFrame, GoAwayFrame, FRAME_MAX_LEN, FRAME_MAX_ALLOWED_LEN
 )
 from hyper.packages.hpack.hpack_compat import Encoder, Decoder
 from hyper.http20.connection import HTTP20Connection
@@ -245,6 +245,65 @@ class TestHyperConnection(object):
         c.receive_frame(f)
 
         assert c._out_flow_control_window == 65535 + 1000
+
+    def test_connections_handle_resizing_max_frame_size_properly(self):
+        sock = DummySocket()
+        f = SettingsFrame(0)
+        f.settings[SettingsFrame.SETTINGS_MAX_FRAME_SIZE] = 65536 # 2^16
+        c = HTTP20Connection('www.google.com')
+        c._sock = sock
+
+        # 'Receive' the SETTINGS frame.
+        c.receive_frame(f)
+
+        # Confirm that the setting is stored and the max frame size increased.
+        assert c._settings[SettingsFrame.SETTINGS_MAX_FRAME_SIZE] == 65536
+
+        # Confirm we got a SETTINGS ACK.
+        f2 = decode_frame(sock.queue[0])
+        assert isinstance(f2, SettingsFrame)
+        assert f2.stream_id == 0
+        assert f2.flags == set(['ACK'])
+
+    def test_connections_handle_too_small_max_frame_size_properly(self):
+        sock = DummySocket()
+        f = SettingsFrame(0)
+        f.settings[SettingsFrame.SETTINGS_MAX_FRAME_SIZE] = 1024
+        c = HTTP20Connection('www.google.com')
+        c._sock = sock
+
+        # 'Receive' the SETTINGS frame.
+        c.receive_frame(f)
+
+        # The value advertised by an endpoint MUST be between 2^14 and
+        # 2^24-1 octets. Confirm that the max frame size did not increase.
+        assert c._settings[SettingsFrame.SETTINGS_MAX_FRAME_SIZE] == FRAME_MAX_LEN
+
+        # Confirm we got a SETTINGS ACK.
+        f2 = decode_frame(sock.queue[0])
+        assert isinstance(f2, SettingsFrame)
+        assert f2.stream_id == 0
+        assert f2.flags == set(['ACK'])
+
+    def test_connections_handle_too_big_max_frame_size_properly(self):
+        sock = DummySocket()
+        f = SettingsFrame(0)
+        f.settings[SettingsFrame.SETTINGS_MAX_FRAME_SIZE] = 67108864 # 2^26
+        c = HTTP20Connection('www.google.com')
+        c._sock = sock
+
+        # 'Receive' the SETTINGS frame.
+        c.receive_frame(f)
+
+        # The value advertised by an endpoint MUST be between 2^14 and
+        # 2^24-1 octets. Confirm that the max frame size did not increase.
+        assert c._settings[SettingsFrame.SETTINGS_MAX_FRAME_SIZE] == FRAME_MAX_LEN
+
+        # Confirm we got a SETTINGS ACK.
+        f2 = decode_frame(sock.queue[0])
+        assert isinstance(f2, SettingsFrame)
+        assert f2.stream_id == 0
+        assert f2.flags == set(['ACK'])
 
     def test_connections_handle_resizing_header_tables_properly(self):
         sock = DummySocket()

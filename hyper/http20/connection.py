@@ -12,7 +12,7 @@ from ..common.headers import HTTPHeaderMap
 from ..packages.hyperframe.frame import (
     FRAMES, DataFrame, HeadersFrame, PushPromiseFrame, RstStreamFrame,
     SettingsFrame, Frame, WindowUpdateFrame, GoAwayFrame, PingFrame,
-    BlockedFrame, FRAME_MAX_LEN
+    BlockedFrame, FRAME_MAX_LEN, FRAME_MAX_ALLOWED_LEN
 )
 from ..packages.hpack.hpack_compat import Encoder, Decoder
 from .stream import Stream
@@ -449,6 +449,11 @@ class HTTP20Connection(object):
             self._out_flow_control_window += delta
 
             self._settings[SettingsFrame.INITIAL_WINDOW_SIZE] = newsize
+
+        if SettingsFrame.SETTINGS_MAX_FRAME_SIZE in frame.settings:
+            new_size = frame.settings[SettingsFrame.SETTINGS_MAX_FRAME_SIZE]
+            if new_size > FRAME_MAX_LEN and new_size < FRAME_MAX_ALLOWED_LEN:
+                self._settings[SettingsFrame.SETTINGS_MAX_FRAME_SIZE] = new_size
 
     def _new_stream(self, stream_id=None, local_closed=False):
         """
