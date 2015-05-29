@@ -2,7 +2,7 @@
 from hyper.packages.hyperframe.frame import (
     Frame, DataFrame, RstStreamFrame, SettingsFrame,
     PushPromiseFrame, PingFrame, WindowUpdateFrame, HeadersFrame,
-    ContinuationFrame, BlockedFrame, GoAwayFrame,
+    ContinuationFrame, BlockedFrame, GoAwayFrame, FRAME_MAX_LEN
 )
 from hyper.packages.hpack.hpack_compat import Encoder, Decoder
 from hyper.http20.connection import HTTP20Connection
@@ -195,6 +195,7 @@ class TestHyperConnection(object):
         assert c.decoder is not decoder
         assert c._settings == {
             SettingsFrame.INITIAL_WINDOW_SIZE: 65535,
+            SettingsFrame.SETTINGS_MAX_FRAME_SIZE: FRAME_MAX_LEN,
         }
         assert c._out_flow_control_window == 65535
         assert c.window_manager is not wm
@@ -1282,6 +1283,40 @@ class TestUtilities(object):
         assert isinstance(f, RstStreamFrame)
         assert f.error_code == 1 # PROTOCOL_ERROR
 
+    def test_connection_sends_rst_frame_if_frame_size_too_large(self):
+        sock = DummySocket()
+        d = DataFrame(1)
+        d.data = b'hi there frame'
+        sock.buffer = BytesIO(d.serialize())
+
+        def send_rst_frame(stream_id, error_code):
+            assert stream_id == 1
+            assert error_code == 6 #FRAME_SIZE_ERROR
+
+        c = HTTP20Connection('www.google.com')
+        # Lower the maximum frame size settings in order to force the
+        # connection to send a reset frame with FRAME_SIZE_ERROR
+        c._settings[SettingsFrame.SETTINGS_MAX_FRAME_SIZE] = 10
+        c._sock = sock
+        c._send_rst_frame = send_rst_frame
+        c.request('GET', '/')
+        c._recv_cb()
+
+    def test_connection_stream_is_removed_on_frame_size_error(self):
+        sock = DummySocket()
+        d = DataFrame(1)
+        d.data = b'hi there frame'
+        sock.buffer = BytesIO(d.serialize())
+
+        c = HTTP20Connection('www.google.com')
+        c._settings[SettingsFrame.SETTINGS_MAX_FRAME_SIZE] = 10
+        c._sock = sock
+        c.request('GET', '/')
+
+        # Make sure the stream gets removed from the map
+        assert len(c.streams) == 1
+        c._recv_cb()
+        assert len(c.streams) == 0
 
 # Some utility classes for the tests.
 class NullEncoder(object):
