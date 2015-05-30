@@ -367,8 +367,9 @@ class Stream(object):
         :returns: Nothing.
         """
         # Right now let's not bother with grace, let's just call close on the
-        # connection.
-        self._close_cb(self.stream_id, error_code)
+        # connection. If not error code is provided then assume it is a
+        # gracefull shutdown.
+        self._close_cb(self.stream_id, error_code or 0)
 
     def _handle_header_block(self, headers):
         """
