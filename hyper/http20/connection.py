@@ -248,16 +248,17 @@ class HTTP20Connection(object):
         # The server will also send an initial settings frame, so get it.
         self._recv_cb()
 
-    def close(self):
+    def close(self, error_code=None):
         """
         Close the connection to the server.
 
+        :param error_code: (optional) The error code to reset all streams with.
         :returns: Nothing.
         """
         # Close all streams
         for stream in list(self.streams.values()):
             log.debug("Close stream %d" % stream.stream_id)
-            stream.close()
+            stream.close(error_code)
 
         # Send GoAway frame to the server
         try:
@@ -389,10 +390,14 @@ class HTTP20Connection(object):
             if 'ACK' not in frame.flags:
                 self._update_settings(frame)
 
-                # Need to return an ack.
-                f = SettingsFrame(0)
-                f.flags.add('ACK')
-                self._send_cb(f)
+                # When the setting containing the max frame size value is out
+                # of range, the spec dictates to tear down the connection.
+                # Therefore we make sure the socket is still alive before
+                # returning the ack.
+                if self._sock is not None:
+                    f = SettingsFrame(0)
+                    f.flags.add('ACK')
+                    self._send_cb(f)
         elif frame.type == GoAwayFrame.type:
             # If we get GoAway with error code zero, we are doing a graceful
             # shutdown and all is well. Otherwise, throw an exception.
@@ -454,6 +459,12 @@ class HTTP20Connection(object):
             new_size = frame.settings[SettingsFrame.SETTINGS_MAX_FRAME_SIZE]
             if new_size > FRAME_MAX_LEN and new_size < FRAME_MAX_ALLOWED_LEN:
                 self._settings[SettingsFrame.SETTINGS_MAX_FRAME_SIZE] = new_size
+            else:
+                log.warning(
+                    "Frame size %d is outside of allowed range",
+                    new_size)
+                # Tear the connection down with error code PROTOCOL_ERROR
+                self.close(1)
 
     def _new_stream(self, stream_id=None, local_closed=False):
         """
@@ -536,15 +547,14 @@ class HTTP20Connection(object):
         # Parse the header. We can use the returned memoryview directly here.
         frame, length = Frame.parse_frame_header(header)
 
-        frame_size = self._settings[SettingsFrame.SETTINGS_MAX_FRAME_SIZE]
-        if (length > frame_size):
-            self._send_rst_frame(frame.stream_id, 6) # 6 = FRAME_SIZE_ERROR
+        if (length > FRAME_MAX_LEN):
             log.warning(
                 "Frame size exceeded on stream %d (received: %d, max: %d)",
                 frame.stream_id,
                 length,
-                frame_size
+                FRAME_MAX_LEN
             )
+            self._send_rst_frame(frame.stream_id, 6) # 6 = FRAME_SIZE_ERROR
 
         # Read the remaining data from the socket.
         data = self._recv_payload(length)
@@ -646,12 +656,11 @@ class HTTP20Connection(object):
 
     def _send_rst_frame(self, stream_id, error_code):
         """
-            Send reset stream frame with error code and remove stream from map.
+        Send reset stream frame with error code and remove stream from map.
         """
-        if error_code is not None:
-            f = RstStreamFrame(stream_id)
-            f.error_code = error_code
-            self._send_cb(f)
+        f = RstStreamFrame(stream_id)
+        f.error_code = error_code
+        self._send_cb(f)
 
         try:
             del self.streams[stream_id]
