@@ -410,7 +410,7 @@ class HeadersFrame(Padding, Priority, Frame):
     (remote)" states.
 
     The HeadersFrame class is actually basically a data frame in this
-    implementation, becuase of the requirement to control the sizes of frames.
+    implementation, because of the requirement to control the sizes of frames.
     A header block fragment that doesn't fit in an entire HEADERS frame needs
     to be followed with CONTINUATION frames. From the perspective of the frame
     building code the header block is an opaque data segment.
