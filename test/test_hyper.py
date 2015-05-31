@@ -27,7 +27,7 @@ import pytest
 import socket
 import zlib
 from io import BytesIO
-
+import hyper
 
 def decode_frame(frame_data):
     f, length = Frame.parse_frame_header(frame_data[:9])
@@ -279,11 +279,9 @@ class TestHyperConnection(object):
         # 2^24-1 octets. Confirm that the max frame size did not increase.
         assert c._settings[SettingsFrame.SETTINGS_MAX_FRAME_SIZE] == FRAME_MAX_LEN
 
-        # Confirm we got a SETTINGS ACK.
-        f2 = decode_frame(sock.queue[0])
-        assert isinstance(f2, SettingsFrame)
-        assert f2.stream_id == 0
-        assert f2.flags == set(['ACK'])
+        # When the setting containing the max frame size value is out of range,
+        # the spec dictates to tear down the connection.
+        assert c._sock == None
 
     def test_connections_handle_too_big_max_frame_size_properly(self):
         sock = DummySocket()
@@ -299,11 +297,9 @@ class TestHyperConnection(object):
         # 2^24-1 octets. Confirm that the max frame size did not increase.
         assert c._settings[SettingsFrame.SETTINGS_MAX_FRAME_SIZE] == FRAME_MAX_LEN
 
-        # Confirm we got a SETTINGS ACK.
-        f2 = decode_frame(sock.queue[0])
-        assert isinstance(f2, SettingsFrame)
-        assert f2.stream_id == 0
-        assert f2.flags == set(['ACK'])
+        # When the setting containing the max frame size value is out of range,
+        # the spec dictates to tear down the connection.
+        assert c._sock == None
 
     def test_connections_handle_resizing_header_tables_properly(self):
         sock = DummySocket()
@@ -1345,34 +1341,42 @@ class TestUtilities(object):
     def test_connection_sends_rst_frame_if_frame_size_too_large(self):
         sock = DummySocket()
         d = DataFrame(1)
-        d.data = b'hi there frame'
+        # Create big data frame that exceeds the FRAME_MAX_LEN value in order
+        # to trigger the reset frame with error code 6 (FRAME_SIZE_ERROR)
+        d.data = b''.join([b"hi there sir" for x in range(40)])
         sock.buffer = BytesIO(d.serialize())
 
+        frames = []
+
         def send_rst_frame(stream_id, error_code):
-            assert stream_id == 1
-            assert error_code == 6 #FRAME_SIZE_ERROR
+            f = RstStreamFrame(stream_id)
+            f.error_code = error_code
+            frames.append(f)
 
         c = HTTP20Connection('www.google.com')
-        # Lower the maximum frame size settings in order to force the
-        # connection to send a reset frame with FRAME_SIZE_ERROR
-        c._settings[SettingsFrame.SETTINGS_MAX_FRAME_SIZE] = 10
         c._sock = sock
         c._send_rst_frame = send_rst_frame
         c.request('GET', '/')
         c._recv_cb()
 
+        assert len(frames) == 1
+        f = frames[0]
+        assert isinstance(f, RstStreamFrame)
+        assert f.stream_id == 1
+        assert f.error_code == 6 #FRAME_SIZE_ERROR
+
     def test_connection_stream_is_removed_on_frame_size_error(self):
         sock = DummySocket()
         d = DataFrame(1)
-        d.data = b'hi there frame'
+        d.data = b''.join([b"hi there sir" for x in range(40)])
         sock.buffer = BytesIO(d.serialize())
 
         c = HTTP20Connection('www.google.com')
-        c._settings[SettingsFrame.SETTINGS_MAX_FRAME_SIZE] = 10
         c._sock = sock
         c.request('GET', '/')
 
         # Make sure the stream gets removed from the map
+        # after receiving an out of size data frame
         assert len(c.streams) == 1
         c._recv_cb()
         assert len(c.streams) == 0
