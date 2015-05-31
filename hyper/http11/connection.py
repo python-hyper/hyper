@@ -8,15 +8,18 @@ Objects that build hyper's connection-level HTTP/1.1 abstraction.
 import logging
 import os
 import socket
+import base64
 
 from .response import HTTP11Response
 from ..tls import wrap_socket
 from ..common.bufsocket import BufferedSocket
-from ..common.exceptions import TLSUpgrade
+from ..common.exceptions import TLSUpgrade, HTTPUpgrade
 from ..common.headers import HTTPHeaderMap
 from ..common.util import to_bytestring
 from ..compat import bytes
 
+from ..http20.connection import H2C_PROTOCOL
+from ..packages.hyperframe.frame import SettingsFrame
 
 # We prefer pycohttpparser to the pure-Python interpretation
 try:  # pragma: no cover
@@ -94,7 +97,7 @@ class HTTP11Connection(object):
             if self.secure:
                 sock, proto = wrap_socket(sock, self.host, self.ssl_context)
 
-            log.debug("Selected NPN protocol: %s", proto)
+            log.debug("Selected protocol: %s", proto)
             sock = BufferedSocket(sock, self.network_buffer_size)
 
             if proto not in ('http/1.1', None):
@@ -129,6 +132,15 @@ class HTTP11Connection(object):
 
         if self._sock is None:
             self.connect()
+
+        #add HTTP Upgrade headers
+        headers[b'connection'] = b'Upgrade, HTTP2-Settings'
+        headers[b'upgrade'] = H2C_PROTOCOL
+        
+        #need to encode SETTINGS frame payload in Base64 and put into the HTTP-2 Settings header 
+        http2Settings = SettingsFrame(0)
+        http2Settings.settings[SettingsFrame.INITIAL_WINDOW_SIZE] = 65535
+        headers[b'HTTP2-Settings'] = base64.b64encode(http2Settings.serialize_body())
 
         # We may need extra headers.
         if body:
@@ -165,6 +177,11 @@ class HTTP11Connection(object):
             headers[n.tobytes()] = v.tobytes()
 
         self._sock.advance_buffer(response.consumed)
+
+        if(response.status == 101 and 
+           response.getheader('Connection') == 'Upgrade' and 
+           response.getheader('Upgrade') == H2C_PROTOCOL):
+            raise HTTPUpgrade(proto, sock)
 
         return HTTP11Response(
             response.status,

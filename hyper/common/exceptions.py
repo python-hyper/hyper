@@ -51,3 +51,12 @@ class TLSUpgrade(Exception):
         super(TLSUpgrade, self).__init__()
         self.negotiated = negotiated
         self.sock = sock
+
+class HTTPUpgrade(Exception):
+    """
+    We upgraded to a new protocol via the HTTP Upgrade response.
+    """
+    def __init__(self, negotiated, sock):
+        super(HTTPUpgrade, self).__init__()
+        self.negotiated = negotiated
+        self.sock = sock

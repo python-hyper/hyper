@@ -5,11 +5,10 @@ hyper/common/connection
 
 Hyper's HTTP/1.1 and HTTP/2 abstraction layer.
 """
-from .exceptions import TLSUpgrade
+from .exceptions import TLSUpgrade, HTTPUpgrade
 from ..http11.connection import HTTP11Connection
-from ..http20.connection import HTTP20Connection
+from ..http20.connection import HTTP20Connection, H2C_PROTOCOL
 from ..tls import H2_NPN_PROTOCOLS
-
 
 class HTTPConnection(object):
     """
@@ -88,12 +87,15 @@ class HTTPConnection(object):
             return self._conn.request(
                 method=method, url=url, body=body, headers=headers
             )
-        except TLSUpgrade as e:
-            # We upgraded in the NPN/ALPN handshake. We can just go straight to
-            # the world of HTTP/2. Replace the backing object and insert the
-            # socket into it.
-            assert e.negotiated in H2_NPN_PROTOCOLS
-
+        except (TLSUpgrade, HTTPUpgrade) as e:
+            # We upgraded in the NPN/ALPN handshake or via the HTTP Upgrade 
+            # mechanism. We can just go straight to the world of HTTP/2. 
+            #Replace the backing object and insert the socket into it.
+            if(type(e) is TLSUpgrade):
+                assert e.negotiated in H2_NPN_PROTOCOLS
+            else:
+                assert e.negotiated == H2C_PROTOCOL
+    
             self._conn = HTTP20Connection(
                 self._host, self._port, **self._h2_kwargs
             )

@@ -25,9 +25,9 @@ import errno
 import logging
 import socket
 
-log = logging.getLogger(__name__)
+H2C_PROTOCOL = 'h2c'
 
-H2_CLEARTEXT_PROTOCOL = 'h2c'
+log = logging.getLogger(__name__)
 
 class HTTP20Connection(object):
     """
@@ -224,10 +224,10 @@ class HTTP20Connection(object):
             if self.secure:
                 sock, proto = wrap_socket(sock, self.host, self.ssl_context)
             else:
-                proto = H2_CLEARTEXT_PROTOCOL
+                proto = H2C_PROTOCOL
 
             log.debug("Selected NPN protocol: %s", proto)
-            assert proto in (H2_NPN_PROTOCOLS, H2_CLEARTEXT_PROTOCOL)
+            assert proto in (H2_NPN_PROTOCOLS, H2C_PROTOCOL)
 
             self._sock = BufferedSocket(sock, self.network_buffer_size)
 
