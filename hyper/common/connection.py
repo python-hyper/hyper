@@ -27,8 +27,8 @@ class HTTPConnection(object):
         ``'http2bin.org'``, ``'http2bin.org:443'`` or ``'127.0.0.1'``.
     :param port: (optional) The port to connect to. If not provided and one also
         isn't provided in the ``host`` parameter, defaults to 443.
-    :param secure: (optional, HTTP/1.1 only) Whether the request should use
-        TLS. Defaults to ``False`` for most requests, but to ``True`` for any
+    :param secure: (optional) Whether the request should use TLS. 
+        Defaults to ``False`` for most requests, but to ``True`` for any
         request issued to port 443.
     :param window_manager: (optional) The class to use to manage flow control
         windows. This needs to be a subclass of the
