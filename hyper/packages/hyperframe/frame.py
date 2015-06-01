@@ -65,7 +65,7 @@ class Frame(object):
 
     def serialize(self):
         body = self.serialize_body()
-        body_len = len(body)
+        self.body_len = len(body)
 
         # Build the common frame header.
         # First, get the flags.
@@ -77,8 +77,8 @@ class Frame(object):
 
         header = struct.pack(
             "!HBBBL",
-            body_len & 0xFFFF00,  # Length is spread over top 24 bits
-            body_len & 0x0000FF,
+            self.body_len & 0xFFFF00,  # Length is spread over top 24 bits
+            self.body_len & 0x0000FF,
             self.type,
             flags,
             self.stream_id & 0x7FFFFFFF  # Stream ID is 32 bits.
