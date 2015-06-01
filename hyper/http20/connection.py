@@ -457,7 +457,7 @@ class HTTP20Connection(object):
 
         if SettingsFrame.SETTINGS_MAX_FRAME_SIZE in frame.settings:
             new_size = frame.settings[SettingsFrame.SETTINGS_MAX_FRAME_SIZE]
-            if new_size > FRAME_MAX_LEN and new_size < FRAME_MAX_ALLOWED_LEN:
+            if FRAME_MAX_LEN <= new_size <= FRAME_MAX_ALLOWED_LEN:
                 self._settings[SettingsFrame.SETTINGS_MAX_FRAME_SIZE] = new_size
             else:
                 log.warning(
@@ -465,6 +465,9 @@ class HTTP20Connection(object):
                     new_size)
                 # Tear the connection down with error code PROTOCOL_ERROR
                 self.close(1)
+                error_string = ("Advertised frame size %d is outside of range" %
+                                (new_size))
+                raise ConnectionError(error_string)
 
     def _new_stream(self, stream_id=None, local_closed=False):
         """
@@ -506,6 +509,9 @@ class HTTP20Connection(object):
             self._out_flow_control_window -= len(frame.data)
 
         data = frame.serialize()
+
+        if frame.body_len > FRAME_MAX_LEN:  # pragma: no cover
+            raise ValueError("Frame size %d is too large" % frame.body_len)
 
         log.info(
             "Sending frame %s on stream %d",
