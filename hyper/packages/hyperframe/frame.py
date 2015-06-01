@@ -33,6 +33,7 @@ class Frame(object):
     def __init__(self, stream_id):
         self.stream_id = stream_id
         self.flags = set()
+        self.body_len = 0
 
         if self.stream_association == 'has-stream' and not self.stream_id:
             raise ValueError('Stream ID must be non-zero')
