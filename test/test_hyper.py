@@ -273,7 +273,8 @@ class TestHyperConnection(object):
         c._sock = sock
 
         # 'Receive' the SETTINGS frame.
-        c.receive_frame(f)
+        with pytest.raises(ConnectionError):
+            c.receive_frame(f)
 
         # The value advertised by an endpoint MUST be between 2^14 and
         # 2^24-1 octets. Confirm that the max frame size did not increase.
@@ -282,6 +283,10 @@ class TestHyperConnection(object):
         # When the setting containing the max frame size value is out of range,
         # the spec dictates to tear down the connection.
         assert c._sock == None
+
+        # Check if GoAway frame was correctly sent to the endpoint
+        f = decode_frame(sock.queue[0])
+        assert isinstance(f, GoAwayFrame)
 
     def test_connections_handle_too_big_max_frame_size_properly(self):
         sock = DummySocket()
@@ -291,7 +296,8 @@ class TestHyperConnection(object):
         c._sock = sock
 
         # 'Receive' the SETTINGS frame.
-        c.receive_frame(f)
+        with pytest.raises(ConnectionError):
+            c.receive_frame(f)
 
         # The value advertised by an endpoint MUST be between 2^14 and
         # 2^24-1 octets. Confirm that the max frame size did not increase.
@@ -300,6 +306,10 @@ class TestHyperConnection(object):
         # When the setting containing the max frame size value is out of range,
         # the spec dictates to tear down the connection.
         assert c._sock == None
+
+        # Check if GoAway frame was correctly sent to the endpoint
+        f = decode_frame(sock.queue[0])
+        assert isinstance(f, GoAwayFrame)
 
     def test_connections_handle_resizing_header_tables_properly(self):
         sock = DummySocket()
