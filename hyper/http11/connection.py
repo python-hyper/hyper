@@ -19,7 +19,6 @@ from ..common.util import to_bytestring
 from ..compat import bytes
 
 from ..http20.connection import H2C_PROTOCOL
-from ..http20.response import HTTP20Response
 from ..packages.hyperframe.frame import SettingsFrame
 
 # We prefer pycohttpparser to the pure-Python interpretation
@@ -181,9 +180,7 @@ class HTTP11Connection(object):
 
         if(response.status == 101 and 
            b'upgrade' in headers['connection'] and bytes(H2C_PROTOCOL, 'utf-8') in headers['upgrade']):
-            # HTTP/1.1 requests that are upgrade to HTTP/2.0 are responded to with steam id of 1
-            headers[b':status'] = str(response.status)
-            raise HTTPUpgrade(H2C_PROTOCOL, self._sock, HTTP20Response(headers, ))
+            raise HTTPUpgrade(H2C_PROTOCOL, self._sock)
 
         return HTTP11Response(
             response.status,

@@ -114,22 +114,23 @@ class HTTPConnection(object):
             return self._conn.get_response()
         except HTTPUpgrade as e:
             # We upgraded via the HTTP Upgrade mechanism. We can just 
-            #go straight to the world of HTTP/2. Replace the backing object 
-            #and insert the socket into it.
+            # go straight to the world of HTTP/2. Replace the backing object 
+            # and insert the socket into it.
             assert e.negotiated == H2C_PROTOCOL
     
             self._conn = HTTP20Connection(
                 self._host, self._port, **self._h2_kwargs
             )
 
-            #stream id 1 is used by the upgrade request and response
-            self.next_stream_id += 2
             self._conn._sock = e.sock
-            
+            # stream id 1 is used by the upgrade request and response
+            # and is half-closed by the client
+            self._conn._new_stream(stream_id=1, local_closed=True)
+
             # HTTP/2 preamble must be sent after receipt of a HTTP/1.1 101
             self._conn._send_preamble()
-
-            return e.resp
+        
+            return self._conn.get_response(1)
 
     # Can anyone say 'proxy object pattern'?
     def __getattr__(self, name):
