@@ -55,7 +55,7 @@ class HTTPConnection(object):
         self._h1_kwargs = {'secure': secure, 'ssl_context': ssl_context}
         self._h2_kwargs = {
             'window_manager': window_manager, 'enable_push': enable_push,
-            'ssl_context': ssl_context
+            'secure': secure, 'ssl_context': ssl_context
         }
 
         # Add any unexpected kwargs to both dictionaries.
@@ -87,14 +87,11 @@ class HTTPConnection(object):
             return self._conn.request(
                 method=method, url=url, body=body, headers=headers
             )
-        except (TLSUpgrade, HTTPUpgrade) as e:
-            # We upgraded in the NPN/ALPN handshake or via the HTTP Upgrade 
-            # mechanism. We can just go straight to the world of HTTP/2. 
-            #Replace the backing object and insert the socket into it.
-            if(type(e) is TLSUpgrade):
-                assert e.negotiated in H2_NPN_PROTOCOLS
-            else:
-                assert e.negotiated == H2C_PROTOCOL
+        except TLSUpgrade as e:
+            # We upgraded in the NPN/ALPN handshake. We can just go straight to
+            # the world of HTTP/2. Replace the backing object and insert the
+            # socket into it.
+            assert e.negotiated in H2_NPN_PROTOCOLS
     
             self._conn = HTTP20Connection(
                 self._host, self._port, **self._h2_kwargs
@@ -108,6 +105,31 @@ class HTTPConnection(object):
             return self._conn.request(
                 method=method, url=url, body=body, headers=headers
             )
+
+    def get_response(self):
+        """
+        Returns a response object.
+        """
+        try:
+            return self._conn.get_response()
+        except HTTPUpgrade as e:
+            # We upgraded via the HTTP Upgrade mechanism. We can just 
+            #go straight to the world of HTTP/2. Replace the backing object 
+            #and insert the socket into it.
+            assert e.negotiated == H2C_PROTOCOL
+    
+            self._conn = HTTP20Connection(
+                self._host, self._port, **self._h2_kwargs
+            )
+
+            #stream id 1 is used by the upgrade request and response
+            self.next_stream_id += 2
+            self._conn._sock = e.sock
+            
+            # HTTP/2 preamble must be sent after receipt of a HTTP/1.1 101
+            self._conn._send_preamble()
+
+            return e.resp
 
     # Can anyone say 'proxy object pattern'?
     def __getattr__(self, name):

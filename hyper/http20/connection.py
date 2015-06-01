@@ -287,7 +287,7 @@ class HTTP20Connection(object):
         # HTTP/2 specific. These are: ":method", ":scheme", ":authority" and
         # ":path". We can set all of these now.
         s.add_header(":method", method)
-        s.add_header(":scheme", "https")  # We only support HTTPS at this time.
+        s.add_header(":scheme", "https" if self.secure else "http") 
         s.add_header(":authority", self.host)
         s.add_header(":path", selector)
 
