@@ -92,7 +92,7 @@ class HTTPConnection(object):
             # the world of HTTP/2. Replace the backing object and insert the
             # socket into it.
             assert e.negotiated in H2_NPN_PROTOCOLS
-    
+
             self._conn = HTTP20Connection(
                 self._host, self._port, **self._h2_kwargs
             )

@@ -132,15 +132,9 @@ class HTTP11Connection(object):
 
         if self._sock is None:
             self.connect()
-
-        #add HTTP Upgrade headers
-        headers[b'connection'] = b'Upgrade, HTTP2-Settings'
-        headers[b'upgrade'] = H2C_PROTOCOL
         
-        #need to encode SETTINGS frame payload in Base64 and put into the HTTP-2 Settings header 
-        http2_settings = SettingsFrame(0)
-        http2_settings.settings[SettingsFrame.INITIAL_WINDOW_SIZE] = 65535
-        headers[b'HTTP2-Settings'] = base64.b64encode(http2_settings.serialize_body())
+        # TODO: Only send upgrade headers on first request
+        self._add_upgrade_headers(headers)
 
         # We may need extra headers.
         if body:
@@ -178,8 +172,8 @@ class HTTP11Connection(object):
 
         self._sock.advance_buffer(response.consumed)
 
-        if(response.status == 101 and 
-           b'upgrade' in headers['connection'] and bytes(H2C_PROTOCOL, 'utf-8') in headers['upgrade']):
+        if (response.status == 101 and 
+           b'upgrade' in headers['connection'] and H2C_PROTOCOL.decode('utf-8') in headers['upgrade']):
             raise HTTPUpgrade(H2C_PROTOCOL, self._sock)
 
         return HTTP11Response(
@@ -232,6 +226,16 @@ class HTTP11Connection(object):
 
         headers[b'transfer-encoding'] = b'chunked'
         return BODY_CHUNKED
+
+    def _add_upgrade_headers(self, headers):
+        # Add HTTP Upgrade headers.
+        headers[b'connection'] = b'Upgrade, HTTP2-Settings'
+        headers[b'upgrade'] = H2C_PROTOCOL
+        
+        # Encode SETTINGS frame payload in Base64 and put into the HTTP-2 Settings header.
+        http2_settings = SettingsFrame(0)
+        http2_settings.settings[SettingsFrame.INITIAL_WINDOW_SIZE] = 65535
+        headers[b'HTTP2-Settings'] = base64.b64encode(http2_settings.serialize_body())
 
     def _send_body(self, body, body_type):
         """
