@@ -289,3 +289,12 @@ class HTTP11Connection(object):
         """
         self._sock.close()
         self._sock = None
+
+    # The following two methods are the implementation of the context manager
+    # protocol.
+    def __enter__(self):
+        return self
+
+    def __exit__(self, type, value, tb):
+        self.close()
+        return False  # Never swallow exceptions.

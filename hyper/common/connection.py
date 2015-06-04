@@ -107,6 +107,15 @@ class HTTPConnection(object):
                 method=method, url=url, body=body, headers=headers
             )
 
+    # The following two methods are the implementation of the context manager
+    # protocol.
+    def __enter__(self):
+        return self
+
+    def __exit__(self, type, value, tb):
+        self.close()
+        return False  # Never swallow exceptions.
+
     # Can anyone say 'proxy object pattern'?
     def __getattr__(self, name):
         return getattr(self._conn, name)
