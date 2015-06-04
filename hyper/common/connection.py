@@ -109,10 +109,10 @@ class HTTPConnection(object):
 
     # The following two methods are the implementation of the context manager
     # protocol.
-    def __enter__(self):
+    def __enter__(self):  # pragma: no cover
         return self
 
-    def __exit__(self, type, value, tb):
+    def __exit__(self, type, value, tb):  # pragma: no cover
         self.close()
         return False  # Never swallow exceptions.
 
