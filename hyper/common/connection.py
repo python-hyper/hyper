@@ -113,7 +113,7 @@ class HTTPConnection(object):
         return self
 
     def __exit__(self, type, value, tb):  # pragma: no cover
-        self.close()
+        self._conn.close()
         return False  # Never swallow exceptions.
 
     # Can anyone say 'proxy object pattern'?
