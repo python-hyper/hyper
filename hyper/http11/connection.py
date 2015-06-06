@@ -69,6 +69,8 @@ class HTTP11Connection(object):
         else:
             self.secure = False
 
+        self._send_http_upgrade = not self.secure
+
         self.ssl_context = ssl_context
         self._sock = None
 
@@ -131,9 +133,10 @@ class HTTP11Connection(object):
 
         if self._sock is None:
             self.connect()
-        
-        # TODO: Only send upgrade headers on first request
-        self._add_upgrade_headers(headers)
+       
+        if(self._send_http_upgrade):
+            self._add_upgrade_headers(headers)
+            self._send_http_upgrade = False
 
         # We may need extra headers.
         if body:
