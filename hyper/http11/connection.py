@@ -175,7 +175,7 @@ class HTTP11Connection(object):
         self._sock.advance_buffer(response.consumed)
 
         if (response.status == 101 and 
-           b'upgrade' in headers['connection'] and H2C_PROTOCOL.decode('utf-8') in headers['upgrade']):
+           b'upgrade' in headers['connection'] and H2C_PROTOCOL.encode('utf-8') in headers['upgrade']):
             raise HTTPUpgrade(H2C_PROTOCOL, self._sock)
 
         return HTTP11Response(
