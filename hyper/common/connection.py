@@ -7,8 +7,8 @@ Hyper's HTTP/1.1 and HTTP/2 abstraction layer.
 """
 from .exceptions import TLSUpgrade, HTTPUpgrade
 from ..http11.connection import HTTP11Connection
-from ..http20.connection import HTTP20Connection, H2C_PROTOCOL
-from ..tls import H2_NPN_PROTOCOLS
+from ..http20.connection import HTTP20Connection
+from ..tls import H2_NPN_PROTOCOLS, H2C_PROTOCOL
 
 class HTTPConnection(object):
     """
