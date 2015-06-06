@@ -5,7 +5,7 @@ hyper/http20/connection
 
 Objects that build hyper's connection-level HTTP/2 abstraction.
 """
-from ..tls import wrap_socket, H2_NPN_PROTOCOLS
+from ..tls import wrap_socket, H2_NPN_PROTOCOLS, H2C_PROTOCOL
 from ..common.exceptions import ConnectionResetError
 from ..common.bufsocket import BufferedSocket
 from ..common.headers import HTTPHeaderMap
@@ -24,8 +24,6 @@ from . import errors
 import errno
 import logging
 import socket
-
-H2C_PROTOCOL = 'h2c'
 
 log = logging.getLogger(__name__)
 

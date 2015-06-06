@@ -11,14 +11,13 @@ import socket
 import base64
 
 from .response import HTTP11Response
-from ..tls import wrap_socket
+from ..tls import wrap_socket, H2C_PROTOCOL
 from ..common.bufsocket import BufferedSocket
 from ..common.exceptions import TLSUpgrade, HTTPUpgrade
 from ..common.headers import HTTPHeaderMap
 from ..common.util import to_bytestring
 from ..compat import bytes
 
-from ..http20.connection import H2C_PROTOCOL
 from ..packages.hyperframe.frame import SettingsFrame
 
 # We prefer pycohttpparser to the pure-Python interpretation
