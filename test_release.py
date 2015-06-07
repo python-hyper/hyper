@@ -90,7 +90,7 @@ class TestHyperActuallyWorks(object):
         """
         This test function uses hyper's HTTP/1.1 support to talk to http2bin
         """
-        c = HTTP11Connection('http2bin.org')
+        c = HTTP11Connection('httpbin.org')
 
         # Here are some nice URLs.
         urls = [
