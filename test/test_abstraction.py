@@ -26,6 +26,7 @@ class TestHTTPConnection(object):
         assert c._h2_kwargs == {
             'window_manager': True,
             'enable_push': True,
+            'secure': False,
             'ssl_context': True,
             'other_kwarg': True,
         }
