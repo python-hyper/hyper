@@ -6,8 +6,11 @@ dev
 
 *New Features*
 
+- Support for upgrading plaintext HTTP/1.1 to plaintext HTTP/2. (`Issue 28`_)
 - ``HTTP11Connection`` and ``HTTPConnection`` objects are now both context
   managers.
+
+.. _Issue #28: https://github.com/Lukasa/hyper/issues/28
 
 0.3.1 (2015-04-03)
 ------------------
