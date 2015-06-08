@@ -132,6 +132,15 @@ class HTTPConnection(object):
         
             return self._conn.get_response(1)
 
+    # The following two methods are the implementation of the context manager
+    # protocol.
+    def __enter__(self):  # pragma: no cover
+        return self
+
+    def __exit__(self, type, value, tb):  # pragma: no cover
+        self._conn.close()
+        return False  # Never swallow exceptions.
+
     # Can anyone say 'proxy object pattern'?
     def __getattr__(self, name):
         return getattr(self._conn, name)

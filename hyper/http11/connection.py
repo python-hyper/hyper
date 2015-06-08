@@ -301,14 +301,23 @@ class HTTP11Connection(object):
     def close(self):
         """
         Closes the connection. This closes the socket and then abandons the
-        reference to it. After calling this method, it any outstanding
+        reference to it. After calling this method, any outstanding
         :class:`Response <hyper.http11.response.Response>` objects will throw
         exceptions if attempts are made to read their bodies.
 
-        This method should absolutely only be called when you are certain the
-        connection object is no longer needed.
-
         In some cases this method will automatically be called.
+
+        .. warning:: This method should absolutely only be called when you are
+                     certain the connection object is no longer needed.
         """
         self._sock.close()
         self._sock = None
+
+    # The following two methods are the implementation of the context manager
+    # protocol.
+    def __enter__(self):
+        return self
+
+    def __exit__(self, type, value, tb):
+        self.close()
+        return False  # Never swallow exceptions.

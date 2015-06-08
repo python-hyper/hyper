@@ -1,6 +1,14 @@
 Release History
 ===============
 
+dev
+---
+
+*New Features*
+
+- ``HTTP11Connection`` and ``HTTPConnection`` objects are now both context
+  managers.
+
 0.3.1 (2015-04-03)
 ------------------
 
