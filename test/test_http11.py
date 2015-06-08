@@ -334,6 +334,24 @@ class TestHTTP11Connection(object):
                 body=body()
             )
 
+    def test_http_upgrade_headers_only_sent_once(self):
+        c = HTTP11Connection('httpbin.org')
+        c._sock = sock = DummySocket()
+
+        c.request('GET', '/get', headers={'User-Agent': 'hyper'})
+
+        sock.queue = []
+        c.request('GET', '/get', headers={'User-Agent': 'hyper'})
+        received = b''.join(sock.queue)
+
+        expected = (
+            b"GET /get HTTP/1.1\r\n"
+            b"User-Agent: hyper\r\n"
+            b"host: httpbin.org\r\n"
+            b"\r\n"
+        )
+
+        assert received == expected
 
 class TestHTTP11Response(object):
     def test_short_circuit_read(self):

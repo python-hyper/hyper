@@ -69,6 +69,7 @@ class HTTP11Connection(object):
         else:
             self.secure = False
 
+        # only send http upgrade headers for non-secure connection
         self._send_http_upgrade = not self.secure
 
         self.ssl_context = ssl_context
@@ -133,7 +134,7 @@ class HTTP11Connection(object):
 
         if self._sock is None:
             self.connect()
-       
+
         if(self._send_http_upgrade):
             self._add_upgrade_headers(headers)
             self._send_http_upgrade = False
