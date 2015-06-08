@@ -80,11 +80,11 @@ class DummyH1Connection(object):
             self.secure = False
 
     def request(self, *args, **kwargs):
-        if(self.secure):
+        if self.secure:
             raise TLSUpgrade('h2', 'totally a secure socket')
 
     def get_response(self):
-        if(not self.secure):
+        if not self.secure:
             raise HTTPUpgrade('h2c', 'totally a non-secure socket')
 
 
@@ -107,9 +107,9 @@ class DummyH2Connection(object):
         pass
 
     def request(self, *args, **kwargs):
-        if(self.secure):
+        if self.secure:
             return 'h2'
 
     def get_response(self, *args, **kwargs):
-         if(not self.secure):
+         if not self.secure:
             return 'h2c'
