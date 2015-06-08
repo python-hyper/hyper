@@ -103,7 +103,7 @@ class SocketLevelTest(object):
 
     def get_connection(self):
         if self.h2:
-            return HTTP20Connection(self.host, self.port)
+            return HTTP20Connection(self.host, self.port, secure=True)
         else:
             return HTTP11Connection(self.host, self.port, secure=True)
 
