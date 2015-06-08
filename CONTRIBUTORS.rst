@@ -30,3 +30,7 @@ In chronological order:
 
   - Updated documentation and tests.
 
+- Fred Thomsen (@fredthomsen)
+
+  - Added support for upgrade of plaintext HTTP/1.1 to plaintext HTTP/2.
+
