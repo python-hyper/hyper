@@ -214,3 +214,39 @@ class TestHyperH11Integration(SocketLevelTest):
         assert data == b'hellotherehello'
 
         assert c._sock is None
+
+    def test_upgrade_response(self):
+        self.set_up()
+
+        send_event = threading.Event()
+
+        def socket_handler(listener):
+            sock = listener.accept()[0]
+
+            # We should get the initial request.
+            data = b''
+            while not data.endswith(b'\r\n\r\n'):
+                data += sock.recv(65535)
+
+            send_event.wait()
+
+            # We need to send back a response.
+            resp = (
+                b'HTTP/1.1 101 Upgrade\r\n'
+                b'Server: socket-level-server\r\n'
+                b'Content-Length: 0\r\n'
+                b'Connection: upgrade\r\n'
+                b'Upgrade: h2c\r\n'
+                b'\r\n'
+            )
+            sock.send(resp)
+
+            sock.close()
+
+        self._start_server(socket_handler)
+        c = self.get_connection()
+        c.request('GET', '/')
+        send_event.set()
+
+        with pytest.raises(HTTPUpgrade):
+            r = c.get_response()
