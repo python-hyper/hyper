@@ -35,6 +35,9 @@ class H2Stream(object):
     in that RFC does not include state transitions associated with CONTINUATION
     frames. To formally handle those frames in the state machine process, we
     extend the number of states to include continuation sent/received states.
+
+    :param stream_id: The stream ID of this stream. This is stored primarily
+        for logging purposes.
     """
     # For the sake of clarity, we reproduce the RFC 7540 state machine here:
     #
@@ -81,4 +84,6 @@ class H2Stream(object):
     # END_HEADERS (transition to open or half-closed, depending on source) or
     # RST_STREAM (transition immediately to closed). This adds substantial
     # complexity, but c'est la vie.
-    pass
+    def __init__(self, stream_id):
+        self.state = StreamState.IDLE
+        self.stream_id = stream_id
