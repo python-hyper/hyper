@@ -217,6 +217,7 @@ class TestHyperH11Integration(SocketLevelTest):
 
     def test_upgrade_response(self):
         self.set_up()
+        self.secure = False
 
         send_event = threading.Event()
 
