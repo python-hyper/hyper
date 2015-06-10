@@ -188,4 +188,6 @@ class H2Stream(object):
                 "Invalid input %s in state %s", input_, self.state
             )
         else:
-            return func()
+            self.state = target_state
+            if func is not None:
+                return func()
