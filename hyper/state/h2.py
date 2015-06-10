@@ -17,6 +17,7 @@ class ProtocolError(Exception):
     """
     An action was attempted in violation of the HTTP/2 protocol.
     """
+    pass
 
 
 class StreamState(Enum):
