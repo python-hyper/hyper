@@ -23,6 +23,7 @@ from hyper.packages.hpack.huffman_constants import (
     REQUEST_CODES, REQUEST_CODES_LENGTH
 )
 from hyper.http20.exceptions import ConnectionError
+from hyper.common.exceptions import HTTPUpgrade
 from server import SocketLevelTest
 
 # Turn off certificate verification for the tests.
