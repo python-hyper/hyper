@@ -170,6 +170,8 @@ class H2Stream(object):
         (StreamState.RESERVED_REMOTE_CONT, StreamInputs.RECV_RST_STREAM): (None, StreamState.CLOSED),
 
         # State: open
+        (StreamState.OPEN, StreamInputs.SEND_DATA): (None, StreamState.OPEN),
+        (StreamState.OPEN, StreamInputs.RECV_DATA): (None, StreamState.OPEN),
         (StreamState.OPEN, StreamInputs.SEND_END_STREAM): (None, StreamState.HALF_CLOSED_LOCAL),
         (StreamState.OPEN, StreamInputs.RECV_END_STREAM): (None, StreamState.HALF_CLOSED_REMOTE),
         (StreamState.OPEN, StreamInputs.SEND_WINDOW_UPDATE): (None, StreamState.OPEN),
@@ -178,6 +180,7 @@ class H2Stream(object):
         (StreamState.OPEN, StreamInputs.RECV_RST_STREAM): (None, StreamState.CLOSED),
 
         # State: half-closed remote
+        (StreamState.HALF_CLOSED_REMOTE, StreamInputs.SEND_DATA): (None, StreamState.HALF_CLOSED_REMOTE),
         (StreamState.HALF_CLOSED_REMOTE, StreamInputs.SEND_END_STREAM): (None, StreamState.CLOSED),
         (StreamState.HALF_CLOSED_REMOTE, StreamInputs.SEND_WINDOW_UPDATE): (None, StreamState.HALF_CLOSED_REMOTE),
         (StreamState.HALF_CLOSED_REMOTE, StreamInputs.RECV_WINDOW_UPDATE): (None, StreamState.HALF_CLOSED_REMOTE),
@@ -185,6 +188,7 @@ class H2Stream(object):
         (StreamState.HALF_CLOSED_REMOTE, StreamInputs.RECV_RST_STREAM): (None, StreamState.CLOSED),
 
         # State: half-closed local
+        (StreamState.HALF_CLOSED_LOCAL, StreamInputs.RECV_DATA): (None, StreamState.HALF_CLOSED_LOCAL),
         (StreamState.HALF_CLOSED_LOCAL, StreamInputs.RECV_END_STREAM): (None, StreamState.CLOSED),
         (StreamState.HALF_CLOSED_LOCAL, StreamInputs.SEND_WINDOW_UPDATE): (None, StreamState.HALF_CLOSED_LOCAL),
         (StreamState.HALF_CLOSED_LOCAL, StreamInputs.RECV_WINDOW_UPDATE): (None, StreamState.HALF_CLOSED_LOCAL),
