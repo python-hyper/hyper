@@ -13,17 +13,43 @@ Python HTTP/2 implementation that can be plugged into, for example, Twisted.
 from enum import Enum
 
 
+class ProtocolError(Exception):
+    """
+    An action was attempted in violation of the HTTP/2 protocol.
+    """
+
+
 class StreamState(Enum):
     IDLE = 0
-    CONTINUATION = 1
-    RESERVED_REMOTE = 2
-    RESERVED_LOCAL = 3
-    RESERVED_REMOTE_CONT = 4
-    RESERVED_LOCAL_CONT = 5
-    OPEN = 6
-    HALF_CLOSED_REMOTE = 7
-    HALF_CLOSED_LOCAL = 8
-    CLOSED = 9
+    CONTINUATION_LOCAL = 1
+    CONTINATION_REMOTE = 2
+    RESERVED_REMOTE = 3
+    RESERVED_LOCAL = 4
+    RESERVED_REMOTE_CONT = 5
+    RESERVED_LOCAL_CONT = 6
+    OPEN = 7
+    HALF_CLOSED_REMOTE = 8
+    HALF_CLOSED_LOCAL = 9
+    CLOSED = 10
+
+
+class StreamInputs(Enum):
+    SEND_HEADERS = 0
+    SEND_CONTINUATION = 1
+    SEND_PUSH_PROMISE = 2
+    SEND_END_HEADERS = 3
+    SEND_RST_STREAM = 4
+    SEND_DATA = 5
+    SEND_WINDOW_UPDATE = 6
+    SEND_END_STREAM = 7
+    RECV_HEADERS = 8
+    RECV_CONTINUATION = 9
+    RECV_PUSH_PROMISE = 10
+    RECV_END_HEADERS = 11
+    RECV_RST_STREAM = 12
+    RECV_DATA = 13
+    RECV_WINDOW_UPDATE = 14
+    RECV_END_STREAM = 15
 
 
 class H2Stream(object):
@@ -84,6 +110,82 @@ class H2Stream(object):
     # END_HEADERS (transition to open or half-closed, depending on source) or
     # RST_STREAM (transition immediately to closed). This adds substantial
     # complexity, but c'est la vie.
+    #
+    # The _transitions dictionary contains a mapping of tuples of
+    # (state, input) to tuples of (side_effect_function, end_state). This map
+    # contains all allowed transitions: anything not in this map is invalid
+    # and immediately causes a transition to ``closed``.
+    _transitions = {
+        # State: idle
+        (StreamState.IDLE, StreamInputs.SEND_HEADERS): (None, StreamState.CONTINUATION_LOCAL),
+        (StreamState.IDLE, StreamInputs.RECV_HEADERS): (None, StreamState.CONTINATION_REMOTE),
+        (StreamState.IDLE, StreamInputs.SEND_PUSH_PROMISE): (None, StreamState.RESERVED_LOCAL_CONT),
+        (StreamState.IDLE, StreamInputs.RECV_PUSH_PROMISE): (None, StreamState.RESERVED_REMOTE_CONT),
+
+        # State: sent headers
+        (StreamState.CONTINUATION_LOCAL, StreamInputs.SEND_END_HEADERS): (None, StreamState.OPEN),
+        (StreamState.CONTINUATION_LOCAL, StreamInputs.SEND_RST_STREAM): (None, StreamState.CLOSED),
+        (StreamState.CONTINUATION_LOCAL, StreamInputs.RECV_RST_STREAM): (None, StreamState.CLOSED),
+
+        # State: received headers
+        (StreamState.CONTINUATION_REMOTE, StreamInputs.RECV_END_HEADERS): (None, StreamState.OPEN),
+        (StreamState.CONTINUATION_REMOTE, StreamInputs.SEND_RST_STREAM): (None, StreamState.CLOSED),
+        (StreamState.CONTINUATION_REMOTE, StreamInputs.RECV_RST_STREAM): (None, StreamState.CLOSED),
+
+        # State: reserved local
+        (StreamState.RESERVED_LOCAL, StreamInputs.SEND_HEADERS): (None, StreamState.RESERVED_LOCAL_CONT),
+        (StreamState.RESERVED_LOCAL, StreamInputs.SEND_RST_STREAM): (None, StreamState.CLOSED),
+        (StreamState.RESERVED_LOCAL, StreamInputs.RECV_RST_STREAM): (None, StreamState.CLOSED),
+
+        # State: reserved remote
+        (StreamState.RESERVED_REMOTE, StreamInputs.RECV_HEADERS): (None, StreamState.RESERVED_REMOTE_CONT),
+        (StreamState.RESERVED_REMOTE, StreamInputs.SEND_RST_STREAM): (None, StreamState.CLOSED),
+        (StreamState.RESERVED_REMOTE, StreamInputs.RECV_RST_STREAM): (None, StreamState.CLOSED),
+
+        # State: reserved local, sent headers
+        (StreamState.RESERVED_LOCAL_CONT, StreamInputs.SEND_END_HEADERS): (None, StreamState.HALF_CLOSED_REMOTE),
+        (StreamState.RESERVED_LOCAL_CONT, StreamInputs.SEND_RST_STREAM): (None, StreamState.CLOSED),
+        (StreamState.RESERVED_LOCAL_CONT, StreamInputs.RECV_RST_STREAM): (None, StreamState.CLOSED),
+
+        # State: reserved remote, received headers
+        (StreamState.RESERVED_REMOTE_CONT, StreamInputs.RECV_END_HEADERS): (None, StreamState.HALF_CLOSED_LOCAL),
+        (StreamState.RESERVED_REMOTE_CONT, StreamInputs.SEND_RST_STREAM): (None, StreamState.CLOSED),
+        (StreamState.RESERVED_REMOTE_CONT, StreamInputs.RECV_RST_STREAM): (None, StreamState.CLOSED),
+
+        # State: open
+        (StreamState.OPEN, StreamInputs.SEND_END_STREAM): (None, StreamState.HALF_CLOSED_LOCAL),
+        (StreamState.OPEN, StreamInputs.RECV_END_STREAM): (None, StreamState.HALF_CLOSED_REMOTE),
+        (StreamState.OPEN, StreamInputs.SEND_RST_STREAM): (None, StreamState.CLOSED),
+        (StreamState.OPEN, StreamInputs.RECV_RST_STREAM): (None, StreamState.CLOSED),
+
+        # State: half-closed remote
+        (StreamState.HALF_CLOSED_REMOTE, StreamInputs.SEND_END_STREAM): (None, StreamState.CLOSED),
+        (StreamState.HALF_CLOSED_REMOTE, StreamInputs.SEND_RST_STREAM): (None, StreamState.CLOSED),
+        (StreamState.HALF_CLOSED_REMOTE, StreamInputs.RECV_RST_STREAM): (None, StreamState.CLOSED),
+
+        # State: half-closed local
+        (StreamState.HALF_CLOSED_LOCAL, StreamInputs.RECV_END_STREAM): (None, StreamState.CLOSED),
+        (StreamState.HALF_CLOSED_LOCAL, StreamInputs.SEND_RST_STREAM): (None, StreamState.CLOSED),
+        (StreamState.HALF_CLOSED_LOCAL, StreamInputs.RECV_RST_STREAM): (None, StreamState.CLOSED),
+    }
+
     def __init__(self, stream_id):
         self.state = StreamState.IDLE
         self.stream_id = stream_id
+
+    def process_input(self, input_):
+        """
+        Process a specific input in the state machine.
+        """
+        if not isinstance(input_, StreamInputs):
+            raise ValueError("Input must be an instance of StreamInputs")
+
+        try:
+            func, target_state = self._transitions[(self.state, input_)]
+        except KeyError:
+            self.state = StreamState.CLOSED
+            raise ProtocolError(
+                "Invalid input %s in state %s", input_, self.state
+            )
+        else:
+            return func()
