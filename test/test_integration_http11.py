@@ -8,6 +8,7 @@ still not fully hitting the network, so that's alright.
 """
 import hyper
 import threading
+import pytest
 
 from hyper.compat import ssl
 from server import SocketLevelTest
