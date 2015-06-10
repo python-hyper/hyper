@@ -12,6 +12,7 @@ import pytest
 
 from hyper.compat import ssl
 from server import SocketLevelTest
+from hyper.common.exceptions import HTTPUpgrade
 
 # Turn off certificate verification for the tests.
 if ssl is not None:
