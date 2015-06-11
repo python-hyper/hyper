@@ -39,24 +39,29 @@ class SocketServerThread(threading.Thread):
                  socket_handler,
                  host='localhost',
                  ready_event=None,
-                 h2=True):
+                 h2=True,
+                 secure=True):
         threading.Thread.__init__(self)
 
         self.socket_handler = socket_handler
         self.host = host
+        self.secure = secure
         self.ready_event = ready_event
 
-        self.cxt = ssl.SSLContext(ssl.PROTOCOL_SSLv23)
-        if ssl.HAS_NPN and h2:
-            self.cxt.set_npn_protocols([NPN_PROTOCOL])
-        self.cxt.load_cert_chain(certfile='test/certs/server.crt',
-                                 keyfile='test/certs/server.key')
+        if self.secure:
+            self.cxt = ssl.SSLContext(ssl.PROTOCOL_SSLv23)
+            if ssl.HAS_NPN and h2:
+                self.cxt.set_npn_protocols([NPN_PROTOCOL])
+            self.cxt.load_cert_chain(certfile='test/certs/server.crt',
+                                     keyfile='test/certs/server.key')
 
     def _start_server(self):
         sock = socket.socket(socket.AF_INET6)
         if sys.platform != 'win32':
             sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-        sock = self.cxt.wrap_socket(sock, server_side=True)
+
+        if self.secure:
+            sock = self.cxt.wrap_socket(sock, server_side=True)
         sock.bind((self.host, 0))
         self.port = sock.getsockname()[1]
 
@@ -81,9 +86,10 @@ class SocketLevelTest(object):
     A test-class that defines a few helper methods for running socket-level
     tests.
     """
-    def set_up(self):
+    def set_up(self, secure=True):
         self.host = None
         self.port = None
+        self.secure = secure
         self.server_thread = None
 
     def _start_server(self, socket_handler):
@@ -95,17 +101,19 @@ class SocketLevelTest(object):
             socket_handler=socket_handler,
             ready_event=ready_event,
             h2=self.h2,
+            secure=self.secure
         )
         self.server_thread.start()
         ready_event.wait()
         self.host = self.server_thread.host
         self.port = self.server_thread.port
+        self.secure = self.server_thread.secure
 
     def get_connection(self):
         if self.h2:
-            return HTTP20Connection(self.host, self.port, secure=True)
+            return HTTP20Connection(self.host, self.port, self.secure)
         else:
-            return HTTP11Connection(self.host, self.port, secure=True)
+            return HTTP11Connection(self.host, self.port, self.secure)
 
     def get_encoder(self):
         """
