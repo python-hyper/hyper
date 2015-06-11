@@ -86,10 +86,10 @@ class SocketLevelTest(object):
     A test-class that defines a few helper methods for running socket-level
     tests.
     """
-    def set_up(self):
+    def set_up(self, secure=True):
         self.host = None
         self.port = None
-        self.secure = None
+        self.secure = secure
         self.server_thread = None
 
     def _start_server(self, socket_handler):

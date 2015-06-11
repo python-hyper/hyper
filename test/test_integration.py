@@ -453,8 +453,7 @@ class TestHyperIntegration(SocketLevelTest):
         self.tear_down()
 
     def test_insecure_connection(self):
-        self.set_up()
-        self.insecure = False
+        self.set_up(secure=False)
 
         data = []
         send_event = threading.Event()
