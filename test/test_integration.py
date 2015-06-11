@@ -491,7 +491,8 @@ class TestHyperIntegration(SocketLevelTest):
         assert r.headers[b'content-type'] == [b'not/real']
 
         assert r.read() == b'nsaislistening'
-        assert c._sock is None
+
+        self.tear_down()
 
 class TestRequestsAdapter(SocketLevelTest):
     # This uses HTTP/2.
