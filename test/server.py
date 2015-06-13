@@ -47,6 +47,7 @@ class SocketServerThread(threading.Thread):
         self.host = host
         self.secure = secure
         self.ready_event = ready_event
+        self.daemon = True
 
         if self.secure:
             self.cxt = ssl.SSLContext(ssl.PROTOCOL_SSLv23)
