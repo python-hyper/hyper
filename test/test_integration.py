@@ -262,6 +262,7 @@ class TestHyperIntegration(SocketLevelTest):
             # We're going to get the two messages for the connection open, then
             # a headers frame.
             receive_preamble(sock)
+            sock.recv(65535)
 
             # Now, send the headers for the response.
             f = build_headers_frame([(':status', '200')])
@@ -297,6 +298,7 @@ class TestHyperIntegration(SocketLevelTest):
             # We get two messages for the connection open and then a HEADERS
             # frame.
             receive_preamble(sock)
+            sock.recv(65535)
 
             # Now, send the headers for the response. This response has no body.
             f = build_headers_frame([(':status', '204'), ('content-length', '0')])
@@ -339,6 +341,7 @@ class TestHyperIntegration(SocketLevelTest):
             # We get two messages for the connection open and then a HEADERS
             # frame.
             receive_preamble(sock)
+            sock.recv(65535)
 
             # Now, send the headers for the response. This response has no body.
             f = build_headers_frame([(':status', '200'), ('content-length', '0')], e)
