@@ -47,9 +47,11 @@ class HTTP11Connection(object):
         port 443.
     :param ssl_context: (optional) A class with custom certificate settings.
         If not provided then hyper's default ``SSLContext`` is used instead.
+    :param proxies: (optional) A dictionary whose keys are the scheme used 
+        (http or https) and the value being the url of the proxy).
     """
-    def __init__(self, host, port=None, secure=None, ssl_context=None,
-                 **kwargs):
+    def __init__(self, host, port=None, secure=None, ssl_context=None, 
+                 proxies=None, **kwargs):
         if port is None:
             try:
                 self.host, self.port = host.split(':')
@@ -73,6 +75,7 @@ class HTTP11Connection(object):
         self._send_http_upgrade = not self.secure
 
         self.ssl_context = ssl_context
+        self.proxies = proxies
         self._sock = None
 
         #: The size of the in-memory buffer used to store data from the

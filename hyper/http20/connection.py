@@ -56,9 +56,11 @@ class HTTP20Connection(object):
         :meth:`get_pushes() <hyper.HTTP20Connection.get_pushes>`).
     :param ssl_context: (optional) A class with custom certificate settings.
         If not provided then hyper's default ``SSLContext`` is used instead.
+    :param proxies: (optional) A dictionary whose keys are the scheme used 
+        (http or https) and the value being the url of the proxy).
     """
     def __init__(self, host, port=None, secure=None, window_manager=None, enable_push=False,
-                 ssl_context=None, **kwargs):
+                 ssl_context=None, proxies=None, **kwargs):
         """
         Creates an HTTP/2 connection to a specific server.
         """
@@ -80,6 +82,7 @@ class HTTP20Connection(object):
 
         self._enable_push = enable_push
         self.ssl_context = ssl_context
+        self.proxies = proxies
 
         #: The size of the in-memory buffer used to store data from the
         #: network. This is used as a performance optimisation. Increase buffer

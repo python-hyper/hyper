@@ -40,6 +40,8 @@ class HTTPConnection(object):
         :meth:`get_pushes() <hyper.HTTP20Connection.get_pushes>`).
     :param ssl_context: (optional) A class with custom certificate settings.
         If not provided then hyper's default ``SSLContext`` is used instead.
+    :param proxies: (optional) A dictionary whose keys are the scheme used 
+        (http or https) and the value being the url of the proxy).
     """
     def __init__(self,
                  host,
@@ -48,14 +50,15 @@ class HTTPConnection(object):
                  window_manager=None,
                  enable_push=False,
                  ssl_context=None,
+                 proxies=None,
                  **kwargs):
 
         self._host = host
         self._port = port
-        self._h1_kwargs = {'secure': secure, 'ssl_context': ssl_context}
+        self._h1_kwargs = {'secure': secure, 'ssl_context': ssl_context, 'proxies': proxies }
         self._h2_kwargs = {
             'window_manager': window_manager, 'enable_push': enable_push,
-            'secure': secure, 'ssl_context': ssl_context
+            'secure': secure, 'ssl_context': ssl_context, 'proxies': proxies
         }
 
         # Add any unexpected kwargs to both dictionaries.
