@@ -54,8 +54,12 @@ def build_headers_frame(headers, encoder=None):
 
 def receive_preamble(sock):
     # Receive the HTTP/2 'preamble'.
-    sock.recv(65535)
-    sock.recv(65535)
+    first = sock.recv(65535)
+
+    # Work around some bugs: if the first message received was only the PRI
+    # string, aim to receive a settings frame as well.
+    if len(first) <= len(b'PRI * HTTP/2.0\r\n\r\nSM\r\n\r\n'):
+        sock.recv(65535)
     sock.send(SettingsFrame(0).serialize())
     sock.recv(65535)
     return
