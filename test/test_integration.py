@@ -467,7 +467,12 @@ class TestHyperIntegration(SocketLevelTest):
             send_event.wait()
 
             h = HeadersFrame(1)
-            h.data = self.get_encoder().encode({':status': 200, 'Content-Type': 'not/real', 'Content-Length': 14, 'Server': 'socket-level-server'})
+            h.data = self.get_encoder().encode(
+                {':status': 200,
+                'Content-Type': 'not/real',
+                'Content-Length': 14,
+                'Server': 'socket-level-server'}
+            )
             h.flags.add('END_HEADERS')
             sock.send(h.serialize())
 
