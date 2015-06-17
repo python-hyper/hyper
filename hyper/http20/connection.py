@@ -85,7 +85,7 @@ class HTTP20Connection(object):
         #: network. This is used as a performance optimisation. Increase buffer
         #: size to improve performance: decrease it to conserve memory.
         #: Defaults to 64kB.
-        self.network_buffer_size = 65536
+        self.network_buffer_size = 2**24
 
         # Create the mutable state.
         self.__wm_class = window_manager or FlowControlManager
@@ -122,17 +122,17 @@ class HTTP20Connection(object):
 
         # Values for the settings used on an HTTP/2 connection.
         self._settings = {
-            SettingsFrame.INITIAL_WINDOW_SIZE: 65535,
+            SettingsFrame.INITIAL_WINDOW_SIZE: 2**24,
         }
 
         # The socket used to send data.
         self._sock = None
 
         # The inbound and outbound flow control windows.
-        self._out_flow_control_window = 65535
+        self._out_flow_control_window = 2**24
 
         # Instantiate a window manager.
-        self.window_manager = self.__wm_class(65535)
+        self.window_manager = self.__wm_class(2**24)
 
         return
 
@@ -457,7 +457,7 @@ class HTTP20Connection(object):
         s = Stream(
             stream_id or self.next_stream_id, self._send_cb, self._recv_cb,
             self._close_stream, self.encoder, self.decoder,
-            self.__wm_class(65535), local_closed
+            self.__wm_class(2**24), local_closed
         )
         s._out_flow_control_window = self._out_flow_control_window
         self.streams[s.stream_id] = s

@@ -90,7 +90,7 @@ class Stream(object):
         # There are two flow control windows: one for data we're sending,
         # one for data being sent to us.
         self._in_window_manager = window_manager
-        self._out_flow_control_window = 65535
+        self._out_flow_control_window = 2**24
 
         # This is the callback handed to the stream by its parent connection.
         # It is called when the stream wants to send data. It expects to
