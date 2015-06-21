@@ -9,7 +9,7 @@ Release History
 - HTTP/1.1 and HTTP/2 abstraction layer. Don't specify what version you want to
   use, just automatically get the best version the server supports!
 - Support for upgrading plaintext HTTP/1.1 to plaintext HTTP/2, with thanks to
-  @fredthomsen! (`Issue 28`_)
+  @fredthomsen! (`Issue #28`_)
 - ``HTTP11Connection`` and ``HTTPConnection`` objects are now both context
   managers.
 - Added support for ALPN negotiation when using PyOpenSSL. (`Issue #31`_)
