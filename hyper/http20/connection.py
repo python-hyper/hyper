@@ -122,7 +122,7 @@ class HTTP20Connection(object):
 
         # Values for the settings used on an HTTP/2 connection.
         self._settings = {
-            SettingsFrame.INITIAL_WINDOW_SIZE: 65535,
+            SettingsFrame.INITIAL_WINDOW_SIZE: 65535
         }
 
         # The socket used to send data.
@@ -132,7 +132,7 @@ class HTTP20Connection(object):
         self._out_flow_control_window = 65535
 
         # Instantiate a window manager.
-        self.window_manager = self.__wm_class(65535)
+        self.window_manager = self.__wm_class(2**24)
 
         return
 
@@ -242,6 +242,7 @@ class HTTP20Connection(object):
         self._sock.send(b'PRI * HTTP/2.0\r\n\r\nSM\r\n\r\n')
         f = SettingsFrame(0)
         f.settings[SettingsFrame.ENABLE_PUSH] = int(self._enable_push)
+        f.settings[SettingsFrame.INITIAL_WINDOW_SIZE] = 2**24
         self._send_cb(f)
 
         # The server will also send an initial settings frame, so get it.
@@ -457,7 +458,7 @@ class HTTP20Connection(object):
         s = Stream(
             stream_id or self.next_stream_id, self._send_cb, self._recv_cb,
             self._close_stream, self.encoder, self.decoder,
-            self.__wm_class(65535), local_closed
+            self.__wm_class(2**24), local_closed
         )
         s._out_flow_control_window = self._out_flow_control_window
         self.streams[s.stream_id] = s
