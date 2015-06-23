@@ -197,6 +197,7 @@ class Stream(object):
         Handle a frame received on this stream.
         """
         if 'END_STREAM' in frame.flags:
+            log.debug("Closing remote side of stream")
             self._close_remote()
 
         if frame.type == WindowUpdateFrame.type:

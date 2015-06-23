@@ -5,7 +5,7 @@ hyper/http20/connection
 
 Objects that build hyper's connection-level HTTP/2 abstraction.
 """
-from ..tls import wrap_socket, H2_NPN_PROTOCOLS
+from ..tls import wrap_socket, H2_NPN_PROTOCOLS, H2C_PROTOCOL
 from ..common.exceptions import ConnectionResetError
 from ..common.bufsocket import BufferedSocket
 from ..common.headers import HTTPHeaderMap
@@ -27,7 +27,6 @@ import socket
 
 log = logging.getLogger(__name__)
 
-
 class HTTP20Connection(object):
     """
     An object representing a single HTTP/2 connection to a server.
@@ -43,6 +42,9 @@ class HTTP20Connection(object):
         ``'http2bin.org'``, ``'http2bin.org:443'`` or ``'127.0.0.1'``.
     :param port: (optional) The port to connect to. If not provided and one also
         isn't provided in the ``host`` parameter, defaults to 443.
+    :param secure: (optional) Whether the request should use TLS. Defaults to
+        ``False`` for most requests, but to ``True`` for any request issued to
+        port 443.
     :param window_manager: (optional) The class to use to manage flow control
         windows. This needs to be a subclass of the
         :class:`BaseFlowControlManager <hyper.http20.window.BaseFlowControlManager>`.
@@ -55,7 +57,7 @@ class HTTP20Connection(object):
     :param ssl_context: (optional) A class with custom certificate settings.
         If not provided then hyper's default ``SSLContext`` is used instead.
     """
-    def __init__(self, host, port=None, window_manager=None, enable_push=False,
+    def __init__(self, host, port=None, secure=None, window_manager=None, enable_push=False,
                  ssl_context=None, **kwargs):
         """
         Creates an HTTP/2 connection to a specific server.
@@ -68,6 +70,13 @@ class HTTP20Connection(object):
                 self.host, self.port = host, 443
         else:
             self.host, self.port = host, port
+
+        if secure is not None:
+            self.secure = secure
+        elif self.port == 443:
+            self.secure = True
+        else:
+            self.secure = False
 
         self._enable_push = enable_push
         self.ssl_context = ssl_context
@@ -211,9 +220,13 @@ class HTTP20Connection(object):
         if self._sock is None:
             sock = socket.create_connection((self.host, self.port), 5)
 
-            sock, proto = wrap_socket(sock, self.host, self.ssl_context)
+            if self.secure:
+                sock, proto = wrap_socket(sock, self.host, self.ssl_context)
+            else:
+                proto = H2C_PROTOCOL
+
             log.debug("Selected NPN protocol: %s", proto)
-            assert proto in H2_NPN_PROTOCOLS
+            assert proto in H2_NPN_PROTOCOLS or proto == H2C_PROTOCOL
 
             self._sock = BufferedSocket(sock, self.network_buffer_size)
 
@@ -274,7 +287,7 @@ class HTTP20Connection(object):
         # HTTP/2 specific. These are: ":method", ":scheme", ":authority" and
         # ":path". We can set all of these now.
         s.add_header(":method", method)
-        s.add_header(":scheme", "https")  # We only support HTTPS at this time.
+        s.add_header(":scheme", "https" if self.secure else "http")
         s.add_header(":authority", self.host)
         s.add_header(":path", selector)
 

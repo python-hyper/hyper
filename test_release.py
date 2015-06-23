@@ -86,11 +86,11 @@ class TestHyperActuallyWorks(object):
         assert all(map(lambda r: r.status_code == 200, responses))
         assert all(map(lambda r: r.text, responses))
 
-    def test_hitting_http2bin_org_http11(self):
+    def test_hitting_httpbin_org_http11(self):
         """
-        This test function uses hyper's HTTP/1.1 support to talk to http2bin
+        This test function uses hyper's HTTP/1.1 support to talk to httpbin
         """
-        c = HTTP11Connection('http2bin.org')
+        c = HTTP11Connection('httpbin.org')
 
         # Here are some nice URLs.
         urls = [

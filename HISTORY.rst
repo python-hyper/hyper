@@ -1,6 +1,38 @@
 Release History
 ===============
 
+0.4.0 (2015-06-21)
+------------------
+
+*New Features*
+
+- HTTP/1.1 and HTTP/2 abstraction layer. Don't specify what version you want to
+  use, just automatically get the best version the server supports!
+- Support for upgrading plaintext HTTP/1.1 to plaintext HTTP/2, with thanks to
+  @fredthomsen! (`Issue #28`_)
+- ``HTTP11Connection`` and ``HTTPConnection`` objects are now both context
+  managers.
+- Added support for ALPN negotiation when using PyOpenSSL. (`Issue #31`_)
+- Added support for user-provided SSLContext objects, with thanks to
+  @jdecuyper! (`Issue #8`_)
+- Better support for HTTP/2 error codes, with thanks to @jdecuyper!
+  (`Issue #119`_)
+- More gracefully close connections, with thanks to @jdecuyper! (`Issue #15`_)
+
+*Structural Changes*
+
+- The framing and HPACK layers were stripped out into their own libraries.
+
+*Bugfixes*
+
+- Properly verify hostnames when using PyOpenSSL.
+
+.. _Issue #8: https://github.com/Lukasa/hyper/issues/8
+.. _Issue #15: https://github.com/Lukasa/hyper/issues/15
+.. _Issue #28: https://github.com/Lukasa/hyper/issues/28
+.. _Issue #31: https://github.com/Lukasa/hyper/issues/31
+.. _Issue #119: https://github.com/Lukasa/hyper/issues/119
+
 0.3.1 (2015-04-03)
 ------------------
 

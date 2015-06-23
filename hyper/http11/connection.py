@@ -8,15 +8,17 @@ Objects that build hyper's connection-level HTTP/1.1 abstraction.
 import logging
 import os
 import socket
+import base64
 
 from .response import HTTP11Response
-from ..tls import wrap_socket
+from ..tls import wrap_socket, H2C_PROTOCOL
 from ..common.bufsocket import BufferedSocket
-from ..common.exceptions import TLSUpgrade
+from ..common.exceptions import TLSUpgrade, HTTPUpgrade
 from ..common.headers import HTTPHeaderMap
 from ..common.util import to_bytestring
 from ..compat import bytes
 
+from ..packages.hyperframe.frame import SettingsFrame
 
 # We prefer pycohttpparser to the pure-Python interpretation
 try:  # pragma: no cover
@@ -67,6 +69,9 @@ class HTTP11Connection(object):
         else:
             self.secure = False
 
+        # only send http upgrade headers for non-secure connection
+        self._send_http_upgrade = not self.secure
+
         self.ssl_context = ssl_context
         self._sock = None
 
@@ -94,7 +99,7 @@ class HTTP11Connection(object):
             if self.secure:
                 sock, proto = wrap_socket(sock, self.host, self.ssl_context)
 
-            log.debug("Selected NPN protocol: %s", proto)
+            log.debug("Selected protocol: %s", proto)
             sock = BufferedSocket(sock, self.network_buffer_size)
 
             if proto not in ('http/1.1', None):
@@ -129,6 +134,10 @@ class HTTP11Connection(object):
 
         if self._sock is None:
             self.connect()
+
+        if self._send_http_upgrade:
+            self._add_upgrade_headers(headers)
+            self._send_http_upgrade = False
 
         # We may need extra headers.
         if body:
@@ -165,6 +174,10 @@ class HTTP11Connection(object):
             headers[n.tobytes()] = v.tobytes()
 
         self._sock.advance_buffer(response.consumed)
+
+        if (response.status == 101 and 
+           b'upgrade' in headers['connection'] and H2C_PROTOCOL.encode('utf-8') in headers['upgrade']):
+            raise HTTPUpgrade(H2C_PROTOCOL, self._sock)
 
         return HTTP11Response(
             response.status,
@@ -216,6 +229,16 @@ class HTTP11Connection(object):
 
         headers[b'transfer-encoding'] = b'chunked'
         return BODY_CHUNKED
+
+    def _add_upgrade_headers(self, headers):
+        # Add HTTP Upgrade headers.
+        headers[b'connection'] = b'Upgrade, HTTP2-Settings'
+        headers[b'upgrade'] = H2C_PROTOCOL
+        
+        # Encode SETTINGS frame payload in Base64 and put into the HTTP-2 Settings header.
+        http2_settings = SettingsFrame(0)
+        http2_settings.settings[SettingsFrame.INITIAL_WINDOW_SIZE] = 65535
+        headers[b'HTTP2-Settings'] = base64.b64encode(http2_settings.serialize_body())
 
     def _send_body(self, body, body_type):
         """
@@ -278,14 +301,23 @@ class HTTP11Connection(object):
     def close(self):
         """
         Closes the connection. This closes the socket and then abandons the
-        reference to it. After calling this method, it any outstanding
+        reference to it. After calling this method, any outstanding
         :class:`Response <hyper.http11.response.Response>` objects will throw
         exceptions if attempts are made to read their bodies.
 
-        This method should absolutely only be called when you are certain the
-        connection object is no longer needed.
-
         In some cases this method will automatically be called.
+
+        .. warning:: This method should absolutely only be called when you are
+                     certain the connection object is no longer needed.
         """
         self._sock.close()
         self._sock = None
+
+    # The following two methods are the implementation of the context manager
+    # protocol.
+    def __enter__(self):
+        return self
+
+    def __exit__(self, type, value, tb):
+        self.close()
+        return False  # Never swallow exceptions.

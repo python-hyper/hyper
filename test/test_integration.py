@@ -54,8 +54,12 @@ def build_headers_frame(headers, encoder=None):
 
 def receive_preamble(sock):
     # Receive the HTTP/2 'preamble'.
-    sock.recv(65535)
-    sock.recv(65535)
+    first = sock.recv(65535)
+
+    # Work around some bugs: if the first message received was only the PRI
+    # string, aim to receive a settings frame as well.
+    if len(first) <= len(b'PRI * HTTP/2.0\r\n\r\nSM\r\n\r\n'):
+        sock.recv(65535)
     sock.send(SettingsFrame(0).serialize())
     sock.recv(65535)
     return
@@ -258,6 +262,7 @@ class TestHyperIntegration(SocketLevelTest):
             # We're going to get the two messages for the connection open, then
             # a headers frame.
             receive_preamble(sock)
+            sock.recv(65535)
 
             # Now, send the headers for the response.
             f = build_headers_frame([(':status', '200')])
@@ -293,6 +298,7 @@ class TestHyperIntegration(SocketLevelTest):
             # We get two messages for the connection open and then a HEADERS
             # frame.
             receive_preamble(sock)
+            sock.recv(65535)
 
             # Now, send the headers for the response. This response has no body.
             f = build_headers_frame([(':status', '204'), ('content-length', '0')])
@@ -335,6 +341,7 @@ class TestHyperIntegration(SocketLevelTest):
             # We get two messages for the connection open and then a HEADERS
             # frame.
             receive_preamble(sock)
+            sock.recv(65535)
 
             # Now, send the headers for the response. This response has no body.
             f = build_headers_frame([(':status', '200'), ('content-length', '0')], e)
@@ -452,6 +459,52 @@ class TestHyperIntegration(SocketLevelTest):
 
         self.tear_down()
 
+    def test_insecure_connection(self):
+        self.set_up(secure=False)
+
+        data = []
+        send_event = threading.Event()
+
+        def socket_handler(listener):
+            sock = listener.accept()[0]
+
+            receive_preamble(sock)
+
+            data.append(sock.recv(65535))
+            send_event.wait()
+
+            h = HeadersFrame(1)
+            h.data = self.get_encoder().encode(
+                {':status': 200,
+                'Content-Type': 'not/real',
+                'Content-Length': 14,
+                'Server': 'socket-level-server'}
+            )
+            h.flags.add('END_HEADERS')
+            sock.send(h.serialize())
+
+            d = DataFrame(1)
+            d.data = b'nsaislistening'
+            d.flags.add('END_STREAM')
+            sock.send(d.serialize())
+
+            sock.close()
+
+        self._start_server(socket_handler)
+        c = self.get_connection()
+        c.request('GET', '/')
+        send_event.set()
+        r = c.get_response()
+
+        assert r.status == 200
+        assert len(r.headers) == 3
+        assert r.headers[b'server'] == [b'socket-level-server']
+        assert r.headers[b'content-length'] == [b'14']
+        assert r.headers[b'content-type'] == [b'not/real']
+
+        assert r.read() == b'nsaislistening'
+
+        self.tear_down()
 
 class TestRequestsAdapter(SocketLevelTest):
     # This uses HTTP/2.

@@ -29,4 +29,11 @@ In chronological order:
 - Jerome De Cuyper (@jdecuyper)
 
   - Updated documentation and tests.
+  - Added support for user-provided SSLContext objects.
+  - Improved support for HTTP/2 error codes.
+  - Added support for graceful connection closure.
+
+- Fred Thomsen (@fredthomsen)
+
+  - Added support for upgrade of plaintext HTTP/1.1 to plaintext HTTP/2.
 

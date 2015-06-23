@@ -5,11 +5,10 @@ hyper/common/connection
 
 Hyper's HTTP/1.1 and HTTP/2 abstraction layer.
 """
-from .exceptions import TLSUpgrade
+from .exceptions import TLSUpgrade, HTTPUpgrade
 from ..http11.connection import HTTP11Connection
 from ..http20.connection import HTTP20Connection
-from ..tls import H2_NPN_PROTOCOLS
-
+from ..tls import H2_NPN_PROTOCOLS, H2C_PROTOCOL
 
 class HTTPConnection(object):
     """
@@ -27,8 +26,8 @@ class HTTPConnection(object):
         ``'http2bin.org'``, ``'http2bin.org:443'`` or ``'127.0.0.1'``.
     :param port: (optional) The port to connect to. If not provided and one also
         isn't provided in the ``host`` parameter, defaults to 443.
-    :param secure: (optional, HTTP/1.1 only) Whether the request should use
-        TLS. Defaults to ``False`` for most requests, but to ``True`` for any
+    :param secure: (optional) Whether the request should use TLS. 
+        Defaults to ``False`` for most requests, but to ``True`` for any
         request issued to port 443.
     :param window_manager: (optional) The class to use to manage flow control
         windows. This needs to be a subclass of the
@@ -56,7 +55,7 @@ class HTTPConnection(object):
         self._h1_kwargs = {'secure': secure, 'ssl_context': ssl_context}
         self._h2_kwargs = {
             'window_manager': window_manager, 'enable_push': enable_push,
-            'ssl_context': ssl_context
+            'secure': secure, 'ssl_context': ssl_context
         }
 
         # Add any unexpected kwargs to both dictionaries.
@@ -106,6 +105,41 @@ class HTTPConnection(object):
             return self._conn.request(
                 method=method, url=url, body=body, headers=headers
             )
+
+    def get_response(self):
+        """
+        Returns a response object.
+        """
+        try:
+            return self._conn.get_response()
+        except HTTPUpgrade as e:
+            # We upgraded via the HTTP Upgrade mechanism. We can just 
+            # go straight to the world of HTTP/2. Replace the backing object 
+            # and insert the socket into it.
+            assert e.negotiated == H2C_PROTOCOL
+    
+            self._conn = HTTP20Connection(
+                self._host, self._port, **self._h2_kwargs
+            )
+
+            self._conn._sock = e.sock
+            # stream id 1 is used by the upgrade request and response
+            # and is half-closed by the client
+            self._conn._new_stream(stream_id=1, local_closed=True)
+
+            # HTTP/2 preamble must be sent after receipt of a HTTP/1.1 101
+            self._conn._send_preamble()
+        
+            return self._conn.get_response(1)
+
+    # The following two methods are the implementation of the context manager
+    # protocol.
+    def __enter__(self):  # pragma: no cover
+        return self
+
+    def __exit__(self, type, value, tb):  # pragma: no cover
+        self._conn.close()
+        return False  # Never swallow exceptions.
 
     # Can anyone say 'proxy object pattern'?
     def __getattr__(self, name):
