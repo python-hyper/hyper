@@ -209,12 +209,12 @@ class H2Stream(object):
         # Slice into blocks of max_outbound_frame_size. Be careful with this:
         # it only works right because we never send padded frames or priority
         # information on the frames. Revisit this if we do.
-        header_blocks = (
+        header_blocks = [
             encoded_headers[i:i+self.max_outbound_frame_size]
             for i in range(
                 0, len(encoded_headers), self.max_outbound_frame_size
             )
-        )
+        ]
 
         frames = []
         hf = HeadersFrame(self.stream_id)
