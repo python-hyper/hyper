@@ -231,7 +231,7 @@ class H2Stream(object):
         if end_stream:
             # Not a bug: the END_STREAM flag is valid on the initial HEADERS
             # frame, not the CONTINUATION frames that follow.
-            self.state_machine.process_input(StreamInputs.END_STREAM)
+            self.state_machine.process_input(StreamInputs.SEND_END_STREAM)
             frames[0].flags.add('END_STREAM')
 
         return frames
@@ -308,4 +308,4 @@ class H2Stream(object):
         """
         Handle a stream being reset remotely.
         """
-        self.state_machine.process_input(StreamInputs.RECV_RST_STREAM
+        self.state_machine.process_input(StreamInputs.RECV_RST_STREAM)
