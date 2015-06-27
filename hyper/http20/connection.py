@@ -510,8 +510,12 @@ class HTTP20Connection(object):
 
         data = frame.serialize()
 
-        if frame.body_len > FRAME_MAX_LEN:  # pragma: no cover
-            raise ValueError("Frame size %d is too large" % frame.body_len)
+        if frame.body_len > self._settings[SettingsFrame.SETTINGS_MAX_FRAME_SIZE]:
+            raise ValueError(
+                     "Frame size %d exceeds maximum frame size setting %d" %
+                     (frame.body_len,
+                     self._settings[SettingsFrame.SETTINGS_MAX_FRAME_SIZE])
+            )
 
         log.info(
             "Sending frame %s on stream %d",
