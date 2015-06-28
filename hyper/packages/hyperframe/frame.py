@@ -10,9 +10,11 @@ socket.
 import collections
 import struct
 
-# The maximum length of a frame. Some frames have shorter maximum lengths.
+# The maximum initial length of a frame. Some frames have shorter maximum lengths.
 FRAME_MAX_LEN = (2 ** 14) - 1
 
+# The maximum allowed length of a frame.
+FRAME_MAX_ALLOWED_LEN = (2 ** 24) - 1
 
 class Frame(object):
     """
@@ -31,6 +33,7 @@ class Frame(object):
     def __init__(self, stream_id):
         self.stream_id = stream_id
         self.flags = set()
+        self.body_len = 0
 
         if self.stream_association == 'has-stream' and not self.stream_id:
             raise ValueError('Stream ID must be non-zero')
@@ -40,7 +43,7 @@ class Frame(object):
     @staticmethod
     def parse_frame_header(header):
         """
-        Takes an 9-byte frame header and returns a tuple of the appropriate
+        Takes a 9-byte frame header and returns a tuple of the appropriate
         Frame object and the length that needs to be read from the socket.
         """
         fields = struct.unpack("!HBBBL", header)
@@ -63,7 +66,7 @@ class Frame(object):
 
     def serialize(self):
         body = self.serialize_body()
-        body_len = len(body)
+        self.body_len = len(body)
 
         # Build the common frame header.
         # First, get the flags.
@@ -75,8 +78,8 @@ class Frame(object):
 
         header = struct.pack(
             "!HBBBL",
-            body_len & 0xFFFF00,  # Length is spread over top 24 bits
-            body_len & 0x0000FF,
+            (self.body_len & 0xFFFF00) >> 8,  # Length is spread over top 24 bits
+            self.body_len & 0x0000FF,
             self.type,
             flags,
             self.stream_id & 0x7FFFFFFF  # Stream ID is 32 bits.
@@ -408,7 +411,7 @@ class HeadersFrame(Padding, Priority, Frame):
     (remote)" states.
 
     The HeadersFrame class is actually basically a data frame in this
-    implementation, becuase of the requirement to control the sizes of frames.
+    implementation, because of the requirement to control the sizes of frames.
     A header block fragment that doesn't fit in an entire HEADERS frame needs
     to be followed with CONTINUATION frames. From the perspective of the frame
     building code the header block is an opaque data segment.
