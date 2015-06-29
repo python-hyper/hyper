@@ -407,13 +407,19 @@ class HTTP20Connection(object):
             # code registry otherwise use the frame's additional data.
             if frame.error_code != 0:
                 try:
-                    name, number, description = errors.get_data(frame.error_code)
+                    name, number, description = errors.get_data(
+                        frame.error_code
+                    )
                 except ValueError:
-                    error_string = ("Encountered error code %d, extra data %s" %
-                                   (frame.error_code, frame.additional_data))
+                    error_string = (
+                        "Encountered error code %d, extra data %s" %
+                        (frame.error_code, frame.additional_data)
+                    )
                 else:
-                    error_string = ("Encountered error %s %s: %s" %
-                                   (name, number, description))
+                    error_string = (
+                        "Encountered error %s %s: %s" %
+                        (name, number, description)
+                    )
 
                 raise ConnectionError(error_string)
 
@@ -458,15 +464,20 @@ class HTTP20Connection(object):
         if SettingsFrame.SETTINGS_MAX_FRAME_SIZE in frame.settings:
             new_size = frame.settings[SettingsFrame.SETTINGS_MAX_FRAME_SIZE]
             if FRAME_MAX_LEN <= new_size <= FRAME_MAX_ALLOWED_LEN:
-                self._settings[SettingsFrame.SETTINGS_MAX_FRAME_SIZE] = new_size
+                self._settings[SettingsFrame.SETTINGS_MAX_FRAME_SIZE] = (
+                    new_size
+                )
             else:
                 log.warning(
                     "Frame size %d is outside of allowed range",
-                    new_size)
+                    new_size
+                )
+
                 # Tear the connection down with error code PROTOCOL_ERROR
                 self.close(1)
-                error_string = ("Advertised frame size %d is outside of range" %
-                                (new_size))
+                error_string = (
+                    "Advertised frame size %d is outside of range" % (new_size)
+                )
                 raise ConnectionError(error_string)
 
     def _new_stream(self, stream_id=None, local_closed=False):
@@ -510,11 +521,12 @@ class HTTP20Connection(object):
 
         data = frame.serialize()
 
-        if frame.body_len > self._settings[SettingsFrame.SETTINGS_MAX_FRAME_SIZE]:
+        max_frame_size = self._settings[SettingsFrame.SETTINGS_MAX_FRAME_SIZE]
+        if frame.body_len > max_frame_size:
             raise ValueError(
                      "Frame size %d exceeds maximum frame size setting %d" %
                      (frame.body_len,
-                     self._settings[SettingsFrame.SETTINGS_MAX_FRAME_SIZE])
+                      self._settings[SettingsFrame.SETTINGS_MAX_FRAME_SIZE])
             )
 
         log.info(
@@ -526,7 +538,8 @@ class HTTP20Connection(object):
         try:
             self._sock.send(data)
         except socket.error as e:
-            if not tolerate_peer_gone or e.errno not in (errno.EPIPE, errno.ECONNRESET):
+            if (not tolerate_peer_gone or
+                e.errno not in (errno.EPIPE, errno.ECONNRESET)):
                 raise
 
     def _adjust_receive_window(self, frame_len):
