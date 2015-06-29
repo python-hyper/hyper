@@ -2,7 +2,7 @@
 from hyper.packages.hyperframe.frame import (
     Frame, DataFrame, RstStreamFrame, SettingsFrame,
     PushPromiseFrame, PingFrame, WindowUpdateFrame, HeadersFrame,
-    ContinuationFrame, BlockedFrame, GoAwayFrame,
+    ContinuationFrame, BlockedFrame, GoAwayFrame, FRAME_MAX_LEN, FRAME_MAX_ALLOWED_LEN
 )
 from hyper.packages.hpack.hpack_compat import Encoder, Decoder
 from hyper.http20.connection import HTTP20Connection
@@ -27,7 +27,7 @@ import pytest
 import socket
 import zlib
 from io import BytesIO
-
+import hyper
 
 def decode_frame(frame_data):
     f, length = Frame.parse_frame_header(frame_data[:9])
@@ -195,6 +195,7 @@ class TestHyperConnection(object):
         assert c.decoder is not decoder
         assert c._settings == {
             SettingsFrame.INITIAL_WINDOW_SIZE: 65535,
+            SettingsFrame.SETTINGS_MAX_FRAME_SIZE: FRAME_MAX_LEN,
         }
         assert c._out_flow_control_window == 65535
         assert c.window_manager is not wm
@@ -244,6 +245,71 @@ class TestHyperConnection(object):
         c.receive_frame(f)
 
         assert c._out_flow_control_window == 65535 + 1000
+
+    def test_connections_handle_resizing_max_frame_size_properly(self):
+        sock = DummySocket()
+        f = SettingsFrame(0)
+        f.settings[SettingsFrame.SETTINGS_MAX_FRAME_SIZE] = 65536 # 2^16
+        c = HTTP20Connection('www.google.com')
+        c._sock = sock
+
+        # 'Receive' the SETTINGS frame.
+        c.receive_frame(f)
+
+        # Confirm that the setting is stored and the max frame size increased.
+        assert c._settings[SettingsFrame.SETTINGS_MAX_FRAME_SIZE] == 65536
+
+        # Confirm we got a SETTINGS ACK.
+        f2 = decode_frame(sock.queue[0])
+        assert isinstance(f2, SettingsFrame)
+        assert f2.stream_id == 0
+        assert f2.flags == set(['ACK'])
+
+    def test_connections_handle_too_small_max_frame_size_properly(self):
+        sock = DummySocket()
+        f = SettingsFrame(0)
+        f.settings[SettingsFrame.SETTINGS_MAX_FRAME_SIZE] = 1024
+        c = HTTP20Connection('www.google.com')
+        c._sock = sock
+
+        # 'Receive' the SETTINGS frame.
+        with pytest.raises(ConnectionError):
+            c.receive_frame(f)
+
+        # The value advertised by an endpoint MUST be between 2^14 and
+        # 2^24-1 octets. Confirm that the max frame size did not increase.
+        assert c._settings[SettingsFrame.SETTINGS_MAX_FRAME_SIZE] == FRAME_MAX_LEN
+
+        # When the setting containing the max frame size value is out of range,
+        # the spec dictates to tear down the connection.
+        assert c._sock == None
+
+        # Check if GoAway frame was correctly sent to the endpoint
+        f = decode_frame(sock.queue[0])
+        assert isinstance(f, GoAwayFrame)
+
+    def test_connections_handle_too_big_max_frame_size_properly(self):
+        sock = DummySocket()
+        f = SettingsFrame(0)
+        f.settings[SettingsFrame.SETTINGS_MAX_FRAME_SIZE] = 67108864 # 2^26
+        c = HTTP20Connection('www.google.com')
+        c._sock = sock
+
+        # 'Receive' the SETTINGS frame.
+        with pytest.raises(ConnectionError):
+            c.receive_frame(f)
+
+        # The value advertised by an endpoint MUST be between 2^14 and
+        # 2^24-1 octets. Confirm that the max frame size did not increase.
+        assert c._settings[SettingsFrame.SETTINGS_MAX_FRAME_SIZE] == FRAME_MAX_LEN
+
+        # When the setting containing the max frame size value is out of range,
+        # the spec dictates to tear down the connection.
+        assert c._sock == None
+
+        # Check if GoAway frame was correctly sent to the endpoint
+        f = decode_frame(sock.queue[0])
+        assert isinstance(f, GoAwayFrame)
 
     def test_connections_handle_resizing_header_tables_properly(self):
         sock = DummySocket()
@@ -1282,6 +1348,65 @@ class TestUtilities(object):
         assert isinstance(f, RstStreamFrame)
         assert f.error_code == 1 # PROTOCOL_ERROR
 
+    def test_connection_sends_rst_frame_if_frame_size_too_large(self):
+        sock = DummySocket()
+        d = DataFrame(1)
+        # Receive oversized frame on the client side.
+        # Create huge data frame that exceeds the FRAME_MAX_LEN value in order
+        # to trigger the reset frame with error code 6 (FRAME_SIZE_ERROR).
+        # FRAME_MAX_LEN is a constant value for the hyper client and cannot 
+        # be updated as of now.
+        d.data = b''.join([b"hi there client" for x in range(40)])
+        sock.buffer = BytesIO(d.serialize())
+
+        frames = []
+
+        def send_rst_frame(stream_id, error_code):
+            f = RstStreamFrame(stream_id)
+            f.error_code = error_code
+            frames.append(f)
+
+        c = HTTP20Connection('www.google.com')
+        c._sock = sock
+        c._send_rst_frame = send_rst_frame
+        c.request('GET', '/')
+        c._recv_cb()
+
+        assert len(frames) == 1
+        f = frames[0]
+        assert isinstance(f, RstStreamFrame)
+        assert f.stream_id == 1
+        assert f.error_code == 6 #FRAME_SIZE_ERROR
+
+    def test_connection_stream_is_removed_when_receiving_out_of_range_frame(self):
+        sock = DummySocket()
+        d = DataFrame(1)
+        d.data = b''.join([b"hi there sir" for x in range(40)])
+        sock.buffer = BytesIO(d.serialize())
+
+        c = HTTP20Connection('www.google.com')
+        c._sock = sock
+        c.request('GET', '/')
+
+        # Make sure the stream gets removed from the map
+        # after receiving an out of size data frame
+        assert len(c.streams) == 1
+        c._recv_cb()
+        assert len(c.streams) == 0
+
+    def test_connection_error_when_send_out_of_range_frame(self):
+        # Send oversized frame to the server side.
+        # Create huge data frame that exceeds the intitial FRAME_MAX_LEN setting
+        # in order to trigger a value error when sending it.
+        # Note that the value of the FRAME_MAX_LEN setting can be updated
+        # by the server through a settings frame.
+        d = DataFrame(1)
+        d.data = b''.join([b"hi there server" for x in range(1500)])
+
+        c = HTTP20Connection('www.google.com')
+        c._sock = DummySocket()
+        with pytest.raises(ValueError):
+            c._send_cb(d)
 
 # Some utility classes for the tests.
 class NullEncoder(object):
