@@ -4,6 +4,15 @@ Release History
 dev
 ---
 
+*Feature Enhancement*
+
+- Pay attention to max frame length changes from remote peers. Thanks to
+  @jdecuyper!
+
+*Bugfixes*
+
+- Prevent hyper from emitting oversized frames. Thanks to @jdecuyper!
+
 *Software Updates*
 
 - Updated hyperframe to version 1.1.0.
