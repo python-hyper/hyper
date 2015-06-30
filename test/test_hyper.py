@@ -1354,9 +1354,9 @@ class TestUtilities(object):
         # Receive oversized frame on the client side.
         # Create huge data frame that exceeds the FRAME_MAX_LEN value in order
         # to trigger the reset frame with error code 6 (FRAME_SIZE_ERROR).
-        # FRAME_MAX_LEN is a constant value for the hyper client and cannot 
+        # FRAME_MAX_LEN is a constant value for the hyper client and cannot
         # be updated as of now.
-        d.data = b''.join([b"hi there client" for x in range(40)])
+        d.data = b''.join([b"hi there client" for x in range(1500)])
         sock.buffer = BytesIO(d.serialize())
 
         frames = []
@@ -1381,7 +1381,7 @@ class TestUtilities(object):
     def test_connection_stream_is_removed_when_receiving_out_of_range_frame(self):
         sock = DummySocket()
         d = DataFrame(1)
-        d.data = b''.join([b"hi there sir" for x in range(40)])
+        d.data = b''.join([b"hi there sir" for x in range(1500)])
         sock.buffer = BytesIO(d.serialize())
 
         c = HTTP20Connection('www.google.com')
