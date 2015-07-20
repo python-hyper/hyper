@@ -43,7 +43,7 @@ def wrap_socket(sock, server_hostname, ssl_context=None):
     # Setting SSLContext.check_hostname to True only verifies that the
     # post-handshake servername matches that of the certificate. We also need
     # to check that it matches the requested one.
-    if _context.check_hostname:  # pragma: no cover
+    if _ssl_context.check_hostname:  # pragma: no cover
         try:
             ssl.match_hostname(ssl_sock.getpeercert(), server_hostname)
         except AttributeError:
