@@ -500,7 +500,10 @@ class HTTP20Connection(object):
         """
         Called by a stream when it would like to be 'closed'.
         """
-        self._send_rst_frame(stream_id, error_code)
+        # Graceful shutdown of streams involves not emitting an error code
+        # at all.
+        if error_code:
+            self._send_rst_frame(stream_id, error_code)
 
     def _send_cb(self, frame, tolerate_peer_gone=False):
         """
@@ -518,6 +521,9 @@ class HTTP20Connection(object):
                 self._recv_cb()
 
             self._out_flow_control_window -= len(frame.data)
+
+        if frame.type == RstStreamFrame.type:
+            import pdb; pdb.set_trace()
 
         data = frame.serialize()
 

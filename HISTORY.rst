@@ -12,10 +12,12 @@ dev
 *Bugfixes*
 
 - Prevent hyper from emitting oversized frames. Thanks to @jdecuyper!
+- Prevent hyper from emitting RST_STREAM frames whenever it finishes consuming
+  a stream.
 
 *Software Updates*
 
-- Updated hyperframe to version 1.1.0.
+- Updated hyperframe to version 1.1.1.
 
 0.4.0 (2015-06-21)
 ------------------
