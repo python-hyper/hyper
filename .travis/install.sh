@@ -22,12 +22,15 @@ if [[ "$NGHTTP2" = true ]]; then
     # Now, download and install nghttp2's latest version.
     git clone https://github.com/tatsuhiro-t/nghttp2.git
     cd nghttp2
+    DIR=`pwd`
+    export PYTHONPATH="$DIR/lib/python${TRAVIS_PYTHON_VERSION}/site-packages"
+    mkdir -p $PYTHONPATH
     autoreconf -i
     automake
     autoconf
-    ./configure --disable-threads
+    ./configure --disable-threads --prefix=`pwd`
     make
-    sudo make install
+    make install
 
     # The makefile doesn't install into the active virtualenv. Install again.
     cd python
