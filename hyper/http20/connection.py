@@ -504,6 +504,14 @@ class HTTP20Connection(object):
         # at all.
         if error_code:
             self._send_rst_frame(stream_id, error_code)
+        else:
+            # Just delete the stream.
+            try:
+                del self.streams[stream_id]
+            except KeyError as e:  # pragma: no cover
+                log.warn(
+                    "Stream with id %d does not exist: %s",
+                    stream_id, e)
 
     def _send_cb(self, frame, tolerate_peer_gone=False):
         """
@@ -521,9 +529,6 @@ class HTTP20Connection(object):
                 self._recv_cb()
 
             self._out_flow_control_window -= len(frame.data)
-
-        if frame.type == RstStreamFrame.type:
-            import pdb; pdb.set_trace()
 
         data = frame.serialize()
 
