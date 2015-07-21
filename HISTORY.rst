@@ -14,6 +14,7 @@ dev
 - Prevent hyper from emitting oversized frames. Thanks to @jdecuyper!
 - Prevent hyper from emitting RST_STREAM frames whenever it finishes consuming
   a stream.
+- Prevent hyper from emitting lots of RST_STREAM frames.
 
 *Software Updates*
 
