@@ -110,9 +110,13 @@ class HTTP20Connection(object):
         # Streams are stored in a dictionary keyed off their stream IDs. We
         # also save the most recent one for easy access without having to walk
         # the dictionary.
+        # Finally, we add a set of all streams that we or the remote party
+        # forcefully closed with RST_STREAM, to avoid encountering issues where
+        # frames were already in flight before the RST was processed.
         self.streams = {}
         self.recent_stream = None
         self.next_stream_id = 1
+        self.reset_streams = set()
 
         # Header encoding/decoding is at the connection scope, so we embed a
         # header encoder and a decoder. These get passed to child stream
@@ -652,6 +656,13 @@ class HTTP20Connection(object):
                 # the stream and go about our business.
                 self._send_rst_frame(frame.promised_stream_id, 7)
 
+        # If this frame was received on a stream that has been reset, drop it.
+        if frame.stream_id in self.reset_streams:
+            log.info(
+                "Stream %s has been reset, dropping frame.", frame.stream_id
+            )
+            return
+
         # Work out to whom this frame should go.
         if frame.stream_id != 0:
             try:
@@ -663,6 +674,11 @@ class HTTP20Connection(object):
                 log.warning(
                     "Unexpected stream identifier %d" % (frame.stream_id)
                 )
+
+            # If this is a RST_STREAM frame, we may get more than one (because
+            # of frames in flight). Keep track.
+            if frame.type == RstStreamFrame.type:
+                self.reset_streams.add(frame.stream_id)
         else:
             self.receive_frame(frame)
 
@@ -702,6 +718,10 @@ class HTTP20Connection(object):
             log.warn(
                 "Stream with id %d does not exist: %s",
                 stream_id, e)
+
+        # Keep track of the fact that we reset this stream in case there are
+        # other frames in flight.
+        self.reset_streams.add(stream_id)
 
     # The following two methods are the implementation of the context manager
     # protocol.

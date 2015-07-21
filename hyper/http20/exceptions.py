@@ -40,3 +40,10 @@ class ProtocolError(HTTP20Error):
     The remote party violated the HTTP/2 protocol.
     """
     pass
+
+
+class StreamResetError(HTTP20Error):
+    """
+    A stream was forcefully reset by the remote party.
+    """
+    pass
