@@ -16,9 +16,9 @@ the stream by the endpoint that initiated the stream.
 from ..common.headers import HTTPHeaderMap
 from ..packages.hyperframe.frame import (
     FRAME_MAX_LEN, FRAMES, HeadersFrame, DataFrame, PushPromiseFrame,
-    WindowUpdateFrame, ContinuationFrame, BlockedFrame
+    WindowUpdateFrame, ContinuationFrame, BlockedFrame, RstStreamFrame
 )
-from .exceptions import ProtocolError
+from .exceptions import ProtocolError, StreamResetError
 from .util import h2_safe_headers
 import collections
 import logging
@@ -233,6 +233,9 @@ class Stream(object):
                 w = WindowUpdateFrame(self.stream_id)
                 w.window_increment = increment
                 self._data_cb(w, True)
+        elif frame.type == RstStreamFrame.type:
+            self.close(0)
+            raise StreamResetError("Stream forcefully closed.")
         elif frame.type in FRAMES:
             # This frame isn't valid at this point.
             raise ValueError("Unexpected frame %s." % frame)
@@ -368,8 +371,9 @@ class Stream(object):
         :returns: Nothing.
         """
         # Right now let's not bother with grace, let's just call close on the
-        # connection.
-        self._close_cb(self.stream_id, error_code)
+        # connection. If not error code is provided then assume it is a
+        # gracefull shutdown.
+        self._close_cb(self.stream_id, error_code or 0)
 
     def _handle_header_block(self, headers):
         """

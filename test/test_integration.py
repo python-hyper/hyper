@@ -15,14 +15,14 @@ from hyper.compat import ssl
 from hyper.contrib import HTTP20Adapter
 from hyper.packages.hyperframe.frame import (
     Frame, SettingsFrame, WindowUpdateFrame, DataFrame, HeadersFrame,
-    GoAwayFrame,
+    GoAwayFrame, RstStreamFrame
 )
 from hyper.packages.hpack.hpack import Encoder
 from hyper.packages.hpack.huffman import HuffmanEncoder
 from hyper.packages.hpack.huffman_constants import (
     REQUEST_CODES, REQUEST_CODES_LENGTH
 )
-from hyper.http20.exceptions import ConnectionError
+from hyper.http20.exceptions import ConnectionError, StreamResetError
 from server import SocketLevelTest
 
 # Turn off certificate verification for the tests.
@@ -505,6 +505,101 @@ class TestHyperIntegration(SocketLevelTest):
         assert r.read() == b'nsaislistening'
 
         self.tear_down()
+
+    def test_resetting_stream_with_frames_in_flight(self):
+        """
+        Hyper emits only one RST_STREAM frame, despite the other frames in
+        flight.
+        """
+        self.set_up()
+
+        recv_event = threading.Event()
+
+        def socket_handler(listener):
+            sock = listener.accept()[0]
+
+            # We get two messages for the connection open and then a HEADERS
+            # frame.
+            receive_preamble(sock)
+            sock.recv(65535)
+
+            # Now, send the headers for the response. This response has no
+            # body.
+            f = build_headers_frame(
+                [(':status', '204'), ('content-length', '0')]
+            )
+            f.flags.add('END_STREAM')
+            f.stream_id = 1
+            sock.send(f.serialize())
+
+            # Wait for the message from the main thread.
+            recv_event.wait()
+            sock.close()
+
+        self._start_server(socket_handler)
+        conn = self.get_connection()
+        stream_id = conn.request('GET', '/')
+
+        # Now, trigger the RST_STREAM frame by closing the stream.
+        conn._send_rst_frame(stream_id, 0)
+
+        # Now, eat the Headers frame. This should not cause an exception.
+        conn._recv_cb()
+
+        # However, attempting to get the response should.
+        with pytest.raises(KeyError):
+            conn.get_response(stream_id)
+
+        # Awesome, we're done now.
+        recv_event.set()
+
+        self.tear_down()
+
+    def test_stream_can_be_reset_multiple_times(self):
+        """
+        Confirm that hyper gracefully handles receiving multiple RST_STREAM
+        frames.
+        """
+        self.set_up()
+
+        recv_event = threading.Event()
+
+        def socket_handler(listener):
+            sock = listener.accept()[0]
+
+            # We get two messages for the connection open and then a HEADERS
+            # frame.
+            receive_preamble(sock)
+            sock.recv(65535)
+
+            # Now, send two RST_STREAM frames.
+            for _ in range(0, 2):
+                f = RstStreamFrame(1)
+                sock.send(f.serialize())
+
+            # Wait for the message from the main thread.
+            recv_event.wait()
+            sock.close()
+
+        self._start_server(socket_handler)
+        conn = self.get_connection()
+        conn.request('GET', '/')
+
+        # Now, eat the RstStream frames. The first one throws a
+        # StreamResetError.
+        with pytest.raises(StreamResetError):
+            conn._consume_single_frame()
+
+        # The next should throw no exception.
+        conn._consume_single_frame()
+
+        assert conn.reset_streams == set([1])
+
+        # Awesome, we're done now.
+        recv_event.set()
+
+        self.tear_down()
+
 
 class TestRequestsAdapter(SocketLevelTest):
     # This uses HTTP/2.
