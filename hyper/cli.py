@@ -223,9 +223,7 @@ def request(args):
     response = conn.get_response()
     log.debug('Response Headers:\n%s', pformat(response.headers))
     ctype, charset = get_content_type_and_charset(response)
-    data = response.read().decode(charset)
-    if 'json' in ctype:
-        data = pformat(json.loads(data))
+    data = response.read()
     return data
 
 
@@ -233,7 +231,7 @@ def main(argv=None):
     args = parse_argument(argv)
     log.debug('Commandline Argument: %s', args)
     data = request(args)
-    write_to_stdout(data.encode(PREFERRED_ENCODING, errors='replace'))
+    write_to_stdout(data)
 
 
 if __name__ == '__main__':  # pragma: no cover
