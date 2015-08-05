@@ -15,6 +15,7 @@ dev
 - Prevent hyper from emitting RST_STREAM frames whenever it finishes consuming
   a stream.
 - Prevent hyper from emitting lots of RST_STREAM frames.
+- Hyper CLI tool now correctly uses TLS for any ``https``-schemed URL.
 
 *Software Updates*
 
