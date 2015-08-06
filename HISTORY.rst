@@ -16,6 +16,8 @@ dev
   a stream.
 - Prevent hyper from emitting lots of RST_STREAM frames.
 - Hyper CLI tool now correctly uses TLS for any ``https``-schemed URL.
+- Hyper CLI tool no longer attempts to decode bytes, instead writing them
+  straight to the terminal.
 
 *Software Updates*
 
