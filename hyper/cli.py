@@ -123,6 +123,7 @@ def set_url_info(args):
             self.port = 443
             self.query = None
             self.scheme = 'https'
+            self.secure = False
 
     info = UrlInfo()
     _result = urlsplit(args._url)
@@ -133,6 +134,9 @@ def set_url_info(args):
 
     if info.scheme == 'http' and not _result.port:
         info.port = 80
+
+    # Set the secure arg is the scheme is HTTPS, otherwise do unsecured.
+    info.secure = info.scheme == 'https'
 
     if info.netloc:
         hostname, _ = split_host_and_port(info.netloc)
@@ -214,14 +218,12 @@ def get_content_type_and_charset(response):
 
 
 def request(args):
-    conn = HTTPConnection(args.url.host, args.url.port)
+    conn = HTTPConnection(args.url.host, args.url.port, secure=args.url.secure)
     conn.request(args.method, args.url.path, args.body, args.headers)
     response = conn.get_response()
     log.debug('Response Headers:\n%s', pformat(response.headers))
     ctype, charset = get_content_type_and_charset(response)
-    data = response.read().decode(charset)
-    if 'json' in ctype:
-        data = pformat(json.loads(data))
+    data = response.read()
     return data
 
 
@@ -229,7 +231,7 @@ def main(argv=None):
     args = parse_argument(argv)
     log.debug('Commandline Argument: %s', args)
     data = request(args)
-    write_to_stdout(data.encode(PREFERRED_ENCODING, errors='replace'))
+    write_to_stdout(data)
 
 
 if __name__ == '__main__':  # pragma: no cover
