@@ -11,6 +11,7 @@ env:
   - TEST_RELEASE=false HYPER_FAST_PARSE=true
   - TEST_RELEASE=true HYPER_FAST_PARSE=false
   - TEST_RELEASE=true HYPER_FAST_PARSE=true
+  - NAHPACKPY=true
   - NGHTTP2=true
 
 matrix:

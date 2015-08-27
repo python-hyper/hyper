@@ -37,6 +37,12 @@ if [[ "$NGHTTP2" = true ]]; then
     # Let's try ldconfig.
     sudo sh -c 'echo "/usr/local/lib" > /etc/ld.so.conf.d/libnghttp2.conf'
     sudo ldconfig
+elif [[ $NAHPACKPY == true ]]; then
+    # compile rust nightly for nahpackpy build
+    wget http://static.rust-lang.org/dist/rust-nightly-x86_64-unknown-linux-gnu.tar.gz  # wget exit 4 with TLS
+    tar xvfz rust-nightly-x86_64-unknown-linux-gnu.tar.gz
+    cd rust-nightly-x86_64-unknown-linux-gnu && sudo ./install.sh && cd ..
+    pip install "nahpackpy>=0.1.0,<0.2.0"
 fi
 
 if [[ "$HYPER_FAST_PARSE" = true ]]; then

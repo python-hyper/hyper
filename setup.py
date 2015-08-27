@@ -77,6 +77,6 @@ setup(
         ],
     },
     extras_require={
-        'fast': ['pycohttpparser'],
+        'fast': ['pycohttpparser', 'nahpackpy'],
     }
 )
