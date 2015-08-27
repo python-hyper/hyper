@@ -45,6 +45,7 @@ class SocketServerThread(threading.Thread):
 
         self.socket_handler = socket_handler
         self.host = host
+        self.port = None
         self.secure = secure
         self.ready_event = ready_event
         self.daemon = True
@@ -105,7 +106,7 @@ class SocketLevelTest(object):
             secure=self.secure
         )
         self.server_thread.start()
-        ready_event.wait()
+        ready_event.wait(1)
         self.host = self.server_thread.host
         self.port = self.server_thread.port
         self.secure = self.server_thread.secure
