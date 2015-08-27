@@ -82,7 +82,7 @@ dev
     simple ``.headers`` and ``.trailers`` properties that contain
     ``HTTPHeaderMap`` structures.
   - Headers and trailers are now bytestrings, rather than unicode strings.
-  - An ``iter_chunked()`` method was added to repsonse objects that allows
+  - An ``iter_chunked()`` method was added to response objects that allows
     iterating over data in units of individual data frames.
   - Changed the name of ``getresponse()`` to ``get_response()``, because
     ``getresponse()`` was a terrible name forced upon me by httplib.
