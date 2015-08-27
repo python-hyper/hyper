@@ -17,21 +17,86 @@ whether the nghttp2 bindings are installed, and if they are it wraps them in
 a hpack-compatible API and uses them instead of its own. If not, it falls back
 to the built-in Python bindings.
 """
+
 import logging
+
 from .hpack import _to_bytes
 
 log = logging.getLogger(__name__)
 
-# Attempt to import nghttp2.
-try:
-    import nghttp2
-    USE_NGHTTP2 = True
-    log.debug("Using nghttp2's HPACK implementation.")
-except ImportError:
-    USE_NGHTTP2 = False
-    log.debug("Using our pure-Python HPACK implementation.")
 
-if USE_NGHTTP2:
+HPACK_MODULE = 'hyper'
+
+
+try:
+    import nahpackpy
+    HPACK_MODULE = 'nahpackpy'
+except ImportError:
+    try:
+        import nghttp2
+        HPACK_MODULE = 'nghttp2'
+    except ImportError:
+        pass
+
+
+log.debug("Using the %s HPACK implementation.", HPACK_MODULE)
+
+
+if HPACK_MODULE == 'nahpackpy':
+
+    class Encoder(nahpackpy.Encoder):
+
+        def encode(self, headers):
+            """
+            Takes an iterable of (name, value) iterables and returns
+            encoded bytes.
+            """
+            log.debug("HPACK encoding %s", headers)
+
+            # Turn the headers into a list of tuples if possible. This is the
+            # natural way to interact with them in HPACK.
+            if isinstance(headers, dict):
+                headers = headers.items()
+
+            # Next, walk across the headers and turn them all into bytestrings.
+            headers = [(_to_bytes(n), _to_bytes(v)) for n, v in headers]
+
+            return self.encode_block(headers)
+
+        @property
+        def header_table_size(self):
+            return self.capacity
+
+        @header_table_size.setter
+        def header_table_size(self, value):
+            log.debug("Setting header table size to %d", value)
+            self.set_capacity(value)
+
+
+    class Decoder(nahpackpy.Decoder):
+
+        def decode(self, data):
+            """
+            Takes an HPACK-encoded header block and decodes it into a header
+            set.
+            """
+            log.debug("Decoding %s", data)
+
+            headers = self.decode_block(data)
+            return [(n.decode('utf-8'), v.decode('utf-8')) for n, v in headers]
+
+        @property
+        def header_table_size(self):
+            return self.capacity
+
+        @header_table_size.setter
+        def header_table_size(self, value):
+            log.debug("Setting header table size to %d", value)
+            self.set_capacity(value)
+
+
+elif HPACK_MODULE == 'nghttp2':
+
     class Encoder(object):
         """
         An HPACK encoder object. This object takes HTTP headers and emits
@@ -72,6 +137,7 @@ if USE_NGHTTP2:
             header_block = self._e.deflate(headers)
 
             return header_block
+
 
     class Decoder(object):
         """
