@@ -29,11 +29,23 @@ if sys.argv[-1] == 'publish':
 py_version = sys.version_info[:2]
 py_long_version = sys.version_info[:3]
 
+try:
+    pypy_version = sys.pypy_version_info[:2]
+except AttributeError:
+    pypy_version = None
+
+
 def resolve_install_requires():
-    if py_version == (3,3):
+    if py_version == (3, 3):
         return ['pyOpenSSL>=0.15', 'service_identity>=14.0.0']
-    elif py_version == (2,7) and py_long_version < (2,7,9):
-        return ['pyOpenSSL>=0.15', 'service_identity>=14.0.0']
+    elif py_version == (2, 7) and py_long_version < (2, 7, 9):
+        deps = ['pyOpenSSL>=0.15', 'service_identity>=14.0.0']
+
+        # PyPy earlier than 2.6.0 doesn't support cryptography 1.0
+        if pypy_version and pypy_version < (2, 6):
+            deps.append('cryptography<1.0')
+
+        return deps
     return []
 
 packages = [
