@@ -47,11 +47,11 @@ class HTTP11Connection(object):
         port 443.
     :param ssl_context: (optional) A class with custom certificate settings.
         If not provided then hyper's default ``SSLContext`` is used instead.
-    :param proxies: (optional) A dictionary whose keys are the scheme used 
-        (http or https) and the value being the url of the proxy).
+    :param proxy: (optional) The proxy to connect to.  This can be an IP address
+        or a host name and may include a port.
     """
     def __init__(self, host, port=None, secure=None, ssl_context=None, 
-                 proxies=None, **kwargs):
+                 proxy=None, **kwargs):
         if port is None:
             try:
                 self.host, self.port = host.split(':')
@@ -75,8 +75,17 @@ class HTTP11Connection(object):
         self._send_http_upgrade = not self.secure
 
         self.ssl_context = ssl_context
-        self.proxies = proxies
         self._sock = None
+       
+        if proxy:
+            self.proxy_host, self.proxy_port = proxy.split(':')
+            if(self.proxy_port):
+                self.proxy_port = int(self.proxy_port)
+            else:
+                self.proxy_port = 8080
+        else:
+            self.proxy_host = None
+            self.proxy_port = None
 
         #: The size of the in-memory buffer used to store data from the
         #: network. This is used as a performance optimisation. Increase buffer
@@ -96,11 +105,16 @@ class HTTP11Connection(object):
         :returns: Nothing.
         """
         if self._sock is None:
-            sock = socket.create_connection((self.host, self.port), 5)
+            if not self.proxy_host:
+                host = self.host
+            else:
+                port = self.proxy_host
+                
+            sock = socket.create_connection((host, port), 5)
             proto = None
 
             if self.secure:
-                sock, proto = wrap_socket(sock, self.host, self.ssl_context)
+                sock, proto = wrap_socket(sock, host, self.ssl_context)
 
             log.debug("Selected protocol: %s", proto)
             sock = BufferedSocket(sock, self.network_buffer_size)
