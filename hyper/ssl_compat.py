@@ -56,6 +56,8 @@ def verify_hostname(ssl_sock, server_hostname):
     """
     A method nearly compatible with the stdlib's match_hostname.
     """
+    if isinstance(server_hostname, bytes):
+        server_hostname = server_hostname.decode('ascii')
     return _verify(ssl_sock._conn, server_hostname)
 
 
