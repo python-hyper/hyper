@@ -236,12 +236,15 @@ class HTTP20Connection(object):
         if self._sock is None:
             if not self.proxy_host:
                 host = self.host
+                port = self.port
             else:
+                host = self.proxy_host
                 port = self.proxy_host
 
             sock = socket.create_connection((host, port), 5)
 
             if self.secure:
+                assert not self.proxy_host, "Using a proxy with HTTPS not yet supported."
                 sock, proto = wrap_socket(sock, host, self.ssl_context)
             else:
                 proto = H2C_PROTOCOL
