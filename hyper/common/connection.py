@@ -26,7 +26,7 @@ class HTTPConnection(object):
         ``'http2bin.org'``, ``'http2bin.org:443'`` or ``'127.0.0.1'``.
     :param port: (optional) The port to connect to. If not provided and one also
         isn't provided in the ``host`` parameter, defaults to 443.
-    :param secure: (optional) Whether the request should use TLS. 
+    :param secure: (optional) Whether the request should use TLS.
         Defaults to ``False`` for most requests, but to ``True`` for any
         request issued to port 443.
     :param window_manager: (optional) The class to use to manage flow control
@@ -116,18 +116,18 @@ class HTTPConnection(object):
                 method=method, url=url, body=body, headers=headers
             )
 
-    def get_response(self):
+    def get_response(self, *args, **kwargs):
         """
         Returns a response object.
         """
         try:
-            return self._conn.get_response()
+            return self._conn.get_response(*args, **kwargs)
         except HTTPUpgrade as e:
-            # We upgraded via the HTTP Upgrade mechanism. We can just 
-            # go straight to the world of HTTP/2. Replace the backing object 
+            # We upgraded via the HTTP Upgrade mechanism. We can just
+            # go straight to the world of HTTP/2. Replace the backing object
             # and insert the socket into it.
             assert e.negotiated == H2C_PROTOCOL
-    
+
             self._conn = HTTP20Connection(
                 self._host, self._port, **self._h2_kwargs
             )
@@ -139,7 +139,7 @@ class HTTPConnection(object):
 
             # HTTP/2 preamble must be sent after receipt of a HTTP/1.1 101
             self._conn._send_preamble()
-        
+
             return self._conn.get_response(1)
 
     # The following two methods are the implementation of the context manager
