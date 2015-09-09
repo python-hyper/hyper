@@ -43,6 +43,8 @@ class TestHTTP11Connection(object):
         assert c.host == 'httpbin.org'
         assert c.port == 80
         assert not c.secure
+        assert not c.proxy_host
+        assert not c.proxy_port
 
     def test_initialization_inline_port(self):
         c = HTTP11Connection('httpbin.org:443')
@@ -50,6 +52,8 @@ class TestHTTP11Connection(object):
         assert c.host == 'httpbin.org'
         assert c.port == 443
         assert c.secure
+        assert not c.proxy_host
+        assert not c.proxy_port
 
     def test_initialization_separate_port(self):
         c = HTTP11Connection('localhost', 8080)
@@ -57,6 +61,8 @@ class TestHTTP11Connection(object):
         assert c.host == 'localhost'
         assert c.port == 8080
         assert not c.secure
+        assert not c.proxy_host
+        assert not c.proxy_port
 
     def test_can_override_security(self):
         c = HTTP11Connection('localhost', 443, secure=False)
@@ -64,6 +70,26 @@ class TestHTTP11Connection(object):
         assert c.host == 'localhost'
         assert c.port == 443
         assert not c.secure
+        assert not c.proxy_host
+        assert not c.proxy_port
+
+    def test_initialization_proxy(self):
+        c = HTTP11Connection('httpbin.org', proxy='localhost')
+
+        assert c.host == 'httpbin.org'
+        assert c.port == 80
+        assert not c.secure
+        assert c.proxy_host == 'localhost'
+        assert c.proxy_port == 8080
+
+    def test_initialization_proxy_with_port(self):
+        c = HTTP11Connection('httpbin.org', proxy='localhost:8443')
+
+        assert c.host == 'httpbin.org'
+        assert c.port == 80
+        assert not c.secure
+        assert c.proxy_host == 'localhost'
+        assert c.proxy_port == 8443
 
     def test_basic_request(self):
         c = HTTP11Connection('httpbin.org')
