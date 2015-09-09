@@ -78,10 +78,11 @@ class HTTP11Connection(object):
         self._sock = None
        
         if proxy:
-            self.proxy_host, self.proxy_port = proxy.split(':')
-            if(self.proxy_port):
+            if(':' in proxy):
+                self.proxy_host, self.proxy_port = proxy.split(':')
                 self.proxy_port = int(self.proxy_port)
             else:
+                self.proxy_host = proxy
                 self.proxy_port = 8080
         else:
             self.proxy_host = None
