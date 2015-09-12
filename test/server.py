@@ -124,7 +124,7 @@ class SocketProxyThread(threading.Thread):
         raise NotImplementedError()
 
     def run(self):
-        self.proxy = self._start_proxy()
+        self.proxy_server = self._start_proxy()
 
 
 class SocketLevelTest(object):
@@ -158,7 +158,7 @@ class SocketLevelTest(object):
         self.port = self.server_thread.port
         self.secure = self.server_thread.secure
 
-        if proxy:
+        if self.proxy:
             self._start_proxy()
             self.proxy_host = self.proxy_thread.proxy_host
 
