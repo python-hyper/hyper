@@ -98,6 +98,7 @@ class SocketProxyThread(threading.Thread):
         self.host = host
         self.port = port
         self.proxy_host = proxy_host
+        self.secure = secure
         self.daemon = True
 
         assert not self.secure, "HTTPS Proxies not supported"
