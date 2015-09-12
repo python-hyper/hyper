@@ -81,17 +81,65 @@ class SocketServerThread(threading.Thread):
     def run(self):
         self.server = self._start_server()
 
+class SocketProxyThread(threading.Thread):
+    """
+    :param ready_event: Event which gets set when the socket handler is
+        ready to receive requests.
+    """
+    def __init__(self,
+                 socket_handler,
+                 proxy_host='localhost',
+                 host='localhost',
+                 port=80,
+                 secure=False):
+        threading.Thread.__init__(self)
+
+        self.socket_handler = socket_handler
+        self.host = host
+        self.port = port
+        self.proxy_host = proxy_host
+        self.daemon = True
+
+        assert not self.secure, "HTTPS Proxies not supported"
+
+    def _start_proxy(self):
+        tx_sock = socket.socket(socket.AF_INET6)
+        rx_sock = socket.socket(socket.AF_INET6)
+
+        if sys.platform != 'win32':
+            for sock in [tx_sock, rx_sock]:
+                sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+
+        sock_rx.bind((self.proxy_host, 0))
+        self.proxy_port = sock_rx.getsockname()[1]
+
+        # Once listen() returns, the server socket is ready
+        rx_sock.listen(1)
+        tx_sock.connect((host, port))
+
+        self.socket_handler(tx_sock, rx_sock)
+        sock.close()
+
+    def _wrap_socket(self, sock):
+        raise NotImplementedError()
+
+    def run(self):
+        self.proxy = self._start_proxy()
+
 
 class SocketLevelTest(object):
     """
     A test-class that defines a few helper methods for running socket-level
     tests.
     """
-    def set_up(self, secure=True):
+    def set_up(self, secure=True, proxy=False):
         self.host = None
         self.port = None
-        self.secure = secure
+        self.proxy = proxy
+        self.secure = secure if not proxy else False
+
         self.server_thread = None
+        self.proxy_thread = None
 
     def _start_server(self, socket_handler):
         """
@@ -109,6 +157,24 @@ class SocketLevelTest(object):
         self.host = self.server_thread.host
         self.port = self.server_thread.port
         self.secure = self.server_thread.secure
+
+        if proxy:
+            self._start_proxy()
+            self.proxy_host = self.proxy_thread.proxy_host
+
+    def _start_proxy(self):
+        """
+        Starts a background thread that runs the given socket handler.
+        """
+        def _proxy_socket_handler(tx_sock, rx_sock):
+            rx_sock_add = rx_sock.accept()[0]
+            tx_sock.send(rx_sock_add.recv(65535))
+            rx_sock_add = sock.close()
+
+        self.proxy_thread = SocketProxyThread(
+            socket_handler=_proxy_socket_handler
+        )
+        self.proxy_thread.start()
 
     def get_connection(self):
         if self.h2:
