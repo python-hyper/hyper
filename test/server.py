@@ -116,7 +116,7 @@ class SocketProxyThread(threading.Thread):
 
         # Once listen() returns, the server socket is ready
         rx_sock.listen(1)
-        tx_sock.connect((host, port))
+        tx_sock.connect((self.host, self.port))
 
         self.socket_handler(tx_sock, rx_sock)
         sock.close()
@@ -161,7 +161,9 @@ class SocketLevelTest(object):
 
         if self.proxy:
             self._start_proxy()
+
             self.proxy_host = self.proxy_thread.proxy_host
+            self.proxy_port = self.proxy_thread.proxy_port
 
     def _start_proxy(self):
         """
@@ -178,10 +180,17 @@ class SocketLevelTest(object):
         self.proxy_thread.start()
 
     def get_connection(self):
-        if self.h2:
-            return HTTP20Connection(self.host, self.port, self.secure)
+        if not self.proxy:
+            host = self.host
+            port = self.port
         else:
-            return HTTP11Connection(self.host, self.port, self.secure)
+            host = self.proxy_host
+            port = self.proxy_port
+
+        if self.h2:
+            return HTTP20Connection(host, port, self.secure)
+        else:
+            return HTTP11Connection(host, port, self.secure)
 
     def get_encoder(self):
         """
@@ -196,3 +205,6 @@ class SocketLevelTest(object):
         Tears down the testing thread.
         """
         self.server_thread.join(0.1)
+
+        if self.proxy:
+            self.proxy_thread.join(0.1)
