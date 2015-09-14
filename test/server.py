@@ -98,6 +98,7 @@ class SocketProxyThread(threading.Thread):
         self.host = host
         self.port = port
         self.proxy_host = proxy_host
+        self.proxy_port = None
         self.secure = secure
         self.daemon = True
 
@@ -111,8 +112,8 @@ class SocketProxyThread(threading.Thread):
             for sock in [tx_sock, rx_sock]:
                 sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
 
-        sock_rx.bind((self.proxy_host, 0))
-        self.proxy_port = sock_rx.getsockname()[1]
+        rx_sock.bind((self.proxy_host, 0))
+        self.proxy_port = rx_sock.getsockname()[1]
 
         # Once listen() returns, the server socket is ready
         rx_sock.listen(1)
@@ -164,6 +165,7 @@ class SocketLevelTest(object):
 
             self.proxy_host = self.proxy_thread.proxy_host
             self.proxy_port = self.proxy_thread.proxy_port
+            self.secure = self.proxy_thread.secure
 
     def _start_proxy(self):
         """
@@ -172,25 +174,20 @@ class SocketLevelTest(object):
         def _proxy_socket_handler(tx_sock, rx_sock):
             rx_sock_add = rx_sock.accept()[0]
             tx_sock.send(rx_sock_add.recv(65535))
-            rx_sock_add = sock.close()
+            rx_sock_add.close()
 
         self.proxy_thread = SocketProxyThread(
-            socket_handler=_proxy_socket_handler
+            socket_handler=_proxy_socket_handler,
+            host=self.host,
+            port=self.port
         )
         self.proxy_thread.start()
 
     def get_connection(self):
-        if not self.proxy:
-            host = self.host
-            port = self.port
-        else:
-            host = self.proxy_host
-            port = self.proxy_port
-
         if self.h2:
-            return HTTP20Connection(host, port, self.secure)
+            return HTTP20Connection(self.host, self.port, self.secure, proxy=':'.join([self.proxy_host, self.proxy_port]) if self.proxy else None)
         else:
-            return HTTP11Connection(host, port, self.secure)
+            return HTTP11Connection(self.host, self.port, self.secure, proxy=':'.join([self.proxy_host, self.proxy_port]) if self.proxy else None)
 
     def get_encoder(self):
         """
