@@ -56,11 +56,13 @@ class HTTP20Connection(object):
         :meth:`get_pushes() <hyper.HTTP20Connection.get_pushes>`).
     :param ssl_context: (optional) A class with custom certificate settings.
         If not provided then hyper's default ``SSLContext`` is used instead.
-    :param proxy: (optional) A dictionary whose keys are the scheme used 
-        (http or https) and the value being the url of the proxy).
+    :param proxy_host: (optional) The proxy to connect to.  This can be an IP address
+        or a host name and may include a port.
+    :param proxy_port: (optional) The proxy port to connect to. If not provided 
+        and one also isn't provided in the ``proxy`` parameter, defaults to 8080.
     """
     def __init__(self, host, port=None, secure=None, window_manager=None, enable_push=False,
-                 ssl_context=None, proxy=None, **kwargs):
+                 ssl_context=None, proxy_host=None, proxy_port=None, **kwargs):
         """
         Creates an HTTP/2 connection to a specific server.
         """
@@ -83,15 +85,18 @@ class HTTP20Connection(object):
         self._enable_push = enable_push
         self.ssl_context = ssl_context
 
-        if proxy:
-            self.proxy_host, self.proxy_port = proxy.split(':')
-            if(self.proxy_port):
-                self.proxy_port = int(self.proxy_port)
+        # Setup proxy details if applicable.
+        if proxy_host:
+            if proxy_port is None:
+                try:
+                    self.proxy_host, self.proxy_port = proxy_host.split(':')
+                    self.proxy_port = int(self.proxy_port)
+                except ValueError:
+                    self.proxy_host, self.proxy_port = proxy_host, 8080
             else:
-                self.proxy_port = 8080
+                self.proxy_host, self.proxy_port = proxy_host, proxy_port
         else:
             self.proxy_host = None
-            self.proxy_port = None
 
         #: The size of the in-memory buffer used to store data from the
         #: network. This is used as a performance optimisation. Increase buffer

@@ -137,7 +137,11 @@ class SocketLevelTest(object):
     def set_up(self, secure=True, proxy=False):
         self.host = None
         self.port = None
+
         self.proxy = proxy
+        self.proxy_host = None
+        self.proxy_port = None
+
         self.secure = secure if not proxy else False
 
         self.server_thread = None
@@ -185,9 +189,9 @@ class SocketLevelTest(object):
 
     def get_connection(self):
         if self.h2:
-            return HTTP20Connection(self.host, self.port, self.secure, proxy=':'.join([self.proxy_host, self.proxy_port]) if self.proxy else None)
+            return HTTP20Connection(self.host, self.port, self.secure, proxy_host=self.proxy_host, proxy_port=self.proxy_port)
         else:
-            return HTTP11Connection(self.host, self.port, self.secure, proxy=':'.join([self.proxy_host, self.proxy_port]) if self.proxy else None)
+            return HTTP11Connection(self.host, self.port, self.secure, proxy_host=self.proxy_host, proxy_port=self.proxy_port)
 
     def get_encoder(self):
         """

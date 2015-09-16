@@ -47,11 +47,13 @@ class HTTP11Connection(object):
         port 443.
     :param ssl_context: (optional) A class with custom certificate settings.
         If not provided then hyper's default ``SSLContext`` is used instead.
-    :param proxy: (optional) The proxy to connect to.  This can be an IP address
+    :param proxy_host: (optional) The proxy to connect to.  This can be an IP address
         or a host name and may include a port.
+    :param proxy_port: (optional) The proxy port to connect to. If not provided 
+        and one also isn't provided in the ``proxy`` parameter, defaults to 8080.
     """
     def __init__(self, host, port=None, secure=None, ssl_context=None, 
-                 proxy=None, **kwargs):
+                 proxy_host=None, proxy_port=None, **kwargs):
         if port is None:
             try:
                 self.host, self.port = host.split(':')
@@ -76,17 +78,19 @@ class HTTP11Connection(object):
 
         self.ssl_context = ssl_context
         self._sock = None
-       
-        if proxy:
-            if(':' in proxy):
-                self.proxy_host, self.proxy_port = proxy.split(':')
-                self.proxy_port = int(self.proxy_port)
+
+        # Setup proxy details if applicable.
+        if proxy_host:
+            if proxy_port is None:
+                try:
+                    self.proxy_host, self.proxy_port = proxy_host.split(':')
+                    self.proxy_port = int(self.proxy_port)
+                except ValueError:
+                    self.proxy_host, self.proxy_port = proxy_host, 8080
             else:
-                self.proxy_host = proxy
-                self.proxy_port = 8080
+                self.proxy_host, self.proxy_port = proxy_host, proxy_port
         else:
             self.proxy_host = None
-            self.proxy_port = None
 
         #: The size of the in-memory buffer used to store data from the
         #: network. This is used as a performance optimisation. Increase buffer
