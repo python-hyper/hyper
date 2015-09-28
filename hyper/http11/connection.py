@@ -115,7 +115,7 @@ class HTTP11Connection(object):
                 port = self.port
             else:
                 host = self.proxy_host
-                port = self.proxy_host
+                port = self.proxy_port
                 
             sock = socket.create_connection((host, port), 5)
             proto = None

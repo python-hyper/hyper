@@ -524,7 +524,7 @@ class TestHyperIntegration(SocketLevelTest):
             h.data = self.get_encoder().encode(
                 {':status': 200,
                 'Content-Type': 'not/real',
-                'Content-Length': 14,
+                'Content-Length': 12,
                 'Server': 'socket-level-server'}
             )
             h.flags.add('END_HEADERS')
