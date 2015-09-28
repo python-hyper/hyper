@@ -483,6 +483,19 @@ class TestHyperConnection(object):
         assert frames[0].type == WindowUpdateFrame.type
         assert frames[0].window_increment == 5535
 
+    def test_that_using_proxy_keeps_http_headers_intact(self):
+        sock = DummySocket()
+        c = HTTP20Connection('www.google.com', secure=False, proxy_host='localhost')
+        c._sock = sock
+        c.request('GET', '/')
+        s = c.recent_stream
+
+        assert s.headers == [
+            (':method', 'GET'),
+            (':scheme', 'http'),
+            (':authority', 'www.google.com'),
+            (':path', '/'),
+        ]
 
 class TestServerPush(object):
     def setup_method(self, method):

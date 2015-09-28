@@ -116,6 +116,25 @@ class TestHTTP11Connection(object):
 
         assert received == expected
 
+    def test_proxy_request(self):
+        c = HTTP11Connection('httpbin.org', proxy_host='localhost')
+        c._sock = sock = DummySocket()
+
+        c.request('GET', '/get', headers={'User-Agent': 'hyper'})
+
+        expected = (
+            b"GET /get HTTP/1.1\r\n"
+            b"User-Agent: hyper\r\n"
+            b"connection: Upgrade, HTTP2-Settings\r\n"
+            b"upgrade: h2c\r\n"
+            b"HTTP2-Settings: AAQAAP//\r\n"
+            b"host: httpbin.org\r\n"
+            b"\r\n"
+        )
+        received = b''.join(sock.queue)
+
+        assert received == expected
+
     def test_request_with_bytestring_body(self):
         c = HTTP11Connection('httpbin.org')
         c._sock = sock = DummySocket()
