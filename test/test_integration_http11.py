@@ -69,51 +69,6 @@ class TestHyperH11Integration(SocketLevelTest):
 
         assert c._sock is None
 
-    def test_proxy(self):
-        self.set_up(secure=False, proxy=True)
-
-        send_event = threading.Event()
-
-        def socket_handler(listener):
-            sock = listener.accept()[0]
-
-            # We should get the initial request.
-            data = b''
-            while not data.endswith(b'\r\n\r\n'):
-                data += sock.recv(65535)
-
-            send_event.wait()
-
-            # We need to send back a response.
-            resp = (
-                b'HTTP/1.1 201 No Content\r\n'
-                b'Server: socket-level-server\r\n'
-                b'Content-Length: 0\r\n'
-                b'Connection: close\r\n'
-                b'\r\n'
-            )
-            sock.send(resp)
-
-            sock.close()
-
-        self._start_server(socket_handler)
-        c = self.get_connection()
-        c.request('GET', '/')
-        send_event.set()
-        r = c.get_response()
-
-        assert r.status == 201
-        assert r.reason == b'No Content'
-        assert len(r.headers) == 3
-        assert r.headers[b'server'] == [b'socket-level-server']
-        assert r.headers[b'content-length'] == [b'0']
-        assert r.headers[b'connection'] == [b'close']
-
-        assert r.read() == b''
-
-        assert c._sock is None
-       
-
     def test_closing_response(self):
         self.set_up()
 
@@ -163,6 +118,51 @@ class TestHyperH11Integration(SocketLevelTest):
         assert r.headers[b'connection'] == [b'close']
 
         assert r.read() == b'hellotheresirfinalfantasy'
+
+    def test_proxy_request_response(self):
+        self.set_up(proxy=True)
+
+        send_event = threading.Event()
+
+        def socket_handler(listener):
+            sock = listener.accept()[0]
+
+            # We should get the initial request.
+            data = b''
+            while not data.endswith(b'\r\n\r\n'):
+                data += sock.recv(65535)
+
+            send_event.wait()
+
+            # We need to send back a response.
+            resp = (
+                b'HTTP/1.1 201 No Content\r\n'
+                b'Server: socket-level-server\r\n'
+                b'Content-Length: 0\r\n'
+                b'Connection: close\r\n'
+                b'\r\n'
+            )
+            sock.send(resp)
+
+            sock.close()
+
+        self._start_server(socket_handler)
+        c = self.get_connection()
+        c.request('GET', '/')
+        send_event.set()
+        r = c.get_response()
+
+        assert r.status == 201
+        assert r.reason == b'No Content'
+        assert len(r.headers) == 3
+        assert r.headers[b'server'] == [b'socket-level-server']
+        assert r.headers[b'content-length'] == [b'0']
+        assert r.headers[b'connection'] == [b'close']
+
+        assert r.read() == b''
+
+        assert c._sock is None
+
 
     def test_response_with_body(self):
         self.set_up()

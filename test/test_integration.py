@@ -506,6 +506,54 @@ class TestHyperIntegration(SocketLevelTest):
 
         self.tear_down()
 
+    def test_proxy_connection(self):
+        self.set_up(proxy=True)
+
+        data = []
+        send_event = threading.Event()
+
+        def socket_handler(listener):
+            sock = listener.accept()[0]
+
+            receive_preamble(sock)
+
+            data.append(sock.recv(65535))
+            send_event.wait()
+
+            h = HeadersFrame(1)
+            h.data = self.get_encoder().encode(
+                {':status': 200,
+                'Content-Type': 'not/real',
+                'Content-Length': 14,
+                'Server': 'socket-level-server'}
+            )
+            h.flags.add('END_HEADERS')
+            sock.send(h.serialize())
+
+            d = DataFrame(1)
+            d.data = b'thisisaproxy'
+            d.flags.add('END_STREAM')
+            sock.send(d.serialize())
+
+            sock.close()
+
+        self._start_server(socket_handler)
+        c = self.get_connection()
+        c.request('GET', '/')
+        send_event.set()
+        r = c.get_response()
+
+        assert r.status == 200
+        assert len(r.headers) == 3
+        assert r.headers[b'server'] == [b'socket-level-server']
+        assert r.headers[b'content-length'] == [b'12']
+        assert r.headers[b'content-type'] == [b'not/real']
+
+        assert r.read() == b'thisisaproxy'
+
+        self.tear_down()
+
+
     def test_resetting_stream_with_frames_in_flight(self):
         """
         Hyper emits only one RST_STREAM frame, despite the other frames in
