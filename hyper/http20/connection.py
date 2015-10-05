@@ -90,13 +90,15 @@ class HTTP20Connection(object):
             if proxy_port is None:
                 try:
                     self.proxy_host, self.proxy_port = proxy_host.split(':')
-                    self.proxy_port = int(self.proxy_port)
                 except ValueError:
                     self.proxy_host, self.proxy_port = proxy_host, 8080
+                else:
+                    self.proxy_port = int(self.proxy_port)
             else:
                 self.proxy_host, self.proxy_port = proxy_host, proxy_port
         else:
             self.proxy_host = None
+            self.proxy_port = None
 
         #: The size of the in-memory buffer used to store data from the
         #: network. This is used as a performance optimisation. Increase buffer
