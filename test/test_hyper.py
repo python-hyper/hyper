@@ -56,7 +56,9 @@ class TestHyperConnection(object):
         assert c.proxy_port == 8443
 
     def test_connections_can_parse_proxy_hosts_and_ports(self):
-        c = HTTP20Connection('www.google.com', proxy_host='localhost', proxy_port=8443)
+        c = HTTP20Connection('www.google.com', 
+                             proxy_host='localhost', 
+                             proxy_port=8443)
         assert c.host == 'www.google.com'
         assert c.proxy_host == 'localhost'
         assert c.proxy_port == 8443

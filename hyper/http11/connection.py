@@ -47,10 +47,11 @@ class HTTP11Connection(object):
         port 443.
     :param ssl_context: (optional) A class with custom certificate settings.
         If not provided then hyper's default ``SSLContext`` is used instead.
-    :param proxy_host: (optional) The proxy to connect to.  This can be an IP address
-        or a host name and may include a port.
+    :param proxy_host: (optional) The proxy to connect to.  This can be an IP 
+        address or a host name and may include a port.
     :param proxy_port: (optional) The proxy port to connect to. If not provided 
-        and one also isn't provided in the ``proxy`` parameter, defaults to 8080.
+        and one also isn't provided in the ``proxy`` parameter, 
+        defaults to 8080.
     """
     def __init__(self, host, port=None, secure=None, ssl_context=None, 
                  proxy_host=None, proxy_port=None, **kwargs):
@@ -203,7 +204,8 @@ class HTTP11Connection(object):
         self._sock.advance_buffer(response.consumed)
 
         if (response.status == 101 and 
-           b'upgrade' in headers['connection'] and H2C_PROTOCOL.encode('utf-8') in headers['upgrade']):
+           b'upgrade' in headers['connection'] and 
+           H2C_PROTOCOL.encode('utf-8') in headers['upgrade']):
             raise HTTPUpgrade(H2C_PROTOCOL, self._sock)
 
         return HTTP11Response(

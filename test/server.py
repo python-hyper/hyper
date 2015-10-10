@@ -117,12 +117,16 @@ class SocketLevelTest(object):
             if not self.proxy:
                 return HTTP20Connection(self.host, self.port, self.secure)
             else:
-                return HTTP20Connection('http2bin.org', secure=self.secure, proxy_host=self.host, proxy_port=self.port)
+                return HTTP20Connection('http2bin.org', secure=self.secure, 
+                                        proxy_host=self.host, 
+                                        proxy_port=self.port)
         else:
             if not self.proxy:
                 return HTTP11Connection(self.host, self.port, self.secure)
             else:
-                return HTTP11Connection('httpbin.org', secure=self.secure, proxy_host=self.host, proxy_port=self.port)
+                return HTTP11Connection('httpbin.org', secure=self.secure, 
+                                        proxy_host=self.host, 
+                                        proxy_port=self.port)
 
 
     def get_encoder(self):
