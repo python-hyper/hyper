@@ -20,6 +20,8 @@ dev
   straight to the terminal.
 - Added new ``--h2`` flag to the Hyper CLI tool, which allows straight HTTP/2
   in plaintext, rather than attempting to upgrade from HTTP/1.1.
+- Allow arguments and keyword arguments in abstract version of
+  ``get_response``.
 
 *Software Updates*
 
