@@ -56,9 +56,13 @@ class HTTP20Connection(object):
         :meth:`get_pushes() <hyper.HTTP20Connection.get_pushes>`).
     :param ssl_context: (optional) A class with custom certificate settings.
         If not provided then hyper's default ``SSLContext`` is used instead.
+    :param proxy_host: (optional) The proxy to connect to.  This can be an IP address
+        or a host name and may include a port.
+    :param proxy_port: (optional) The proxy port to connect to. If not provided 
+        and one also isn't provided in the ``proxy`` parameter, defaults to 8080.
     """
     def __init__(self, host, port=None, secure=None, window_manager=None, enable_push=False,
-                 ssl_context=None, **kwargs):
+                 ssl_context=None, proxy_host=None, proxy_port=None, **kwargs):
         """
         Creates an HTTP/2 connection to a specific server.
         """
@@ -80,6 +84,21 @@ class HTTP20Connection(object):
 
         self._enable_push = enable_push
         self.ssl_context = ssl_context
+
+        # Setup proxy details if applicable.
+        if proxy_host:
+            if proxy_port is None:
+                try:
+                    self.proxy_host, self.proxy_port = proxy_host.split(':')
+                except ValueError:
+                    self.proxy_host, self.proxy_port = proxy_host, 8080
+                else:
+                    self.proxy_port = int(self.proxy_port)
+            else:
+                self.proxy_host, self.proxy_port = proxy_host, proxy_port
+        else:
+            self.proxy_host = None
+            self.proxy_port = None
 
         #: The size of the in-memory buffer used to store data from the
         #: network. This is used as a performance optimisation. Increase buffer
@@ -222,10 +241,18 @@ class HTTP20Connection(object):
         :returns: Nothing.
         """
         if self._sock is None:
-            sock = socket.create_connection((self.host, self.port), 5)
+            if not self.proxy_host:
+                host = self.host
+                port = self.port
+            else:
+                host = self.proxy_host
+                port = self.proxy_port
+
+            sock = socket.create_connection((host, port), 5)
 
             if self.secure:
-                sock, proto = wrap_socket(sock, self.host, self.ssl_context)
+                assert not self.proxy_host, "Using a proxy with HTTPS not yet supported."
+                sock, proto = wrap_socket(sock, host, self.ssl_context)
             else:
                 proto = H2C_PROTOCOL
 

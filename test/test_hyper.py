@@ -41,11 +41,27 @@ class TestHyperConnection(object):
         c = HTTP20Connection(host='www.google.com', port=8080)
         assert c.host =='www.google.com'
         assert c.port == 8080
+        assert c.proxy_host == None
 
     def test_connections_can_parse_hosts_and_ports(self):
         c = HTTP20Connection('www.google.com:8080')
         assert c.host == 'www.google.com'
         assert c.port == 8080
+        assert c.proxy_host == None
+
+    def test_connections_accept_proxy_hosts_and_ports(self):
+        c = HTTP20Connection('www.google.com', proxy_host='localhost:8443')
+        assert c.host == 'www.google.com'
+        assert c.proxy_host == 'localhost'
+        assert c.proxy_port == 8443
+
+    def test_connections_can_parse_proxy_hosts_and_ports(self):
+        c = HTTP20Connection('www.google.com', 
+                             proxy_host='localhost', 
+                             proxy_port=8443)
+        assert c.host == 'www.google.com'
+        assert c.proxy_host == 'localhost'
+        assert c.proxy_port == 8443
 
     def test_putrequest_establishes_new_stream(self):
         c = HTTP20Connection("www.google.com")
@@ -469,6 +485,19 @@ class TestHyperConnection(object):
         assert frames[0].type == WindowUpdateFrame.type
         assert frames[0].window_increment == 5535
 
+    def test_that_using_proxy_keeps_http_headers_intact(self):
+        sock = DummySocket()
+        c = HTTP20Connection('www.google.com', secure=False, proxy_host='localhost')
+        c._sock = sock
+        c.request('GET', '/')
+        s = c.recent_stream
+
+        assert s.headers == [
+            (':method', 'GET'),
+            (':scheme', 'http'),
+            (':authority', 'www.google.com'),
+            (':path', '/'),
+        ]
 
 class TestServerPush(object):
     def setup_method(self, method):

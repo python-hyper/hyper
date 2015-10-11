@@ -43,6 +43,7 @@ class TestHTTP11Connection(object):
         assert c.host == 'httpbin.org'
         assert c.port == 80
         assert not c.secure
+        assert not c.proxy_host
 
     def test_initialization_inline_port(self):
         c = HTTP11Connection('httpbin.org:443')
@@ -50,6 +51,7 @@ class TestHTTP11Connection(object):
         assert c.host == 'httpbin.org'
         assert c.port == 443
         assert c.secure
+        assert not c.proxy_host
 
     def test_initialization_separate_port(self):
         c = HTTP11Connection('localhost', 8080)
@@ -57,6 +59,7 @@ class TestHTTP11Connection(object):
         assert c.host == 'localhost'
         assert c.port == 8080
         assert not c.secure
+        assert not c.proxy_host
 
     def test_can_override_security(self):
         c = HTTP11Connection('localhost', 443, secure=False)
@@ -64,9 +67,57 @@ class TestHTTP11Connection(object):
         assert c.host == 'localhost'
         assert c.port == 443
         assert not c.secure
+        assert not c.proxy_host
+
+    def test_initialization_proxy(self):
+        c = HTTP11Connection('httpbin.org', proxy_host='localhost')
+
+        assert c.host == 'httpbin.org'
+        assert c.port == 80
+        assert not c.secure
+        assert c.proxy_host == 'localhost'
+        assert c.proxy_port == 8080
+
+    def test_initialization_proxy_with_inline_port(self):
+        c = HTTP11Connection('httpbin.org', proxy_host='localhost:8443')
+
+        assert c.host == 'httpbin.org'
+        assert c.port == 80
+        assert not c.secure
+        assert c.proxy_host == 'localhost'
+        assert c.proxy_port == 8443
+
+    def test_initialization_proxy_with_separate_port(self):
+        c = HTTP11Connection('httpbin.org', proxy_host='localhost', proxy_port=8443)
+
+        assert c.host == 'httpbin.org'
+        assert c.port == 80
+        assert not c.secure
+        assert c.proxy_host == 'localhost'
+        assert c.proxy_port == 8443
+
 
     def test_basic_request(self):
         c = HTTP11Connection('httpbin.org')
+        c._sock = sock = DummySocket()
+
+        c.request('GET', '/get', headers={'User-Agent': 'hyper'})
+
+        expected = (
+            b"GET /get HTTP/1.1\r\n"
+            b"User-Agent: hyper\r\n"
+            b"connection: Upgrade, HTTP2-Settings\r\n"
+            b"upgrade: h2c\r\n"
+            b"HTTP2-Settings: AAQAAP//\r\n"
+            b"host: httpbin.org\r\n"
+            b"\r\n"
+        )
+        received = b''.join(sock.queue)
+
+        assert received == expected
+
+    def test_proxy_request(self):
+        c = HTTP11Connection('httpbin.org', proxy_host='localhost')
         c._sock = sock = DummySocket()
 
         c.request('GET', '/get', headers={'User-Agent': 'hyper'})

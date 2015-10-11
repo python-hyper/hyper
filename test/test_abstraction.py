@@ -8,19 +8,21 @@ class TestHTTPConnection(object):
     def test_h1_kwargs(self):
         c = HTTPConnection(
             'test', 443, secure=False, window_manager=True, enable_push=True,
-            ssl_context=False, other_kwarg=True
+            ssl_context=False, proxy_host=False, proxy_port=False, other_kwarg=True
         )
 
         assert c._h1_kwargs == {
             'secure': False,
             'ssl_context': False,
+            'proxy_host': False,
+            'proxy_port': False,
             'other_kwarg': True,
         }
 
     def test_h2_kwargs(self):
         c = HTTPConnection(
             'test', 443, secure=False, window_manager=True, enable_push=True,
-            ssl_context=True, other_kwarg=True
+            ssl_context=True, proxy_host=False, proxy_port=False, other_kwarg=True
         )
 
         assert c._h2_kwargs == {
@@ -28,6 +30,8 @@ class TestHTTPConnection(object):
             'enable_push': True,
             'secure': False,
             'ssl_context': True,
+            'proxy_host': False,
+            'proxy_port': False,
             'other_kwarg': True,
         }
 

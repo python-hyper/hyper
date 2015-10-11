@@ -36,4 +36,4 @@ In chronological order:
 - Fred Thomsen (@fredthomsen)
 
   - Added support for upgrade of plaintext HTTP/1.1 to plaintext HTTP/2.
-
+  - Added proxy support.

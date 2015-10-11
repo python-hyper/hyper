@@ -47,9 +47,14 @@ class HTTP11Connection(object):
         port 443.
     :param ssl_context: (optional) A class with custom certificate settings.
         If not provided then hyper's default ``SSLContext`` is used instead.
+    :param proxy_host: (optional) The proxy to connect to.  This can be an IP 
+        address or a host name and may include a port.
+    :param proxy_port: (optional) The proxy port to connect to. If not provided 
+        and one also isn't provided in the ``proxy`` parameter, 
+        defaults to 8080.
     """
-    def __init__(self, host, port=None, secure=None, ssl_context=None,
-                 **kwargs):
+    def __init__(self, host, port=None, secure=None, ssl_context=None, 
+                 proxy_host=None, proxy_port=None, **kwargs):
         if port is None:
             try:
                 self.host, self.port = host.split(':')
@@ -75,6 +80,21 @@ class HTTP11Connection(object):
         self.ssl_context = ssl_context
         self._sock = None
 
+        # Setup proxy details if applicable.
+        if proxy_host:
+            if proxy_port is None:
+                try:
+                    self.proxy_host, self.proxy_port = proxy_host.split(':')
+                except ValueError:
+                    self.proxy_host, self.proxy_port = proxy_host, 8080
+                else:
+                    self.proxy_port = int(self.proxy_port)
+            else:
+                self.proxy_host, self.proxy_port = proxy_host, proxy_port
+        else:
+            self.proxy_host = None
+            self.proxy_port = None
+
         #: The size of the in-memory buffer used to store data from the
         #: network. This is used as a performance optimisation. Increase buffer
         #: size to improve performance: decrease it to conserve memory.
@@ -93,11 +113,19 @@ class HTTP11Connection(object):
         :returns: Nothing.
         """
         if self._sock is None:
-            sock = socket.create_connection((self.host, self.port), 5)
+            if not self.proxy_host:
+                host = self.host
+                port = self.port
+            else:
+                host = self.proxy_host
+                port = self.proxy_port
+                
+            sock = socket.create_connection((host, port), 5)
             proto = None
 
             if self.secure:
-                sock, proto = wrap_socket(sock, self.host, self.ssl_context)
+                assert not self.proxy_host, "Using a proxy with HTTPS not yet supported."
+                sock, proto = wrap_socket(sock, host, self.ssl_context)
 
             log.debug("Selected protocol: %s", proto)
             sock = BufferedSocket(sock, self.network_buffer_size)
@@ -176,7 +204,8 @@ class HTTP11Connection(object):
         self._sock.advance_buffer(response.consumed)
 
         if (response.status == 101 and 
-           b'upgrade' in headers['connection'] and H2C_PROTOCOL.encode('utf-8') in headers['upgrade']):
+           b'upgrade' in headers['connection'] and 
+           H2C_PROTOCOL.encode('utf-8') in headers['upgrade']):
             raise HTTPUpgrade(H2C_PROTOCOL, self._sock)
 
         return HTTP11Response(
