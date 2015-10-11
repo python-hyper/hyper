@@ -1,8 +1,8 @@
 Release History
 ===============
 
-dev
----
+0.5.0 (2015-10-11)
+------------------
 
 *Feature Enhancement*
 

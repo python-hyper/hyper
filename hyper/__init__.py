@@ -6,7 +6,7 @@ hyper
 A module for providing an abstraction layer over the differences between
 HTTP/1.1 and HTTP/2.
 """
-__version__ = '0.4.0'
+__version__ = '0.5.0'
 
 from .common.connection import HTTPConnection
 from .http20.connection import HTTP20Connection
