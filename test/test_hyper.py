@@ -375,9 +375,10 @@ class TestHyperConnection(object):
         )
         h = HeadersFrame(1)
         h.data = header_data[0:int(len(header_data)/2)]
+        h.flags.add('END_STREAM')
         c = ContinuationFrame(1)
         c.data = header_data[int(len(header_data)/2):]
-        c.flags |= set(['END_HEADERS', 'END_STREAM'])
+        c.flags.add('END_HEADERS')
         sock = DummySocket()
         sock.buffer = BytesIO(h.serialize() + c.serialize())
 
