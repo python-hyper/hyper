@@ -18,6 +18,8 @@ dev
 - Hyper CLI tool now correctly uses TLS for any ``https``-schemed URL.
 - Hyper CLI tool no longer attempts to decode bytes, instead writing them
   straight to the terminal.
+- Added new ``--h2`` flag to the Hyper CLI tool, which allows straight HTTP/2
+  in plaintext, rather than attempting to upgrade from HTTP/1.1.
 
 *Software Updates*
 

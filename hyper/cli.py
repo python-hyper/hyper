@@ -14,7 +14,7 @@ from argparse import OPTIONAL, ZERO_OR_MORE
 from pprint import pformat
 from textwrap import dedent
 
-from hyper import HTTPConnection
+from hyper import HTTPConnection, HTTP20Connection
 from hyper import __version__
 from hyper.compat import is_py2, urlencode, urlsplit, write_to_stdout
 
@@ -105,6 +105,9 @@ def make_troubleshooting_argument(parser):
     parser.add_argument(
         '--debug', action='store_true', default=False,
         help='Show debugging information (loglevel=DEBUG)')
+    parser.add_argument(
+        '--h2', action='store_true', default=False,
+        help="Do HTTP/2 directly in plaintext: skip plaintext upgrade")
 
 
 def set_url_info(args):
@@ -218,7 +221,15 @@ def get_content_type_and_charset(response):
 
 
 def request(args):
-    conn = HTTPConnection(args.url.host, args.url.port, secure=args.url.secure)
+    if not args.h2:
+        conn = HTTPConnection(
+            args.url.host, args.url.port, secure=args.url.secure
+        )
+    else:  # pragma: no cover
+        conn = HTTP20Connection(
+            args.url.host, args.url.port, secure=args.url.secure
+        )
+
     conn.request(args.method, args.url.path, args.body, args.headers)
     response = conn.get_response()
     log.debug('Response Headers:\n%s', pformat(response.headers))
