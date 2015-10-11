@@ -25,7 +25,7 @@ dev
 
 *Software Updates*
 
-- Updated hyperframe to version 1.1.1.
+- Updated hyperframe to version 2.1.0
 
 0.4.0 (2015-06-21)
 ------------------
