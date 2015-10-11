@@ -10,11 +10,14 @@ socket.
 import collections
 import struct
 
+from .flags import Flag, Flags
+
 # The maximum initial length of a frame. Some frames have shorter maximum lengths.
 FRAME_MAX_LEN = (2 ** 14)
 
 # The maximum allowed length of a frame.
 FRAME_MAX_ALLOWED_LEN = (2 ** 24) - 1
+
 
 class Frame(object):
     """
@@ -30,15 +33,27 @@ class Frame(object):
     # it must be zero. If 'either', it's not checked.
     stream_association = None
 
-    def __init__(self, stream_id):
+    def __init__(self, stream_id, flags=()):
         self.stream_id = stream_id
-        self.flags = set()
+        self.flags = Flags(self.defined_flags)
         self.body_len = 0
+
+        for flag in flags:
+            self.flags.add(flag)
 
         if self.stream_association == 'has-stream' and not self.stream_id:
             raise ValueError('Stream ID must be non-zero')
         if self.stream_association == 'no-stream' and self.stream_id:
             raise ValueError('Stream ID must be zero')
+
+    def __repr__(self):
+        flags = ", ".join(self.flags) or "None"
+        body = self.serialize_body()
+        if len(body) > 100:
+            body = str(body[:100]) + "..."
+        return (
+            "{type}(Stream: {stream}; Flags: {flags}): {body}"
+        ).format(type=type(self).__name__, stream=self.stream_id, flags=flags, body=body)
 
     @staticmethod
     def parse_frame_header(header):
@@ -52,6 +67,9 @@ class Frame(object):
         type = fields[2]
         flags = fields[3]
         stream_id = fields[4]
+
+        if type not in FRAMES:
+            raise ValueError("Unknown frame type %d" % type)
 
         frame = FRAMES[type](stream_id)
         frame.parse_flags(flags)
@@ -98,10 +116,11 @@ class Padding(object):
     """
     Mixin for frames that contain padding.
     """
-    def __init__(self, stream_id):
-        self.pad_length = 0
+    def __init__(self, stream_id, pad_length=0, **kwargs):
+        super(Padding, self).__init__(stream_id, **kwargs)
 
-        super(Padding, self).__init__(stream_id)
+        self.pad_length = pad_length
+
 
     def serialize_padding_data(self):
         if 'PADDED' in self.flags:
@@ -124,17 +143,17 @@ class Priority(object):
     """
     Mixin for frames that contain priority data.
     """
-    def __init__(self, stream_id):
+    def __init__(self, stream_id, depends_on=None, stream_weight=None, exclusive=None, **kwargs):
+        super(Priority, self).__init__(stream_id, **kwargs)
+
         # The stream ID of the stream on which this stream depends.
-        self.depends_on = None
+        self.depends_on = depends_on
 
         # The weight of the stream. This is an integer between 0 and 256.
-        self.stream_weight = None
+        self.stream_weight = stream_weight
 
         # Whether the exclusive bit was set.
-        self.exclusive = None
-
-        super(Priority, self).__init__(stream_id)
+        self.exclusive = exclusive
 
     def serialize_priority_data(self):
         return struct.pack(
@@ -160,18 +179,18 @@ class DataFrame(Padding, Frame):
     to carry HTTP request or response payloads.
     """
     defined_flags = [
-        ('END_STREAM', 0x01),
-        ('PADDED', 0x08),
+        Flag('END_STREAM', 0x01),
+        Flag('PADDED', 0x08),
     ]
 
     type = 0x0
 
     stream_association = 'has-stream'
 
-    def __init__(self, stream_id):
-        super(DataFrame, self).__init__(stream_id)
+    def __init__(self, stream_id, data=b'', **kwargs):
+        super(DataFrame, self).__init__(stream_id, **kwargs)
 
-        self.data = b''
+        self.data = data
 
     def serialize_body(self):
         padding_data = self.serialize_padding_data()
@@ -181,6 +200,7 @@ class DataFrame(Padding, Frame):
     def parse_body(self, data):
         padding_data_length = self.parse_padding_data(data)
         self.data = data[padding_data_length:len(data)-self.total_padding].tobytes()
+        self.body_len = len(data)
 
     @property
     def flow_controlled_length(self):
@@ -209,6 +229,7 @@ class PriorityFrame(Priority, Frame):
 
     def parse_body(self, data):
         self.parse_priority_data(data)
+        self.body_len = len(data)
 
 
 class RstStreamFrame(Frame):
@@ -226,10 +247,10 @@ class RstStreamFrame(Frame):
 
     stream_association = 'has-stream'
 
-    def __init__(self, stream_id):
-        super(RstStreamFrame, self).__init__(stream_id)
+    def __init__(self, stream_id, error_code=0, **kwargs):
+        super(RstStreamFrame, self).__init__(stream_id, **kwargs)
 
-        self.error_code = 0
+        self.error_code = error_code
 
     def serialize_body(self):
         return struct.pack("!L", self.error_code)
@@ -239,6 +260,7 @@ class RstStreamFrame(Frame):
             raise ValueError()
 
         self.error_code = struct.unpack("!L", data)[0]
+        self.body_len = len(data)
 
 
 class SettingsFrame(Frame):
@@ -253,7 +275,7 @@ class SettingsFrame(Frame):
     might set a high initial flow control window, whereas a server might set a
     lower value to conserve resources.
     """
-    defined_flags = [('ACK', 0x01)]
+    defined_flags = [Flag('ACK', 0x01)]
 
     type = 0x04
 
@@ -268,11 +290,14 @@ class SettingsFrame(Frame):
     SETTINGS_MAX_FRAME_SIZE       = 0x05
     SETTINGS_MAX_HEADER_LIST_SIZE = 0x06
 
-    def __init__(self, stream_id):
-        super(SettingsFrame, self).__init__(stream_id)
+    def __init__(self, stream_id=0, settings=None, **kwargs):
+        super(SettingsFrame, self).__init__(stream_id, **kwargs)
+
+        if settings and "ACK" in kwargs.get("flags", ()):
+            raise ValueError("Settings must be empty if ACK flag is set.")
 
         # A dictionary of the setting type byte to the value.
-        self.settings = {}
+        self.settings = settings or {}
 
     def serialize_body(self):
         settings = [struct.pack("!HL", setting & 0xFF, value)
@@ -284,17 +309,28 @@ class SettingsFrame(Frame):
             name, value = struct.unpack("!HL", data[i:i+6])
             self.settings[name] = value
 
+        self.body_len = len(data)
+
 
 class PushPromiseFrame(Padding, Frame):
     """
     The PUSH_PROMISE frame is used to notify the peer endpoint in advance of
     streams the sender intends to initiate.
     """
-    defined_flags = [('END_HEADERS', 0x04), ('PADDED', 0x08),]
+    defined_flags = [
+        Flag('END_HEADERS', 0x04),
+        Flag('PADDED', 0x08)
+    ]
 
     type = 0x05
 
     stream_association = 'has-stream'
+
+    def __init__(self, stream_id, promised_stream_id=0, data=b'', **kwargs):
+        super(PushPromiseFrame, self).__init__(stream_id, **kwargs)
+
+        self.promised_stream_id = promised_stream_id
+        self.data = data
 
     def serialize_body(self):
         padding_data = self.serialize_padding_data()
@@ -306,6 +342,7 @@ class PushPromiseFrame(Padding, Frame):
         padding_data_length = self.parse_padding_data(data)
         self.promised_stream_id = struct.unpack("!L", data[padding_data_length:padding_data_length + 4])[0]
         self.data = data[padding_data_length + 4:].tobytes()
+        self.body_len = len(data)
 
 
 class PingFrame(Frame):
@@ -314,16 +351,16 @@ class PingFrame(Frame):
     the sender, as well as determining whether an idle connection is still
     functional. PING frames can be sent from any endpoint.
     """
-    defined_flags = [('ACK', 0x01)]
+    defined_flags = [Flag('ACK', 0x01)]
 
     type = 0x06
 
     stream_association = 'no-stream'
 
-    def __init__(self, stream_id):
-        super(PingFrame, self).__init__(stream_id)
+    def __init__(self, stream_id=0, opaque_data=b'', **kwargs):
+        super(PingFrame, self).__init__(stream_id, **kwargs)
 
-        self.opaque_data = b''
+        self.opaque_data = opaque_data
 
     def serialize_body(self):
         if len(self.opaque_data) > 8:
@@ -338,6 +375,7 @@ class PingFrame(Frame):
             raise ValueError()
 
         self.opaque_data = data.tobytes()
+        self.body_len = len(data)
 
 
 class GoAwayFrame(Frame):
@@ -351,12 +389,12 @@ class GoAwayFrame(Frame):
 
     stream_association = 'no-stream'
 
-    def __init__(self, stream_id):
-        super(GoAwayFrame, self).__init__(stream_id)
+    def __init__(self, stream_id=0, last_stream_id=0, error_code=0, additional_data=b'', **kwargs):
+        super(GoAwayFrame, self).__init__(stream_id, **kwargs)
 
-        self.last_stream_id = 0
-        self.error_code = 0
-        self.additional_data = b''
+        self.last_stream_id = last_stream_id
+        self.error_code = error_code
+        self.additional_data = additional_data
 
     def serialize_body(self):
         data = struct.pack(
@@ -370,6 +408,7 @@ class GoAwayFrame(Frame):
 
     def parse_body(self, data):
         self.last_stream_id, self.error_code = struct.unpack("!LL", data[:8])
+        self.body_len = len(data)
 
         if len(data) > 8:
             self.additional_data = data[8:].tobytes()
@@ -392,16 +431,17 @@ class WindowUpdateFrame(Frame):
 
     stream_association = 'either'
 
-    def __init__(self, stream_id):
-        super(WindowUpdateFrame, self).__init__(stream_id)
+    def __init__(self, stream_id, window_increment=0, **kwargs):
+        super(WindowUpdateFrame, self).__init__(stream_id, **kwargs)
 
-        self.window_increment = 0
+        self.window_increment = window_increment
 
     def serialize_body(self):
         return struct.pack("!L", self.window_increment & 0x7FFFFFFF)
 
     def parse_body(self, data):
         self.window_increment = struct.unpack("!L", data)[0]
+        self.body_len = len(data)
 
 
 class HeadersFrame(Padding, Priority, Frame):
@@ -421,11 +461,16 @@ class HeadersFrame(Padding, Priority, Frame):
     stream_association = 'has-stream'
 
     defined_flags = [
-        ('END_STREAM', 0x01),
-        ('END_HEADERS', 0x04),
-        ('PADDED', 0x08),
-        ('PRIORITY', 0x20),
+        Flag('END_STREAM', 0x01),
+        Flag('END_HEADERS', 0x04),
+        Flag('PADDED', 0x08),
+        Flag('PRIORITY', 0x20),
     ]
+
+    def __init__(self, stream_id, data=b'', **kwargs):
+        super(HeadersFrame, self).__init__(stream_id, **kwargs)
+
+        self.data = data
 
     def serialize_body(self):
         padding_data = self.serialize_padding_data()
@@ -447,6 +492,7 @@ class HeadersFrame(Padding, Priority, Frame):
         else:
             priority_data_length = 0
 
+        self.body_len = len(data)
         self.data = data[priority_data_length:len(data)-self.total_padding].tobytes()
 
 
@@ -464,16 +510,23 @@ class ContinuationFrame(Frame):
 
     stream_association = 'has-stream'
 
-    defined_flags = [('END_HEADERS', 0x04),]
+    defined_flags = [Flag('END_HEADERS', 0x04),]
+
+    def __init__(self, stream_id, data=b'', **kwargs):
+        super(ContinuationFrame, self).__init__(stream_id, **kwargs)
+
+        self.data = data
 
     def serialize_body(self):
         return self.data
 
     def parse_body(self, data):
         self.data = data.tobytes()
+        self.body_len = len(data)
 
 
 Origin = collections.namedtuple('Origin', ['scheme', 'host', 'port'])
+
 
 class AltSvcFrame(Frame):
     """
@@ -484,14 +537,14 @@ class AltSvcFrame(Frame):
 
     stream_association = 'no-stream'
 
-    def __init__(self, stream_id):
-        super(AltSvcFrame, self).__init__(stream_id)
+    def __init__(self, stream_id=0, host=b'', port=0, protocol_id=b'', max_age=0, origin=None, **kwargs):
+        super(AltSvcFrame, self).__init__(stream_id, **kwargs)
 
-        self.host = None
-        self.port = None
-        self.protocol_id = None
-        self.max_age = None
-        self.origin = None
+        self.host = host
+        self.port = port
+        self.protocol_id = protocol_id
+        self.max_age = max_age
+        self.origin = origin
 
     def serialize_origin(self):
         if self.origin is not None:
@@ -517,6 +570,7 @@ class AltSvcFrame(Frame):
                          self.serialize_origin()])
 
     def parse_body(self, data):
+        self.body_len = len(data)
         self.max_age, self.port, protocol_id_length = struct.unpack("!LHxB", data[:8])
         pos = 8
         self.protocol_id = data[pos:pos+protocol_id_length].tobytes()
