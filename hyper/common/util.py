@@ -25,3 +25,19 @@ def to_bytestring_tuple(*x):
     tuple. Uses ``to_bytestring``.
     """
     return tuple(imap(to_bytestring, x))
+
+def to_host_port_tuple(host_port_str, default_port=80)
+    """
+    Converts the given string containing a host and possibly a port
+    to a tuple.
+    """
+    try:
+        host, port = host_port_str.rsplit(':', 1)
+    except ValueError:
+        host, port = host_port_str, default_port
+    else:
+        port = int(port)
+
+    host = host.strip('[]')
+
+    return tuple(host, port)
