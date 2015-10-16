@@ -113,8 +113,8 @@ def make_troubleshooting_argument(parser):
 def set_url_info(args):
     def split_host_and_port(hostname):
         if ':' in hostname:
-            host, port = hostname.split(':')
-            return host, int(port)
+            host, port = to_host_port_tuple(hostname)
+            return host, port
         return hostname, None
 
     class UrlInfo(object):
