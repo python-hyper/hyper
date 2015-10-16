@@ -15,7 +15,7 @@ from ..tls import wrap_socket, H2C_PROTOCOL
 from ..common.bufsocket import BufferedSocket
 from ..common.exceptions import TLSUpgrade, HTTPUpgrade
 from ..common.headers import HTTPHeaderMap
-from ..common.util import to_bytestring
+from ..common.util import to_bytestring, to_host_port_tuple
 from ..compat import bytes
 
 from ..packages.hyperframe.frame import SettingsFrame

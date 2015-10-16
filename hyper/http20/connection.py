@@ -9,6 +9,7 @@ from ..tls import wrap_socket, H2_NPN_PROTOCOLS, H2C_PROTOCOL
 from ..common.exceptions import ConnectionResetError
 from ..common.bufsocket import BufferedSocket
 from ..common.headers import HTTPHeaderMap
+from ..common.util import to_host_port_tuple
 from ..packages.hyperframe.frame import (
     FRAMES, DataFrame, HeadersFrame, PushPromiseFrame, RstStreamFrame,
     SettingsFrame, Frame, WindowUpdateFrame, GoAwayFrame, PingFrame,

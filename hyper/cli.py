@@ -17,6 +17,7 @@ from textwrap import dedent
 from hyper import HTTPConnection, HTTP20Connection
 from hyper import __version__
 from hyper.compat import is_py2, urlencode, urlsplit, write_to_stdout
+from hyper.common.util import to_host_port_tuple
 
 
 log = logging.getLogger('hyper')
