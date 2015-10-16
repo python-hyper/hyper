@@ -31,8 +31,13 @@ def to_host_port_tuple(host_port_str, default_port=80):
     Converts the given string containing a host and possibly a port
     to a tuple.
     """
+    if ']' in host_port_str:
+        delim = ']:'
+    else:
+        delim = ':'
+        
     try:
-        host, port = host_port_str.rsplit(':', 1)
+        host, port = host_port_str.rsplit(delim, 1)
     except ValueError:
         host, port = host_port_str, default_port
     else:
