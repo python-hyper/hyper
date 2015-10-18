@@ -68,7 +68,7 @@ class HTTP20Connection(object):
         Creates an HTTP/2 connection to a specific server.
         """
         if port is None:
-            self.host, self.port = to_host_port_tuple(host)
+            self.host, self.port = to_host_port_tuple(host, default_port=443)
         else:
             self.host, self.port = host, port
 

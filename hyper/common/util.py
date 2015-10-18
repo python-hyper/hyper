@@ -6,6 +6,7 @@ hyper/common/util
 General utility functions for use with hyper.
 """
 from hyper.compat import unicode, bytes, imap
+import re
 
 def to_bytestring(element):
     """
@@ -31,17 +32,11 @@ def to_host_port_tuple(host_port_str, default_port=80):
     Converts the given string containing a host and possibly a port
     to a tuple.
     """
-    if ']' in host_port_str:
-        delim = ']:'
-    else:
-        delim = ':'
-        
-    try:
-        host, port = host_port_str.rsplit(delim, 1)
-    except ValueError:
-        host, port = host_port_str, default_port
-    else:
+    if re.search("\]:\d+|\.\d{1-3}:\d+|[a-zA-Z0-9-]+:\d+", host_port_str):
+        host, port = host_port_str.rsplit(':', 1)
         port = int(port)
+    else:
+        host, port = host_port_str, default_port
 
     host = host.strip('[]')
 
