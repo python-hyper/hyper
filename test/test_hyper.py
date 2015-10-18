@@ -68,7 +68,7 @@ class TestHyperConnection(object):
                              proxy_host='[ffff:aaaa::1]:8443')
 
         assert c.host == 'abcd:dcba::1234'
-        assert c.port == 80
+        assert c.port == 443
         assert c.proxy_host == 'ffff:aaaa::1'
         assert c.proxy_port == 8443
 
