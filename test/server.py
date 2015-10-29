@@ -57,7 +57,7 @@ class SocketServerThread(threading.Thread):
                                      keyfile='test/certs/server.key')
 
     def _start_server(self):
-        sock = socket.socket(socket.AF_INET6)
+        sock = socket.socket()
         if sys.platform != 'win32':
             sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
 
@@ -117,15 +117,15 @@ class SocketLevelTest(object):
             if not self.proxy:
                 return HTTP20Connection(self.host, self.port, self.secure)
             else:
-                return HTTP20Connection('http2bin.org', secure=self.secure, 
-                                        proxy_host=self.host, 
+                return HTTP20Connection('http2bin.org', secure=self.secure,
+                                        proxy_host=self.host,
                                         proxy_port=self.port)
         else:
             if not self.proxy:
                 return HTTP11Connection(self.host, self.port, self.secure)
             else:
-                return HTTP11Connection('httpbin.org', secure=self.secure, 
-                                        proxy_host=self.host, 
+                return HTTP11Connection('httpbin.org', secure=self.secure,
+                                        proxy_host=self.host,
                                         proxy_port=self.port)
 
 
