@@ -5,10 +5,7 @@ import os
 import re
 import sys
 
-try:
-    from setuptools import setup
-except ImportError:
-    from distutils.core import setup
+from setuptools import setup
 
 # Get the version
 version_regex = r'__version__ = ["\']([^"\']*)["\']'
