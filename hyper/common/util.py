@@ -33,11 +33,13 @@ def to_host_port_tuple(host_port_str, default_port=80):
     Converts the given string containing a host and possibly a port
     to a tuple.
     """
-    uri = URIReference(scheme=None,
-                       authority=host_port_str,
-                       path=None,
-                       query=None,
-                       fragment=None)
+    uri = URIReference(
+        scheme=None,
+        authority=host_port_str,
+        path=None,
+        query=None,
+        fragment=None
+    )
 
     host = uri.host.strip('[]')
     if not uri.port:
@@ -45,4 +47,4 @@ def to_host_port_tuple(host_port_str, default_port=80):
     else:
         port = int(uri.port)
 
-    return ((host, port))
+    return (host, port)

@@ -56,7 +56,7 @@ class HTTP11Connection(object):
     def __init__(self, host, port=None, secure=None, ssl_context=None, 
                  proxy_host=None, proxy_port=None, **kwargs):
         if port is None:
-            self.host, self.port = to_host_port_tuple(host)
+            self.host, self.port = to_host_port_tuple(host, default_port=80)
         else:
             self.host, self.port = host, port
 
