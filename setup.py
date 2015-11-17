@@ -56,6 +56,7 @@ packages = [
     'hyper.packages',
     'hyper.packages.hpack',
     'hyper.packages.hyperframe',
+    'hyper.packages.rfc3986'
 ]
 
 setup(
