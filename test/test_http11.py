@@ -97,7 +97,7 @@ class TestHTTP11Connection(object):
         assert c.proxy_port == 8443
 
     def test_initialization_with_ipv6_addresses_proxy_inline_port(self):
-        c = HTTP11Connection('abcd:dcba::1234', proxy_host='[ffff:aaaa::1]:8443')
+        c = HTTP11Connection('[abcd:dcba::1234]', proxy_host='[ffff:aaaa::1]:8443')
 
         assert c.host == 'abcd:dcba::1234'
         assert c.port == 80
