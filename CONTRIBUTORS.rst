@@ -37,3 +37,4 @@ In chronological order:
 
   - Added support for upgrade of plaintext HTTP/1.1 to plaintext HTTP/2.
   - Added proxy support.
+  - Improved IPv6 support.

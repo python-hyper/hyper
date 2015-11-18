@@ -17,6 +17,7 @@ from textwrap import dedent
 from hyper import HTTPConnection, HTTP20Connection
 from hyper import __version__
 from hyper.compat import is_py2, urlencode, urlsplit, write_to_stdout
+from hyper.common.util import to_host_port_tuple
 
 
 log = logging.getLogger('hyper')
@@ -113,8 +114,7 @@ def make_troubleshooting_argument(parser):
 def set_url_info(args):
     def split_host_and_port(hostname):
         if ':' in hostname:
-            host, port = hostname.split(':')
-            return host, int(port)
+            return to_host_port_tuple(hostname, default_port=443)
         return hostname, None
 
     class UrlInfo(object):

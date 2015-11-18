@@ -63,6 +63,15 @@ class TestHyperConnection(object):
         assert c.proxy_host == 'localhost'
         assert c.proxy_port == 8443
 
+    def test_connections_can_parse_ipv6_hosts_and_ports(self):
+        c = HTTP20Connection('[abcd:dcba::1234]',
+                             proxy_host='[ffff:aaaa::1]:8443')
+
+        assert c.host == 'abcd:dcba::1234'
+        assert c.port == 443
+        assert c.proxy_host == 'ffff:aaaa::1'
+        assert c.proxy_port == 8443
+
     def test_putrequest_establishes_new_stream(self):
         c = HTTP20Connection("www.google.com")
 

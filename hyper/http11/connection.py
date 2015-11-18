@@ -15,7 +15,7 @@ from ..tls import wrap_socket, H2C_PROTOCOL
 from ..common.bufsocket import BufferedSocket
 from ..common.exceptions import TLSUpgrade, HTTPUpgrade
 from ..common.headers import HTTPHeaderMap
-from ..common.util import to_bytestring
+from ..common.util import to_bytestring, to_host_port_tuple
 from ..compat import bytes
 
 from ..packages.hyperframe.frame import SettingsFrame
@@ -56,11 +56,7 @@ class HTTP11Connection(object):
     def __init__(self, host, port=None, secure=None, ssl_context=None, 
                  proxy_host=None, proxy_port=None, **kwargs):
         if port is None:
-            try:
-                self.host, self.port = host.split(':')
-                self.port = int(self.port)
-            except ValueError:
-                self.host, self.port = host, 80
+            self.host, self.port = to_host_port_tuple(host, default_port=80)
         else:
             self.host, self.port = host, port
 
@@ -83,12 +79,7 @@ class HTTP11Connection(object):
         # Setup proxy details if applicable.
         if proxy_host:
             if proxy_port is None:
-                try:
-                    self.proxy_host, self.proxy_port = proxy_host.split(':')
-                except ValueError:
-                    self.proxy_host, self.proxy_port = proxy_host, 8080
-                else:
-                    self.proxy_port = int(self.proxy_port)
+                self.proxy_host, self.proxy_port = to_host_port_tuple(proxy_host, default_port=8080)
             else:
                 self.proxy_host, self.proxy_port = proxy_host, proxy_port
         else:

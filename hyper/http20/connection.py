@@ -9,6 +9,7 @@ from ..tls import wrap_socket, H2_NPN_PROTOCOLS, H2C_PROTOCOL
 from ..common.exceptions import ConnectionResetError
 from ..common.bufsocket import BufferedSocket
 from ..common.headers import HTTPHeaderMap
+from ..common.util import to_host_port_tuple
 from ..packages.hyperframe.frame import (
     FRAMES, DataFrame, HeadersFrame, PushPromiseFrame, RstStreamFrame,
     SettingsFrame, Frame, WindowUpdateFrame, GoAwayFrame, PingFrame,
@@ -67,11 +68,7 @@ class HTTP20Connection(object):
         Creates an HTTP/2 connection to a specific server.
         """
         if port is None:
-            try:
-                self.host, self.port = host.split(':')
-                self.port = int(self.port)
-            except ValueError:
-                self.host, self.port = host, 443
+            self.host, self.port = to_host_port_tuple(host, default_port=443)
         else:
             self.host, self.port = host, port
 
@@ -88,12 +85,7 @@ class HTTP20Connection(object):
         # Setup proxy details if applicable.
         if proxy_host:
             if proxy_port is None:
-                try:
-                    self.proxy_host, self.proxy_port = proxy_host.split(':')
-                except ValueError:
-                    self.proxy_host, self.proxy_port = proxy_host, 8080
-                else:
-                    self.proxy_port = int(self.proxy_port)
+                self.proxy_host, self.proxy_port = to_host_port_tuple(proxy_host, default_port=8080)
             else:
                 self.proxy_host, self.proxy_port = proxy_host, proxy_port
         else:
