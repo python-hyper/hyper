@@ -132,6 +132,7 @@ class TestHTTP11Connection(object):
             ('User-Agent', 'hyper'), 
             ('Custom-field', 'test'),
             ('Custom-field2', 'test'),
+            ('Custom-field', 'test2'),
         ))
         
         expected = (
@@ -139,6 +140,7 @@ class TestHTTP11Connection(object):
             b"User-Agent: hyper\r\n"
             b"Custom-field: test\r\n"
             b"Custom-field2: test\r\n"
+            b"Custom-field: test2\r\n"
             b"connection: Upgrade, HTTP2-Settings\r\n"
             b"upgrade: h2c\r\n"
             b"HTTP2-Settings: AAQAAP//\r\n"
