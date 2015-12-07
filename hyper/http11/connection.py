@@ -10,6 +10,8 @@ import os
 import socket
 import base64
 
+from collections import Iterable, Mapping
+
 from .response import HTTP11Response
 from ..tls import wrap_socket, H2C_PROTOCOL
 from ..common.bufsocket import BufferedSocket
@@ -148,8 +150,12 @@ class HTTP11Connection(object):
         url = to_bytestring(url)
 
         if not isinstance(headers, HTTPHeaderMap):
-            # FIXME: Handle things that aren't dictionaries here.
-            headers = HTTPHeaderMap(headers.items())
+            if isinstance(headers, Mapping):
+                headers = HTTPHeaderMap(headers.items())
+            elif isinstance(headers, Iterable):
+                headers = HTTPHeaderMap(headers)
+            else:
+                raise ValueError('Header argument must be a dictionary or an iterable')
 
         if self._sock is None:
             self.connect()
