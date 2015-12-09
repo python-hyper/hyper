@@ -860,7 +860,7 @@ class TestHyperStream(object):
             out_frames.append(frame)
 
         def recv_cb(s):
-            def inner():
+            def inner(stream_id=0):
                 s.receive_frame(in_frames.pop(0))
             return inner
 
@@ -910,7 +910,7 @@ class TestHyperStream(object):
             out_frames.append(frame)
 
         def recv_cb(s):
-            def inner():
+            def inner(stream_id=0):
                 s.receive_frame(in_frames.pop(0))
             return inner
 
@@ -936,7 +936,7 @@ class TestHyperStream(object):
             out_frames.append(frame)
 
         def recv_cb(s):
-            def inner():
+            def inner(stream_id=0):
                 s.receive_frame(in_frames.pop(0))
             return inner
 
@@ -968,7 +968,7 @@ class TestHyperStream(object):
             out_frames.append(frame)
 
         def recv_cb(s):
-            def inner():
+            def inner(stream_id=0):
                 s.receive_frame(in_frames.pop(0))
             return inner
 
@@ -1080,7 +1080,7 @@ class TestHyperStream(object):
         trailers = [('e', 'f'), ('g', 'h')]
 
         def recv_cb(s):
-            def inner():
+            def inner(stream_id=0):
                 s.receive_frame(in_frames.pop(0))
             return inner
 
@@ -1124,7 +1124,7 @@ class TestHyperStream(object):
             out_frames.append(frame)
 
         def recv_cb(s):
-            def inner():
+            def inner(stream_id=0):
                 s.receive_frame(in_frames.pop(0))
             return inner
 

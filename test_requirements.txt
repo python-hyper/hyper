@@ -3,3 +3,4 @@ pytest-xdist
 pytest-cov
 requests
 mock
+futures
