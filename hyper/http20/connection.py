@@ -722,6 +722,8 @@ class HTTP20Connection(object):
             except ConnectionResetError:
                 break
 
+            count -= 1
+
     def _send_rst_frame(self, stream_id, error_code):
         """
         Send reset stream frame with error code and remove stream from map.
