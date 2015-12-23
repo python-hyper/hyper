@@ -109,11 +109,22 @@ class Stream(object):
         self._encoder = header_encoder
         self._decoder = header_decoder
 
-    def add_header(self, name, value):
+    def add_header(self, name, value, replace=False):
         """
         Adds a single HTTP header to the headers to be sent on the request.
         """
-        self.headers.append((name.lower(), value))
+        name = name.lower()
+
+        if replace:
+            try:
+                idx = [n for n, _ in self.headers].index(name)
+                self.headers[idx] = (name, value)
+                return
+
+            except ValueError:
+                pass
+        
+        self.headers.append((name, value))
 
     def send_data(self, data, final):
         """

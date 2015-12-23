@@ -109,6 +109,23 @@ class TestHyperConnection(object):
             ('name', 'value'),
         ]
 
+    def test_putheader_replaces_headers(self):
+        c = HTTP20Connection("www.google.com")
+
+        c.putrequest('GET', '/')
+        c.putheader(':authority', 'www.example.org', replace=True)
+        c.putheader('name', 'value')
+        c.putheader('name', 'value2', replace=True)
+        s = c.recent_stream
+
+        assert s.headers == [
+            (':method', 'GET'),
+            (':scheme', 'https'),
+            (':authority', 'www.example.org'),
+            (':path', '/'),
+            ('name', 'value2'),
+        ]
+
     def test_endheaders_sends_data(self):
         frames = []
 
@@ -684,6 +701,23 @@ class TestHyperStream(object):
         s.add_header("name", "value")
         assert s.headers == [("name", "value")]
 
+    def test_streams_can_replace_headers(self):
+        s = Stream(1, None, None, None, None, None, None)
+        s.add_header("name", "value")
+        s.add_header("name", "other_value", replace=True)
+
+        assert s.headers == [("name", "other_value")]
+
+    def test_streams_can_replace_none_headers(self):
+        s = Stream(1, None, None, None, None, None, None)
+        s.add_header("name", "value")
+        s.add_header("other_name", "other_value", replace=True)
+
+        assert s.headers == [
+            ("name", "value"),
+            ("other_name", "other_value")
+        ]
+        
     def test_stream_opening_sends_headers(self):
         def data_callback(frame):
             assert isinstance(frame, HeadersFrame)

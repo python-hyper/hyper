@@ -170,8 +170,9 @@ class HTTP20Connection(object):
         """
         stream_id = self.putrequest(method, url)
 
+        default_headers = (':method', ':scheme', ':authority', ':path')
         for name, value in headers.items():
-            self.putheader(name, value, stream_id)
+            self.putheader(name, value, stream_id, replace=name in default_headers)
 
         # Convert the body to bytes if needed.
         if isinstance(body, str):
@@ -319,7 +320,7 @@ class HTTP20Connection(object):
 
         return s.stream_id
 
-    def putheader(self, header, argument, stream_id=None):
+    def putheader(self, header, argument, stream_id=None, replace=False):
         """
         Sends an HTTP header to the server, with name ``header`` and value
         ``argument``.
@@ -341,7 +342,7 @@ class HTTP20Connection(object):
         :returns: Nothing.
         """
         stream = self._get_stream(stream_id)
-        stream.add_header(header, argument)
+        stream.add_header(header, argument, replace)
 
         return
 
