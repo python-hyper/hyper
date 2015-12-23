@@ -507,7 +507,6 @@ class HTTP20Connection(object):
         """
         Returns a new stream object for this connection.
         """
-        window_size = self._settings[SettingsFrame.INITIAL_WINDOW_SIZE]
         s = Stream(
             stream_id or self.next_stream_id, self._send_cb, self._recv_cb,
             self._close_stream, self.encoder, self.decoder,
