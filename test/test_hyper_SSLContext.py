@@ -5,7 +5,10 @@ Tests the hyper SSLContext.
 import os
 
 from hyper.compat import ssl
-from hyper.ssl_compat import SSLContext
+try:
+    from hyper.ssl_compat import SSLContext
+except ImportError:
+    SSLContext = None
 
 
 TEST_DIR = os.path.abspath(os.path.dirname(__file__))
@@ -20,14 +23,15 @@ class TestHyperSSLContext(object):
     """
     def test_custom_context_with_cert_as_file(self):
         # Test using hyper's own SSLContext
-        context = SSLContext(ssl.PROTOCOL_SSLv23)
-        context.verify_mode = ssl.CERT_NONE
-        context.check_hostname = False
+        if SSLContext is not None:
+            context = SSLContext(ssl.PROTOCOL_SSLv23)
+            context.verify_mode = ssl.CERT_NONE
+            context.check_hostname = False
 
-        # Test that we can load in a cert and key protected by a passphrase,
-        # from files.
-        context.load_cert_chain(
-            certfile=CLIENT_CERT_FILE,
-            keyfile=CLIENT_KEY_FILE,
-            password='abc123'
-        )
+            # Test that we can load in a cert and key protected by a passphrase,
+            # from files.
+            context.load_cert_chain(
+                certfile=CLIENT_CERT_FILE,
+                keyfile=CLIENT_KEY_FILE,
+                password='abc123'
+            )
