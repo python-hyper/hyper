@@ -61,7 +61,7 @@ class Stream(object):
                  local_closed=False):
         self.stream_id = stream_id
         self.state = STATE_HALF_CLOSED_LOCAL if local_closed else STATE_IDLE
-        self.headers = []
+        self.headers = HTTPHeaderMap()
 
         # Set to a key-value set of the response headers once their
         # HEADERS..CONTINUATION frame sequence finishes.
@@ -113,18 +113,11 @@ class Stream(object):
         """
         Adds a single HTTP header to the headers to be sent on the request.
         """
-        name = name.lower()
+        if not replace:
+            self.headers[name] = value
+        else:
+            self.headers.replace(name, value)
 
-        if replace:
-            try:
-                idx = [n for n, _ in self.headers].index(name)
-                self.headers[idx] = (name, value)
-                return
-
-            except ValueError:
-                pass
-        
-        self.headers.append((name, value))
 
     def send_data(self, data, final):
         """
@@ -279,8 +272,11 @@ class Stream(object):
         The `end` flag controls whether this will be the end of the stream, or
         whether data will follow.
         """
+        headers = list(self.headers.items())
+
         # Strip any headers invalid in H2.
-        headers = h2_safe_headers(self.headers)
+        headers = h2_safe_headers(headers)
+
         # Encode the headers.
         encoded_headers = self._encoder.encode(headers)
 
