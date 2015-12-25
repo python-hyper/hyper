@@ -181,6 +181,28 @@ class HTTPHeaderMap(collections.MutableMapping):
         for item in self._items:
             yield item
 
+    def replace(self, key, value):
+        """
+        Replace existing header with new value. If header doesn't exist this
+        method work like ``__setitem__``. Replacing leads to deletion of all 
+        exsiting headers with the same name.
+        """
+        idx = None
+        key = to_bytestring(key)
+        for (i, (k, v)) in enumerate(self._items):
+            if _keys_equal(k, key):
+                idx = i
+                break
+
+        if idx is not None:
+            del self[key]
+
+        self._items.insert(
+            idx if idx is not None else len(self._items),
+            to_bytestring_tuple(key, value)
+        )
+        
+
     def merge(self, other):
         """
         Merge another header set or any other dict-like into this one.
