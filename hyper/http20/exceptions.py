@@ -6,7 +6,7 @@ hyper/http20/exceptions
 This defines exceptions used in the HTTP/2 portion of hyper.
 """
 
-class HTTP20Error(Exception):
+class HTTP20Error(IOError):
     """
     The base class for all of ``hyper``'s HTTP/2-related exceptions.
     """
@@ -46,4 +46,34 @@ class StreamResetError(HTTP20Error):
     """
     A stream was forcefully reset by the remote party.
     """
+    pass
+
+class InternalError(HTTP20Error):
+    pass
+
+class FlowControlError(HTTP20Error):
+    pass
+
+class SettingsTimeout(HTTP20Error):
+    pass
+
+class StreamClosed(HTTP20Error):
+    pass
+
+class FrameSizeError(HTTP20Error):
+    pass
+
+class RefusedStream(HTTP20Error):
+    pass
+
+class CompressionError(HTTP20Error):
+    pass
+
+class EnhanceYourCalm(HTTP20Error):
+    pass
+
+class InadequateSecurity(HTTP20Error):
+    pass
+
+class Http11Required(HTTP20Error):
     pass
