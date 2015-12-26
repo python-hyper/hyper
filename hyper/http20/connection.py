@@ -511,7 +511,7 @@ class HTTP20Connection(object):
         s = Stream(
             stream_id or self.next_stream_id, self._send_cb, self._recv_cb,
             self._close_stream, self.encoder, self.decoder,
-            self.__wm_class(65535), local_closed
+            self.__wm_class(window_size), local_closed
         )
         s._out_flow_control_window = self._out_flow_control_window
         self.streams[s.stream_id] = s
@@ -722,6 +722,8 @@ class HTTP20Connection(object):
                 self._consume_single_frame()
             except ConnectionResetError:
                 break
+
+            count -= 1
 
     def _send_rst_frame(self, stream_id, error_code):
         """
