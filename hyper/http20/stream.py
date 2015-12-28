@@ -272,10 +272,8 @@ class Stream(object):
         The `end` flag controls whether this will be the end of the stream, or
         whether data will follow.
         """
-        headers = list(self.headers.items())
-
         # Strip any headers invalid in H2.
-        headers = h2_safe_headers(headers)
+        headers = h2_safe_headers(self.headers)
 
         # Encode the headers.
         encoded_headers = self._encoder.encode(headers)
