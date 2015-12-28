@@ -192,7 +192,7 @@ class HTTPHeaderMap(collections.MutableMapping):
         except KeyError:
             pass
 
-        self._items.append(to_bytestring_tuple(key, value))
+        self[key] = value
 
     def merge(self, other):
         """
