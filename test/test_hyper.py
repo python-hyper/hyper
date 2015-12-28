@@ -221,6 +221,33 @@ class TestHyperConnection(object):
         assert len(sock.queue) == 2
         assert c._out_flow_control_window == 65535 - len(b'hello')
 
+    def test_different_request_headers(self):
+        sock = DummySocket()
+
+        c = HTTP20Connection('www.google.com')
+        c._sock = sock
+        c.request('GET', '/', body='hello', headers={b'name': b'value'})
+        s = c.recent_stream
+
+        assert list(s.headers.items()) == [
+            (b':method', b'GET'),
+            (b':scheme', b'https'),
+            (b':authority', b'www.google.com'),
+            (b':path', b'/'),
+            (b'name', b'value'),
+        ]
+
+        c.request('GET', '/', body='hello', headers={u'name2': u'value2'})
+        s = c.recent_stream
+
+        assert list(s.headers.items()) == [
+            (b':method', b'GET'),
+            (b':scheme', b'https'),
+            (b':authority', b'www.google.com'),
+            (b':path', b'/'),
+            (b'name2', b'value2'),
+        ]
+
     def test_closed_connections_are_reset(self):
         c = HTTP20Connection('www.google.com')
         c._sock = DummySocket()
