@@ -77,3 +77,25 @@ class InadequateSecurity(HTTP20Error):
 
 class Http11Required(HTTP20Error):
     pass
+
+def HTTP20ErrorHandler(func):
+    """
+    HTTP20Error exception handler which captures exceptions thrown
+    that impact a single stream or the entire connection.
+    """
+    def handler(*args, **kwargs):
+        try:
+            func(*args, **kwargs)
+
+        # Handle errors that impact entire connection.
+        except (ProtocolError, ConnectionError, InternalError) as e:
+            pass
+
+        # Handle errors that impact only single stream.
+        except (StreamResetError, RefusedStream, StreamClosed) as e:
+            pass
+
+        except HTTP20Error:
+            pass
+
+    return handler
