@@ -554,6 +554,23 @@ class TestHyperConnection(object):
             (b':path', b'/'),
         ]
 
+    def test_recv_cb_n_times(self):
+        sock = DummySocket()
+        sock.can_read = True
+
+        c = HTTP20Connection('www.google.com')
+        c._sock = sock
+
+        mutable = {'counter': 0}
+
+        def consume_single_frame():
+            mutable['counter'] += 1
+            
+        c._consume_single_frame = consume_single_frame
+        c._recv_cb()
+
+        assert mutable['counter'] == 10
+
 
 class TestServerPush(object):
     def setup_method(self, method):
