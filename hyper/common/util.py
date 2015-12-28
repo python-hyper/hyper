@@ -7,7 +7,9 @@ General utility functions for use with hyper.
 """
 from hyper.compat import unicode, bytes, imap
 from ..packages.rfc3986.uri import URIReference
+from ..compat import is_py3
 import re
+
 
 def to_bytestring(element):
     """
@@ -27,6 +29,7 @@ def to_bytestring_tuple(*x):
     tuple. Uses ``to_bytestring``.
     """
     return tuple(imap(to_bytestring, x))
+
 
 def to_host_port_tuple(host_port_str, default_port=80):
     """
@@ -48,3 +51,10 @@ def to_host_port_tuple(host_port_str, default_port=80):
         port = int(uri.port)
 
     return (host, port)
+
+
+def to_native_string(string, encoding='utf-8'):
+    if isinstance(string, str):
+        return string
+
+    return string.decode(encoding) if is_py3 else string.encode(encoding)
