@@ -29,6 +29,7 @@ import zlib
 from io import BytesIO
 import hyper
 
+
 def decode_frame(frame_data):
     f, length = Frame.parse_frame_header(frame_data[:9])
     f.parse_body(memoryview(frame_data[9:9 + length]))
@@ -525,6 +526,7 @@ class TestHyperConnection(object):
             (b':authority', b'www.google.com'),
             (b':path', b'/'),
         ]
+
 
 class TestServerPush(object):
     def setup_method(self, method):
@@ -1481,6 +1483,7 @@ class TestUtilities(object):
         with pytest.raises(ValueError):
             c._send_cb(d)
 
+
 # Some utility classes for the tests.
 class NullEncoder(object):
     @staticmethod
@@ -1497,12 +1500,14 @@ class NullEncoder(object):
         return '\n'.join("%s%s" % (to_str(name), to_str(val)) 
                          for name, val in headers)
 
+
 class FixedDecoder(object):
     def __init__(self, result):
         self.result = result
 
     def decode(self, headers):
         return self.result
+
 
 class DummySocket(object):
     def __init__(self):

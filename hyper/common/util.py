@@ -9,6 +9,7 @@ from hyper.compat import unicode, bytes, imap
 from ..packages.rfc3986.uri import URIReference
 import re
 
+
 def to_bytestring(element):
     """
     Converts a single string to a bytestring, encoding via UTF-8 if needed.
@@ -27,6 +28,7 @@ def to_bytestring_tuple(*x):
     tuple. Uses ``to_bytestring``.
     """
     return tuple(imap(to_bytestring, x))
+
 
 def to_host_port_tuple(host_port_str, default_port=80):
     """
