@@ -122,8 +122,8 @@ class TestHyperConnection(object):
         assert list(s.headers.items()) == [
             (b':method', b'GET'),
             (b':scheme', b'https'),
-            (b':authority', b'www.example.org'),
             (b':path', b'/'),
+            (b':authority', b'www.example.org'),
             (b'name', b'value2'),
         ]
 
