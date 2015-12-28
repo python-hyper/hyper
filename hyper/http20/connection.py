@@ -9,7 +9,7 @@ from ..tls import wrap_socket, H2_NPN_PROTOCOLS, H2C_PROTOCOL
 from ..common.exceptions import ConnectionResetError
 from ..common.bufsocket import BufferedSocket
 from ..common.headers import HTTPHeaderMap
-from ..common.util import to_host_port_tuple
+from ..common.util import to_host_port_tuple, to_native_string
 from ..packages.hyperframe.frame import (
     FRAMES, DataFrame, HeadersFrame, PushPromiseFrame, RstStreamFrame,
     SettingsFrame, Frame, WindowUpdateFrame, GoAwayFrame, PingFrame,
@@ -172,7 +172,8 @@ class HTTP20Connection(object):
 
         default_headers = (':method', ':scheme', ':authority', ':path')
         for name, value in headers.items():
-            self.putheader(name, value, stream_id, replace=name in default_headers)
+            is_default = to_native_string(name) in default_headers
+            self.putheader(name, value, stream_id, replace=is_default)
 
         # Convert the body to bytes if needed.
         if isinstance(body, str):
