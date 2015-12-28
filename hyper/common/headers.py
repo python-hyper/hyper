@@ -187,21 +187,12 @@ class HTTPHeaderMap(collections.MutableMapping):
         method work like ``__setitem__``. Replacing leads to deletion of all 
         exsiting headers with the same name.
         """
-        idx = None
-        key = to_bytestring(key)
-        for (i, (k, v)) in enumerate(self._items):
-            if _keys_equal(k, key):
-                idx = i
-                break
-
-        if idx is not None:
+        try:
             del self[key]
+        except KeyError:
+            pass
 
-        self._items.insert(
-            idx if idx is not None else len(self._items),
-            to_bytestring_tuple(key, value)
-        )
-        
+        self._items.append(to_bytestring_tuple(key, value))
 
     def merge(self, other):
         """
