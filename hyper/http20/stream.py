@@ -239,7 +239,7 @@ class Stream(object):
             raise StreamResetError("Stream forcefully closed.")
         elif frame.type in FRAMES:
             # This frame isn't valid at this point.
-            raise ValueError("Unexpected frame %s." % frame)
+            raise StreamError("Unexpected frame %s." % frame)
         else:  # pragma: no cover
             # Unknown frames belong to extensions. Just drop it on the
             # floor, but log so that users know that something happened.
@@ -282,7 +282,7 @@ class Stream(object):
         # Additionally, since this is so unlikely, there's no point writing a
         # test for this: it's just so simple.
         if len(encoded_headers) > FRAME_MAX_LEN:  # pragma: no cover
-            raise ValueError("Header block too large.")
+            raise StreamError("Header block too large.")
 
         header_frame = HeadersFrame(self.stream_id)
         header_frame.data = encoded_headers

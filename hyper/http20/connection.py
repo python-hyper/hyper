@@ -455,7 +455,7 @@ class HTTP20Connection(object):
                 self._send_cb(f, True)
         elif frame.type in FRAMES:
             # This frame isn't valid at this point.
-            raise ValueError("Unexpected frame %s." % frame)
+            raise StreamError("Unexpected frame %s." % frame)
         else:  # pragma: no cover
             # Unexpected frames belong to extensions. Just drop it on the
             # floor, but log so that users know that something happened.
@@ -560,7 +560,7 @@ class HTTP20Connection(object):
 
         max_frame_size = self._settings[SettingsFrame.SETTINGS_MAX_FRAME_SIZE]
         if frame.body_len > max_frame_size:
-            raise ValueError(
+            raise StreamError(
                      "Frame size %d exceeds maximum frame size setting %d" %
                      (frame.body_len,
                       self._settings[SettingsFrame.SETTINGS_MAX_FRAME_SIZE])
