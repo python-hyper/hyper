@@ -396,6 +396,7 @@ class HTTP20Connection(object):
 
         return
 
+    @HTTP20ErrorHandler
     def receive_frame(self, frame):
         """
         Handles receiving frames intended for the stream.
@@ -461,6 +462,7 @@ class HTTP20Connection(object):
             log.warning("Received unknown frame, type %d", frame.type)
             pass
 
+    @HTTP20ErrorHandler
     def _update_settings(self, frame):
         """
         Handles the data sent by a settings frame.
@@ -536,6 +538,7 @@ class HTTP20Connection(object):
                     "Stream with id %d does not exist: %s",
                     stream_id, e)
 
+    @HTTP20ErrorHandler
     def _send_cb(self, frame, tolerate_peer_gone=False):
         """
         This is the callback used by streams to send data on the connection.

@@ -192,6 +192,7 @@ class Stream(object):
         except IndexError:
             return None
 
+    @HTTP20ErrorHandler
     def receive_frame(self, frame):
         """
         Handle a frame received on this stream.
@@ -261,6 +262,7 @@ class Stream(object):
             # We've handled the headers, zero them out.
             self.header_data = None
 
+    @HTTP20ErrorHandler
     def open(self, end):
         """
         Open the stream. Does this by encoding and sending the headers: no more
@@ -375,6 +377,7 @@ class Stream(object):
         # gracefull shutdown.
         self._close_cb(self.stream_id, error_code or 0)
 
+    @HTTP20ErrorHandler
     def _handle_header_block(self, headers):
         """
         Handles the logic for receiving a completed headers block.
