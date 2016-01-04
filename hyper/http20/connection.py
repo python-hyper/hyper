@@ -19,7 +19,7 @@ from ..packages.hpack.hpack_compat import Encoder, Decoder
 from .stream import Stream
 from .response import HTTP20Response, HTTP20Push
 from .window import FlowControlManager
-from .exceptions import ConnectionError, ProtocolError
+from .exceptions import ConnectionError, ProtocolError, HTTP20ErrorHandler
 from . import errors
 
 import errno
