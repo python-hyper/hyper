@@ -14,21 +14,6 @@ class HTTP20Error(Exception):
     """
     pass
 
-
-class HPACKEncodingError(HTTP20Error):
-    """
-    An error has been encountered while performing HPACK encoding.
-    """
-    pass
-
-
-class HPACKDecodingError(HTTP20Error):
-    """
-    An error has been encountered while performing HPACK decoding.
-    """
-    pass
-
-
 class ConnectionError(HTTP20Error):
     """
     The remote party signalled an error affecting the entire HTTP/2

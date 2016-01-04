@@ -11,7 +11,7 @@ from hyper.http20.stream import (
 )
 from hyper.http20.response import HTTP20Response, HTTP20Push
 from hyper.http20.exceptions import (
-    HPACKDecodingError, HPACKEncodingError, ProtocolError, ConnectionError,
+    ProtocolError, ConnectionError,
 )
 from hyper.http20.window import FlowControlManager
 from hyper.http20.util import (
