@@ -29,17 +29,11 @@ class ProtocolError(HTTP20Error):
     error_code = errors.PROTOCOL_ERROR
 
 
-class StreamResetError(HTTP20Error):
-    """
-    A stream was forcefully reset by the remote party.
-    """
-    pass
-
 class FrameTooLargeError(ProtocolError):
     """
     The frame that we tried to send was too large to be sent.
     """
-    pass
+    error_code = errors.FRAME_SIZE_ERROR
 
 
 class TooManyStreamsError(ProtocolError):
@@ -47,7 +41,7 @@ class TooManyStreamsError(ProtocolError):
     An attempt was made to open a stream that would lead to too many concurrent
     streams.
     """
-    pass
+    error_code = errors.ENHANCE_YOUR_CALM
 
 
 class FlowControlError(ProtocolError):
@@ -56,12 +50,16 @@ class FlowControlError(ProtocolError):
     """
     error_code = errors.FLOW_CONTROL_ERROR
 
+
 class StreamError(HTTP20Error):
     """
     A error that only affects a specific stream.
     """
     def __init__(self, stream_id):
         self.stream_id = stream_id
+
+    def __str__(self):
+        return "StreamError:  Error on stream %d" % (self.stream_id)
 
 class StreamIDTooLowError(StreamError):
     """
@@ -70,13 +68,12 @@ class StreamIDTooLowError(StreamError):
     """
     def __init__(self, stream_id, max_stream_id):
         self.max_stream_id = max_stream_id
-        super(StreamIDTooLowError, self).__init__()
+        super(StreamIDTooLowError, self).__init__(steam_id)
 
     def __str__(self):
         return "StreamIDTooLowError: %d is lower than %d" % (
             self.stream_id, self.max_stream_id
         )
-
 
 class NoSuchStreamError(StreamError):
     """
@@ -85,8 +82,12 @@ class NoSuchStreamError(StreamError):
     error_code = errors.STREAM_CLOSED
 
     def __init__(self, stream_id):
-        super(StreamIDTooLowError, self).__init__()
+        super(NoSuchStreamError, self).__init__(steam_id)
 
+    def __str__(self):
+        return "NoSuchStreamError: Unexpected stream identifier %d" % (
+            self.stream_id)
+        )
 
 class StreamClosedError(NoSuchStreamError):
     """
@@ -98,7 +99,24 @@ class StreamClosedError(NoSuchStreamError):
     error_code = errors.STREAM_CLOSED
 
     def __init__(self, stream_id):
-        super(StreamClosedError, self).__init__()
+        super(StreamClosedError, self).__init__(steam_id)
+
+    def __str__(self):
+        return "StreamClosedError: Stream has already been closed" % (
+            self.stream_id)
+        )
+
+class StreamResetError(NoSuchStreamError):
+    """
+    A stream was forcefully reset by the remote party.
+    """
+    error_code = errors.CANCEL
+
+    def __init__(self, stream_id):
+        super(StreamResetError, self).__init__(steam_id)
+
+    def __str__(self):
+        return "Stream %s has been reset, dropping frame." % self.stream_id
 
 def HTTP20ErrorHandler(func):
     """
@@ -110,7 +128,7 @@ def HTTP20ErrorHandler(func):
             self.func(*args, **kwargs)
         except (StreamError) as e:
             self._send_rst_frame(stream_id=e.stream_id, error_code=e.error_code['Code'])
-        except (ProtocolError, ConnectionError, InternalError, HTTP20Error) as e:
+        except (ProtocolError, ConnectionError, InternalError) as e:
             self.close(error_code=e.error_code['Code'])
 
     return handler
