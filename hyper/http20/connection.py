@@ -19,7 +19,7 @@ from ..packages.hpack.hpack_compat import Encoder, Decoder
 from .stream import Stream
 from .response import HTTP20Response, HTTP20Push
 from .window import FlowControlManager
-from .exceptions import ConnectionError, ProtocolError, HTTP20ErrorHandler
+from .exceptions import ConnectionError, ProtocolError, HTTP20ErrorHandler, FrameTooLargeError
 from . import errors
 
 import errno
@@ -503,7 +503,7 @@ class HTTP20Connection(object):
                 error_string = (
                     "Advertised frame size %d is outside of range" % (new_size)
                 )
-                raise ConnectionError(error_string)
+                raise ProtocolError(error_string)
 
     def _new_stream(self, stream_id=None, local_closed=False):
         """
@@ -560,11 +560,12 @@ class HTTP20Connection(object):
 
         max_frame_size = self._settings[SettingsFrame.SETTINGS_MAX_FRAME_SIZE]
         if frame.body_len > max_frame_size:
-            raise StreamError(
-                     "Frame size %d exceeds maximum frame size setting %d" %
-                     (frame.body_len,
-                      self._settings[SettingsFrame.SETTINGS_MAX_FRAME_SIZE])
-            )
+            log.warning(
+                "Frame size exceeded on stream %d (received: %d, max: %d)",
+                frame.stream_id,
+                length,
+                FRAME_MAX_LEN)
+            raise FrameTooLargeError(frame.stream_id)
 
         log.info(
             "Sending frame %s on stream %d",
@@ -612,9 +613,8 @@ class HTTP20Connection(object):
                 "Frame size exceeded on stream %d (received: %d, max: %d)",
                 frame.stream_id,
                 length,
-                FRAME_MAX_LEN
-            )
-            self._send_rst_frame(frame.stream_id, 6) # 6 = FRAME_SIZE_ERROR
+                FRAME_MAX_LEN)
+            raise FrameTooLargeError(frame.stream_id)
 
         # Read the remaining data from the socket.
         data = self._recv_payload(length)
@@ -683,19 +683,17 @@ class HTTP20Connection(object):
             log.info(
                 "Stream %s has been reset, dropping frame.", frame.stream_id
             )
-            return
+            raise StreamResetError(frame.stream_id)
 
         # Work out to whom this frame should go.
         if frame.stream_id != 0:
             try:
                 self.streams[frame.stream_id].receive_frame(frame)
             except KeyError:
-                # If we receive an unexpected stream identifier then we
-                # cancel the stream with an error of type PROTOCOL_ERROR
-                self._send_rst_frame(frame.stream_id, 1)
                 log.warning(
                     "Unexpected stream identifier %d" % (frame.stream_id)
                 )
+                raise NoSuchStreamError(frame.stream_id)
 
             # If this is a RST_STREAM frame, we may get more than one (because
             # of frames in flight). Keep track.
@@ -704,6 +702,7 @@ class HTTP20Connection(object):
         else:
             self.receive_frame(frame)
 
+    @HTTP20ErrorHandler
     def _recv_cb(self):
         """
         This is the callback used by streams to read data from the connection.
