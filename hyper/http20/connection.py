@@ -128,6 +128,12 @@ class HTTP20Connection(object):
         # be synchronized, it uses _send_cb internally (which is serialized);
         # it's other activity (safe deletion of the stream from self.streams)
         # does not require synchronization.
+        #
+        # _read_lock may be acquired when already holding the _write_lock,
+        # when they both held it is always by acquiring _write_lock first
+        #
+        # either _read_lock or _write_lock may be acquired whilst holding _lock
+        # which should always be acquired before either of the other two.
         self._lock = threading.RLock()
         self._write_lock = threading.RLock()
         self._read_lock = threading.RLock()
@@ -836,8 +842,7 @@ class HTTP20Connection(object):
         """
         # Concurrency
         #
-        # Synchronizes reading data, using the same rentrant lock as when data
-        # is written. i.e, reads and writes to the connection are serialized.
+        # Synchronizes reading data
         #
         # i/o occurs while the lock is held; waiting threads will see a delay.
         with self._read_lock:
@@ -855,11 +860,10 @@ class HTTP20Connection(object):
                 # If the connection has been closed, bail out.
                 try:
                     self._consume_single_frame()
-                    count -= 1
                 except ConnectionResetError:
                     break
 
-            count -= 1
+                count -= 1
 
     def _send_rst_frame(self, stream_id, error_code):
         """
