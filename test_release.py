@@ -9,9 +9,12 @@ part of our regression tests. They are instead run before releasing `hyper`
 as a sanity check to confirm that the library itself appears to function and is
 capable of achieving basic tasks.
 """
+
+from concurrent.futures import as_completed, ThreadPoolExecutor
 import logging
 import random
 import requests
+import threading
 from hyper import HTTP20Connection, HTTP11Connection
 from hyper.contrib import HTTP20Adapter
 
@@ -55,6 +58,44 @@ class TestHyperActuallyWorks(object):
         assert all(map(lambda r: r.status == 200, responses))
         assert all(map(lambda p: p.scheme == b'https', pushes))
         assert all(map(lambda p: p.method.lower() == b'get', pushes))
+
+    def test_threaded_abusing_nghttp2_org(self):
+        """
+        This test function loads all of nghttp2.org's pages in parallel using
+        threads. This tests us against the most common open source HTTP/2
+        server implementation.
+
+        """
+        paths = [
+            '/',
+            '/blog/2014/04/27/how-dependency-based-prioritization-works/',
+            '/blog/2014/04/25/http-slash-2-draft-12-update/',
+            '/blog/2014/04/23/nghttp2-dot-org-now-installed-valid-ssl-slash-tls-certificate/',
+            '/blog/2014/04/21/h2load-now-supports-spdy-in-clear-text/',
+            '/blog/2014/04/18/nghttp2-dot-org-goes-live/',
+            '/blog/archives/',
+        ]
+
+        c = HTTP20Connection('nghttp2.org', enable_push=True)
+
+        def do_one_page(path):
+            stream_id = c.request('GET', path)
+            responses = [c.get_response(stream_id)]
+            pushes = c.get_pushes(stream_id)
+            responses.extend(p.get_response() for p in pushes)
+            text_data = b''.join([r.read() for r in responses])
+            # Having read all the data from them, confirm that the status codes
+            # are good. Also confirm that the pushes make sense.
+            assert all(map(lambda r: r.status == 200, responses))
+            assert all(map(lambda p: p.scheme == b'https', pushes))
+            assert all(map(lambda p: p.scheme == b'https', pushes))
+            assert text_data
+
+        max_workers = len(paths)
+        with ThreadPoolExecutor(max_workers=len(paths)) as ex:
+            futures = [ex.submit(do_one_page, p) for p in paths]
+            for f in as_completed(futures):
+                f.result()
 
     def test_hitting_http2bin_org(self):
         """
