@@ -376,12 +376,12 @@ class HTTP20Connection(object):
                 stream.close(error_code)
 
             # Send GoAway frame to the server
-            if self._sock is not None:
-                try:
-                    self._send_cb(GoAwayFrame(0), True)
-                except Exception as e:  # pragma: no cover
-                    log.warn("GoAway frame could not be sent: %s" % e)
+            try:
+                self._send_cb(GoAwayFrame(0), True)
+            except Exception as e:  # pragma: no cover
+                log.warn("GoAway frame could not be sent: %s" % e)
 
+            if self._sock is not None:
                 self._sock.close()
                 self.__init_state()
 
