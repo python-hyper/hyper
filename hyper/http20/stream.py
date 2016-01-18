@@ -61,7 +61,7 @@ class Stream(object):
                  local_closed=False):
         self.stream_id = stream_id
         self.state = STATE_HALF_CLOSED_LOCAL if local_closed else STATE_IDLE
-        self.headers = []
+        self.headers = HTTPHeaderMap()
 
         # Set to a key-value set of the response headers once their
         # HEADERS..CONTINUATION frame sequence finishes.
@@ -109,11 +109,15 @@ class Stream(object):
         self._encoder = header_encoder
         self._decoder = header_decoder
 
-    def add_header(self, name, value):
+    def add_header(self, name, value, replace=False):
         """
         Adds a single HTTP header to the headers to be sent on the request.
         """
-        self.headers.append((name.lower(), value))
+        if not replace:
+            self.headers[name] = value
+        else:
+            self.headers.replace(name, value)
+
 
     def send_data(self, data, final):
         """
@@ -173,7 +177,7 @@ class Stream(object):
 
         # Keep reading until the stream is closed or we get enough data.
         while not self._remote_closed and (amt is None or listlen(self.data) < amt):
-            self._recv_cb()
+            self._recv_cb(stream_id=self.stream_id)
 
         result = b''.join(self.data)
         self.data = []
@@ -185,7 +189,7 @@ class Stream(object):
         """
         # Keep reading until the stream is closed or we have a data frame.
         while not self._remote_closed and not self.data:
-            self._recv_cb()
+            self._recv_cb(stream_id=self.stream_id)
 
         try:
             return self.data.pop(0)
@@ -270,6 +274,7 @@ class Stream(object):
         """
         # Strip any headers invalid in H2.
         headers = h2_safe_headers(self.headers)
+
         # Encode the headers.
         encoded_headers = self._encoder.encode(headers)
 
@@ -310,7 +315,7 @@ class Stream(object):
 
         # Keep reading until all headers are received.
         while self.response_headers is None:
-            self._recv_cb()
+            self._recv_cb(stream_id=self.stream_id)
 
         # Find the Content-Length header if present.
         self._in_window_manager.document_size = (
@@ -337,7 +342,7 @@ class Stream(object):
         # The idea of receiving such a thing is mind-boggling it's so unlikely,
         # but we should fix this up at some stage.
         while not self._remote_closed:
-            self._recv_cb()
+            self._recv_cb(stream_id=self.stream_id)
 
         return self.response_trailers
 
@@ -360,7 +365,7 @@ class Stream(object):
             self.promised_headers = {}
             if not capture_all or self._remote_closed:
                 break
-            self._recv_cb()
+            self._recv_cb(stream_id=self.stream_id)
 
     def close(self, error_code=None):
         """

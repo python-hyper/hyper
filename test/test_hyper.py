@@ -18,7 +18,7 @@ from hyper.http20.util import (
     combine_repeated_headers, split_repeated_headers, h2_safe_headers
 )
 from hyper.common.headers import HTTPHeaderMap
-from hyper.compat import zlib_compressobj
+from hyper.compat import zlib_compressobj, is_py2
 from hyper.contrib import HTTP20Adapter
 import hyper.http20.errors as errors
 import errno
@@ -28,6 +28,7 @@ import socket
 import zlib
 from io import BytesIO
 import hyper
+
 
 def decode_frame(frame_data):
     f, length = Frame.parse_frame_header(frame_data[:9])
@@ -87,11 +88,11 @@ class TestHyperConnection(object):
         c.putrequest('GET', '/')
         s = c.recent_stream
 
-        assert s.headers == [
-            (':method', 'GET'),
-            (':scheme', 'https'),
-            (':authority', 'www.google.com'),
-            (':path', '/'),
+        assert list(s.headers.items()) == [
+            (b':method', b'GET'),
+            (b':scheme', b'https'),
+            (b':authority', b'www.google.com'),
+            (b':path', b'/'),
         ]
 
     def test_putheader_puts_headers(self):
@@ -101,12 +102,29 @@ class TestHyperConnection(object):
         c.putheader('name', 'value')
         s = c.recent_stream
 
-        assert s.headers == [
-            (':method', 'GET'),
-            (':scheme', 'https'),
-            (':authority', 'www.google.com'),
-            (':path', '/'),
-            ('name', 'value'),
+        assert list(s.headers.items()) == [
+            (b':method', b'GET'),
+            (b':scheme', b'https'),
+            (b':authority', b'www.google.com'),
+            (b':path', b'/'),
+            (b'name', b'value'),
+        ]
+
+    def test_putheader_replaces_headers(self):
+        c = HTTP20Connection("www.google.com")
+
+        c.putrequest('GET', '/')
+        c.putheader(':authority', 'www.example.org', replace=True)
+        c.putheader('name', 'value')
+        c.putheader('name', 'value2', replace=True)
+        s = c.recent_stream
+
+        assert list(s.headers.items()) == [
+            (b':method', b'GET'),
+            (b':scheme', b'https'),
+            (b':path', b'/'),
+            (b':authority', b'www.example.org'),
+            (b'name', b'value2'),
         ]
 
     def test_endheaders_sends_data(self):
@@ -202,6 +220,33 @@ class TestHyperConnection(object):
         # The socket should have received one headers frame and one body frame.
         assert len(sock.queue) == 2
         assert c._out_flow_control_window == 65535 - len(b'hello')
+
+    def test_different_request_headers(self):
+        sock = DummySocket()
+
+        c = HTTP20Connection('www.google.com')
+        c._sock = sock
+        c.request('GET', '/', body='hello', headers={b'name': b'value'})
+        s = c.recent_stream
+
+        assert list(s.headers.items()) == [
+            (b':method', b'GET'),
+            (b':scheme', b'https'),
+            (b':authority', b'www.google.com'),
+            (b':path', b'/'),
+            (b'name', b'value'),
+        ]
+
+        c.request('GET', '/', body='hello', headers={u'name2': u'value2'})
+        s = c.recent_stream
+
+        assert list(s.headers.items()) == [
+            (b':method', b'GET'),
+            (b':scheme', b'https'),
+            (b':authority', b'www.google.com'),
+            (b':path', b'/'),
+            (b'name2', b'value2'),
+        ]
 
     def test_closed_connections_are_reset(self):
         c = HTTP20Connection('www.google.com')
@@ -502,12 +547,30 @@ class TestHyperConnection(object):
         c.request('GET', '/')
         s = c.recent_stream
 
-        assert s.headers == [
-            (':method', 'GET'),
-            (':scheme', 'http'),
-            (':authority', 'www.google.com'),
-            (':path', '/'),
+        assert list(s.headers.items()) == [
+            (b':method', b'GET'),
+            (b':scheme', b'http'),
+            (b':authority', b'www.google.com'),
+            (b':path', b'/'),
         ]
+
+    def test_recv_cb_n_times(self):
+        sock = DummySocket()
+        sock.can_read = True
+
+        c = HTTP20Connection('www.google.com')
+        c._sock = sock
+
+        mutable = {'counter': 0}
+
+        def consume_single_frame():
+            mutable['counter'] += 1
+            
+        c._consume_single_frame = consume_single_frame
+        c._recv_cb()
+
+        assert mutable['counter'] == 10
+
 
 class TestServerPush(object):
     def setup_method(self, method):
@@ -677,13 +740,30 @@ class TestHyperStream(object):
 
     def test_streams_initially_have_no_headers(self):
         s = Stream(1, None, None, None, None, None, None)
-        assert s.headers == []
+        assert list(s.headers.items()) == []
 
     def test_streams_can_have_headers(self):
         s = Stream(1, None, None, None, None, None, None)
         s.add_header("name", "value")
-        assert s.headers == [("name", "value")]
+        assert list(s.headers.items()) == [(b"name", b"value")]
 
+    def test_streams_can_replace_headers(self):
+        s = Stream(1, None, None, None, None, None, None)
+        s.add_header("name", "value")
+        s.add_header("name", "other_value", replace=True)
+
+        assert list(s.headers.items()) == [(b"name", b"other_value")]
+
+    def test_streams_can_replace_none_headers(self):
+        s = Stream(1, None, None, None, None, None, None)
+        s.add_header("name", "value")
+        s.add_header("other_name", "other_value", replace=True)
+
+        assert list(s.headers.items()) == [
+            (b"name", b"value"),
+            (b"other_name", b"other_value")
+        ]
+        
     def test_stream_opening_sends_headers(self):
         def data_callback(frame):
             assert isinstance(frame, HeadersFrame)
@@ -780,7 +860,7 @@ class TestHyperStream(object):
             out_frames.append(frame)
 
         def recv_cb(s):
-            def inner():
+            def inner(stream_id=0):
                 s.receive_frame(in_frames.pop(0))
             return inner
 
@@ -830,7 +910,7 @@ class TestHyperStream(object):
             out_frames.append(frame)
 
         def recv_cb(s):
-            def inner():
+            def inner(stream_id=0):
                 s.receive_frame(in_frames.pop(0))
             return inner
 
@@ -856,7 +936,7 @@ class TestHyperStream(object):
             out_frames.append(frame)
 
         def recv_cb(s):
-            def inner():
+            def inner(stream_id=0):
                 s.receive_frame(in_frames.pop(0))
             return inner
 
@@ -888,7 +968,7 @@ class TestHyperStream(object):
             out_frames.append(frame)
 
         def recv_cb(s):
-            def inner():
+            def inner(stream_id=0):
                 s.receive_frame(in_frames.pop(0))
             return inner
 
@@ -1000,7 +1080,7 @@ class TestHyperStream(object):
         trailers = [('e', 'f'), ('g', 'h')]
 
         def recv_cb(s):
-            def inner():
+            def inner(stream_id=0):
                 s.receive_frame(in_frames.pop(0))
             return inner
 
@@ -1044,7 +1124,7 @@ class TestHyperStream(object):
             out_frames.append(frame)
 
         def recv_cb(s):
-            def inner():
+            def inner(stream_id=0):
                 s.receive_frame(in_frames.pop(0))
             return inner
 
@@ -1447,11 +1527,23 @@ class TestUtilities(object):
         with pytest.raises(ValueError):
             c._send_cb(d)
 
+
 # Some utility classes for the tests.
 class NullEncoder(object):
     @staticmethod
     def encode(headers):
-        return '\n'.join("%s%s" % (name, val) for name, val in headers)
+        
+        def to_str(v):
+            if is_py2:
+                return str(v)
+            else:
+                if not isinstance(v, str):
+                    v = str(v, 'utf-8')
+                return v
+
+        return '\n'.join("%s%s" % (to_str(name), to_str(val)) 
+                         for name, val in headers)
+
 
 class FixedDecoder(object):
     def __init__(self, result):
@@ -1459,6 +1551,7 @@ class FixedDecoder(object):
 
     def decode(self, headers):
         return self.result
+
 
 class DummySocket(object):
     def __init__(self):
