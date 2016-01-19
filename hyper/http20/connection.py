@@ -28,6 +28,9 @@ import socket
 
 log = logging.getLogger(__name__)
 
+DEFAULT_WINDOW_SIZE = 65535
+
+
 class HTTP20Connection(object):
     """
     An object representing a single HTTP/2 connection to a server.
@@ -137,7 +140,7 @@ class HTTP20Connection(object):
 
         # Values for the settings used on an HTTP/2 connection.
         self._settings = {
-            SettingsFrame.INITIAL_WINDOW_SIZE: 65535,
+            SettingsFrame.INITIAL_WINDOW_SIZE: DEFAULT_WINDOW_SIZE,
             SettingsFrame.SETTINGS_MAX_FRAME_SIZE: FRAME_MAX_LEN,
         }
 
@@ -513,9 +516,9 @@ class HTTP20Connection(object):
         s = Stream(
             stream_id or self.next_stream_id, self._send_cb, self._recv_cb,
             self._close_stream, self.encoder, self.decoder,
-            self.__wm_class(window_size), local_closed
+            self.__wm_class(DEFAULT_WINDOW_SIZE), local_closed
         )
-        s._out_flow_control_window = self._out_flow_control_window
+        s._out_flow_control_window = window_size
         self.streams[s.stream_id] = s
         self.next_stream_id += 2
 
