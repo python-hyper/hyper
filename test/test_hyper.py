@@ -335,6 +335,22 @@ class TestHyperConnection(object):
         assert f2.stream_id == 0
         assert f2.flags == set(['ACK'])
 
+    def test_connections_handle_resizing_initial_window_size(self):
+        sock = DummySocket()
+        f = SettingsFrame(0)
+        f.settings[SettingsFrame.INITIAL_WINDOW_SIZE] = 256
+        c = HTTP20Connection('www.google.com')
+        c._sock = sock
+
+        # 'Receive' the SETTINGS frame.
+        c.receive_frame(f)
+
+        # Open a new stream.
+        c.request('GET', '/')
+
+        # Confirm that the stream has the correct window size.
+        assert c.streams[1]._out_flow_control_window == 256
+
     def test_connections_handle_too_small_max_frame_size_properly(self):
         sock = DummySocket()
         f = SettingsFrame(0)
