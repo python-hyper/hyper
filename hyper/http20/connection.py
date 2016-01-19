@@ -59,7 +59,7 @@ class HTTP20Connection(object):
         If not provided then hyper's default ``SSLContext`` is used instead.
     :param proxy_host: (optional) The proxy to connect to.  This can be an IP address
         or a host name and may include a port.
-    :param proxy_port: (optional) The proxy port to connect to. If not provided 
+    :param proxy_port: (optional) The proxy port to connect to. If not provided
         and one also isn't provided in the ``proxy`` parameter, defaults to 8080.
     """
     def __init__(self, host, port=None, secure=None, window_manager=None, enable_push=False,
