@@ -15,11 +15,18 @@ except ImportError:
     # TODO log?
     ssl_compat = None
 
+try:
+    import google.appengine
+    is_appengine = True
+except ImportError:
+    is_appengine = False
+
 _ver = sys.version_info
 is_py2 = _ver[0] == 2
 is_py2_7_9_or_later = _ver[0] >= 2 and _ver[1] >= 7 and _ver[2] >= 9
 is_py3 = _ver[0] == 3
 is_py3_3 = is_py3 and _ver[1] == 3
+
 
 @contextmanager
 def ignore_missing():
@@ -31,6 +38,9 @@ def ignore_missing():
 if is_py2:
     if is_py2_7_9_or_later:
         import ssl
+    elif is_appengine:
+        from . import ssl_compat_appengine
+        ssl = ssl_compat_appengine
     else:
         ssl = ssl_compat
 
