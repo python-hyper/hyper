@@ -10,6 +10,7 @@ from ..common.exceptions import ConnectionResetError
 from ..common.bufsocket import BufferedSocket
 from ..common.headers import HTTPHeaderMap
 from ..common.util import to_host_port_tuple, to_native_string
+from ..compat import is_appengine
 from ..packages.hyperframe.frame import (
     FRAMES, DataFrame, HeadersFrame, PushPromiseFrame, RstStreamFrame,
     SettingsFrame, Frame, WindowUpdateFrame, GoAwayFrame, PingFrame,
@@ -254,7 +255,10 @@ class HTTP20Connection(object):
                 proto = H2C_PROTOCOL
 
             log.debug("Selected NPN protocol: %s", proto)
-            assert proto in H2_NPN_PROTOCOLS or proto == H2C_PROTOCOL
+            # AppEngine SSLSocket does not have selected_npn_protocol nor
+            # selected_alpn_protocol, so just avoid this assertion.
+            assert is_appengine or (
+                proto in H2_NPN_PROTOCOLS or proto == H2C_PROTOCOL)
 
             self._sock = BufferedSocket(sock, self.network_buffer_size)
 
