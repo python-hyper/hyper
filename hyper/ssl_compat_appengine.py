@@ -38,8 +38,12 @@ class SSLContext(object):
 
     def wrap_socket(self, sock, server_side=False, do_handshake_on_connect=True,
                     suppress_ragged_eofs=True, server_hostname=None):
-        return ssl.wrap_socket(
+        sock = ssl.wrap_socket(
             sock, server_side=server_side, cert_reqs=self.verify_mode,
             ssl_version=self.protocol_version, ca_certs=self.custom_ca_cert,
             suppress_ragged_eofs=suppress_ragged_eofs,
             do_handshake_on_connect=do_handshake_on_connect)
+        # AppEngine SSLSocket does not have selected_npn_protocol, a hacky
+        # solution to return a dummy data.
+        sock.selected_npn_protocol = lambda: 'h2'
+        return sock
