@@ -54,7 +54,7 @@ class TestAppengineSocket(SocketLevelTest):
         context.load_verify_locations('test/certs/server.crt')
         sock = socket.create_connection(
             (self.server_thread.host, self.server_thread.port))
-        ssl_sock = context.wrap_socket(sock)
+        ssl_sock = context.wrap_socket(sock, do_handshake_on_connect=False)
         assert ssl_sock.selected_npn_protocol() == 'h2'
         ssl_sock.close()
         self.tear_down()
