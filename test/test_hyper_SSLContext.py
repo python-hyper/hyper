@@ -39,5 +39,5 @@ class TestHyperSSLContext(object):
         context.load_cert_chain(
             certfile=CLIENT_CERT_FILE,
             keyfile=CLIENT_KEY_FILE,
-            password='abc123'
+            password=b'abc123'
         )
