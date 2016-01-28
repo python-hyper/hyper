@@ -36,11 +36,11 @@ def ignore_missing():
         pass
 
 if is_py2:
-    if is_py2_7_9_or_later:
-        import ssl
-    elif is_appengine:
+    if is_appengine:
         from . import ssl_compat_appengine
         ssl = ssl_compat_appengine
+    elif is_py2_7_9_or_later:
+        import ssl
     else:
         ssl = ssl_compat
 
