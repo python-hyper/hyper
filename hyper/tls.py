@@ -24,7 +24,7 @@ _context = None
 cert_loc = path.join(path.dirname(__file__), 'certs.pem')
 
 
-def wrap_socket(sock, server_hostname, ssl_context=None):
+def wrap_socket(sock, server_hostname, ssl_context=None, force_proto=None):
     """
     A vastly simplified SSL wrapping function. We'll probably extend this to
     do more things later.
@@ -49,16 +49,19 @@ def wrap_socket(sock, server_hostname, ssl_context=None):
         except AttributeError:
             ssl.verify_hostname(ssl_sock, server_hostname)  # pyopenssl
 
-    proto = None
+    if force_proto != None:
+        proto = force_proto
+    else:
+        proto = None
 
-    # ALPN is newer, so we prefer it over NPN. The odds of us getting different
-    # answers is pretty low, but let's be sure.
-    with ignore_missing():
-        proto = ssl_sock.selected_alpn_protocol()
+        # ALPN is newer, so we prefer it over NPN. The odds of us getting
+        # different answers is pretty low, but let's be sure.
+        with ignore_missing():
+            proto = ssl_sock.selected_alpn_protocol()
 
-    with ignore_missing():
-        if proto is None:
-            proto = ssl_sock.selected_npn_protocol()
+        with ignore_missing():
+            if proto is None:
+                proto = ssl_sock.selected_npn_protocol()
 
     return (ssl_sock, proto)
 

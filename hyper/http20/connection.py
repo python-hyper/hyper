@@ -66,7 +66,8 @@ class HTTP20Connection(object):
         and one also isn't provided in the ``proxy`` parameter, defaults to 8080.
     """
     def __init__(self, host, port=None, secure=None, window_manager=None, enable_push=False,
-                 ssl_context=None, proxy_host=None, proxy_port=None, **kwargs):
+                 ssl_context=None, proxy_host=None, proxy_port=None,
+                 force_proto=None, **kwargs):
         """
         Creates an HTTP/2 connection to a specific server.
         """
@@ -100,6 +101,8 @@ class HTTP20Connection(object):
         #: size to improve performance: decrease it to conserve memory.
         #: Defaults to 64kB.
         self.network_buffer_size = 65536
+
+        self.force_proto = force_proto
 
         # Create the mutable state.
         self.__wm_class = window_manager or FlowControlManager
@@ -249,7 +252,8 @@ class HTTP20Connection(object):
 
             if self.secure:
                 assert not self.proxy_host, "Using a proxy with HTTPS not yet supported."
-                sock, proto = wrap_socket(sock, host, self.ssl_context)
+                sock, proto = wrap_socket(sock, host, self.ssl_context,
+                                          force_proto=self.force_proto)
             else:
                 proto = H2C_PROTOCOL
 
