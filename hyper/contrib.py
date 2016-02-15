@@ -28,21 +28,35 @@ class HTTP20Adapter(HTTPAdapter):
         #: A mapping between HTTP netlocs and ``HTTP20Connection`` objects.
         self.connections = {}
 
-    def get_connection(self, host, port, scheme):
+    def get_connection(self, host, port, scheme, cert=None):
         """
-        Gets an appropriate HTTP/2 connection object based on host/port/scheme
-        tuples.
+        Gets an appropriate HTTP/2 connection object based on
+        host/port/scheme/cert tuples.
         """
         secure = (scheme == 'https')
 
         if port is None:  # pragma: no cover
             port = 80 if not secure else 443
 
+        ssl_context = None
+
+        if cert is not None:
+            ssl_context = init_context()
+            try:
+                basestring
+            except NameError:
+                basestring = str
+            if not isinstance(cert, basestring):
+                ssl_context.load_cert_chain(cert[0], cert[1])
+            else:
+                ssl_context.load_cert_chain(cert)
+
         try:
-            conn = self.connections[(host, port, scheme)]
+            conn = self.connections[(host, port, scheme, cert)]
         except KeyError:
-            conn = HTTPConnection(host, port, secure=secure)
-            self.connections[(host, port, scheme)] = conn
+            conn = HTTPConnection(host, port, secure=secure,
+                                  ssl_context=ssl_context)
+            self.connections[(host, port, scheme, cert)] = conn
 
         return conn
 
@@ -51,8 +65,8 @@ class HTTP20Adapter(HTTPAdapter):
         Sends a HTTP message to the server.
         """
         parsed = urlparse(request.url)
-
-        conn = self.get_connection(parsed.hostname, parsed.port, parsed.scheme)
+        conn = self.get_connection(parsed.hostname, parsed.port, parsed.scheme,
+                                   cert=kwargs.get('cert'))
 
         # Build the selector.
         selector = parsed.path
