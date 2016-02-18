@@ -175,6 +175,8 @@ class HTTP20Connection(object):
 
         default_headers = (':method', ':scheme', ':authority', ':path')
         for name, value in headers.items():
+            # rewrite to default headers format
+            name = ':' + name
             is_default = to_native_string(name) in default_headers
             self.putheader(name, value, stream_id, replace=is_default)
 
