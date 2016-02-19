@@ -31,7 +31,7 @@ script:
         if [[ $TRAVIS_PYTHON_VERSION == pypy ]]; then
           py.test test/
         else
-          py.test --cov hyper test/
+          py.test -n 1 --cov hyper test/
           coverage report -m --fail-under 100
         fi
       fi
