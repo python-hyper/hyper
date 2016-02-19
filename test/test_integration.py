@@ -91,13 +91,13 @@ class TestHyperIntegration(SocketLevelTest):
             f = SettingsFrame(0)
             sock.send(f.serialize())
 
-            send_event.wait()
+            send_event.set()
             sock.close()
 
         self._start_server(socket_handler)
         conn = self.get_connection()
         conn.connect()
-        send_event.set()
+        send_event.wait(5)
 
         assert data[0] == b'PRI * HTTP/2.0\r\n\r\nSM\r\n\r\n'
 
@@ -125,13 +125,13 @@ class TestHyperIntegration(SocketLevelTest):
             f = SettingsFrame(0)
             sock.send(f.serialize())
 
-            send_event.wait()
+            send_event.set()
             sock.close()
 
         self._start_server(socket_handler)
         conn = self.get_connection()
         conn.connect()
-        send_event.set()
+        send_event.wait()
 
         # Get the second chunk of data and decode it into a frame.
         data = data[1]
@@ -270,7 +270,7 @@ class TestHyperIntegration(SocketLevelTest):
             sock.send(f.serialize())
 
             # Wait for the message from the main thread.
-            recv_event.wait()
+            recv_event.set()
             sock.close()
 
         self._start_server(socket_handler)
@@ -281,7 +281,7 @@ class TestHyperIntegration(SocketLevelTest):
         # Close the response.
         resp.close()
 
-        recv_event.set()
+        recv_event.wait(5)
 
         assert not conn.streams
 
@@ -307,7 +307,7 @@ class TestHyperIntegration(SocketLevelTest):
             sock.send(f.serialize())
 
             # Wait for the message from the main thread.
-            recv_event.wait()
+            recv_event.set()
             sock.close()
 
         self._start_server(socket_handler)
@@ -323,7 +323,7 @@ class TestHyperIntegration(SocketLevelTest):
         assert resp._stream._in_window_manager.document_size == 0
 
         # Awesome, we're done now.
-        recv_event.set()
+        recv_event.wait(5)
 
         self.tear_down()
 
@@ -360,7 +360,7 @@ class TestHyperIntegration(SocketLevelTest):
             sock.send(f.serialize())
 
             # Wait for the message from the main thread.
-            recv_event.wait()
+            recv_event.set()
             sock.close()
 
         self._start_server(socket_handler)
@@ -383,7 +383,7 @@ class TestHyperIntegration(SocketLevelTest):
         assert len(resp.trailers) == 1
 
         # Awesome, we're done now.
-        recv_event.set()
+        recv_event.wait(5)
 
         self.tear_down()
 
@@ -407,7 +407,7 @@ class TestHyperIntegration(SocketLevelTest):
             sock.send(f.serialize())
 
             # Wait for the message from the main thread.
-            recv_event.wait()
+            recv_event.set()
             sock.close()
 
         self._start_server(socket_handler)
@@ -418,7 +418,7 @@ class TestHyperIntegration(SocketLevelTest):
         assert conn._sock is None
 
         # Awesome, we're done now.
-        recv_event.set()
+        recv_event.wait(5)
 
         self.tear_down()
 
@@ -443,7 +443,7 @@ class TestHyperIntegration(SocketLevelTest):
 
             # Wait for the message from the main thread.
             sock.close()
-            recv_event.wait()
+            recv_event.set()
 
         self._start_server(socket_handler)
         conn = self.get_connection()
@@ -455,7 +455,7 @@ class TestHyperIntegration(SocketLevelTest):
         assert conn._sock is None
 
         # Awesome, we're done now.
-        recv_event.set()
+        recv_event.wait(5)
 
         self.tear_down()
 
@@ -471,7 +471,7 @@ class TestHyperIntegration(SocketLevelTest):
             receive_preamble(sock)
 
             data.append(sock.recv(65535))
-            send_event.wait()
+            send_event.wait(5)
 
             h = HeadersFrame(1)
             h.data = self.get_encoder().encode(
@@ -518,7 +518,7 @@ class TestHyperIntegration(SocketLevelTest):
             receive_preamble(sock)
 
             data.append(sock.recv(65535))
-            send_event.wait()
+            send_event.wait(5)
 
             h = HeadersFrame(1)
             h.data = self.get_encoder().encode(
@@ -581,7 +581,7 @@ class TestHyperIntegration(SocketLevelTest):
             sock.send(f.serialize())
 
             # Wait for the message from the main thread.
-            recv_event.wait()
+            recv_event.wait(5)
             sock.close()
 
         self._start_server(socket_handler)
@@ -626,7 +626,7 @@ class TestHyperIntegration(SocketLevelTest):
                 sock.send(f.serialize())
 
             # Wait for the message from the main thread.
-            recv_event.wait()
+            recv_event.wait(5)
             sock.close()
 
         self._start_server(socket_handler)
@@ -688,7 +688,7 @@ class TestRequestsAdapter(SocketLevelTest):
             d.flags.add('END_STREAM')
             sock.send(d.serialize())
 
-            send_event.wait()
+            send_event.wait(5)
             sock.close()
 
         self._start_server(socket_handler)
@@ -720,7 +720,6 @@ class TestRequestsAdapter(SocketLevelTest):
         monkeypatch.setattr(hyper.http11.connection, 'wrap_socket', wrap)
 
         data = []
-        send_event = threading.Event()
 
         def socket_handler(listener):
             sock = listener.accept()[0]
@@ -742,7 +741,6 @@ class TestRequestsAdapter(SocketLevelTest):
             d.flags.add('END_STREAM')
             sock.send(d.serialize())
 
-            send_event.set()
             sock.close()
 
         self._start_server(socket_handler)
