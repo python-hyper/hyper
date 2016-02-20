@@ -221,6 +221,22 @@ class TestHyperConnection(object):
         assert len(sock.queue) == 2
         assert c._out_flow_control_window == 65535 - len(b'hello')
 
+    def test_request_with_utf8_bytes_body(self):
+        c = HTTP20Connection('www.google.com')
+        c._sock = DummySocket()
+        body = '你好' if is_py2 else '你好'.encode('utf-8')
+        c.request('GET', '/', body=body)
+
+        assert c._out_flow_control_window == 65535 - len(body)
+
+    def test_request_with_unicode_body(self):
+        c = HTTP20Connection('www.google.com')
+        c._sock = DummySocket()
+        body = '你好'.decode('unicode-escape') if is_py2 else '你好'
+        c.request('GET', '/', body=body)
+
+        assert c._out_flow_control_window == 65535 - len(body.encode('utf-8'))
+
     def test_different_request_headers(self):
         sock = DummySocket()
 
