@@ -184,15 +184,28 @@ class HTTPHeaderMap(collections.MutableMapping):
     def replace(self, key, value):
         """
         Replace existing header with new value. If header doesn't exist this
-        method work like ``__setitem__``. Replacing leads to deletion of all 
-        exsiting headers with the same name.
+        method work like ``__setitem__``. Replacing leads to deletion of all
+        existing headers with the same name.
         """
-        try:
-            del self[key]
-        except KeyError:
-            pass
+        key = to_bytestring(key)
+        indices = []
+        for (i, (k, v)) in enumerate(self._items):
+            if _keys_equal(k, key):
+                indices.append(i)
 
-        self[key] = value
+        # If the key isn't present, this is easy: just append and abort early.
+        if not indices:
+            self._items.append((key, value))
+            return
+
+        # Delete all but the first. I swear, this is the correct slicing
+        # syntax!
+        base_index = indices[0]
+        for i in indices[:0:-1]:
+            self._items.pop(i)
+
+        del self._items[base_index]
+        self._items.insert(base_index, (key, value))
 
     def merge(self, other):
         """

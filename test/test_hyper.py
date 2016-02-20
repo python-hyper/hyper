@@ -122,8 +122,8 @@ class TestHyperConnection(object):
         assert list(s.headers.items()) == [
             (b':method', b'GET'),
             (b':scheme', b'https'),
-            (b':path', b'/'),
             (b':authority', b'www.example.org'),
+            (b':path', b'/'),
             (b'name', b'value2'),
         ]
 
@@ -581,7 +581,7 @@ class TestHyperConnection(object):
 
         def consume_single_frame():
             mutable['counter'] += 1
-            
+
         c._consume_single_frame = consume_single_frame
         c._recv_cb()
 
@@ -779,7 +779,7 @@ class TestHyperStream(object):
             (b"name", b"value"),
             (b"other_name", b"other_value")
         ]
-        
+
     def test_stream_opening_sends_headers(self):
         def data_callback(frame):
             assert isinstance(frame, HeadersFrame)
@@ -1548,7 +1548,7 @@ class TestUtilities(object):
 class NullEncoder(object):
     @staticmethod
     def encode(headers):
-        
+
         def to_str(v):
             if is_py2:
                 return str(v)
@@ -1557,7 +1557,7 @@ class NullEncoder(object):
                     v = str(v, 'utf-8')
                 return v
 
-        return '\n'.join("%s%s" % (to_str(name), to_str(val)) 
+        return '\n'.join("%s%s" % (to_str(name), to_str(val))
                          for name, val in headers)
 
 
