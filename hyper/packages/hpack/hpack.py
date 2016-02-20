@@ -223,13 +223,23 @@ class Encoder(object):
         representation: the same is true if they are in the static table.
         Otherwise, a literal representation will be used.
         """
-        log.debug("HPACK encoding %s", headers)
         header_block = []
 
         # Turn the headers into a list of tuples if possible. This is the
         # natural way to interact with them in HPACK.
         if isinstance(headers, dict):
             headers = headers.items()
+
+        # special headers need to come first in the header block
+        headers_helper = []
+        for h in headers:
+            if h[0][0] == ':':
+                headers_helper = [h] + headers_helper
+            else:
+                headers_helper.append(h)
+        headers = headers_helper
+
+        log.debug("HPACK encoding %s", headers)
 
         # Next, walk across the headers and turn them all into bytestrings.
         headers = [(_to_bytes(n), _to_bytes(v)) for n, v in headers]
