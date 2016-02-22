@@ -164,12 +164,14 @@ def set_request_data(args):
     body, headers, params = {}, {}, {}
     for i in args.items:
         if i.sep == SEP_HEADERS:
-            # :key:value case
-            if i.key == '':
-                k, v = i.value.split(':')
-                headers[':' + k] = v
-            else:
+            if i.key:
                 headers[i.key] = i.value
+            else:
+            # when overriding a HTTP/2 special header there will be a leading 
+            # colon, which tricks the command line parser into thinking 
+            # the header is empty
+                k, v = i.value.split(':', 1)
+                headers[':' + k] = v
         elif i.sep == SEP_QUERY:
             params[i.key] = i.value
         elif i.sep == SEP_DATA:
