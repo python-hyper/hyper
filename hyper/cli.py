@@ -164,7 +164,12 @@ def set_request_data(args):
     body, headers, params = {}, {}, {}
     for i in args.items:
         if i.sep == SEP_HEADERS:
-            headers[i.key] = i.value
+            # :key:value case
+            if i.key == '':
+                k, v = i.value.split(':')
+                headers[':' + k] = v
+            else:
+                headers[i.key] = i.value
         elif i.sep == SEP_QUERY:
             params[i.key] = i.value
         elif i.sep == SEP_DATA:
