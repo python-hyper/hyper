@@ -110,11 +110,20 @@ def test_cli_with_system_exit(argv):
      {'method': 'GET', 'url.path': '/?param=test'}),
     (['POST', 'example.com', 'data=test'],
      {'method': 'POST', 'body': '{"data": "test"}'}),
+    (['GET', 'example.com', ':authority:example.org'],
+     {'method': 'GET', 'headers': {
+                            ':authority': 'example.org'}}),
+    (['GET', 'example.com', ':authority:example.org', 'x-test:header'],
+     {'method': 'GET', 'headers': {
+                            ':authority': 'example.org',
+                            'x-test':'header'}}),
 ], ids=[
     'specified "--debug" option',
     'specified host and additional header',
     'specified host and get parameter',
     'specified host and post data',
+    'specified host and override default header',
+    'specified host and override default header and additional header',
 ])
 def test_parse_argument(argv, expected):
     args = parse_argument(argv)
