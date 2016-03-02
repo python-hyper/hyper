@@ -170,6 +170,8 @@ class HTTP20Connection(object):
         # Convert the body to bytes if needed.
         if body and isinstance(body, (unicode, bytes)):
             body = to_bytestring(body)
+            if 'Transfer-Encoding' not in headers.keys():
+                self.putheader('Content-Length', str(len(body)))
 
         self.endheaders(message_body=body, final=True, stream_id=stream_id)
 
