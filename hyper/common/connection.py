@@ -25,7 +25,7 @@ class HTTPConnection(object):
         hostname, and optionally may include a port: for example,
         ``'http2bin.org'``, ``'http2bin.org:443'`` or ``'127.0.0.1'``.
     :param port: (optional) The port to connect to. If not provided and one also
-        isn't provided in the ``host`` parameter, defaults to 443.
+        isn't provided in the ``host`` parameter, defaults to 80.
     :param secure: (optional) Whether the request should use TLS.
         Defaults to ``False`` for most requests, but to ``True`` for any
         request issued to port 443.
@@ -42,7 +42,7 @@ class HTTPConnection(object):
         If not provided then hyper's default ``SSLContext`` is used instead.
     :param proxy_host: (optional) The proxy to connect to.  This can be an IP address
         or a host name and may include a port.
-    :param proxy_port: (optional) The proxy port to connect to. If not provided 
+    :param proxy_port: (optional) The proxy port to connect to. If not provided
         and one also isn't provided in the ``proxy`` parameter, defaults to 8080.
     """
     def __init__(self,
@@ -59,12 +59,12 @@ class HTTPConnection(object):
         self._host = host
         self._port = port
         self._h1_kwargs = {
-            'secure': secure, 'ssl_context': ssl_context, 
-            'proxy_host': proxy_host, 'proxy_port': proxy_port 
+            'secure': secure, 'ssl_context': ssl_context,
+            'proxy_host': proxy_host, 'proxy_port': proxy_port
         }
         self._h2_kwargs = {
             'window_manager': window_manager, 'enable_push': enable_push,
-            'secure': secure, 'ssl_context': ssl_context, 
+            'secure': secure, 'ssl_context': ssl_context,
             'proxy_host': proxy_host, 'proxy_port': proxy_port
         }
 
