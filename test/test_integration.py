@@ -11,15 +11,16 @@ import threading
 import hyper
 import hyper.http11.connection
 import pytest
+from h2.frame_buffer import FrameBuffer
 from hyper.compat import ssl
 from hyper.contrib import HTTP20Adapter
-from hyper.packages.hyperframe.frame import (
+from hyperframe.frame import (
     Frame, SettingsFrame, WindowUpdateFrame, DataFrame, HeadersFrame,
     GoAwayFrame, RstStreamFrame
 )
-from hyper.packages.hpack.hpack import Encoder
-from hyper.packages.hpack.huffman import HuffmanEncoder
-from hyper.packages.hpack.huffman_constants import (
+from hpack.hpack import Encoder
+from hpack.huffman import HuffmanEncoder
+from hpack.huffman_constants import (
     REQUEST_CODES, REQUEST_CODES_LENGTH
 )
 from hyper.http20.exceptions import ConnectionError, StreamResetError
@@ -52,6 +53,13 @@ def build_headers_frame(headers, encoder=None):
     return f
 
 
+@pytest.fixture
+def frame_buffer():
+    buffer = FrameBuffer()
+    buffer.max_frame_size = 65535
+    return buffer
+
+
 def receive_preamble(sock):
     # Receive the HTTP/2 'preamble'.
     first = sock.recv(65535)
@@ -80,12 +88,9 @@ class TestHyperIntegration(SocketLevelTest):
         def socket_handler(listener):
             sock = listener.accept()[0]
 
-            # We should get two packets: one connection header string, one
-            # SettingsFrame.
+            # We should get one big chunk.
             first = sock.recv(65535)
-            second = sock.recv(65535)
             data.append(first)
-            data.append(second)
 
             # We need to send back a SettingsFrame.
             f = SettingsFrame(0)
@@ -99,11 +104,11 @@ class TestHyperIntegration(SocketLevelTest):
         conn.connect()
         send_event.wait(5)
 
-        assert data[0] == b'PRI * HTTP/2.0\r\n\r\nSM\r\n\r\n'
+        assert data[0].startswith(b'PRI * HTTP/2.0\r\n\r\nSM\r\n\r\n')
 
         self.tear_down()
 
-    def test_initial_settings(self):
+    def test_initial_settings(self, frame_buffer):
         self.set_up()
 
         # Confirm that we send the connection upgrade string and the initial
@@ -114,12 +119,9 @@ class TestHyperIntegration(SocketLevelTest):
         def socket_handler(listener):
             sock = listener.accept()[0]
 
-            # We should get two packets: one connection header string, one
-            # SettingsFrame.
+            # We get one big chunk.
             first = sock.recv(65535)
-            second = sock.recv(65535)
             data.append(first)
-            data.append(second)
 
             # We need to send back a SettingsFrame.
             f = SettingsFrame(0)
@@ -133,9 +135,13 @@ class TestHyperIntegration(SocketLevelTest):
         conn.connect()
         send_event.wait()
 
-        # Get the second chunk of data and decode it into a frame.
-        data = data[1]
-        f = decode_frame(data)
+        # Get the chunk of data after the preamble and decode it into frames.
+        # We actually expect two, but only the second one contains ENABLE_PUSH.
+        preamble_size = len(b'PRI * HTTP/2.0\r\n\r\nSM\r\n\r\n')
+        data = data[0][preamble_size:]
+        frame_buffer.add_data(data)
+        frames = list(frame_buffer)
+        f = frames[1]
 
         assert isinstance(f, SettingsFrame)
         assert f.stream_id == 0
@@ -153,8 +159,7 @@ class TestHyperIntegration(SocketLevelTest):
         def socket_handler(listener):
             sock = listener.accept()[0]
 
-            # Dispose of the first two packets.
-            sock.recv(65535)
+            # Dispose of the first packet.
             sock.recv(65535)
 
             # Send a Settings frame that reduces the flow-control window to
@@ -225,12 +230,8 @@ class TestHyperIntegration(SocketLevelTest):
         def socket_handler(listener):
             sock = listener.accept()[0]
 
-            # We should get two packets: one connection header string, one
-            # SettingsFrame.
             first = sock.recv(65535)
-            second = sock.recv(65535)
             data.append(first)
-            data.append(second)
 
             # We need to send back a SettingsFrame.
             f = SettingsFrame(0)
@@ -343,8 +344,11 @@ class TestHyperIntegration(SocketLevelTest):
             receive_preamble(sock)
             sock.recv(65535)
 
-            # Now, send the headers for the response. This response has no body.
-            f = build_headers_frame([(':status', '200'), ('content-length', '0')], e)
+            # Now, send the headers for the response.
+            f = build_headers_frame(
+                [(':status', '200'), ('content-length', '14')],
+                e
+            )
             f.stream_id = 1
             sock.send(f.serialize())
 
@@ -354,7 +358,7 @@ class TestHyperIntegration(SocketLevelTest):
             sock.send(f.serialize())
 
             # Now, send a headers frame again, containing trailing headers.
-            f = build_headers_frame([('trailing', 'sure'), (':res', 'no')], e)
+            f = build_headers_frame([(':res', 'no'), ('trailing', 'sure')], e)
             f.flags.add('END_STREAM')
             f.stream_id = 1
             sock.send(f.serialize())
@@ -371,9 +375,9 @@ class TestHyperIntegration(SocketLevelTest):
         # Confirm the status code.
         assert resp.status == 200
 
-        # Confirm that we can read this, but it has no body.
+        # Confirm that we can read this.
         assert resp.read() == b'have some data'
-        assert resp._stream._in_window_manager.document_size == 0
+        assert resp._stream._in_window_manager.document_size == 14
 
         # Confirm that we got the trailing headers, and that they don't contain
         # reserved headers.
@@ -395,11 +399,9 @@ class TestHyperIntegration(SocketLevelTest):
         def socket_handler(listener):
             sock = listener.accept()[0]
 
-            # We should get two packets: one connection header string, one
-            # SettingsFrame. Rather than respond to the packets, send a GOAWAY
-            # frame with error code 0 indicating clean shutdown.
-            first = sock.recv(65535)
-            second = sock.recv(65535)
+            # We should get one packet. Rather than respond to it, send a
+            # GOAWAY frame with error code 0 indicating clean shutdown.
+            sock.recv(65535)
 
             # Now, send the shut down.
             f = GoAwayFrame(0)
@@ -430,11 +432,9 @@ class TestHyperIntegration(SocketLevelTest):
         def socket_handler(listener):
             sock = listener.accept()[0]
 
-            # We should get two packets: one connection header string, one
-            # SettingsFrame. Rather than respond to the packets, send a GOAWAY
-            # frame with error code 0 indicating clean shutdown.
-            first = sock.recv(65535)
-            second = sock.recv(65535)
+            # We should get one packet. Rather than respond to it, send a
+            # GOAWAY frame with error code 0 indicating clean shutdown.
+            sock.recv(65535)
 
             # Now, send the shut down.
             f = GoAwayFrame(0)
@@ -475,10 +475,11 @@ class TestHyperIntegration(SocketLevelTest):
 
             h = HeadersFrame(1)
             h.data = self.get_encoder().encode(
-                {':status': 200,
-                'Content-Type': 'not/real',
-                'Content-Length': 14,
-                'Server': 'socket-level-server'}
+                [(':status', 200),
+                 ('content-type', 'not/real'),
+                 ('content-length', 14),
+                 ('server', 'socket-level-server')
+                ]
             )
             h.flags.add('END_HEADERS')
             sock.send(h.serialize())
@@ -522,10 +523,11 @@ class TestHyperIntegration(SocketLevelTest):
 
             h = HeadersFrame(1)
             h.data = self.get_encoder().encode(
-                {':status': 200,
-                'Content-Type': 'not/real',
-                'Content-Length': 12,
-                'Server': 'socket-level-server'}
+                [(':status', 200),
+                 ('content-type', 'not/real'),
+                 ('content-length', 12),
+                 ('server', 'socket-level-server')
+                ]
             )
             h.flags.add('END_HEADERS')
             sock.send(h.serialize())
@@ -636,10 +638,10 @@ class TestHyperIntegration(SocketLevelTest):
         # Now, eat the RstStream frames. The first one throws a
         # StreamResetError.
         with pytest.raises(StreamResetError):
-            conn._consume_single_frame()
+            conn._single_read()
 
         # The next should throw no exception.
-        conn._consume_single_frame()
+        conn._single_read()
 
         assert conn.reset_streams == set([1])
 
@@ -680,7 +682,12 @@ class TestRequestsAdapter(SocketLevelTest):
 
             # Respond!
             h = HeadersFrame(1)
-            h.data = self.get_encoder().encode({':status': 200, 'Content-Type': 'not/real', 'Content-Length': 20})
+            h.data = self.get_encoder().encode(
+                [(':status', 200),
+                 ('content-type', 'not/real'),
+                 ('content-length', 20),
+                ]
+            )
             h.flags.add('END_HEADERS')
             sock.send(h.serialize())
             d = DataFrame(1)
@@ -733,7 +740,12 @@ class TestRequestsAdapter(SocketLevelTest):
 
             # Respond!
             h = HeadersFrame(1)
-            h.data = self.get_encoder().encode({':status': 200, 'Content-Type': 'not/real', 'Content-Length': 20})
+            h.data = self.get_encoder().encode(
+                [(':status', 200),
+                 ('content-type', 'not/real'),
+                 ('content-length', 20),
+                ]
+            )
             h.flags.add('END_HEADERS')
             sock.send(h.serialize())
             d = DataFrame(1)

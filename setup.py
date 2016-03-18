@@ -53,7 +53,7 @@ except AttributeError:
 
 
 def resolve_install_requires():
-    basic_dependencies = ['h2~=2.0']
+    basic_dependencies = ['h2~=2.0', 'hyperframe~=3.2']
 
     if py_version == (3, 3):
         basic_dependencies.extend(
@@ -76,8 +76,6 @@ packages = [
     'hyper.common',
     'hyper.http11',
     'hyper.packages',
-    'hyper.packages.hpack',
-    'hyper.packages.hyperframe',
     'hyper.packages.rfc3986'
 ]
 
