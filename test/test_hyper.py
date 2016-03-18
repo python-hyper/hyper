@@ -463,6 +463,28 @@ class TestHyperConnection(object):
         with open(__file__, 'rb') as f:
             assert f.read() == sent_data
 
+    def test_closing_incomplete_stream(self, frame_buffer):
+        # Prepare a socket so we can open a stream.
+        sock = DummySocket()
+        c = HTTP20Connection('www.google.com')
+        c._sock = sock
+
+        # Send a request that involves uploading some data, but don't finish.
+        c.putrequest('POST', '/')
+        c.endheaders(message_body=b'some data', final=False)
+
+        # Close the stream.
+        c.streams[1].close()
+
+        # Get all the frames
+        frame_buffer.add_data(b''.join(sock.queue))
+        frames = list(frame_buffer)
+
+        # The last one should be a RST_STREAM frame.
+        f = frames[-1]
+        assert isinstance(f, RstStreamFrame)
+        assert 1 not in c.streams
+
 
 class TestServerPush(object):
     def setup_method(self, method):
