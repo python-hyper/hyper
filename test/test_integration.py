@@ -718,6 +718,66 @@ class TestHyperIntegration(SocketLevelTest):
 
         self.tear_down()
 
+    def test_read_delayed(self):
+        self.set_up()
+
+        recv_event = threading.Event()
+        wait_event = threading.Event()
+
+        def socket_handler(listener):
+            sock = listener.accept()[0]
+
+            # We get two messages for the connection open and then a HEADERS
+            # frame.
+            receive_preamble(sock)
+            sock.recv(65535)
+
+            # Now, send the headers for the response. This response has a body.
+            f = build_headers_frame([(':status', '200')])
+            f.stream_id = 1
+            sock.send(f.serialize())
+
+            # Send the first two chunks.
+            f = DataFrame(1)
+            f.data = b'hello'
+            sock.sendall(f.serialize())
+            f = DataFrame(1)
+            f.data = b'there'
+            sock.sendall(f.serialize())
+
+            # Now, delay a bit. We want to wait a half a second before we send
+            # the next frame.
+            wait_event.wait(5)
+            time.sleep(0.5)
+            f = DataFrame(1)
+            f.data = b'world'
+            f.flags.add('END_STREAM')
+            sock.sendall(f.serialize())
+
+            # Wait for the message from the main thread.
+            recv_event.set()
+            sock.close()
+
+        self._start_server(socket_handler)
+        conn = self.get_connection()
+        conn.request('GET', '/')
+        resp = conn.get_response()
+
+        # Confirm the status code.
+        assert resp.status == 200
+
+        first_chunk = resp.read(10)
+        wait_event.set()
+        second_chunk = resp.read(5)
+
+        assert first_chunk == b'hellothere'
+        assert second_chunk == b'world'
+
+        # Awesome, we're done now.
+        recv_event.wait(5)
+
+        self.tear_down()
+
 
 class TestRequestsAdapter(SocketLevelTest):
     # This uses HTTP/2.
