@@ -411,6 +411,28 @@ class TestHyperConnection(object):
 
         assert mutable['counter'] == 10
 
+    def test_sending_file(self, frame_buffer):
+        # Prepare a socket so we can open a stream.
+        sock = DummySocket()
+        c = HTTP20Connection('www.google.com')
+        c._sock = sock
+
+        # Send a request that involves uploading a file handle.
+        with open(__file__, 'rb') as f:
+            c.request('GET', '/', body=f)
+
+        # Get all the frames
+        frame_buffer.add_data(b''.join(sock.queue))
+        frames = list(frame_buffer)
+
+        # Reconstruct the file from the sent data.
+        sent_data = b''.join(
+            f.data for f in frames if isinstance(f, DataFrame)
+        )
+
+        with open(__file__, 'rb') as f:
+            assert f.read() == sent_data
+
 
 class TestServerPush(object):
     def setup_method(self, method):

@@ -14,6 +14,7 @@ from ..common.exceptions import ConnectionResetError
 from ..common.bufsocket import BufferedSocket
 from ..common.headers import HTTPHeaderMap
 from ..common.util import to_host_port_tuple, to_native_string, to_bytestring
+from ..compat import unicode, bytes
 from .stream import Stream
 from .response import HTTP20Response, HTTP20Push
 from .window import FlowControlManager
@@ -164,7 +165,7 @@ class HTTP20Connection(object):
             self.putheader(name, value, stream_id, replace=is_default)
 
         # Convert the body to bytes if needed.
-        if body:
+        if body and isinstance(body, (unicode, bytes)):
             body = to_bytestring(body)
 
         self.endheaders(message_body=body, final=True, stream_id=stream_id)
