@@ -276,7 +276,7 @@ class HTTP20Connection(object):
 
         # Send GoAway frame to the server
         try:
-            self._conn.close_connection(error_code)
+            self._conn.close_connection(error_code or 0)
             self._send_cb(self._conn.data_to_send(), True)
         except Exception as e:  # pragma: no cover
             log.warn("GoAway frame could not be sent: %s" % e)
