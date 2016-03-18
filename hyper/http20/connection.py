@@ -547,7 +547,10 @@ class HTTP20Connection(object):
         """
         Called by a stream when it is closing, so that state can be cleared.
         """
-        del self.streams[stream_id]
+        try:
+            del self.streams[stream_id]
+        except KeyError:
+            pass
 
     # The following two methods are the implementation of the context manager
     # protocol.

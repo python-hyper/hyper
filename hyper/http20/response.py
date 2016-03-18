@@ -129,6 +129,10 @@ class HTTP20Response(object):
             if self._stream.response_headers:
                 self.headers.merge(self._stream.response_headers)
 
+        # We're at the end, close the connection.
+        if response_complete:
+            self.close()
+
         return data
 
     def read_chunked(self, decode_content=True):
@@ -154,6 +158,8 @@ class HTTP20Response(object):
 
         if decode_content and self._decompressobj:
             yield self._decompressobj.flush()
+
+        self.close()
 
         return
 

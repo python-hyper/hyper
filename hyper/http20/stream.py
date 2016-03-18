@@ -286,12 +286,10 @@ class Stream(object):
         :param error_code: (optional) The error code to reset the stream with.
         :returns: Nothing.
         """
-        if not self.local_closed:
-            self._conn.end_stream(self.stream_id)
-        else:
+        if not self.remote_closed:
             self._conn.reset_stream(self.stream_id, error_code or 0)
+            self._send_cb(self._conn.data_to_send())
 
-        self._send_cb(self._conn.data_to_send())
         self._close_cb(self.stream_id)
 
     @property
