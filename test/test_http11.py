@@ -782,7 +782,6 @@ class DummySocket(object):
         return memoryview(self._buffer.getvalue()[self._read_counter:])
 
     def advance_buffer(self, amt):
-        print "advance buffer %d" % amt
         self._read_counter += amt
         self._buffer.read(amt)
 
