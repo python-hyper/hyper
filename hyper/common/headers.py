@@ -187,7 +187,7 @@ class HTTPHeaderMap(collections.MutableMapping):
         method work like ``__setitem__``. Replacing leads to deletion of all
         existing headers with the same name.
         """
-        key = to_bytestring(key)
+        key, value = to_bytestring_tuple(key, value)
         indices = []
         for (i, (k, v)) in enumerate(self._items):
             if _keys_equal(k, key):
