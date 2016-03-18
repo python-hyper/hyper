@@ -351,7 +351,7 @@ class TestHyperConnection(object):
         c._sock = DummySocket()
         c._send_cb(f, True) # shouldn't raise an error
 
-    def test_window_increments_appropriately(self, frame_buffer):
+    def test_connection_window_increments_appropriately(self, frame_buffer):
         e = Encoder()
         h = HeadersFrame(1)
         h.data = e.encode([(':status', 200), ('content-type', 'foo/bar')])
@@ -371,6 +371,36 @@ class TestHyperConnection(object):
         c.request('GET', '/')
         resp = c.get_response()
         resp.read()
+
+        frame_buffer.add_data(b''.join(sock.queue))
+        queue = list(frame_buffer)
+        assert len(queue) == 3  # one headers frame, two window update frames.
+        assert isinstance(queue[1], WindowUpdateFrame)
+        assert queue[1].window_increment == len(b'hi there sir')
+        assert isinstance(queue[2], WindowUpdateFrame)
+        assert queue[2].window_increment == len(b'hi there sir again')
+
+    def test_stream_window_increments_appropriately(self, frame_buffer):
+        e = Encoder()
+        h = HeadersFrame(1)
+        h.data = e.encode([(':status', 200), ('content-type', 'foo/bar')])
+        h.flags = set(['END_HEADERS'])
+        d = DataFrame(1)
+        d.data = b'hi there sir'
+        d2 = DataFrame(1)
+        d2.data = b'hi there sir again'
+        #d2.flags = set(['END_STREAM'])
+        sock = DummySocket()
+        sock.buffer = BytesIO(h.serialize() + d.serialize() + d2.serialize())
+
+        c = HTTP20Connection('www.google.com')
+        c._sock = sock
+        c.request('GET', '/')
+        c.streams[1]._in_window_manager.window_size = 1000
+        c.streams[1]._in_window_manager.initial_window_size = 1000
+        resp = c.get_response()
+        resp.read(len(b'hi there sir'))
+        resp.read(len(b'hi there sir again'))
 
         frame_buffer.add_data(b''.join(sock.queue))
         queue = list(frame_buffer)
@@ -917,18 +947,19 @@ class DummySocket(object):
     def __init__(self):
         self.queue = []
         self._buffer = BytesIO()
+        self._read_counter = 0
         self.can_read = False
 
     @property
     def buffer(self):
-        return memoryview(self._buffer.getvalue())
+        return memoryview(self._buffer.getvalue()[self._read_counter:])
 
     @buffer.setter
     def buffer(self, value):
         self._buffer = value
 
     def advance_buffer(self, amt):
-        self._buffer.read(amt)
+        self._read_counter += amt
 
     def send(self, data):
         self.queue.append(data)

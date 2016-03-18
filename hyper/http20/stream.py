@@ -13,6 +13,8 @@ stream is an independent, bi-directional sequence of HTTP headers and data.
 Each stream is identified by a monotonically increasing integer, assigned to
 the stream by the endpoint that initiated the stream.
 """
+from h2.exceptions import StreamClosedError
+
 from ..common.headers import HTTPHeaderMap
 from .exceptions import ProtocolError, StreamResetError
 from .util import h2_safe_headers
@@ -194,7 +196,7 @@ class Stream(object):
         # Append the data to the buffer.
         self.data.append(event.data)
 
-        if increment:
+        if increment and not self.remote_closed:
             self._conn.increment_flow_control_window(
                 increment, stream_id=self.stream_id
             )
