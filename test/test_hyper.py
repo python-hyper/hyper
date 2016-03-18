@@ -960,6 +960,7 @@ class DummySocket(object):
 
     def advance_buffer(self, amt):
         self._read_counter += amt
+        self._buffer.read(amt)
 
     def send(self, data):
         self.queue.append(data)
@@ -967,7 +968,9 @@ class DummySocket(object):
     sendall = send
 
     def recv(self, l):
-        return memoryview(self.buffer.read(l))
+        data = self._buffer.read(l)
+        self._read_counter += len(data)
+        return memoryview(data)
 
     def close(self):
         pass
