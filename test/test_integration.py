@@ -392,6 +392,79 @@ class TestHyperIntegration(SocketLevelTest):
 
         self.tear_down()
 
+    def test_receiving_trailers_before_reading(self):
+        self.set_up()
+
+        recv_event = threading.Event()
+        wait_event = threading.Event()
+
+        def socket_handler(listener):
+            sock = listener.accept()[0]
+
+            e = Encoder()
+            e.huffman_coder = HuffmanEncoder(REQUEST_CODES, REQUEST_CODES_LENGTH)
+
+            # We get two messages for the connection open and then a HEADERS
+            # frame.
+            receive_preamble(sock)
+            sock.recv(65535)
+
+            # Now, send the headers for the response.
+            f = build_headers_frame(
+                [(':status', '200'), ('content-length', '14')],
+                e
+            )
+            f.stream_id = 1
+            sock.send(f.serialize())
+
+            # Also send a data frame.
+            f = DataFrame(1)
+            f.data = b'have some data'
+            sock.send(f.serialize())
+
+            # Wait for the main thread to signal that it wants the trailers,
+            # then delay slightly.
+            wait_event.wait(5)
+            time.sleep(0.5)
+
+            # Now, send a headers frame again, containing trailing headers.
+            f = build_headers_frame([(':res', 'no'), ('trailing', 'sure')], e)
+            f.flags.add('END_STREAM')
+            f.stream_id = 1
+            sock.send(f.serialize())
+
+            # Wait for the message from the main thread.
+            recv_event.set()
+            sock.close()
+
+        self._start_server(socket_handler)
+        conn = self.get_connection()
+        conn.request('GET', '/')
+        resp = conn.get_response()
+
+        # Confirm the status code.
+        assert resp.status == 200
+
+        # Ask for the trailers.
+        wait_event.set()
+
+        # Confirm that we got the trailing headers, and that they don't contain
+        # reserved headers. More importantly, check the trailers *first*,
+        # before we read from the stream.
+        assert resp.trailers['trailing'] == [b'sure']
+        assert resp.trailers.get(':res') is None
+        assert len(resp.headers) == 1
+        assert len(resp.trailers) == 1
+
+        # Confirm that the stream is still readable.
+        assert resp.read() == b'have some data'
+        assert resp._stream._in_window_manager.document_size == 14
+
+        # Awesome, we're done now.
+        recv_event.wait(5)
+
+        self.tear_down()
+
     def test_clean_shut_down(self):
         self.set_up()
 
