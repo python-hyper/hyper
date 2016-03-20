@@ -65,8 +65,4 @@ Exceptions
 
 .. autoclass:: hyper.http20.exceptions.HTTP20Error
 
-.. autoclass:: hyper.http20.exceptions.HPACKEncodingError
-
-.. autoclass:: hyper.http20.exceptions.HPACKDecodingError
-
 .. autoclass:: hyper.http20.exceptions.ConnectionError
