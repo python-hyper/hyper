@@ -7,9 +7,6 @@ from hyperframe.frame import (
 )
 from hpack.hpack_compat import Encoder, Decoder
 from hyper.http20.connection import HTTP20Connection
-from hyper.http20.stream import (
-    Stream, STATE_HALF_CLOSED_LOCAL, STATE_OPEN, MAX_CHUNK, STATE_CLOSED
-)
 from hyper.http20.response import HTTP20Response, HTTP20Push
 from hyper.http20.exceptions import (
     HPACKDecodingError, HPACKEncodingError, ProtocolError, ConnectionError,
