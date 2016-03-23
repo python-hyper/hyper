@@ -9,6 +9,7 @@ hitting the network, so that's alright.
 import requests
 import threading
 import time
+import socket
 import hyper
 import hyper.http11.connection
 import pytest
@@ -25,6 +26,7 @@ from hpack.huffman_constants import (
     REQUEST_CODES, REQUEST_CODES_LENGTH
 )
 from hyper.http20.exceptions import ConnectionError, StreamResetError
+from hyper.tls import wrap_socket
 from server import SocketLevelTest
 
 # Turn off certificate verification for the tests.
@@ -72,6 +74,31 @@ def receive_preamble(sock):
     sock.send(SettingsFrame(0).serialize())
     sock.recv(65535)
     return
+
+
+class TestBasicSocketManipulation(SocketLevelTest):
+    # These aren't HTTP/2 tests, but it doesn't hurt to leave it.
+    h2 = True
+
+    def test_connection_string(self):
+        self.set_up()
+        evt = threading.Event()
+
+        def socket_handler(listener):
+            sock = listener.accept()[0]
+
+            evt.wait(5)
+            sock.close()
+
+        self._start_server(socket_handler)
+        s = socket.create_connection((self.host, self.port))
+        s, proto = wrap_socket(s, "localhost", force_proto=b"test")
+        s.close()
+        evt.set()
+
+        assert proto == b"test"
+
+        self.tear_down()
 
 
 class TestHyperIntegration(SocketLevelTest):
