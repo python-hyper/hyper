@@ -96,6 +96,7 @@ class BaseFlowControlManager(object):
         :returns: The amount to increase the receive window by. Return zero if
           the window should not be increased.
         """
+        # TODO: Is this method necessary?
         raise NotImplementedError(
             "FlowControlManager is an abstract base class"
         )

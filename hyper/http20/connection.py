@@ -5,17 +5,16 @@ hyper/http20/connection
 
 Objects that build hyper's connection-level HTTP/2 abstraction.
 """
+import h2.connection
+import h2.events
+import h2.settings
+
 from ..tls import wrap_socket, H2_NPN_PROTOCOLS, H2C_PROTOCOL
 from ..common.exceptions import ConnectionResetError
 from ..common.bufsocket import BufferedSocket
 from ..common.headers import HTTPHeaderMap
 from ..common.util import to_host_port_tuple, to_native_string, to_bytestring
-from ..packages.hyperframe.frame import (
-    FRAMES, DataFrame, HeadersFrame, PushPromiseFrame, RstStreamFrame,
-    SettingsFrame, Frame, WindowUpdateFrame, GoAwayFrame, PingFrame,
-    BlockedFrame, FRAME_MAX_LEN, FRAME_MAX_ALLOWED_LEN
-)
-from ..packages.hpack.hpack_compat import Encoder, Decoder
+from ..compat import unicode, bytes
 from .stream import Stream
 from .response import HTTP20Response, HTTP20Push
 from .window import FlowControlManager
@@ -121,6 +120,8 @@ class HTTP20Connection(object):
         users should be strongly discouraged from messing about with connection
         objects themselves.
         """
+        self._conn = h2.connection.H2Connection()
+
         # Streams are stored in a dictionary keyed off their stream IDs. We
         # also save the most recent one for easy access without having to walk
         # the dictionary.
@@ -132,23 +133,8 @@ class HTTP20Connection(object):
         self.next_stream_id = 1
         self.reset_streams = set()
 
-        # Header encoding/decoding is at the connection scope, so we embed a
-        # header encoder and a decoder. These get passed to child stream
-        # objects.
-        self.encoder = Encoder()
-        self.decoder = Decoder()
-
-        # Values for the settings used on an HTTP/2 connection.
-        self._settings = {
-            SettingsFrame.INITIAL_WINDOW_SIZE: DEFAULT_WINDOW_SIZE,
-            SettingsFrame.SETTINGS_MAX_FRAME_SIZE: FRAME_MAX_LEN,
-        }
-
         # The socket used to send data.
         self._sock = None
-
-        # The inbound and outbound flow control windows.
-        self._out_flow_control_window = 65535
 
         # Instantiate a window manager.
         self.window_manager = self.__wm_class(65535)
@@ -179,7 +165,7 @@ class HTTP20Connection(object):
             self.putheader(name, value, stream_id, replace=is_default)
 
         # Convert the body to bytes if needed.
-        if body:
+        if body and isinstance(body, (unicode, bytes)):
             body = to_bytestring(body)
 
         self.endheaders(message_body=body, final=True, stream_id=stream_id)
@@ -268,10 +254,11 @@ class HTTP20Connection(object):
         """
         # We need to send the connection header immediately on this
         # connection, followed by an initial settings frame.
-        self._sock.send(b'PRI * HTTP/2.0\r\n\r\nSM\r\n\r\n')
-        f = SettingsFrame(0)
-        f.settings[SettingsFrame.ENABLE_PUSH] = int(self._enable_push)
-        self._send_cb(f)
+        self._conn.initiate_connection()
+        self._conn.update_settings(
+            {h2.settings.ENABLE_PUSH: int(self._enable_push)}
+        )
+        self._sock.sendall(self._conn.data_to_send())
 
         # The server will also send an initial settings frame, so get it.
         self._recv_cb()
@@ -290,7 +277,8 @@ class HTTP20Connection(object):
 
         # Send GoAway frame to the server
         try:
-            self._send_cb(GoAwayFrame(0), True)
+            self._conn.close_connection(error_code or 0)
+            self._send_cb(self._conn.data_to_send(), True)
         except Exception as e:  # pragma: no cover
             log.warn("GoAway frame could not be sent: %s" % e)
 
@@ -372,13 +360,14 @@ class HTTP20Connection(object):
 
         stream = self._get_stream(stream_id)
 
-        # Close this if we've been told no more data is coming and we don't
-        # have any to send.
-        stream.open(final and message_body is None)
+        headers_only = (message_body is None and final)
+        stream.send_headers(headers_only)
 
         # Send whatever data we have.
         if message_body is not None:
             stream.send_data(message_body, final)
+
+        self._send_cb(self._conn.data_to_send())
 
         return
 
@@ -401,181 +390,32 @@ class HTTP20Connection(object):
 
         return
 
-    def receive_frame(self, frame):
-        """
-        Handles receiving frames intended for the stream.
-        """
-        if frame.type == WindowUpdateFrame.type:
-            self._out_flow_control_window += frame.window_increment
-        elif frame.type == PingFrame.type:
-            if 'ACK' not in frame.flags:
-                # The spec requires us to reply with PING+ACK and identical data.
-                p = PingFrame(0)
-                p.flags.add('ACK')
-                p.opaque_data = frame.opaque_data
-                self._send_cb(p, True)
-        elif frame.type == SettingsFrame.type:
-            if 'ACK' not in frame.flags:
-                self._update_settings(frame)
-
-                # When the setting containing the max frame size value is out
-                # of range, the spec dictates to tear down the connection.
-                # Therefore we make sure the socket is still alive before
-                # returning the ack.
-                if self._sock is not None:
-                    f = SettingsFrame(0)
-                    f.flags.add('ACK')
-                    self._send_cb(f)
-        elif frame.type == GoAwayFrame.type:
-            # If we get GoAway with error code zero, we are doing a graceful
-            # shutdown and all is well. Otherwise, throw an exception.
-            self.close()
-
-            # If an error occured, try to read the error description from
-            # code registry otherwise use the frame's additional data.
-            if frame.error_code != 0:
-                try:
-                    name, number, description = errors.get_data(
-                        frame.error_code
-                    )
-                except ValueError:
-                    error_string = (
-                        "Encountered error code %d, extra data %s" %
-                        (frame.error_code, frame.additional_data)
-                    )
-                else:
-                    error_string = (
-                        "Encountered error %s %s: %s" %
-                        (name, number, description)
-                    )
-
-                raise ConnectionError(error_string)
-
-        elif frame.type == BlockedFrame.type:
-            increment = self.window_manager._blocked()
-            if increment:
-                f = WindowUpdateFrame(0)
-                f.window_increment = increment
-                self._send_cb(f, True)
-        elif frame.type in FRAMES:
-            # This frame isn't valid at this point.
-            raise ValueError("Unexpected frame %s." % frame)
-        else:  # pragma: no cover
-            # Unexpected frames belong to extensions. Just drop it on the
-            # floor, but log so that users know that something happened.
-            log.warning("Received unknown frame, type %d", frame.type)
-            pass
-
-    def _update_settings(self, frame):
-        """
-        Handles the data sent by a settings frame.
-        """
-        if SettingsFrame.HEADER_TABLE_SIZE in frame.settings:
-            new_size = frame.settings[SettingsFrame.HEADER_TABLE_SIZE]
-
-            self._settings[SettingsFrame.HEADER_TABLE_SIZE] = new_size
-            self.encoder.header_table_size = new_size
-
-        if SettingsFrame.INITIAL_WINDOW_SIZE in frame.settings:
-            newsize = frame.settings[SettingsFrame.INITIAL_WINDOW_SIZE]
-            oldsize = self._settings[SettingsFrame.INITIAL_WINDOW_SIZE]
-            delta = newsize - oldsize
-
-            for stream in self.streams.values():
-                stream._out_flow_control_window += delta
-
-            # Update the connection window size.
-            self._out_flow_control_window += delta
-
-            self._settings[SettingsFrame.INITIAL_WINDOW_SIZE] = newsize
-
-        if SettingsFrame.SETTINGS_MAX_FRAME_SIZE in frame.settings:
-            new_size = frame.settings[SettingsFrame.SETTINGS_MAX_FRAME_SIZE]
-            if FRAME_MAX_LEN <= new_size <= FRAME_MAX_ALLOWED_LEN:
-                self._settings[SettingsFrame.SETTINGS_MAX_FRAME_SIZE] = (
-                    new_size
-                )
-            else:
-                log.warning(
-                    "Frame size %d is outside of allowed range",
-                    new_size
-                )
-
-                # Tear the connection down with error code PROTOCOL_ERROR
-                self.close(1)
-                error_string = (
-                    "Advertised frame size %d is outside of range" % (new_size)
-                )
-                raise ConnectionError(error_string)
-
     def _new_stream(self, stream_id=None, local_closed=False):
         """
         Returns a new stream object for this connection.
         """
-        window_size = self._settings[SettingsFrame.INITIAL_WINDOW_SIZE]
         s = Stream(
-            stream_id or self.next_stream_id, self._send_cb, self._recv_cb,
-            self._close_stream, self.encoder, self.decoder,
-            self.__wm_class(DEFAULT_WINDOW_SIZE), local_closed
+            stream_id or self.next_stream_id,
+            self.__wm_class(DEFAULT_WINDOW_SIZE),
+            self._conn,
+            self._send_cb,
+            self._recv_cb,
+            self._stream_close_cb,
         )
-        s._out_flow_control_window = window_size
+        s.local_closed = local_closed
         self.streams[s.stream_id] = s
         self.next_stream_id += 2
 
         return s
 
-    def _close_stream(self, stream_id, error_code=None):
-        """
-        Called by a stream when it would like to be 'closed'.
-        """
-        # Graceful shutdown of streams involves not emitting an error code
-        # at all.
-        if error_code:
-            self._send_rst_frame(stream_id, error_code)
-        else:
-            # Just delete the stream.
-            try:
-                del self.streams[stream_id]
-            except KeyError as e:  # pragma: no cover
-                log.warn(
-                    "Stream with id %d does not exist: %s",
-                    stream_id, e)
-
-    def _send_cb(self, frame, tolerate_peer_gone=False):
+    def _send_cb(self, data, tolerate_peer_gone=False):
         """
         This is the callback used by streams to send data on the connection.
 
-        It expects to receive a single frame, and then to serialize that frame
-        and send it on the connection. It does so obeying the connection-level
-        flow-control principles of HTTP/2.
+        This acts as a dumb wrapper around the socket send method.
         """
-        # Maintain our outgoing flow-control window.
-        if frame.type == DataFrame.type:
-            # If we don't have room in the flow control window, we need to look
-            # for a Window Update frame.
-            while self._out_flow_control_window < len(frame.data):
-                self._recv_cb()
-
-            self._out_flow_control_window -= len(frame.data)
-
-        data = frame.serialize()
-
-        max_frame_size = self._settings[SettingsFrame.SETTINGS_MAX_FRAME_SIZE]
-        if frame.body_len > max_frame_size:
-            raise ValueError(
-                     "Frame size %d exceeds maximum frame size setting %d" %
-                     (frame.body_len,
-                      self._settings[SettingsFrame.SETTINGS_MAX_FRAME_SIZE])
-            )
-
-        log.info(
-            "Sending frame %s on stream %d",
-            frame.__class__.__name__,
-            frame.stream_id
-        )
-
         try:
-            self._sock.send(data)
+            self._sock.sendall(data)
         except socket.error as e:
             if (not tolerate_peer_gone or
                 e.errno not in (errno.EPIPE, errno.ECONNRESET)):
@@ -589,142 +429,97 @@ class HTTP20Connection(object):
         increment = self.window_manager._handle_frame(frame_len)
 
         if increment:
-            f = WindowUpdateFrame(0)
-            f.window_increment = increment
-            self._send_cb(f, True)
+            self._conn.increment_flow_control_window(increment)
+            self._send_cb(self._conn.data_to_send(), True)
 
         return
 
-    def _consume_single_frame(self):
+    def _single_read(self):
         """
-        Consumes a single frame from the TCP stream.
-
-        Right now this method really does a bit too much: it shouldn't be
-        responsible for determining if a frame is valid or to increase the
-        flow control window.
+        Performs a single read from the socket and hands the data off to the
+        h2 connection object.
         """
-        # Begin by reading 9 bytes from the socket.
-        header = self._sock.recv(9)
+        # Begin by reading what we can from the socket.
+        self._sock.fill()
+        data = self._sock.buffer.tobytes()
+        self._sock.advance_buffer(len(data))
 
-        # Parse the header. We can use the returned memoryview directly here.
-        frame, length = Frame.parse_frame_header(header)
+        events = self._conn.receive_data(data)
+        for event in events:
+            if isinstance(event, h2.events.DataReceived):
+                self._adjust_receive_window(event.flow_controlled_length)
+                self.streams[event.stream_id].receive_data(event)
+            elif isinstance(event, h2.events.PushedStreamReceived):
+                if self._enable_push:
+                    self._new_stream(event.pushed_stream_id, local_closed=True)
+                    self.streams[event.parent_stream_id].receive_push(event)
+                else:
+                    # Servers are forbidden from sending push promises when
+                    # the ENABLE_PUSH setting is 0, but the spec leaves the
+                    # client action undefined when they do it anyway. So we
+                    # just refuse the stream and go about our business.
+                    self._send_rst_frame(event.pushed_stream_id, 7)
+            elif isinstance(event, h2.events.ResponseReceived):
+                self.streams[event.stream_id].receive_response(event)
+            elif isinstance(event, h2.events.TrailersReceived):
+                self.streams[event.stream_id].receive_trailers(event)
+            elif isinstance(event, h2.events.StreamEnded):
+                self.streams[event.stream_id].receive_end_stream(event)
+            elif isinstance(event, h2.events.StreamReset):
+                if event.stream_id not in self.reset_streams:
+                    self.reset_streams.add(event.stream_id)
+                    self.streams[event.stream_id].receive_reset(event)
+            elif isinstance(event, h2.events.ConnectionTerminated):
+                # If we get GoAway with error code zero, we are doing a
+                # graceful shutdown and all is well. Otherwise, throw an
+                # exception.
+                self.close()
 
-        if (length > FRAME_MAX_LEN):
-            log.warning(
-                "Frame size exceeded on stream %d (received: %d, max: %d)",
-                frame.stream_id,
-                length,
-                FRAME_MAX_LEN
-            )
-            self._send_rst_frame(frame.stream_id, 6) # 6 = FRAME_SIZE_ERROR
+                # If an error occured, try to read the error description from
+                # code registry otherwise use the frame's additional data.
+                if event.error_code != 0:
+                    try:
+                        name, number, description = errors.get_data(
+                            event.error_code
+                        )
+                    except ValueError:
+                        error_string = (
+                            "Encountered error code %d" % event.error_code
+                        )
+                    else:
+                        error_string = (
+                            "Encountered error %s %s: %s" %
+                            (name, number, description)
+                        )
 
-        # Read the remaining data from the socket.
-        data = self._recv_payload(length)
-        self._consume_frame_payload(frame, data)
-
-    def _recv_payload(self, length):
-        """
-        This receive function handles the situation where the underlying socket
-        has not received the full set of data. It spins on calling `recv`
-        until the full quantity of data is available before returning.
-
-        Note that this function makes us vulnerable to a DoS attack, where a
-        server can send part of a frame and then swallow the rest. We should
-        add support for socket timeouts here at some stage.
-        """
-        # TODO: Fix DoS risk.
-        if not length:
-            return memoryview(b'')
-
-        buffer = bytearray(length)
-        buffer_view = memoryview(buffer)
-        index = 0
-        data_length = -1
-        # _sock.recv(length) might not read out all data if the given length
-        # is very large. So it should be to retrieve from socket repeatedly.
-        while length and data_length:
-            data = self._sock.recv(length)
-            data_length = len(data)
-            end = index + data_length
-            buffer_view[index:end] = data[:]
-            length -= data_length
-            index = end
-
-        return buffer_view[:end]
-
-    def _consume_frame_payload(self, frame, data):
-        """
-        This builds and handles a frame.
-        """
-        frame.parse_body(data)
-
-        log.info(
-            "Received frame %s on stream %d",
-            frame.__class__.__name__,
-            frame.stream_id
-        )
-
-        # Maintain our flow control window. We do this by delegating to the
-        # chosen WindowManager.
-        if frame.type == DataFrame.type:
-            # Inform the WindowManager of how much data was received. If the
-            # manager tells us to increment the window, do so.
-            self._adjust_receive_window(frame.flow_controlled_length)
-        elif frame.type == PushPromiseFrame.type:
-            if self._enable_push:
-                self._new_stream(frame.promised_stream_id, local_closed=True)
+                    raise ConnectionError(error_string)
             else:
-                # Servers are forbidden from sending push promises when
-                # the ENABLE_PUSH setting is 0, but the spec leaves the client
-                # action undefined when they do it anyway. So we just refuse
-                # the stream and go about our business.
-                self._send_rst_frame(frame.promised_stream_id, 7)
+                log.info("Received unhandled event %s", event)
 
-        # If this frame was received on a stream that has been reset, drop it.
-        if frame.stream_id in self.reset_streams:
-            log.info(
-                "Stream %s has been reset, dropping frame.", frame.stream_id
-            )
-            return
-
-        # Work out to whom this frame should go.
-        if frame.stream_id != 0:
-            try:
-                self.streams[frame.stream_id].receive_frame(frame)
-            except KeyError:
-                # If we receive an unexpected stream identifier then we
-                # cancel the stream with an error of type PROTOCOL_ERROR
-                self._send_rst_frame(frame.stream_id, 1)
-                log.warning(
-                    "Unexpected stream identifier %d" % (frame.stream_id)
-                )
-
-            # If this is a RST_STREAM frame, we may get more than one (because
-            # of frames in flight). Keep track.
-            if frame.type == RstStreamFrame.type:
-                self.reset_streams.add(frame.stream_id)
-        else:
-            self.receive_frame(frame)
+        data = self._conn.data_to_send()
+        if data:
+            self._send_cb(data, tolerate_peer_gone=True)
 
     def _recv_cb(self):
         """
         This is the callback used by streams to read data from the connection.
 
-        It expects to read a single frame, and then to deserialize that frame
-        and pass it to the relevant stream. It then attempts to optimistically
-        read further frames (in an attempt to ensure that we see control frames
-        as early as possible).
+        This stream reads what data it can, and throws it into the underlying
+        connection, before farming out any events that fire to the relevant
+        streams. If the socket remains readable, it will then optimistically
+        continue to attempt to read.
 
         This is generally called by a stream, not by the connection itself, and
         it's likely that streams will read a frame that doesn't belong to them.
         """
-        self._consume_single_frame()
+        # TODO: Re-evaluate this.
+        self._single_read()
         count = 9
 
         while count and self._sock is not None and self._sock.can_read:
             # If the connection has been closed, bail out.
             try:
-                self._consume_single_frame()
+                self._single_read()
             except ConnectionResetError:
                 break
 
@@ -734,9 +529,8 @@ class HTTP20Connection(object):
         """
         Send reset stream frame with error code and remove stream from map.
         """
-        f = RstStreamFrame(stream_id)
-        f.error_code = error_code
-        self._send_cb(f)
+        self._conn.reset_stream(stream_id, error_code=error_code)
+        self._send_cb(self._conn.data_to_send())
 
         try:
             del self.streams[stream_id]
@@ -748,6 +542,15 @@ class HTTP20Connection(object):
         # Keep track of the fact that we reset this stream in case there are
         # other frames in flight.
         self.reset_streams.add(stream_id)
+
+    def _stream_close_cb(self, stream_id):
+        """
+        Called by a stream when it is closing, so that state can be cleared.
+        """
+        try:
+            del self.streams[stream_id]
+        except KeyError:
+            pass
 
     # The following two methods are the implementation of the context manager
     # protocol.

@@ -129,8 +129,8 @@ class HTTP20Response(object):
             if self._stream.response_headers:
                 self.headers.merge(self._stream.response_headers)
 
-        # We're at the end. Close the connection.
-        if not data:
+        # We're at the end, close the connection.
+        if response_complete:
             self.close()
 
         return data

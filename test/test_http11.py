@@ -129,12 +129,12 @@ class TestHTTP11Connection(object):
         c._sock = sock = DummySocket()
 
         c.request('GET', '/get', headers=(
-            ('User-Agent', 'hyper'), 
+            ('User-Agent', 'hyper'),
             ('Custom-field', 'test'),
             ('Custom-field2', 'test'),
             ('Custom-field', 'test2'),
         ))
-        
+
         expected = (
             b"GET /get HTTP/1.1\r\n"
             b"User-Agent: hyper\r\n"
@@ -774,13 +774,15 @@ class DummySocket(object):
     def __init__(self):
         self.queue = []
         self._buffer = BytesIO()
+        self._read_counter = 0
         self.can_read = False
 
     @property
     def buffer(self):
-        return memoryview(self._buffer.getvalue())
+        return memoryview(self._buffer.getvalue()[self._read_counter:])
 
     def advance_buffer(self, amt):
+        self._read_counter += amt
         self._buffer.read(amt)
 
     def send(self, data):
@@ -790,13 +792,17 @@ class DummySocket(object):
         self.queue.append(data)
 
     def recv(self, l):
-        return memoryview(self._buffer.read(l))
+        data = self._buffer.read(l)
+        self._read_counter += len(data)
+        return memoryview(data)
 
     def close(self):
         pass
 
     def readline(self):
-        return memoryview(self._buffer.readline())
+        line = self._buffer.readline()
+        self._read_counter += len(line)
+        return memoryview(line)
 
     def fill(self):
         pass
@@ -817,4 +823,3 @@ class DummyFile(object):
 
     def __iter__(self):
         return self.buffer.__iter__()
-

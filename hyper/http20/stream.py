@@ -14,26 +14,11 @@ Each stream is identified by a monotonically increasing integer, assigned to
 the stream by the endpoint that initiated the stream.
 """
 from ..common.headers import HTTPHeaderMap
-from ..packages.hyperframe.frame import (
-    FRAME_MAX_LEN, FRAMES, HeadersFrame, DataFrame, PushPromiseFrame,
-    WindowUpdateFrame, ContinuationFrame, BlockedFrame, RstStreamFrame
-)
-from .exceptions import ProtocolError, StreamResetError
+from .exceptions import StreamResetError
 from .util import h2_safe_headers
-import collections
 import logging
-import zlib
 
 log = logging.getLogger(__name__)
-
-
-# Define a set of states for a HTTP/2 stream.
-STATE_IDLE               = 0
-STATE_OPEN               = 1
-STATE_HALF_CLOSED_LOCAL  = 2
-STATE_HALF_CLOSED_REMOTE = 3
-STATE_CLOSED             = 4
-
 
 # Define the largest chunk of data we'll send in one go. Realistically, we
 # should take the MSS into account but that's pretty dull, so let's just say
@@ -52,15 +37,12 @@ class Stream(object):
     """
     def __init__(self,
                  stream_id,
-                 data_cb,
-                 recv_cb,
-                 close_cb,
-                 header_encoder,
-                 header_decoder,
                  window_manager,
-                 local_closed=False):
+                 connection,
+                 send_cb,
+                 recv_cb,
+                 close_cb):
         self.stream_id = stream_id
-        self.state = STATE_HALF_CLOSED_LOCAL if local_closed else STATE_IDLE
         self.headers = HTTPHeaderMap()
 
         # Set to a key-value set of the response headers once their
@@ -76,38 +58,26 @@ class Stream(object):
         # PUSH_PROMISE..CONTINUATION frame sequence finishes.
         self.promised_headers = {}
 
-        # Chunks of encoded header data from the current
-        # (HEADERS|PUSH_PROMISE)..CONTINUATION frame sequence. Since sending any
-        # frame other than a CONTINUATION is disallowed while a header block is
-        # being transmitted, this and ``promised_stream_id`` are the only pieces
-        # of state we have to track.
-        self.header_data = []
-        self.promised_stream_id = None
-
         # Unconsumed response data chunks. Empties after every call to _read().
         self.data = []
+
+        # Whether the remote side has completed the stream.
+        self.remote_closed = False
+
+        # Whether we have closed the stream.
+        self.local_closed = False
 
         # There are two flow control windows: one for data we're sending,
         # one for data being sent to us.
         self._in_window_manager = window_manager
-        self._out_flow_control_window = 65535
 
-        # This is the callback handed to the stream by its parent connection.
-        # It is called when the stream wants to send data. It expects to
-        # receive a list of frames that will be automatically serialized.
-        self._data_cb = data_cb
+        # Save off a reference to the state machine.
+        self._conn = connection
 
-        # Similarly, this is a callback that reads one frame off the
-        # connection.
+        # Save off a data callback.
+        self._send_cb = send_cb
         self._recv_cb = recv_cb
-
-        # This is the callback to be called when the stream is closed.
         self._close_cb = close_cb
-
-        # A reference to the header encoder and decoder objects belonging to
-        # the parent connection.
-        self._encoder = header_encoder
-        self._decoder = header_decoder
 
     def add_header(self, name, value, replace=False):
         """
@@ -118,6 +88,16 @@ class Stream(object):
         else:
             self.headers.replace(name, value)
 
+    def send_headers(self, end_stream=False):
+        """
+        Sends the complete saved header block on the stream.
+        """
+        headers = self.get_headers()
+        self._conn.send_headers(self.stream_id, headers, end_stream)
+        self._send_cb(self._conn.data_to_send())
+
+        if end_stream:
+            self.local_closed = True
 
     def send_data(self, data, final):
         """
@@ -143,30 +123,6 @@ class Stream(object):
         for chunk in chunks:
             self._send_chunk(chunk, final)
 
-    @property
-    def _local_closed(self):
-        return self.state in (STATE_CLOSED, STATE_HALF_CLOSED_LOCAL)
-
-    @property
-    def _remote_closed(self):
-        return self.state in (STATE_CLOSED, STATE_HALF_CLOSED_REMOTE)
-
-    @property
-    def _local_open(self):
-        return self.state in (STATE_OPEN, STATE_HALF_CLOSED_REMOTE)
-
-    def _close_local(self):
-        self.state = (
-            STATE_HALF_CLOSED_LOCAL if self.state == STATE_OPEN
-            else STATE_CLOSED
-        )
-
-    def _close_remote(self):
-        self.state = (
-            STATE_HALF_CLOSED_REMOTE if self.state == STATE_OPEN
-            else STATE_CLOSED
-        )
-
     def _read(self, amt=None):
         """
         Read data from the stream. Unlike a normal read behaviour, this
@@ -176,7 +132,7 @@ class Stream(object):
             return sum(map(len, list))
 
         # Keep reading until the stream is closed or we get enough data.
-        while not self._remote_closed and (amt is None or listlen(self.data) < amt):
+        while not self.remote_closed and (amt is None or listlen(self.data) < amt):
             self._recv_cb()
 
         result = b''.join(self.data)
@@ -188,7 +144,7 @@ class Stream(object):
         Reads a single data frame from the stream and returns it.
         """
         # Keep reading until the stream is closed or we have a data frame.
-        while not self._remote_closed and not self.data:
+        while not self.remote_closed and not self.data:
             self._recv_cb()
 
         try:
@@ -196,123 +152,68 @@ class Stream(object):
         except IndexError:
             return None
 
-    def receive_frame(self, frame):
+    def receive_response(self, event):
         """
-        Handle a frame received on this stream.
+        Receive response headers.
         """
-        if 'END_STREAM' in frame.flags:
-            log.debug("Closing remote side of stream")
-            self._close_remote()
+        # TODO: If this is called while we're still sending data, we may want
+        # to stop sending that data and check the response. Early responses to
+        # big uploads are almost always a problem.
+        self.response_headers = HTTPHeaderMap(event.headers)
 
-        if frame.type == WindowUpdateFrame.type:
-            self._out_flow_control_window += frame.window_increment
-        elif frame.type == HeadersFrame.type:
-            # Begin the header block for the response headers.
-            self.promised_stream_id = None
-            self.header_data = [frame.data]
-        elif frame.type == PushPromiseFrame.type:
-            # Begin a header block for the request headers of a pushed resource.
-            self.promised_stream_id = frame.promised_stream_id
-            self.header_data = [frame.data]
-        elif frame.type == ContinuationFrame.type:
-            # Continue a header block begun with either HEADERS or PUSH_PROMISE.
-            self.header_data.append(frame.data)
-        elif frame.type == DataFrame.type:
-            # Increase the window size. Only do this if the data frame contains
-            # actual data.
-            size = frame.flow_controlled_length
-            increment = self._in_window_manager._handle_frame(size)
-
-            # Append the data to the buffer.
-            self.data.append(frame.data)
-
-            if increment and not self._remote_closed:
-                w = WindowUpdateFrame(self.stream_id)
-                w.window_increment = increment
-                self._data_cb(w, True)
-        elif frame.type == BlockedFrame.type:
-            # If we've been blocked we may want to fixup the window.
-            increment = self._in_window_manager._blocked()
-            if increment:
-                w = WindowUpdateFrame(self.stream_id)
-                w.window_increment = increment
-                self._data_cb(w, True)
-        elif frame.type == RstStreamFrame.type:
-            self.close(0)
-            raise StreamResetError("Stream forcefully closed.")
-        elif frame.type in FRAMES:
-            # This frame isn't valid at this point.
-            raise ValueError("Unexpected frame %s." % frame)
-        else:  # pragma: no cover
-            # Unknown frames belong to extensions. Just drop it on the
-            # floor, but log so that users know that something happened.
-            log.warning("Received unknown frame, type %d", frame.type)
-            pass
-
-        if 'END_HEADERS' in frame.flags:
-            # Begin by decoding the header block. If this fails, we need to
-            # tear down the entire connection. TODO: actually do that.
-            headers = self._decoder.decode(b''.join(self.header_data))
-
-            # If we're involved in a PUSH_PROMISE sequence, this header block
-            # is the proposed request headers. Save it off. Otherwise, handle
-            # it as an in-stream HEADERS block.
-            if (self.promised_stream_id is None):
-                self._handle_header_block(headers)
-            else:
-                self.promised_headers[self.promised_stream_id] = headers
-
-            # We've handled the headers, zero them out.
-            self.header_data = None
-
-    def open(self, end):
+    def receive_trailers(self, event):
         """
-        Open the stream. Does this by encoding and sending the headers: no more
-        calls to ``add_header`` are allowed after this method is called.
-        The `end` flag controls whether this will be the end of the stream, or
-        whether data will follow.
+        Receive response trailers.
+        """
+        self.response_trailers = HTTPHeaderMap(event.headers)
+
+    def receive_push(self, event):
+        """
+        Receive the request headers for a pushed stream.
+        """
+        self.promised_headers[event.pushed_stream_id] = event.headers
+
+    def receive_data(self, event):
+        """
+        Receive a chunk of data.
+        """
+        size = event.flow_controlled_length
+        increment = self._in_window_manager._handle_frame(size)
+
+        # Append the data to the buffer.
+        self.data.append(event.data)
+
+        if increment and not self.remote_closed:
+            self._conn.increment_flow_control_window(
+                increment, stream_id=self.stream_id
+            )
+            self._send_cb(self._conn.data_to_send())
+
+    def receive_end_stream(self, event):
+        """
+        All of the data is returned now.
+        """
+        self.remote_closed = True
+
+    def receive_reset(self, event):
+        """
+        Stream forcefully reset.
+        """
+        self.remote_closed = True
+        raise StreamResetError("Stream forcefully closed")
+
+    def get_headers(self):
+        """
+        Provides the headers to the connection object.
         """
         # Strip any headers invalid in H2.
-        headers = h2_safe_headers(self.headers)
-
-        # Encode the headers.
-        encoded_headers = self._encoder.encode(headers)
-
-        # It's possible that there is a substantial amount of data here. The
-        # data needs to go into one HEADERS frame, followed by a number of
-        # CONTINUATION frames. For now, for ease of implementation, let's just
-        # assume that's never going to happen (16kB of headers is lots!).
-        # Additionally, since this is so unlikely, there's no point writing a
-        # test for this: it's just so simple.
-        if len(encoded_headers) > FRAME_MAX_LEN:  # pragma: no cover
-            raise ValueError("Header block too large.")
-
-        header_frame = HeadersFrame(self.stream_id)
-        header_frame.data = encoded_headers
-
-        # If no data has been provided, this is the end of the stream. Either
-        # way, due to the restriction above it's definitely the end of the
-        # headers.
-        header_frame.flags.add('END_HEADERS')
-
-        if end:
-            header_frame.flags.add('END_STREAM')
-
-        # Send the header frame.
-        self._data_cb(header_frame)
-
-        # Transition the stream state appropriately.
-        self.state = STATE_HALF_CLOSED_LOCAL if end else STATE_OPEN
-
-        return
+        return h2_safe_headers(self.headers)
 
     def getheaders(self):
         """
         Once all data has been sent on this connection, returns a key-value set
         of the headers of the response to the original request.
         """
-        assert self._local_closed
-
         # Keep reading until all headers are received.
         while self.response_headers is None:
             self._recv_cb()
@@ -338,10 +239,7 @@ class Stream(object):
                   were sent.
         """
         # Keep reading until the stream is done.
-        # TODO: Right now this doesn't handle CONTINUATION blocks in trailers.
-        # The idea of receiving such a thing is mind-boggling it's so unlikely,
-        # but we should fix this up at some stage.
-        while not self._remote_closed:
+        while not self.remote_closed:
             self._recv_cb()
 
         return self.response_trailers
@@ -363,7 +261,7 @@ class Stream(object):
             for pair in self.promised_headers.items():
                 yield pair
             self.promised_headers = {}
-            if not capture_all or self._remote_closed:
+            if not capture_all or self.remote_closed:
                 break
             self._recv_cb()
 
@@ -375,42 +273,21 @@ class Stream(object):
         :param error_code: (optional) The error code to reset the stream with.
         :returns: Nothing.
         """
-        # Right now let's not bother with grace, let's just call close on the
-        # connection. If not error code is provided then assume it is a
-        # gracefull shutdown.
-        self._close_cb(self.stream_id, error_code or 0)
+        # FIXME: I think this is overbroad, but for now it's probably ok.
+        if not (self.remote_closed and self.local_closed):
+            self._conn.reset_stream(self.stream_id, error_code or 0)
+            self._send_cb(self._conn.data_to_send())
+            self.remote_closed = True
+            self.local_closed = True
 
-    def _handle_header_block(self, headers):
+        self._close_cb(self.stream_id)
+
+    @property
+    def _out_flow_control_window(self):
         """
-        Handles the logic for receiving a completed headers block.
-
-        A headers block is an uninterrupted sequence of one HEADERS frame
-        followed by zero or more CONTINUATION frames, and is terminated by a
-        frame bearing the END_HEADERS flag.
-
-        HTTP/2 allows receipt of up to three such blocks on a stream. The first
-        is optional, and contains a 1XX response. The second is mandatory, and
-        must contain a final response (200 or higher). The third is optional,
-        and may contain 'trailers', headers that are sent after a chunk-encoded
-        body is sent. This method enforces the logic associated with this,
-        storing the headers in the appropriate places.
+        The size of our outbound flow control window.
         """
-        # At this stage we should check for a provisional response (1XX). As
-        # hyper doesn't currently support such responses, we'll leave that as a
-        # TODO.
-        # TODO: Handle 1XX responses here.
-
-        # The header block may be for trailers or headers. If we've already
-        # received headers these _must_ be for trailers.
-        if self.response_headers is None:
-            self.response_headers = HTTPHeaderMap(headers)
-        elif self.response_trailers is None:
-            self.response_trailers = HTTPHeaderMap(headers)
-        else:
-            # Received too many headers blocks.
-            raise ProtocolError("Too many header blocks.")
-
-        return
+        return self._conn.local_flow_control_window(self.stream_id)
 
     def _send_chunk(self, data, final):
         """
@@ -421,26 +298,23 @@ class Stream(object):
         (determined by being of size less than MAX_CHUNK) and no more data is
         to be sent.
         """
-        assert self._local_open
-
-        f = DataFrame(self.stream_id)
-        f.data = data
+        # If we don't fit in the connection window, try popping frames off the
+        # connection in hope that one might be a window update frame.
+        while len(data) > self._out_flow_control_window:
+            self._recv_cb()
 
         # If the length of the data is less than MAX_CHUNK, we're probably
         # at the end of the file. If this is the end of the data, mark it
         # as END_STREAM.
+        end_stream = False
         if len(data) < MAX_CHUNK and final:
-            f.flags.add('END_STREAM')
-
-        # If we don't fit in the connection window, try popping frames off the
-        # connection in hope that one might be a Window Update frame.
-        while len(data) > self._out_flow_control_window:
-            self._recv_cb()
+            end_stream = True
 
         # Send the frame and decrement the flow control window.
-        self._data_cb(f)
-        self._out_flow_control_window -= len(data)
+        self._conn.send_data(
+            stream_id=self.stream_id, data=data, end_stream=end_stream
+        )
+        self._send_cb(self._conn.data_to_send())
 
-        # If no more data is to be sent on this stream, transition our state.
-        if len(data) < MAX_CHUNK and final:
-            self._close_local()
+        if end_stream:
+            self.local_closed = True

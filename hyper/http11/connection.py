@@ -12,6 +12,8 @@ import base64
 
 from collections import Iterable, Mapping
 
+from hyperframe.frame import SettingsFrame
+
 from .response import HTTP11Response
 from ..tls import wrap_socket, H2C_PROTOCOL
 from ..common.bufsocket import BufferedSocket
@@ -19,8 +21,6 @@ from ..common.exceptions import TLSUpgrade, HTTPUpgrade
 from ..common.headers import HTTPHeaderMap
 from ..common.util import to_bytestring, to_host_port_tuple
 from ..compat import bytes
-
-from ..packages.hyperframe.frame import SettingsFrame
 
 # We prefer pycohttpparser to the pure-Python interpretation
 try:  # pragma: no cover
@@ -49,13 +49,13 @@ class HTTP11Connection(object):
         port 443.
     :param ssl_context: (optional) A class with custom certificate settings.
         If not provided then hyper's default ``SSLContext`` is used instead.
-    :param proxy_host: (optional) The proxy to connect to.  This can be an IP 
+    :param proxy_host: (optional) The proxy to connect to.  This can be an IP
         address or a host name and may include a port.
-    :param proxy_port: (optional) The proxy port to connect to. If not provided 
-        and one also isn't provided in the ``proxy`` parameter, 
+    :param proxy_port: (optional) The proxy port to connect to. If not provided
+        and one also isn't provided in the ``proxy`` parameter,
         defaults to 8080.
     """
-    def __init__(self, host, port=None, secure=None, ssl_context=None, 
+    def __init__(self, host, port=None, secure=None, ssl_context=None,
                  proxy_host=None, proxy_port=None, **kwargs):
         if port is None:
             self.host, self.port = to_host_port_tuple(host, default_port=80)
@@ -112,7 +112,7 @@ class HTTP11Connection(object):
             else:
                 host = self.proxy_host
                 port = self.proxy_port
-                
+
             sock = socket.create_connection((host, port), 5)
             proto = None
 
@@ -200,8 +200,8 @@ class HTTP11Connection(object):
 
         self._sock.advance_buffer(response.consumed)
 
-        if (response.status == 101 and 
-           b'upgrade' in headers['connection'] and 
+        if (response.status == 101 and
+           b'upgrade' in headers['connection'] and
            H2C_PROTOCOL.encode('utf-8') in headers['upgrade']):
             raise HTTPUpgrade(H2C_PROTOCOL, self._sock)
 
@@ -260,7 +260,7 @@ class HTTP11Connection(object):
         # Add HTTP Upgrade headers.
         headers[b'connection'] = b'Upgrade, HTTP2-Settings'
         headers[b'upgrade'] = H2C_PROTOCOL
-        
+
         # Encode SETTINGS frame payload in Base64 and put into the HTTP-2 Settings header.
         http2_settings = SettingsFrame(0)
         http2_settings.settings[SettingsFrame.INITIAL_WINDOW_SIZE] = 65535

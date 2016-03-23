@@ -53,17 +53,22 @@ except AttributeError:
 
 
 def resolve_install_requires():
+    basic_dependencies = ['h2~=2.0', 'hyperframe~=3.2']
+
     if py_version == (3, 3):
-        return ['pyOpenSSL>=0.15', 'service_identity>=14.0.0']
+        basic_dependencies.extend(
+            ['pyOpenSSL>=0.15', 'service_identity>=14.0.0']
+        )
     elif py_version == (2, 7) and py_long_version < (2, 7, 9):
-        deps = ['pyOpenSSL>=0.15', 'service_identity>=14.0.0']
+        basic_dependencies.extend(
+            ['pyOpenSSL>=0.15', 'service_identity>=14.0.0']
+        )
 
         # PyPy earlier than 2.6.0 doesn't support cryptography 1.0
         if pypy_version and pypy_version < (2, 6):
-            deps.append('cryptography<1.0')
+            basic_dependencies.append('cryptography<1.0')
 
-        return deps
-    return []
+    return basic_dependencies
 
 packages = [
     'hyper',
@@ -71,8 +76,6 @@ packages = [
     'hyper.common',
     'hyper.http11',
     'hyper.packages',
-    'hyper.packages.hpack',
-    'hyper.packages.hyperframe',
     'hyper.packages.rfc3986'
 ]
 
@@ -98,6 +101,7 @@ setup(
         'Programming Language :: Python :: 2.7',
         'Programming Language :: Python :: 3',
         'Programming Language :: Python :: 3.4',
+        'Programming Language :: Python :: 3.5',
         'Programming Language :: Python :: Implementation :: CPython',
     ],
     install_requires=resolve_install_requires(),

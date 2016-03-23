@@ -67,9 +67,6 @@ class BufferedSocket(object):
         """
         Whether or not there is more data to read from the socket.
         """
-        if self._bytes_in_buffer:
-            return True
-
         read = select.select([self._sck], [], [], 0)[0]
         if read:
             return True
