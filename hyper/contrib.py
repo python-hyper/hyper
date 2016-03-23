@@ -16,6 +16,7 @@ except ImportError:  # pragma: no cover
 
 from hyper.common.connection import HTTPConnection
 from hyper.compat import urlparse
+from hyper.tls import init_context
 
 
 class HTTP20Adapter(HTTPAdapter):
@@ -39,17 +40,8 @@ class HTTP20Adapter(HTTPAdapter):
             port = 80 if not secure else 443
 
         ssl_context = None
-
         if cert is not None:
-            ssl_context = init_context()
-            try:
-                basestring
-            except NameError:
-                basestring = str
-            if not isinstance(cert, basestring):
-                ssl_context.load_cert_chain(cert[0], cert[1])
-            else:
-                ssl_context.load_cert_chain(cert)
+            ssl_context = init_context(cert=cert)
 
         try:
             conn = self.connections[(host, port, scheme, cert)]

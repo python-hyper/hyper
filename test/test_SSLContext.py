@@ -2,10 +2,20 @@
 """
 Tests the hyper SSLContext.
 """
+import os
+
 import hyper
 from hyper.common.connection import HTTPConnection
 from hyper.compat import ssl
+
 import pytest
+
+
+TEST_DIR = os.path.abspath(os.path.dirname(__file__))
+TEST_CERTS_DIR = os.path.join(TEST_DIR, 'certs')
+CLIENT_CERT_FILE = os.path.join(TEST_CERTS_DIR, 'client.crt')
+CLIENT_KEY_FILE = os.path.join(TEST_CERTS_DIR, 'client.key')
+
 
 class TestSSLContext(object):
     """
@@ -47,3 +57,8 @@ class TestSSLContext(object):
         assert conn.ssl_context.check_hostname == True
         assert conn.ssl_context.verify_mode == ssl.CERT_REQUIRED
         assert conn.ssl_context.options & ssl.OP_NO_COMPRESSION != 0
+
+
+    def test_client_certificates(self):
+        context = hyper.tls.init_context(
+            cert=(CLIENT_CERT_FILE, CLIENT_KEY_FILE), cert_password='abc123')
