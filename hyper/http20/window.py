@@ -133,10 +133,11 @@ class FlowControlManager(BaseFlowControlManager):
 
     This algorithm will become more complicated over time. In the current form,
     the algorithm is very simple:
-        - When the flow control window gets less than 1/4 of the maximum size,
-          increment back to the maximum.
-        - Otherwise, if the flow control window gets to less than 1kB, increment
-          back to the maximum.
+
+    - When the flow control window gets less than 1/4 of the maximum size,
+      increment back to the maximum.
+    - Otherwise, if the flow control window gets to less than 1kB, increment
+      back to the maximum.
     """
     def increase_window_size(self, frame_size):
         future_window_size = self.window_size - frame_size
