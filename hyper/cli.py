@@ -14,9 +14,9 @@ from argparse import OPTIONAL, ZERO_OR_MORE
 from pprint import pformat
 from textwrap import dedent
 
-from hyper import HTTPConnection, HTTP20Connection
+from hyper import HTTPConnection, HTTP20Connection, tls
 from hyper import __version__
-from hyper.compat import is_py2, urlencode, urlsplit, write_to_stdout
+from hyper.compat import is_py2, urlencode, urlsplit, write_to_stdout, ssl
 from hyper.common.util import to_host_port_tuple
 
 
@@ -109,6 +109,9 @@ def make_troubleshooting_argument(parser):
     parser.add_argument(
         '--h2', action='store_true', default=False,
         help="Do HTTP/2 directly in plaintext: skip plaintext upgrade")
+    parser.add_argument(
+        '--insecure', action='store_true', default=False,
+        help="Do not check certificates.")
 
 
 def set_url_info(args):
@@ -248,6 +251,13 @@ def request(args):
 def main(argv=None):
     args = parse_argument(argv)
     log.debug('Commandline Argument: %s', args)
+
+    if args.insecure:
+        # Disable all security checks (dangerous!).
+        tls._context = tls.init_context()
+        tls._context.check_hostname = False
+        tls._context.verify_mode = ssl.CERT_NONE
+
     data = request(args)
     write_to_stdout(data)
 
