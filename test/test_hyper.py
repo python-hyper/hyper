@@ -122,8 +122,8 @@ class TestHyperConnection(object):
         assert list(s.headers.items()) == [
             (b':method', b'GET'),
             (b':scheme', b'https'),
-            (b':path', b'/'),
             (b':authority', b'www.example.org'),
+            (b':path', b'/'),
             (b'name', b'value2'),
         ]
 
@@ -220,6 +220,22 @@ class TestHyperConnection(object):
         # The socket should have received one headers frame and one body frame.
         assert len(sock.queue) == 2
         assert c._out_flow_control_window == 65535 - len(b'hello')
+
+    def test_request_with_utf8_bytes_body(self):
+        c = HTTP20Connection('www.google.com')
+        c._sock = DummySocket()
+        body = '你好' if is_py2 else '你好'.encode('utf-8')
+        c.request('GET', '/', body=body)
+
+        assert c._out_flow_control_window == 65535 - len(body)
+
+    def test_request_with_unicode_body(self):
+        c = HTTP20Connection('www.google.com')
+        c._sock = DummySocket()
+        body = '你好'.decode('unicode-escape') if is_py2 else '你好'
+        c.request('GET', '/', body=body)
+
+        assert c._out_flow_control_window == 65535 - len(body.encode('utf-8'))
 
     def test_different_request_headers(self):
         sock = DummySocket()
@@ -581,7 +597,7 @@ class TestHyperConnection(object):
 
         def consume_single_frame():
             mutable['counter'] += 1
-            
+
         c._consume_single_frame = consume_single_frame
         c._recv_cb()
 
@@ -779,7 +795,7 @@ class TestHyperStream(object):
             (b"name", b"value"),
             (b"other_name", b"other_value")
         ]
-        
+
     def test_stream_opening_sends_headers(self):
         def data_callback(frame):
             assert isinstance(frame, HeadersFrame)
@@ -1548,7 +1564,7 @@ class TestUtilities(object):
 class NullEncoder(object):
     @staticmethod
     def encode(headers):
-        
+
         def to_str(v):
             if is_py2:
                 return str(v)
@@ -1557,7 +1573,7 @@ class NullEncoder(object):
                     v = str(v, 'utf-8')
                 return v
 
-        return '\n'.join("%s%s" % (to_str(name), to_str(val)) 
+        return '\n'.join("%s%s" % (to_str(name), to_str(val))
                          for name, val in headers)
 
 

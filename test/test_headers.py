@@ -272,8 +272,8 @@ class TestHTTPHeaderMap(object):
 
         assert list(h.items()) == [
             (b'name', b'value'),
-            (b'name3', b'value3'),
             (b'name2', b'42'),
+            (b'name3', b'value3'),
             (b'name4', b'other_value'),
         ]
 
