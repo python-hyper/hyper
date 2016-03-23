@@ -15,6 +15,7 @@ TEST_DIR = os.path.abspath(os.path.dirname(__file__))
 TEST_CERTS_DIR = os.path.join(TEST_DIR, 'certs')
 CLIENT_CERT_FILE = os.path.join(TEST_CERTS_DIR, 'client.crt')
 CLIENT_KEY_FILE = os.path.join(TEST_CERTS_DIR, 'client.key')
+CLIENT_PEM_FILE = os.path.join(TEST_CERTS_DIR, 'nopassword.pem')
 
 
 class TestSSLContext(object):
@@ -61,4 +62,6 @@ class TestSSLContext(object):
 
     def test_client_certificates(self):
         context = hyper.tls.init_context(
-            cert=(CLIENT_CERT_FILE, CLIENT_KEY_FILE), cert_password='abc123')
+            cert=(CLIENT_CERT_FILE, CLIENT_KEY_FILE),
+            cert_password=b'abc123')
+        context = hyper.tls.init_context(cert=CLIENT_PEM_FILE)

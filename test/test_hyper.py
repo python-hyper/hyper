@@ -30,6 +30,11 @@ from io import BytesIO
 import hyper
 
 
+TEST_DIR = os.path.abspath(os.path.dirname(__file__))
+TEST_CERTS_DIR = os.path.join(TEST_DIR, 'certs')
+CLIENT_PEM_FILE = os.path.join(TEST_CERTS_DIR, 'nopassword.pem')
+
+
 def decode_frame(frame_data):
     f, length = Frame.parse_frame_header(frame_data[:9])
     f.parse_body(memoryview(frame_data[9:9 + length]))
@@ -1328,6 +1333,15 @@ class TestHTTP20Adapter(object):
         conn2 = a.get_connection('http2bin.org', 80, 'http')
 
         assert conn1 is conn2
+
+    def test_adapter_accept_client_certificate(self):
+        a = HTTP20Adapter()
+        conn1 = a.get_connection('http2bin.org', 80, 'http',
+                                 cert=CLIENT_PEM_FILE)
+        conn2 = a.get_connection('http2bin.org', 80, 'http',
+                                 cert=CLIENT_PEM_FILE)
+        assert conn1 is conn2
+
 
 
 class TestUtilities(object):
