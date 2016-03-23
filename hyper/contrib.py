@@ -46,19 +46,25 @@ class HTTP20Adapter(HTTPAdapter):
         try:
             conn = self.connections[(host, port, scheme, cert)]
         except KeyError:
-            conn = HTTPConnection(host, port, secure=secure,
-                                  ssl_context=ssl_context)
+            conn = HTTPConnection(
+                host,
+                port,
+                secure=secure,
+                ssl_context=ssl_context)
             self.connections[(host, port, scheme, cert)] = conn
 
         return conn
 
-    def send(self, request, stream=False, **kwargs):
+    def send(self, request, stream=False, cert=None, **kwargs):
         """
         Sends a HTTP message to the server.
         """
         parsed = urlparse(request.url)
-        conn = self.get_connection(parsed.hostname, parsed.port, parsed.scheme,
-                                   cert=kwargs.get('cert'))
+        conn = self.get_connection(
+            parsed.hostname,
+            parsed.port,
+            parsed.scheme,
+            cert=cert)
 
         # Build the selector.
         selector = parsed.path

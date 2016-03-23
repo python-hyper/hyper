@@ -1336,10 +1336,16 @@ class TestHTTP20Adapter(object):
 
     def test_adapter_accept_client_certificate(self):
         a = HTTP20Adapter()
-        conn1 = a.get_connection('http2bin.org', 80, 'http',
-                                 cert=CLIENT_PEM_FILE)
-        conn2 = a.get_connection('http2bin.org', 80, 'http',
-                                 cert=CLIENT_PEM_FILE)
+        conn1 = a.get_connection(
+            'http2bin.org',
+            80,
+            'http',
+            cert=CLIENT_PEM_FILE)
+        conn2 = a.get_connection(
+            'http2bin.org',
+            80,
+            'http',
+            cert=CLIENT_PEM_FILE)
         assert conn1 is conn2
 
 
