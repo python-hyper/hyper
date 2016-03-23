@@ -49,19 +49,18 @@ def wrap_socket(sock, server_hostname, ssl_context=None, force_proto=None):
         except AttributeError:
             ssl.verify_hostname(ssl_sock, server_hostname)  # pyopenssl
 
-    if force_proto != None:
-        proto = force_proto
-    else:
-        proto = None
+    # Allow for the protocol to be forced externally.
+    proto = force_proto
 
-        # ALPN is newer, so we prefer it over NPN. The odds of us getting
-        # different answers is pretty low, but let's be sure.
-        with ignore_missing():
+    # ALPN is newer, so we prefer it over NPN. The odds of us getting
+    # different answers is pretty low, but let's be sure.
+    with ignore_missing():
+        if proto is None:
             proto = ssl_sock.selected_alpn_protocol()
 
-        with ignore_missing():
-            if proto is None:
-                proto = ssl_sock.selected_npn_protocol()
+    with ignore_missing():
+        if proto is None:
+            proto = ssl_sock.selected_npn_protocol()
 
     return (ssl_sock, proto)
 
