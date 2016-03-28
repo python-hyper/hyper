@@ -8,12 +8,13 @@ class TestHTTPConnection(object):
     def test_h1_kwargs(self):
         c = HTTPConnection(
             'test', 443, secure=False, window_manager=True, enable_push=True,
-            ssl_context=False, proxy_host=False, proxy_port=False, other_kwarg=True
+            ssl_context=False, force_proto=False, proxy_host=False, proxy_port=False, other_kwarg=True
         )
 
         assert c._h1_kwargs == {
             'secure': False,
             'ssl_context': False,
+            'force_proto': False,
             'proxy_host': False,
             'proxy_port': False,
             'other_kwarg': True,
