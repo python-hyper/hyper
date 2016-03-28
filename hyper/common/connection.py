@@ -40,6 +40,8 @@ class HTTPConnection(object):
         :meth:`get_pushes() <hyper.HTTP20Connection.get_pushes>`).
     :param ssl_context: (optional) A class with custom certificate settings.
         If not provided then hyper's default ``SSLContext`` is used instead.
+    :param force_proto: (optional) An optional parameter forcing the SSL/TLS
+        connection to a specific protocol, circumvents use of ALPN/NPN.
     :param proxy_host: (optional) The proxy to connect to.  This can be an IP address
         or a host name and may include a port.
     :param proxy_port: (optional) The proxy port to connect to. If not provided
