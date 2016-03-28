@@ -60,7 +60,7 @@ class HTTPConnection(object):
         self._host = host
         self._port = port
         self._h1_kwargs = {
-            'secure': secure, 'ssl_context': ssl_context,
+            'secure': secure, 'ssl_context': ssl_context, 'force_proto': force_proto,
             'proxy_host': proxy_host, 'proxy_port': proxy_port
         }
         self._h2_kwargs = {
