@@ -24,10 +24,10 @@ class HTTP20Adapter(HTTPAdapter):
     HTTP/2. This implements some degree of connection pooling to maximise the
     HTTP/2 gain.
     """
-    def __init__(self, *args, **kwargs):
+    def __init__(self, force_proto=None, *args, **kwargs):
         #: A mapping between HTTP netlocs and ``HTTP20Connection`` objects.
         self.connections = {}
-        self.force_proto = kwargs.get('force_proto')
+        self.force_proto = force_proto
 
     def get_connection(self, host, port, scheme):
         """
