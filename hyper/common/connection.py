@@ -52,6 +52,7 @@ class HTTPConnection(object):
                  window_manager=None,
                  enable_push=False,
                  ssl_context=None,
+                 force_proto=None,
                  proxy_host=None,
                  proxy_port=None,
                  **kwargs):
@@ -64,7 +65,7 @@ class HTTPConnection(object):
         }
         self._h2_kwargs = {
             'window_manager': window_manager, 'enable_push': enable_push,
-            'secure': secure, 'ssl_context': ssl_context,
+            'secure': secure, 'ssl_context': ssl_context, 'force_proto': force_proto,
             'proxy_host': proxy_host, 'proxy_port': proxy_port
         }
 

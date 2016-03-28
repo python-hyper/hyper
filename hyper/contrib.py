@@ -27,6 +27,7 @@ class HTTP20Adapter(HTTPAdapter):
     def __init__(self, *args, **kwargs):
         #: A mapping between HTTP netlocs and ``HTTP20Connection`` objects.
         self.connections = {}
+        self.force_proto = kwargs.get('force_proto')
 
     def get_connection(self, host, port, scheme):
         """
@@ -41,7 +42,8 @@ class HTTP20Adapter(HTTPAdapter):
         try:
             conn = self.connections[(host, port, scheme)]
         except KeyError:
-            conn = HTTPConnection(host, port, secure=secure)
+            conn = HTTPConnection(host, port, secure=secure,
+                force_proto=self.force_proto)
             self.connections[(host, port, scheme)] = conn
 
         return conn
