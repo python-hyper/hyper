@@ -40,6 +40,8 @@ class HTTPConnection(object):
         :meth:`get_pushes() <hyper.HTTP20Connection.get_pushes>`).
     :param ssl_context: (optional) A class with custom certificate settings.
         If not provided then hyper's default ``SSLContext`` is used instead.
+    :param force_proto: (optional) An optional parameter forcing the SSL/TLS
+        connection to a specific protocol, circumvents use of ALPN/NPN.
     :param proxy_host: (optional) The proxy to connect to.  This can be an IP address
         or a host name and may include a port.
     :param proxy_port: (optional) The proxy port to connect to. If not provided
@@ -52,6 +54,7 @@ class HTTPConnection(object):
                  window_manager=None,
                  enable_push=False,
                  ssl_context=None,
+                 force_proto=None,
                  proxy_host=None,
                  proxy_port=None,
                  **kwargs):
@@ -59,12 +62,12 @@ class HTTPConnection(object):
         self._host = host
         self._port = port
         self._h1_kwargs = {
-            'secure': secure, 'ssl_context': ssl_context,
+            'secure': secure, 'ssl_context': ssl_context, 'force_proto': force_proto,
             'proxy_host': proxy_host, 'proxy_port': proxy_port
         }
         self._h2_kwargs = {
             'window_manager': window_manager, 'enable_push': enable_push,
-            'secure': secure, 'ssl_context': ssl_context,
+            'secure': secure, 'ssl_context': ssl_context, 'force_proto': force_proto,
             'proxy_host': proxy_host, 'proxy_port': proxy_port
         }
 

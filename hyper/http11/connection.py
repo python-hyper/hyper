@@ -56,7 +56,7 @@ class HTTP11Connection(object):
         defaults to 8080.
     """
     def __init__(self, host, port=None, secure=None, ssl_context=None,
-                 proxy_host=None, proxy_port=None, **kwargs):
+                 force_proto=None, proxy_host=None, proxy_port=None, **kwargs):
         if port is None:
             self.host, self.port = to_host_port_tuple(host, default_port=80)
         else:
@@ -76,6 +76,7 @@ class HTTP11Connection(object):
         self._send_http_upgrade = not self.secure
 
         self.ssl_context = ssl_context
+        self.force_proto = force_proto
         self._sock = None
 
         # Setup proxy details if applicable.
@@ -118,7 +119,7 @@ class HTTP11Connection(object):
 
             if self.secure:
                 assert not self.proxy_host, "Using a proxy with HTTPS not yet supported."
-                sock, proto = wrap_socket(sock, host, self.ssl_context)
+                sock, proto = wrap_socket(sock, host, self.ssl_context, self.force_proto)
 
             log.debug("Selected protocol: %s", proto)
             sock = BufferedSocket(sock, self.network_buffer_size)
