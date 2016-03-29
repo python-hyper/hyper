@@ -63,8 +63,8 @@ class TestBasicSocketManipulation(SocketLevelTest):
     def test_client_certificate(self, context_kwargs):
         # Don't have the server thread do TLS: we'll do it ourselves.
         self.set_up(secure=False)
-        certs = []
         evt = threading.Event()
+        data = []
 
         def socket_handler(listener):
             sock = listener.accept()[0]
@@ -77,7 +77,7 @@ class TestBasicSocketManipulation(SocketLevelTest):
                 ca_certs=CLIENT_PEM_FILE,
                 server_side=True
             )
-            certs.append(sock.getpeercert())
+            data.append(sock.recv(65535))
             evt.wait(5)
             sock.close()
 
@@ -90,9 +90,8 @@ class TestBasicSocketManipulation(SocketLevelTest):
 
         s = socket.create_connection((self.host, self.port))
         s, proto = wrap_socket(s, "localhost", ssl_context=context)
+        s.sendall(b'hi')
         s.close()
         evt.set()
-
-        assert len(certs) == 1
 
         self.tear_down()
