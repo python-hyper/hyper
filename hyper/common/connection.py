@@ -76,7 +76,7 @@ class HTTPConnection(object):
             self._host, self._port, **self._h1_kwargs
         )
 
-    def request(self, method, url, body=None, headers={}):
+    def request(self, method, url, body=None, headers=None):
         """
         This will send a request to the server using the HTTP request method
         ``method`` and the selector ``url``. If the ``body`` argument is
@@ -93,6 +93,9 @@ class HTTPConnection(object):
         :returns: A stream ID for the request, or ``None`` if the request is
             made over HTTP/1.1.
         """
+
+        headers = headers or {}
+
         try:
             return self._conn.request(
                 method=method, url=url, body=body, headers=headers
