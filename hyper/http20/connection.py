@@ -144,7 +144,7 @@ class HTTP20Connection(object):
 
         return
 
-    def request(self, method, url, body=None, headers={}):
+    def request(self, method, url, body=None, headers=None):
         """
         This will send a request to the server using the HTTP request method
         ``method`` and the selector ``url``. If the ``body`` argument is
@@ -160,6 +160,9 @@ class HTTP20Connection(object):
         :param headers: (optional) The headers to send on the request.
         :returns: A stream ID for the request.
         """
+
+        headers = headers or {}
+
         stream_id = self.putrequest(method, url)
 
         default_headers = (':method', ':scheme', ':authority', ':path')
