@@ -264,7 +264,8 @@ class HTTP11Connection(object):
         # Encode SETTINGS frame payload in Base64 and put into the HTTP-2 Settings header.
         http2_settings = SettingsFrame(0)
         http2_settings.settings[SettingsFrame.INITIAL_WINDOW_SIZE] = 65535
-        headers[b'HTTP2-Settings'] = base64.b64encode(http2_settings.serialize_body())
+        encoded_settings = base64.urlsafe_b64encode(http2_settings.serialize_body())
+        headers[b'HTTP2-Settings'] = encoded_settings.rstrip(b'=')
 
     def _send_body(self, body, body_type):
         """
