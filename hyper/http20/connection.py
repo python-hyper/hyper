@@ -9,6 +9,7 @@ import h2.connection
 import h2.events
 import h2.settings
 
+from ..compat import ssl
 from ..tls import wrap_socket, H2_NPN_PROTOCOLS, H2C_PROTOCOL
 from ..common.exceptions import ConnectionResetError
 from ..common.bufsocket import BufferedSocket
@@ -237,7 +238,7 @@ class HTTP20Connection(object):
                 host = self.proxy_host
                 port = self.proxy_port
 
-            sock = socket.create_connection((host, port), 5)
+            sock = socket.create_connection((host, port))
 
             if self.secure:
                 assert not self.proxy_host, "Using a proxy with HTTPS not yet supported."
@@ -522,13 +523,31 @@ class HTTP20Connection(object):
         # TODO: Re-evaluate this.
         self._single_read()
         count = 9
+        retry_wait = 0.05  # can improve responsiveness to delay the retry
 
         while count and self._sock is not None and self._sock.can_read:
-            # If the connection has been closed, bail out.
+            # If the connection has been closed, bail out, but retry
+            # on transient errors.
             try:
                 self._single_read()
             except ConnectionResetError:
                 break
+            except ssl.SSLError as e:  # pragma: no cover
+                # these are transient errors that can occur while reading from
+                # ssl connections.
+                if e.args[0] in (ssl.SSL_ERROR_WANT_READ, SSL_ERROR_WANT_WRITE):
+                    continue
+                else:
+                    raise
+            except socket.error as e:  # pragma: no cover
+                if e.errno in (errno.EINTR, errno.EAGAIN):
+                    # if 'interrupted' or 'try again', continue
+                    sleep(retry_wait)
+                    continue
+                elif e.errno == errno.ECONNRESET:
+                    break
+                else:
+                    raise
 
             count -= 1
 
