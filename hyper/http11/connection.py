@@ -130,7 +130,7 @@ class HTTP11Connection(object):
 
         return
 
-    def request(self, method, url, body=None, headers={}):
+    def request(self, method, url, body=None, headers=None):
         """
         This will send a request to the server using the HTTP request method
         ``method`` and the selector ``url``. If the ``body`` argument is
@@ -146,6 +146,9 @@ class HTTP11Connection(object):
         :param headers: (optional) The headers to send on the request.
         :returns: Nothing.
         """
+
+        headers = headers or {}
+
         method = to_bytestring(method)
         url = to_bytestring(url)
 
