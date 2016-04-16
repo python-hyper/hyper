@@ -12,6 +12,7 @@ import base64
 
 from collections import Iterable, Mapping
 
+import collections
 from hyperframe.frame import SettingsFrame
 
 from .response import HTTP11Response
@@ -141,7 +142,7 @@ class HTTP11Connection(object):
 
         :param method: The request method, e.g. ``'GET'``.
         :param url: The URL to contact, e.g. ``'/path/segment'``.
-        :param body: (optional) The request body to send. Must be a bytestring
+        :param body: (optional) The request body to send. Must be a bytestring, an iterable of bytestring
             or a file-like object.
         :param headers: (optional) The headers to send on the request.
         :returns: Nothing.
@@ -282,9 +283,7 @@ class HTTP11Connection(object):
                     try:
                         self._sock.send(block)
                     except TypeError:
-                        raise ValueError(
-                            "File objects must return bytestrings"
-                        )
+                        raise ValueError("File-like bodies must return bytestrings. Got: {}".format(type(block)))
 
                 return
 
@@ -295,14 +294,18 @@ class HTTP11Connection(object):
                 return
 
             # Iterables that set a specific content length.
-            else:
+            elif isinstance(body, collections.Iterable):
                 for item in body:
                     try:
                         self._sock.send(item)
                     except TypeError:
-                        raise ValueError("Body must be a bytestring")
-
+                        raise ValueError("Elements in iterable body must be bytestrings. "
+                                         "Illegal element: {}".format(item))
                 return
+
+            else:
+                raise ValueError('Request body must be a bytestring, a file-like object returning bytestrings '
+                                 'or an iterable of bytestrings. Got: {}'.format(type(body)))
 
         # Chunked! For chunked bodies we don't special-case, we just iterate
         # over what we have and send stuff out.
@@ -317,9 +320,7 @@ class HTTP11Connection(object):
                 self._sock.send(chunk)
                 self._sock.send(b'\r\n')
             except TypeError:
-                raise ValueError(
-                    "Iterable bodies must always iterate in bytestrings"
-                )
+                raise ValueError("Iterable bodies must always iterate in bytestrings")
 
         self._sock.send(b'0\r\n\r\n')
         return

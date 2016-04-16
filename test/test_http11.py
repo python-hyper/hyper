@@ -269,13 +269,14 @@ class TestHTTP11Connection(object):
     def test_content_length_overrides_generator(self):
         c = HTTP11Connection('httpbin.org')
         c._sock = sock = DummySocket()
+
         def body():
             yield b'hi'
             yield b'there'
             yield b'sir'
 
         c.request(
-            'POST', '/post', headers={b'content-length': b'10'}, body=body()
+            'POST', '/post', body=body(), headers={b'content-length': b'10'}
         )
 
         expected = (
@@ -288,8 +289,8 @@ class TestHTTP11Connection(object):
             b"\r\n"
             b"hitheresir"
         )
-        received = b''.join(sock.queue)
 
+        received = b''.join(sock.queue)
         assert received == expected
 
     def test_chunked_overrides_body(self):
@@ -414,6 +415,7 @@ class TestHTTP11Connection(object):
     def test_content_length_overrides_generator_unicode(self):
         c = HTTP11Connection('httpbin.org')
         c._sock = DummySocket()
+
         def body():
             yield u'hi'
             yield u'there'
@@ -445,6 +447,40 @@ class TestHTTP11Connection(object):
         )
 
         assert received == expected
+
+    def test_exception_raised_for_illegal_body_type(self):
+        c = HTTP11Connection('httpbin.org')
+
+        with pytest.raises(ValueError) as exc_info:
+            body = 1234
+            # content-length set so body type is set to BODY_FLAT. value doesn't matter
+            c.request('GET', '/get', body=body, headers={'content-length': str(len(str(body)))})
+        assert 'Request body must be a bytestring, a file-like object returning bytestrings ' \
+               'or an iterable of bytestrings. Got: {}'.format(type(body)) in str(exc_info)
+
+    def test_exception_raised_for_illegal_elements_in_iterable_body(self):
+        c = HTTP11Connection('httpbin.org')
+
+        rogue_element = 123
+        with pytest.raises(ValueError) as exc_info:
+            # content-length set so body type is set to BODY_FLAT. value doesn't matter
+            body = ['legal1', 'legal2', rogue_element]
+            c.request('GET', '/get', body=body, headers={'content-length': str(len(map(str, body)))})
+        assert 'Elements in iterable body must be bytestrings. Illegal element: {}'.format(rogue_element)\
+               in str(exc_info)
+
+    def test_exception_raised_for_filelike_body_not_returning_bytes(self):
+        c = HTTP11Connection('httpbin.org')
+
+        class RogueFile(object):
+            def read(self, size):
+                return 42
+
+        with pytest.raises(ValueError) as exc_info:
+            # content-length set so body type is BODY_FLAT. value doesn't matter
+            c.request('GET', '/get', body=RogueFile(), headers={'content-length': str(10)})
+        assert 'File-like bodies must return bytestrings. Got: {}'.format(int) in str(exc_info)
+
 
 class TestHTTP11Response(object):
     def test_short_circuit_read(self):
