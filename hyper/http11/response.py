@@ -54,7 +54,9 @@ class HTTP11Response(object):
             self._length = None
 
         # Whether we expect a chunked response.
-        self._chunked = b'chunked' in self.headers.get(b'transfer-encoding', [])
+        self._chunked = (
+            b'chunked' in self.headers.get(b'transfer-encoding', [])
+        )
 
         # One of the following must be true: we must expect that the connection
         # will be closed following the body, or that a content-length was sent,
@@ -76,7 +78,7 @@ class HTTP11Response(object):
             self._decompressobj = None
 
         # This is a reference that allows for the Response class to tell the
-        # parent connection object to throw away its socket object. This is to
+        # parent connection object to throw away its socket object. This is to
         # be used when the connection is genuinely closed, so that the user
         # can keep using the Connection object.
         # Strictly, we take a weakreference to this so that we don't set up a
