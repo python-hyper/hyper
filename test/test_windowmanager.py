@@ -5,6 +5,7 @@ Tests the hyper window manager.
 from hyper.http20.window import BaseFlowControlManager, FlowControlManager
 import pytest
 
+
 class TestBaseFCM(object):
     """
     Tests the base flow control manager.
