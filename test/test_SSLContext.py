@@ -8,8 +8,6 @@ import hyper
 from hyper.common.connection import HTTPConnection
 from hyper.compat import ssl
 
-import pytest
-
 
 TEST_DIR = os.path.abspath(os.path.dirname(__file__))
 TEST_CERTS_DIR = os.path.join(TEST_DIR, 'certs')
@@ -25,10 +23,9 @@ class TestSSLContext(object):
     def test_default_context(self):
         # Create default SSLContext
         hyper.tls._context = hyper.tls.init_context()
-        assert hyper.tls._context.check_hostname == True
+        assert hyper.tls._context.check_hostname
         assert hyper.tls._context.verify_mode == ssl.CERT_REQUIRED
         assert hyper.tls._context.options & ssl.OP_NO_COMPRESSION != 0
-
 
     def test_custom_context(self):
         # The following SSLContext doesn't provide any valid certicate.
@@ -40,10 +37,9 @@ class TestSSLContext(object):
 
         hyper.tls._context = context
 
-        assert hyper.tls._context.check_hostname == False
+        assert not hyper.tls._context.check_hostname
         assert hyper.tls._context.verify_mode == ssl.CERT_NONE
         assert hyper.tls._context.options & ssl.OP_NO_COMPRESSION == 0
-
 
     def test_HTTPConnection_with_custom_context(self):
         context = ssl.SSLContext(ssl.PROTOCOL_SSLv23)
@@ -55,13 +51,12 @@ class TestSSLContext(object):
 
         conn = HTTPConnection('http2bin.org', 443, ssl_context=context)
 
-        assert conn.ssl_context.check_hostname == True
+        assert conn.ssl_context.check_hostname
         assert conn.ssl_context.verify_mode == ssl.CERT_REQUIRED
         assert conn.ssl_context.options & ssl.OP_NO_COMPRESSION != 0
 
-
     def test_client_certificates(self):
-        context = hyper.tls.init_context(
+        hyper.tls.init_context(
             cert=(CLIENT_CERT_FILE, CLIENT_KEY_FILE),
             cert_password=b'abc123')
-        context = hyper.tls.init_context(cert=CLIENT_PEM_FILE)
+        hyper.tls.init_context(cert=CLIENT_PEM_FILE)
