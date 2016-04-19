@@ -132,7 +132,8 @@ class Stream(object):
             return sum(map(len, list))
 
         # Keep reading until the stream is closed or we get enough data.
-        while not self.remote_closed and (amt is None or listlen(self.data) < amt):
+        while (not self.remote_closed and
+                (amt is None or listlen(self.data) < amt)):
             self._recv_cb()
 
         result = b''.join(self.data)
@@ -246,11 +247,11 @@ class Stream(object):
 
     def get_pushes(self, capture_all=False):
         """
-        Returns a generator that yields push promises from the server. Note that
-        this method is not idempotent; promises returned in one call will not be
-        returned in subsequent calls. Iterating through generators returned by
-        multiple calls to this method simultaneously results in undefined
-        behavior.
+        Returns a generator that yields push promises from the server. Note
+        that this method is not idempotent; promises returned in one call will
+        not be returned in subsequent calls. Iterating through generators
+        returned by multiple calls to this method simultaneously results in
+        undefined behavior.
 
         :param capture_all: If ``False``, the generator will yield all buffered
             push promises without blocking. If ``True``, the generator will
