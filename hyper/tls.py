@@ -67,12 +67,12 @@ def wrap_socket(sock, server_hostname, ssl_context=None, force_proto=None):
 
 def init_context(cert_path=None, cert=None, cert_password=None):
     """
-    Create a new ``SSLContext`` that is correctly set up for an HTTP/2 connection.
-    This SSL context object can be customized and passed as a parameter to the
-    :class:`HTTPConnection <hyper.HTTPConnection>` class. Provide your
-    own certificate file in case you don’t want to use hyper’s default
-    certificate. The path to the certificate can be absolute or relative
-    to your working directory.
+    Create a new ``SSLContext`` that is correctly set up for an HTTP/2
+    connection. This SSL context object can be customized and passed as a
+    parameter to the :class:`HTTPConnection <hyper.HTTPConnection>` class.
+    Provide your own certificate file in case you don’t want to use hyper’s
+    default certificate. The path to the certificate can be absolute or
+    relative to your working directory.
 
     :param cert_path: (optional) The path to the certificate file of
         “certification authority” (CA) certificates
