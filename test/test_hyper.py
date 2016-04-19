@@ -1,17 +1,14 @@
 # -*- coding: utf-8 -*-
 from h2.frame_buffer import FrameBuffer
 from hyperframe.frame import (
-    Frame, DataFrame, RstStreamFrame, SettingsFrame,
-    PushPromiseFrame, PingFrame, WindowUpdateFrame, HeadersFrame,
-    ContinuationFrame, BlockedFrame, GoAwayFrame, FRAME_MAX_LEN, FRAME_MAX_ALLOWED_LEN
+    Frame, DataFrame, RstStreamFrame, SettingsFrame, PushPromiseFrame,
+    WindowUpdateFrame, HeadersFrame, ContinuationFrame, GoAwayFrame,
+    FRAME_MAX_ALLOWED_LEN
 )
-from hpack.hpack_compat import Encoder, Decoder
+from hpack.hpack_compat import Encoder
 from hyper.http20.connection import HTTP20Connection
 from hyper.http20.response import HTTP20Response, HTTP20Push
-from hyper.http20.exceptions import (
-    HPACKDecodingError, HPACKEncodingError, ProtocolError, ConnectionError,
-)
-from hyper.http20.window import FlowControlManager
+from hyper.http20.exceptions import ConnectionError
 from hyper.http20.util import (
     combine_repeated_headers, split_repeated_headers, h2_safe_headers
 )
@@ -25,7 +22,6 @@ import pytest
 import socket
 import zlib
 from io import BytesIO
-import hyper
 
 
 TEST_DIR = os.path.abspath(os.path.dirname(__file__))
@@ -50,15 +46,15 @@ def frame_buffer():
 class TestHyperConnection(object):
     def test_connections_accept_hosts_and_ports(self):
         c = HTTP20Connection(host='www.google.com', port=8080)
-        assert c.host =='www.google.com'
+        assert c.host == 'www.google.com'
         assert c.port == 8080
-        assert c.proxy_host == None
+        assert c.proxy_host is None
 
     def test_connections_can_parse_hosts_and_ports(self):
         c = HTTP20Connection('www.google.com:8080')
         assert c.host == 'www.google.com'
         assert c.port == 8080
-        assert c.proxy_host == None
+        assert c.proxy_host is None
 
     def test_connections_accept_proxy_hosts_and_ports(self):
         c = HTTP20Connection('www.google.com', proxy_host='localhost:8443')
@@ -262,7 +258,7 @@ class TestHyperConnection(object):
         assert c.next_stream_id == 1
         assert c.window_manager is not wm
 
-    def test_connection_doesnt_send_window_update_on_zero_length_data_frame(self):
+    def test_connection_no_window_update_on_zero_length_data_frame(self):
         # Prepare a socket with a data frame in it that has no length.
         sock = DummySocket()
         sock.buffer = BytesIO(DataFrame(1).serialize())
@@ -299,8 +295,8 @@ class TestHyperConnection(object):
 
     def test_read_headers_out_of_order(self):
         # If header blocks aren't decoded in the same order they're received,
-        # regardless of the stream they belong to, the decoder state will become
-        # corrupted.
+        # regardless of the stream they belong to, the decoder state will
+        # become corrupted.
         e = Encoder()
         h1 = HeadersFrame(1)
         h1.data = e.encode([(':status', 200), ('content-type', 'foo/bar')])
@@ -316,8 +312,12 @@ class TestHyperConnection(object):
         r1 = c.request('GET', '/a')
         r3 = c.request('GET', '/b')
 
-        assert c.get_response(r3).headers == HTTPHeaderMap([('content-type', 'baz/qux')])
-        assert c.get_response(r1).headers == HTTPHeaderMap([('content-type', 'foo/bar')])
+        assert c.get_response(r3).headers == HTTPHeaderMap(
+            [('content-type', 'baz/qux')]
+        )
+        assert c.get_response(r1).headers == HTTPHeaderMap(
+            [('content-type', 'foo/bar')]
+        )
 
     def test_headers_with_continuation(self):
         e = Encoder()
@@ -338,7 +338,9 @@ class TestHyperConnection(object):
         c._sock = sock
         r = c.request('GET', '/')
 
-        assert set(c.get_response(r).headers.iter_raw()) == set([(b'content-type', b'foo/bar'), (b'content-length', b'0')])
+        assert set(c.get_response(r).headers.iter_raw()) == set(
+            [(b'content-type', b'foo/bar'), (b'content-length', b'0')]
+        )
 
     def test_send_tolerate_peer_gone(self):
         class ErrorSocket(DummySocket):
@@ -351,7 +353,7 @@ class TestHyperConnection(object):
         with pytest.raises(socket.error):
             c._send_cb(f, False)
         c._sock = DummySocket()
-        c._send_cb(f, True) # shouldn't raise an error
+        c._send_cb(f, True)  # shouldn't raise an error
 
     def test_connection_window_increments_appropriately(self, frame_buffer):
         e = Encoder()
@@ -391,7 +393,6 @@ class TestHyperConnection(object):
         d.data = b'hi there sir'
         d2 = DataFrame(1)
         d2.data = b'hi there sir again'
-        #d2.flags = set(['END_STREAM'])
         sock = DummySocket()
         sock.buffer = BytesIO(h.serialize() + d.serialize() + d2.serialize())
 
@@ -414,7 +415,9 @@ class TestHyperConnection(object):
 
     def test_that_using_proxy_keeps_http_headers_intact(self):
         sock = DummySocket()
-        c = HTTP20Connection('www.google.com', secure=False, proxy_host='localhost')
+        c = HTTP20Connection(
+            'www.google.com', secure=False, proxy_host='localhost'
+        )
         c._sock = sock
         c.request('GET', '/')
         s = c.recent_stream
@@ -494,7 +497,8 @@ class TestServerPush(object):
         self.encoder = Encoder()
         self.conn = None
 
-    def add_push_frame(self, stream_id, promised_stream_id, headers, end_block=True):
+    def add_push_frame(self, stream_id, promised_stream_id, headers,
+                       end_block=True):
         frame = PushPromiseFrame(stream_id)
         frame.promised_stream_id = promised_stream_id
         frame.data = self.encoder.encode(headers)
@@ -502,7 +506,8 @@ class TestServerPush(object):
             frame.flags.add('END_HEADERS')
         self.frames.append(frame)
 
-    def add_headers_frame(self, stream_id, headers, end_block=True, end_stream=False):
+    def add_headers_frame(self, stream_id, headers, end_block=True,
+                          end_stream=False):
         frame = HeadersFrame(stream_id)
         frame.data = self.encoder.encode(headers)
         if end_block:
@@ -521,7 +526,9 @@ class TestServerPush(object):
     def request(self):
         self.conn = HTTP20Connection('www.google.com', enable_push=True)
         self.conn._sock = DummySocket()
-        self.conn._sock.buffer = BytesIO(b''.join([frame.serialize() for frame in self.frames]))
+        self.conn._sock.buffer = BytesIO(
+            b''.join([frame.serialize() for frame in self.frames])
+        )
         self.conn.request('GET', '/')
 
     def assert_response(self):
@@ -542,14 +549,30 @@ class TestServerPush(object):
     def assert_push_response(self):
         push_response = self.pushes[0].get_response()
         assert push_response.status == 200
-        assert dict(push_response.headers) == {b'content-type': [b'application/javascript']}
+        assert dict(push_response.headers) == {
+            b'content-type': [b'application/javascript']
+        }
         assert push_response.read() == b'bar'
 
     def test_promise_before_headers(self):
-        self.add_push_frame(1, 2, [(':method', 'GET'), (':path', '/'), (':authority', 'www.google.com'), (':scheme', 'https'), ('accept-encoding', 'gzip')])
-        self.add_headers_frame(1, [(':status', '200'), ('content-type', 'text/html')])
+        self.add_push_frame(
+            1,
+            2,
+            [
+                (':method', 'GET'),
+                (':path', '/'),
+                (':authority', 'www.google.com'),
+                (':scheme', 'https'),
+                ('accept-encoding', 'gzip')
+            ]
+        )
+        self.add_headers_frame(
+            1, [(':status', '200'), ('content-type', 'text/html')]
+        )
         self.add_data_frame(1, b'foo', end_stream=True)
-        self.add_headers_frame(2, [(':status', '200'), ('content-type', 'application/javascript')])
+        self.add_headers_frame(
+            2, [(':status', '200'), ('content-type', 'application/javascript')]
+        )
         self.add_data_frame(2, b'bar', end_stream=True)
 
         self.request()
@@ -560,10 +583,24 @@ class TestServerPush(object):
         self.assert_push_response()
 
     def test_promise_after_headers(self):
-        self.add_headers_frame(1, [(':status', '200'), ('content-type', 'text/html')])
-        self.add_push_frame(1, 2, [(':method', 'GET'), (':path', '/'), (':authority', 'www.google.com'), (':scheme', 'https'), ('accept-encoding', 'gzip')])
+        self.add_headers_frame(
+            1, [(':status', '200'), ('content-type', 'text/html')]
+        )
+        self.add_push_frame(
+            1,
+            2,
+            [
+                (':method', 'GET'),
+                (':path', '/'),
+                (':authority', 'www.google.com'),
+                (':scheme', 'https'),
+                ('accept-encoding', 'gzip')
+            ]
+        )
         self.add_data_frame(1, b'foo', end_stream=True)
-        self.add_headers_frame(2, [(':status', '200'), ('content-type', 'application/javascript')])
+        self.add_headers_frame(
+            2, [(':status', '200'), ('content-type', 'application/javascript')]
+        )
         self.add_data_frame(2, b'bar', end_stream=True)
 
         self.request()
@@ -574,11 +611,25 @@ class TestServerPush(object):
         self.assert_push_response()
 
     def test_promise_after_data(self):
-        self.add_headers_frame(1, [(':status', '200'), ('content-type', 'text/html')])
+        self.add_headers_frame(
+            1, [(':status', '200'), ('content-type', 'text/html')]
+        )
         self.add_data_frame(1, b'fo')
-        self.add_push_frame(1, 2, [(':method', 'GET'), (':path', '/'), (':authority', 'www.google.com'), (':scheme', 'https'), ('accept-encoding', 'gzip')])
+        self.add_push_frame(
+            1,
+            2,
+            [
+                (':method', 'GET'),
+                (':path', '/'),
+                (':authority', 'www.google.com'),
+                (':scheme', 'https'),
+                ('accept-encoding', 'gzip')
+            ]
+        )
         self.add_data_frame(1, b'o', end_stream=True)
-        self.add_headers_frame(2, [(':status', '200'), ('content-type', 'application/javascript')])
+        self.add_headers_frame(
+            2, [(':status', '200'), ('content-type', 'application/javascript')]
+        )
         self.add_data_frame(2, b'bar', end_stream=True)
 
         self.request()
@@ -589,12 +640,38 @@ class TestServerPush(object):
         self.assert_push_response()
 
     def test_capture_all_promises(self):
-        self.add_push_frame(1, 2, [(':method', 'GET'), (':path', '/one'), (':authority', 'www.google.com'), (':scheme', 'https'), ('accept-encoding', 'gzip')])
-        self.add_headers_frame(1, [(':status', '200'), ('content-type', 'text/html')])
-        self.add_push_frame(1, 4, [(':method', 'GET'), (':path', '/two'), (':authority', 'www.google.com'), (':scheme', 'https'), ('accept-encoding', 'gzip')])
+        self.add_push_frame(
+            1,
+            2,
+            [
+                (':method', 'GET'),
+                (':path', '/one'),
+                (':authority', 'www.google.com'),
+                (':scheme', 'https'),
+                ('accept-encoding', 'gzip')
+            ]
+        )
+        self.add_headers_frame(
+            1, [(':status', '200'), ('content-type', 'text/html')]
+        )
+        self.add_push_frame(
+            1,
+            4,
+            [
+                (':method', 'GET'),
+                (':path', '/two'),
+                (':authority', 'www.google.com'),
+                (':scheme', 'https'),
+                ('accept-encoding', 'gzip')
+            ]
+        )
         self.add_data_frame(1, b'foo', end_stream=True)
-        self.add_headers_frame(4, [(':status', '200'), ('content-type', 'application/javascript')])
-        self.add_headers_frame(2, [(':status', '200'), ('content-type', 'application/javascript')])
+        self.add_headers_frame(
+            4, [(':status', '200'), ('content-type', 'application/javascript')]
+        )
+        self.add_headers_frame(
+            2, [(':status', '200'), ('content-type', 'application/javascript')]
+        )
         self.add_data_frame(4, b'two', end_stream=True)
         self.add_data_frame(2, b'one', end_stream=True)
 
@@ -610,8 +687,20 @@ class TestServerPush(object):
         assert self.response.read() == b'foo'
 
     def test_cancel_push(self):
-        self.add_push_frame(1, 2, [(':method', 'GET'), (':path', '/'), (':authority', 'www.google.com'), (':scheme', 'https'), ('accept-encoding', 'gzip')])
-        self.add_headers_frame(1, [(':status', '200'), ('content-type', 'text/html')])
+        self.add_push_frame(
+            1,
+            2,
+            [
+                (':method', 'GET'),
+                (':path', '/'),
+                (':authority', 'www.google.com'),
+                (':scheme', 'https'),
+                ('accept-encoding', 'gzip')
+            ]
+        )
+        self.add_headers_frame(
+            1, [(':status', '200'), ('content-type', 'text/html')]
+        )
 
         self.request()
         self.conn.get_response()
@@ -622,8 +711,20 @@ class TestServerPush(object):
         assert self.conn._sock.queue[-1] == f.serialize()
 
     def test_reset_pushed_streams_when_push_disabled(self):
-        self.add_push_frame(1, 2, [(':method', 'GET'), (':path', '/'), (':authority', 'www.google.com'), (':scheme', 'https'), ('accept-encoding', 'gzip')])
-        self.add_headers_frame(1, [(':status', '200'), ('content-type', 'text/html')])
+        self.add_push_frame(
+            1,
+            2,
+            [
+                (':method', 'GET'),
+                (':path', '/'),
+                (':authority', 'www.google.com'),
+                (':scheme', 'https'),
+                ('accept-encoding', 'gzip')
+            ]
+        )
+        self.add_headers_frame(
+            1, [(':status', '200'), ('content-type', 'text/html')]
+        )
 
         self.request()
         self.conn._enable_push = False
@@ -656,7 +757,9 @@ class TestResponse(object):
         assert not resp.headers
 
     def test_response_transparently_decrypts_gzip(self):
-        headers = HTTPHeaderMap([(':status', '200'), ('content-encoding', 'gzip')])
+        headers = HTTPHeaderMap(
+            [(':status', '200'), ('content-encoding', 'gzip')]
+        )
         c = zlib_compressobj(wbits=24)
         body = c.compress(b'this is test data')
         body += c.flush()
@@ -665,7 +768,9 @@ class TestResponse(object):
         assert resp.read() == b'this is test data'
 
     def test_response_transparently_decrypts_real_deflate(self):
-        headers = HTTPHeaderMap([(':status', '200'), ('content-encoding', 'deflate')])
+        headers = HTTPHeaderMap(
+            [(':status', '200'), ('content-encoding', 'deflate')]
+        )
         c = zlib_compressobj(wbits=zlib.MAX_WBITS)
         body = c.compress(b'this is test data')
         body += c.flush()
@@ -674,7 +779,9 @@ class TestResponse(object):
         assert resp.read() == b'this is test data'
 
     def test_response_transparently_decrypts_wrong_deflate(self):
-        headers = HTTPHeaderMap([(':status', '200'), ('content-encoding', 'deflate')])
+        headers = HTTPHeaderMap(
+            [(':status', '200'), ('content-encoding', 'deflate')]
+        )
         c = zlib_compressobj(wbits=-zlib.MAX_WBITS)
         body = c.compress(b'this is test data')
         body += c.flush()
@@ -694,7 +801,7 @@ class TestResponse(object):
         headers = HTTPHeaderMap([(':status', '200')])
         stream = DummyStream('')
 
-        with HTTP20Response(headers, stream) as resp:
+        with HTTP20Response(headers, stream):
             pass
 
         assert stream.closed
@@ -723,14 +830,18 @@ class TestResponse(object):
         assert resp.read() == b''
 
     def test_getheader(self):
-        headers = HTTPHeaderMap([(':status', '200'), ('content-type', 'application/json')])
+        headers = HTTPHeaderMap(
+            [(':status', '200'), ('content-type', 'application/json')]
+        )
         stream = DummyStream(b'')
         resp = HTTP20Response(headers, stream)
 
         assert resp.headers[b'content-type'] == [b'application/json']
 
     def test_response_ignores_unknown_headers(self):
-        headers = HTTPHeaderMap([(':status', '200'), (':reserved', 'yes'), ('no', 'no')])
+        headers = HTTPHeaderMap(
+            [(':status', '200'), (':reserved', 'yes'), ('no', 'no')]
+        )
         stream = DummyStream(b'')
         resp = HTTP20Response(headers, stream)
 
@@ -764,7 +875,9 @@ class TestResponse(object):
             assert recv == expected
 
     def test_read_compressed_frames(self):
-        headers = HTTPHeaderMap([(':status', '200'), ('content-encoding', 'gzip')])
+        headers = HTTPHeaderMap(
+            [(':status', '200'), ('content-encoding', 'gzip')]
+        )
         c = zlib_compressobj(wbits=24)
         body = c.compress(b'this is test data')
         body += c.flush()
@@ -802,7 +915,6 @@ class TestHTTP20Adapter(object):
             'http',
             cert=CLIENT_PEM_FILE)
         assert conn1 is conn2
-
 
 
 class TestUtilities(object):
@@ -847,7 +959,7 @@ class TestUtilities(object):
             import nghttp2
         else:
             with pytest.raises(ImportError):
-                import nghttp2
+                import nghttp2  # noqa
 
         assert True
 
@@ -879,7 +991,7 @@ class TestUtilities(object):
     def test_goaway_frame_PROTOCOL_ERROR(self):
         f = GoAwayFrame(0)
         # Set error code to PROTOCOL_ERROR
-        f.error_code = 1;
+        f.error_code = 1
 
         c = HTTP20Connection('www.google.com')
         c._sock = DummySocket()
@@ -901,7 +1013,7 @@ class TestUtilities(object):
     def test_goaway_frame_HTTP_1_1_REQUIRED(self):
         f = GoAwayFrame(0)
         # Set error code to HTTP_1_1_REQUIRED
-        f.error_code = 13;
+        f.error_code = 13
 
         c = HTTP20Connection('www.google.com')
         c._sock = DummySocket()
@@ -923,7 +1035,7 @@ class TestUtilities(object):
     def test_goaway_frame_NO_ERROR(self):
         f = GoAwayFrame(0)
         # Set error code to NO_ERROR
-        f.error_code = 0;
+        f.error_code = 0
 
         c = HTTP20Connection('www.google.com')
         c._sock = DummySocket()
@@ -937,7 +1049,7 @@ class TestUtilities(object):
     def test_goaway_frame_invalid_error_code(self):
         f = GoAwayFrame(0)
         # Set error code to non existing error
-        f.error_code = 100;
+        f.error_code = 100
 
         c = HTTP20Connection('www.google.com')
         c._sock = DummySocket()
@@ -954,7 +1066,6 @@ class TestUtilities(object):
             name, number, description = errors.get_data(100)
 
         assert str(f.error_code) in err_msg
-
 
 
 # Some utility classes for the tests.

@@ -36,6 +36,7 @@ if ssl is not None:
     # Cover our bases because NPN doesn't yet work on all our test platforms.
     hyper.http20.connection.H2_NPN_PROTOCOLS += ['', None]
 
+
 def decode_frame(frame_data):
     f, length = Frame.parse_frame_header(frame_data[:9])
     f.parse_body(memoryview(frame_data[9:9 + length]))
@@ -249,7 +250,7 @@ class TestHyperIntegration(SocketLevelTest):
         send_event.set()
 
         # Check that we closed the connection.
-        assert conn._sock == None
+        assert conn._sock is None
 
         self.tear_down()
 
@@ -302,8 +303,10 @@ class TestHyperIntegration(SocketLevelTest):
             receive_preamble(sock)
             sock.recv(65535)
 
-            # Now, send the headers for the response. This response has no body.
-            f = build_headers_frame([(':status', '204'), ('content-length', '0')])
+            # Now, send the headers for the response. This response has no body
+            f = build_headers_frame(
+                [(':status', '204'), ('content-length', '0')]
+            )
             f.flags.add('END_STREAM')
             f.stream_id = 1
             sock.send(f.serialize())
@@ -338,7 +341,6 @@ class TestHyperIntegration(SocketLevelTest):
             sock = listener.accept()[0]
 
             e = Encoder()
-            e.huffman_coder = HuffmanEncoder(REQUEST_CODES, REQUEST_CODES_LENGTH)
 
             # We get two messages for the connection open and then a HEADERS
             # frame.
@@ -402,7 +404,6 @@ class TestHyperIntegration(SocketLevelTest):
             sock = listener.accept()[0]
 
             e = Encoder()
-            e.huffman_coder = HuffmanEncoder(REQUEST_CODES, REQUEST_CODES_LENGTH)
 
             # We get two messages for the connection open and then a HEADERS
             # frame.
@@ -549,10 +550,11 @@ class TestHyperIntegration(SocketLevelTest):
 
             h = HeadersFrame(1)
             h.data = self.get_encoder().encode(
-                [(':status', 200),
-                 ('content-type', 'not/real'),
-                 ('content-length', 14),
-                 ('server', 'socket-level-server')
+                [
+                    (':status', 200),
+                    ('content-type', 'not/real'),
+                    ('content-length', 14),
+                    ('server', 'socket-level-server')
                 ]
             )
             h.flags.add('END_HEADERS')
@@ -597,10 +599,11 @@ class TestHyperIntegration(SocketLevelTest):
 
             h = HeadersFrame(1)
             h.data = self.get_encoder().encode(
-                [(':status', 200),
-                 ('content-type', 'not/real'),
-                 ('content-length', 12),
-                 ('server', 'socket-level-server')
+                [
+                    (':status', 200),
+                    ('content-type', 'not/real'),
+                    ('content-length', 12),
+                    ('server', 'socket-level-server')
                 ]
             )
             h.flags.add('END_HEADERS')
@@ -884,9 +887,10 @@ class TestRequestsAdapter(SocketLevelTest):
             # Respond!
             h = HeadersFrame(1)
             h.data = self.get_encoder().encode(
-                [(':status', 200),
-                 ('content-type', 'not/real'),
-                 ('content-length', 20),
+                [
+                    (':status', 200),
+                    ('content-type', 'not/real'),
+                    ('content-length', 20),
                 ]
             )
             h.flags.add('END_HEADERS')
@@ -942,9 +946,10 @@ class TestRequestsAdapter(SocketLevelTest):
             # Respond!
             h = HeadersFrame(1)
             h.data = self.get_encoder().encode(
-                [(':status', 200),
-                 ('content-type', 'not/real'),
-                 ('content-length', 20),
+                [
+                    (':status', 200),
+                    ('content-type', 'not/real'),
+                    ('content-length', 20),
                 ]
             )
             h.flags.add('END_HEADERS')

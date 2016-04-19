@@ -10,6 +10,7 @@ from ..http11.connection import HTTP11Connection
 from ..http20.connection import HTTP20Connection
 from ..tls import H2_NPN_PROTOCOLS, H2C_PROTOCOL
 
+
 class HTTPConnection(object):
     """
     An object representing a single HTTP connection to a server.
@@ -24,15 +25,15 @@ class HTTPConnection(object):
     :param host: The host to connect to. This may be an IP address or a
         hostname, and optionally may include a port: for example,
         ``'http2bin.org'``, ``'http2bin.org:443'`` or ``'127.0.0.1'``.
-    :param port: (optional) The port to connect to. If not provided and one also
-        isn't provided in the ``host`` parameter, defaults to 80.
+    :param port: (optional) The port to connect to. If not provided and one
+        also isn't provided in the ``host`` parameter, defaults to 80.
     :param secure: (optional) Whether the request should use TLS.
         Defaults to ``False`` for most requests, but to ``True`` for any
         request issued to port 443.
     :param window_manager: (optional) The class to use to manage flow control
         windows. This needs to be a subclass of the
-        :class:`BaseFlowControlManager <hyper.http20.window.BaseFlowControlManager>`.
-        If not provided,
+        :class:`BaseFlowControlManager
+        <hyper.http20.window.BaseFlowControlManager>`. If not provided,
         :class:`FlowControlManager <hyper.http20.window.FlowControlManager>`
         will be used.
     :param enable_push: (optional) Whether the server is allowed to push
@@ -40,10 +41,11 @@ class HTTPConnection(object):
         :meth:`get_pushes() <hyper.HTTP20Connection.get_pushes>`).
     :param ssl_context: (optional) A class with custom certificate settings.
         If not provided then hyper's default ``SSLContext`` is used instead.
-    :param proxy_host: (optional) The proxy to connect to.  This can be an IP address
-        or a host name and may include a port.
+    :param proxy_host: (optional) The proxy to connect to.  This can be an IP
+        address or a host name and may include a port.
     :param proxy_port: (optional) The proxy port to connect to. If not provided
-        and one also isn't provided in the ``proxy`` parameter, defaults to 8080.
+        and one also isn't provided in the ``proxy`` parameter, defaults to
+        8080.
     """
     def __init__(self,
                  host,

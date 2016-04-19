@@ -13,6 +13,8 @@ This module defines an interface for pluggable flow-control managers. These
 managers will define a flow-control policy. This policy will determine when to
 send WINDOWUPDATE frames.
 """
+
+
 class BaseFlowControlManager(object):
     """
     The abstract base class for flow control managers.
@@ -128,8 +130,8 @@ class FlowControlManager(BaseFlowControlManager):
     ``hyper``'s default flow control manager.
 
     This implements hyper's flow control algorithms. This algorithm attempts to
-    reduce the number of WINDOWUPDATE frames we send without blocking the remote
-    endpoint behind the flow control window.
+    reduce the number of WINDOWUPDATE frames we send without blocking the
+    remote endpoint behind the flow control window.
 
     This algorithm will become more complicated over time. In the current form,
     the algorithm is very simple:
@@ -143,7 +145,7 @@ class FlowControlManager(BaseFlowControlManager):
         future_window_size = self.window_size - frame_size
 
         if ((future_window_size < (self.initial_window_size / 4)) or
-            (future_window_size < 1000)):
+                (future_window_size < 1000)):
             return self.initial_window_size - future_window_size
 
         return 0

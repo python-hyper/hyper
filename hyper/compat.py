@@ -1,7 +1,8 @@
 # -*- coding: utf-8 -*-
+# flake8: noqa
 """
 hyper/compat
-~~~~~~~~~
+~~~~~~~~~~~~
 
 Normalizes the Python 2/3 API for internal use.
 """
@@ -20,6 +21,7 @@ is_py2 = _ver[0] == 2
 is_py2_7_9_or_later = _ver[0] >= 2 and _ver[1] >= 7 and _ver[2] >= 9
 is_py3 = _ver[0] == 3
 is_py3_3 = is_py3 and _ver[1] == 3
+
 
 @contextmanager
 def ignore_missing():

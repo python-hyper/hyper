@@ -116,7 +116,7 @@ def test_cli_with_system_exit(argv):
     (['GET', 'example.com', ':authority:example.org', 'x-test:header'],
      {'method': 'GET', 'headers': {
                             ':authority': 'example.org',
-                            'x-test':'header'}}),
+                            'x-test': 'header'}}),
 ], ids=[
     'specified "--debug" option',
     'specified host and additional header',

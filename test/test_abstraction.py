@@ -4,11 +4,13 @@ import hyper.common.connection
 from hyper.common.connection import HTTPConnection
 from hyper.common.exceptions import TLSUpgrade, HTTPUpgrade
 
+
 class TestHTTPConnection(object):
     def test_h1_kwargs(self):
         c = HTTPConnection(
             'test', 443, secure=False, window_manager=True, enable_push=True,
-            ssl_context=False, proxy_host=False, proxy_port=False, other_kwarg=True
+            ssl_context=False, proxy_host=False, proxy_port=False,
+            other_kwarg=True
         )
 
         assert c._h1_kwargs == {
@@ -22,7 +24,8 @@ class TestHTTPConnection(object):
     def test_h2_kwargs(self):
         c = HTTPConnection(
             'test', 443, secure=False, window_manager=True, enable_push=True,
-            ssl_context=True, proxy_host=False, proxy_port=False, other_kwarg=True
+            ssl_context=True, proxy_host=False, proxy_port=False,
+            other_kwarg=True
         )
 
         assert c._h2_kwargs == {
@@ -115,5 +118,5 @@ class DummyH2Connection(object):
             return 'h2'
 
     def get_response(self, *args, **kwargs):
-         if not self.secure:
+        if not self.secure:
             return 'h2c'

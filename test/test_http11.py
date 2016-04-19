@@ -33,7 +33,7 @@ class TestHTTP11Connection(object):
             import pycohttpparser
         else:
             with pytest.raises(ImportError):
-                import pycohttpparser
+                import pycohttpparser  # noqa
 
         assert True
 
@@ -88,7 +88,9 @@ class TestHTTP11Connection(object):
         assert c.proxy_port == 8443
 
     def test_initialization_proxy_with_separate_port(self):
-        c = HTTP11Connection('httpbin.org', proxy_host='localhost', proxy_port=8443)
+        c = HTTP11Connection(
+            'httpbin.org', proxy_host='localhost', proxy_port=8443
+        )
 
         assert c.host == 'httpbin.org'
         assert c.port == 80
@@ -97,7 +99,9 @@ class TestHTTP11Connection(object):
         assert c.proxy_port == 8443
 
     def test_initialization_with_ipv6_addresses_proxy_inline_port(self):
-        c = HTTP11Connection('[abcd:dcba::1234]', proxy_host='[ffff:aaaa::1]:8443')
+        c = HTTP11Connection(
+            '[abcd:dcba::1234]', proxy_host='[ffff:aaaa::1]:8443'
+        )
 
         assert c.host == 'abcd:dcba::1234'
         assert c.port == 80
@@ -153,7 +157,7 @@ class TestHTTP11Connection(object):
 
     def test_invalid_header(self):
         c = HTTP11Connection('httpbin.org')
-        c._sock = sock = DummySocket()
+        c._sock = DummySocket()
 
         with pytest.raises(ValueError):
             c.request('GET', '/get', headers=42)
@@ -208,6 +212,7 @@ class TestHTTP11Connection(object):
         # file and monkeypatching out 'os.fstat'. This makes it look like a
         # real file.
         FstatRval = namedtuple('FstatRval', ['st_size'])
+
         def fake_fstat(*args):
             return FstatRval(16)
 
@@ -242,6 +247,7 @@ class TestHTTP11Connection(object):
     def test_request_with_generator_body(self):
         c = HTTP11Connection('httpbin.org')
         c._sock = sock = DummySocket()
+
         def body():
             yield b'hi'
             yield b'there'
@@ -326,7 +332,7 @@ class TestHTTP11Connection(object):
         c = HTTP11Connection('httpbin.org')
         c._sock = sock = DummySocket()
 
-        sock._buffer= BytesIO(
+        sock._buffer = BytesIO(
             b"HTTP/1.1 201 No Content\r\n"
             b"Connection: close\r\n"
             b"Server: Socket\r\n"
@@ -349,7 +355,7 @@ class TestHTTP11Connection(object):
         c = HTTP11Connection('httpbin.org')
         c._sock = sock = DummySocket()
 
-        sock._buffer= BytesIO(
+        sock._buffer = BytesIO(
             b"HTTP/1.1 200 OK\r\n"
             b"Content-Length: 15\r\n"
             b"\r\n"
@@ -382,6 +388,7 @@ class TestHTTP11Connection(object):
         # file and monkeypatching out 'os.fstat'. This makes it look like a
         # real file.
         FstatRval = namedtuple('FstatRval', ['st_size'])
+
         def fake_fstat(*args):
             return FstatRval(16)
 
@@ -404,6 +411,7 @@ class TestHTTP11Connection(object):
     def test_request_with_unicode_generator_body(self):
         c = HTTP11Connection('httpbin.org')
         c._sock = DummySocket()
+
         def body():
             yield u'hi'
             yield u'there'
@@ -453,20 +461,34 @@ class TestHTTP11Connection(object):
 
         with pytest.raises(ValueError) as exc_info:
             body = 1234
-            # content-length set so body type is set to BODY_FLAT. value doesn't matter
-            c.request('GET', '/get', body=body, headers={'content-length': str(len(str(body)))})
-        assert 'Request body must be a bytestring, a file-like object returning bytestrings ' \
-               'or an iterable of bytestrings. Got: {}'.format(type(body)) in str(exc_info)
+            # content-length set so body type is set to BODY_FLAT. value
+            # doesn't matter
+            c.request(
+                'GET',
+                '/get',
+                body=body,
+                headers={'content-length': str(len(str(body)))}
+            )
+        assert 'Request body must be a bytestring, a file-like object ' \
+               'returning bytestrings or an iterable of bytestrings. ' \
+               'Got: {}'.format(type(body)) in str(exc_info)
 
     def test_exception_raised_for_illegal_elements_in_iterable_body(self):
         c = HTTP11Connection('httpbin.org')
 
         rogue_element = 123
         with pytest.raises(ValueError) as exc_info:
-            # content-length set so body type is set to BODY_FLAT. value doesn't matter
+            # content-length set so body type is set to BODY_FLAT. value
+            # doesn't matter
             body = ['legal1', 'legal2', rogue_element]
-            c.request('GET', '/get', body=body, headers={'content-length': str(len(map(str, body)))})
-        assert 'Elements in iterable body must be bytestrings. Illegal element: {}'.format(rogue_element)\
+            c.request(
+                'GET',
+                '/get',
+                body=body,
+                headers={'content-length': str(len(map(str, body)))}
+            )
+        assert 'Elements in iterable body must be bytestrings. Illegal ' \
+               'element: {}'.format(rogue_element) \
                in str(exc_info)
 
     def test_exception_raised_for_filelike_body_not_returning_bytes(self):
@@ -477,9 +499,16 @@ class TestHTTP11Connection(object):
                 return 42
 
         with pytest.raises(ValueError) as exc_info:
-            # content-length set so body type is BODY_FLAT. value doesn't matter
-            c.request('GET', '/get', body=RogueFile(), headers={'content-length': str(10)})
-        assert 'File-like bodies must return bytestrings. Got: {}'.format(int) in str(exc_info)
+            # content-length set so body type is BODY_FLAT. value doesn't
+            # matter
+            c.request(
+                'GET',
+                '/get',
+                body=RogueFile(),
+                headers={'content-length': str(10)}
+            )
+        assert 'File-like bodies must return bytestrings. ' \
+               'Got: {}'.format(int) in str(exc_info)
 
 
 class TestHTTP11Response(object):
@@ -509,7 +538,7 @@ class TestHTTP11Response(object):
         with r:
             assert r.read() == b''
 
-        assert r._sock == None
+        assert r._sock is None
 
     def test_response_transparently_decrypts_gzip(self):
         d = DummySocket()
@@ -525,7 +554,10 @@ class TestHTTP11Response(object):
 
     def test_response_transparently_decrypts_real_deflate(self):
         d = DummySocket()
-        headers = {b'content-encoding': [b'deflate'], b'connection': [b'close']}
+        headers = {
+            b'content-encoding': [b'deflate'],
+            b'connection': [b'close'],
+        }
         r = HTTP11Response(200, 'OK', headers, d, None)
         c = zlib_compressobj(wbits=zlib.MAX_WBITS)
         body = c.compress(b'this is test data')

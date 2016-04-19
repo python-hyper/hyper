@@ -19,16 +19,19 @@ from ..compat import unicode, bytes
 from .stream import Stream
 from .response import HTTP20Response, HTTP20Push
 from .window import FlowControlManager
-from .exceptions import ConnectionError, ProtocolError
+from .exceptions import ConnectionError
 from . import errors
 
 import errno
 import logging
 import socket
+import time
 
 log = logging.getLogger(__name__)
 
 DEFAULT_WINDOW_SIZE = 65535
+
+TRANSIENT_SSL_ERRORS = (ssl.SSL_ERROR_WANT_READ, ssl.SSL_ERROR_WANT_WRITE)
 
 
 class HTTP20Connection(object):
@@ -44,15 +47,15 @@ class HTTP20Connection(object):
     :param host: The host to connect to. This may be an IP address or a
         hostname, and optionally may include a port: for example,
         ``'http2bin.org'``, ``'http2bin.org:443'`` or ``'127.0.0.1'``.
-    :param port: (optional) The port to connect to. If not provided and one also
-        isn't provided in the ``host`` parameter, defaults to 443.
+    :param port: (optional) The port to connect to. If not provided and one
+        also isn't provided in the ``host`` parameter, defaults to 443.
     :param secure: (optional) Whether the request should use TLS. Defaults to
         ``False`` for most requests, but to ``True`` for any request issued to
         port 443.
     :param window_manager: (optional) The class to use to manage flow control
         windows. This needs to be a subclass of the
-        :class:`BaseFlowControlManager <hyper.http20.window.BaseFlowControlManager>`.
-        If not provided,
+        :class:`BaseFlowControlManager
+        <hyper.http20.window.BaseFlowControlManager>`. If not provided,
         :class:`FlowControlManager <hyper.http20.window.FlowControlManager>`
         will be used.
     :param enable_push: (optional) Whether the server is allowed to push
@@ -60,14 +63,15 @@ class HTTP20Connection(object):
         :meth:`get_pushes() <hyper.HTTP20Connection.get_pushes>`).
     :param ssl_context: (optional) A class with custom certificate settings.
         If not provided then hyper's default ``SSLContext`` is used instead.
-    :param proxy_host: (optional) The proxy to connect to.  This can be an IP address
-        or a host name and may include a port.
+    :param proxy_host: (optional) The proxy to connect to.  This can be an IP
+        address or a host name and may include a port.
     :param proxy_port: (optional) The proxy port to connect to. If not provided
-        and one also isn't provided in the ``proxy`` parameter, defaults to 8080.
+        and one also isn't provided in the ``proxy`` parameter, defaults to
+        8080.
     """
-    def __init__(self, host, port=None, secure=None, window_manager=None, enable_push=False,
-                 ssl_context=None, proxy_host=None, proxy_port=None,
-                 force_proto=None, **kwargs):
+    def __init__(self, host, port=None, secure=None, window_manager=None,
+                 enable_push=False, ssl_context=None, proxy_host=None,
+                 proxy_port=None, force_proto=None, **kwargs):
         """
         Creates an HTTP/2 connection to a specific server.
         """
@@ -89,7 +93,9 @@ class HTTP20Connection(object):
         # Setup proxy details if applicable.
         if proxy_host:
             if proxy_port is None:
-                self.proxy_host, self.proxy_port = to_host_port_tuple(proxy_host, default_port=8080)
+                self.proxy_host, self.proxy_port = to_host_port_tuple(
+                    proxy_host, default_port=8080
+                )
             else:
                 self.proxy_host, self.proxy_port = proxy_host, proxy_port
         else:
@@ -241,7 +247,7 @@ class HTTP20Connection(object):
             sock = socket.create_connection((host, port))
 
             if self.secure:
-                assert not self.proxy_host, "Using a proxy with HTTPS not yet supported."
+                assert not self.proxy_host, "Proxy with HTTPS not supported."
                 sock, proto = wrap_socket(sock, host, self.ssl_context,
                                           force_proto=self.force_proto)
             else:
@@ -426,7 +432,7 @@ class HTTP20Connection(object):
             self._sock.sendall(data)
         except socket.error as e:
             if (not tolerate_peer_gone or
-                e.errno not in (errno.EPIPE, errno.ECONNRESET)):
+                    e.errno not in (errno.EPIPE, errno.ECONNRESET)):
                 raise
 
     def _adjust_receive_window(self, frame_len):
@@ -535,14 +541,14 @@ class HTTP20Connection(object):
             except ssl.SSLError as e:  # pragma: no cover
                 # these are transient errors that can occur while reading from
                 # ssl connections.
-                if e.args[0] in (ssl.SSL_ERROR_WANT_READ, SSL_ERROR_WANT_WRITE):
+                if e.args[0] in TRANSIENT_SSL_ERRORS:
                     continue
                 else:
                     raise
             except socket.error as e:  # pragma: no cover
                 if e.errno in (errno.EINTR, errno.EAGAIN):
                     # if 'interrupted' or 'try again', continue
-                    sleep(retry_wait)
+                    time.sleep(retry_wait)
                     continue
                 elif e.errno == errno.ECONNRESET:
                     break

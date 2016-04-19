@@ -3,6 +3,7 @@ from hyper.common.headers import HTTPHeaderMap
 
 import pytest
 
+
 class TestHTTPHeaderMap(object):
     def test_header_map_can_insert_single_header(self):
         h = HTTPHeaderMap()
@@ -276,4 +277,3 @@ class TestHTTPHeaderMap(object):
             (b'name3', b'value3'),
             (b'name4', b'other_value'),
         ]
-

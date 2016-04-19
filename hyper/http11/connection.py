@@ -43,8 +43,8 @@ class HTTP11Connection(object):
     :param host: The host to connect to. This may be an IP address or a
         hostname, and optionally may include a port: for example,
         ``'twitter.com'``, ``'twitter.com:443'`` or ``'127.0.0.1'``.
-    :param port: (optional) The port to connect to. If not provided and one also
-        isn't provided in the ``host`` parameter, defaults to 80.
+    :param port: (optional) The port to connect to. If not provided and one
+        also isn't provided in the ``host`` parameter, defaults to 80.
     :param secure: (optional) Whether the request should use TLS. Defaults to
         ``False`` for most requests, but to ``True`` for any request issued to
         port 443.
@@ -82,7 +82,9 @@ class HTTP11Connection(object):
         # Setup proxy details if applicable.
         if proxy_host:
             if proxy_port is None:
-                self.proxy_host, self.proxy_port = to_host_port_tuple(proxy_host, default_port=8080)
+                self.proxy_host, self.proxy_port = to_host_port_tuple(
+                    proxy_host, default_port=8080
+                )
             else:
                 self.proxy_host, self.proxy_port = proxy_host, proxy_port
         else:
@@ -118,7 +120,7 @@ class HTTP11Connection(object):
             proto = None
 
             if self.secure:
-                assert not self.proxy_host, "Using a proxy with HTTPS not yet supported."
+                assert not self.proxy_host, "Proxy with HTTPS not supported."
                 sock, proto = wrap_socket(sock, host, self.ssl_context)
 
             log.debug("Selected protocol: %s", proto)
@@ -142,8 +144,8 @@ class HTTP11Connection(object):
 
         :param method: The request method, e.g. ``'GET'``.
         :param url: The URL to contact, e.g. ``'/path/segment'``.
-        :param body: (optional) The request body to send. Must be a bytestring, an iterable of bytestring
-            or a file-like object.
+        :param body: (optional) The request body to send. Must be a bytestring,
+            an iterable of bytestring, or a file-like object.
         :param headers: (optional) The headers to send on the request.
         :returns: Nothing.
         """
@@ -159,7 +161,9 @@ class HTTP11Connection(object):
             elif isinstance(headers, Iterable):
                 headers = HTTPHeaderMap(headers)
             else:
-                raise ValueError('Header argument must be a dictionary or an iterable')
+                raise ValueError(
+                    'Header argument must be a dictionary or an iterable'
+                )
 
         if self._sock is None:
             self.connect()
@@ -205,8 +209,8 @@ class HTTP11Connection(object):
         self._sock.advance_buffer(response.consumed)
 
         if (response.status == 101 and
-           b'upgrade' in headers['connection'] and
-           H2C_PROTOCOL.encode('utf-8') in headers['upgrade']):
+                b'upgrade' in headers['connection'] and
+                H2C_PROTOCOL.encode('utf-8') in headers['upgrade']):
             raise HTTPUpgrade(H2C_PROTOCOL, self._sock)
 
         return HTTP11Response(
@@ -265,10 +269,13 @@ class HTTP11Connection(object):
         headers[b'connection'] = b'Upgrade, HTTP2-Settings'
         headers[b'upgrade'] = H2C_PROTOCOL
 
-        # Encode SETTINGS frame payload in Base64 and put into the HTTP-2 Settings header.
+        # Encode SETTINGS frame payload in Base64 and put into the HTTP-2
+        # Settings header.
         http2_settings = SettingsFrame(0)
         http2_settings.settings[SettingsFrame.INITIAL_WINDOW_SIZE] = 65535
-        encoded_settings = base64.urlsafe_b64encode(http2_settings.serialize_body())
+        encoded_settings = base64.urlsafe_b64encode(
+            http2_settings.serialize_body()
+        )
         headers[b'HTTP2-Settings'] = encoded_settings.rstrip(b'=')
 
     def _send_body(self, body, body_type):
@@ -279,17 +286,7 @@ class HTTP11Connection(object):
         if body_type == BODY_FLAT:
             # Special case for files and other 'readable' objects.
             if hasattr(body, 'read'):
-                while True:
-                    block = body.read(16*1024)
-                    if not block:
-                        break
-
-                    try:
-                        self._sock.send(block)
-                    except TypeError:
-                        raise ValueError("File-like bodies must return bytestrings. Got: {}".format(type(block)))
-
-                return
+                return self._send_file_like_obj(body)
 
             # Case for bytestrings.
             elif isinstance(body, bytes):
@@ -303,14 +300,26 @@ class HTTP11Connection(object):
                     try:
                         self._sock.send(item)
                     except TypeError:
-                        raise ValueError("Elements in iterable body must be bytestrings. "
-                                         "Illegal element: {}".format(item))
+                        raise ValueError(
+                            "Elements in iterable body must be bytestrings. "
+                            "Illegal element: {}".format(item)
+                        )
                 return
 
             else:
-                raise ValueError('Request body must be a bytestring, a file-like object returning bytestrings '
-                                 'or an iterable of bytestrings. Got: {}'.format(type(body)))
+                raise ValueError(
+                    'Request body must be a bytestring, a file-like object '
+                    'returning bytestrings or an iterable of bytestrings. '
+                    'Got: {}'.format(type(body))
+                )
 
+        # Chunked!
+        return self._send_chunked(body)
+
+    def _send_chunked(self, body):
+        """
+        Handles the HTTP/1.1 logic for sending a chunk-encoded body.
+        """
         # Chunked! For chunked bodies we don't special-case, we just iterate
         # over what we have and send stuff out.
         for chunk in body:
@@ -324,9 +333,30 @@ class HTTP11Connection(object):
                 self._sock.send(chunk)
                 self._sock.send(b'\r\n')
             except TypeError:
-                raise ValueError("Iterable bodies must always iterate in bytestrings")
+                raise ValueError(
+                    "Iterable bodies must always iterate in bytestrings"
+                )
 
         self._sock.send(b'0\r\n\r\n')
+        return
+
+    def _send_file_like_obj(self, fobj):
+        """
+        Handles streaming a file-like object to the network.
+        """
+        while True:
+            block = fobj.read(16*1024)
+            if not block:
+                break
+
+            try:
+                self._sock.send(block)
+            except TypeError:
+                raise ValueError(
+                    "File-like bodies must return bytestrings. Got: "
+                    "{}".format(type(block))
+                )
+
         return
 
     def close(self):

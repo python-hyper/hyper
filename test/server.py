@@ -26,9 +26,11 @@ from hpack.huffman_constants import (
 )
 from hyper.tls import NPN_PROTOCOL
 
+
 class SocketServerThread(threading.Thread):
     """
-    This method stolen wholesale from shazow/urllib3 under license. See NOTICES.
+    This method stolen wholesale from shazow/urllib3 under license. See
+    NOTICES.
 
     :param socket_handler: Callable which receives a socket argument for one
         request.
@@ -127,7 +129,6 @@ class SocketLevelTest(object):
                 return HTTP11Connection('httpbin.org', secure=self.secure,
                                         proxy_host=self.host,
                                         proxy_port=self.port)
-
 
     def get_encoder(self):
         """

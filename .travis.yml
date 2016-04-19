@@ -23,6 +23,8 @@ matrix:
 
 install:
   - ".travis/install.sh"
+before_script: "flake8 --max-complexity 15 --exclude 'hyper/packages/*' hyper test"
+
 script:
   - >
       if [[ "$TEST_RELEASE" == true ]]; then
