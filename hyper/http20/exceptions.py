@@ -6,6 +6,7 @@ hyper/http20/exceptions
 This defines exceptions used in the HTTP/2 portion of hyper.
 """
 
+
 class HTTP20Error(Exception):
     """
     The base class for all of ``hyper``'s HTTP/2-related exceptions.
