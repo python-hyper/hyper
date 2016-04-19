@@ -129,12 +129,6 @@ class HTTP11Response(object):
         if self._length is not None:
             amt = min(amt, self._length)
 
-        # If we are now going to read nothing, exit early. We still need to
-        # close the socket.
-        if not amt:
-            self.close(socket_close=self._expect_close)
-            return b''
-
         # Now, issue reads until we read that length. This is to account for
         # the fact that it's possible that we'll be asked to read more than
         # 65kB in one shot.
