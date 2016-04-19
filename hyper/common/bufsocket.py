@@ -13,6 +13,7 @@ process.
 import select
 from .exceptions import ConnectionResetError, LineTooLongError
 
+
 class BufferedSocket(object):
     """
     A buffered socket wrapper.
@@ -137,8 +138,7 @@ class BufferedSocket(object):
         else:
             should_read = True
 
-        if ((self._remaining_capacity > self._bytes_in_buffer) and
-            (should_read)):
+        if (self._remaining_capacity > self._bytes_in_buffer and should_read):
             count = self._sck.recv_into(self._buffer_view[self._buffer_end:])
 
             # The socket just got closed. We should throw an exception if we
@@ -171,7 +171,6 @@ class BufferedSocket(object):
         self._bytes_in_buffer += count
 
         return
-
 
     def readline(self):
         """
