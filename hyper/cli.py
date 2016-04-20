@@ -236,7 +236,10 @@ def request(args):
         )
     else:  # pragma: no cover
         conn = HTTP20Connection(
-            args.url.host, args.url.port, secure=args.url.secure
+            args.url.host,
+            args.url.port,
+            secure=args.url.secure,
+            force_proto='h2'
         )
 
     conn.request(args.method, args.url.path, args.body, args.headers)
