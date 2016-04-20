@@ -108,7 +108,9 @@ def make_troubleshooting_argument(parser):
         help='Show debugging information (loglevel=DEBUG)')
     parser.add_argument(
         '--h2', action='store_true', default=False,
-        help="Do HTTP/2 directly in plaintext: skip plaintext upgrade")
+        help="Do HTTP/2 directly, skipping plaintext upgrade and ignoring "
+             "NPN/ALPN."
+    )
 
 
 def split_host_and_port(hostname):
@@ -236,7 +238,10 @@ def request(args):
         )
     else:  # pragma: no cover
         conn = HTTP20Connection(
-            args.url.host, args.url.port, secure=args.url.secure
+            args.url.host,
+            args.url.port,
+            secure=args.url.secure,
+            force_proto='h2'
         )
 
     conn.request(args.method, args.url.path, args.body, args.headers)
