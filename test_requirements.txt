@@ -3,4 +3,4 @@ pytest-xdist
 pytest-cov
 requests
 mock
-futures
+futures; python_version < '3.0'
