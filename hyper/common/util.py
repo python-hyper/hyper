@@ -8,7 +8,6 @@ General utility functions for use with hyper.
 from hyper.compat import unicode, bytes, imap
 from ..packages.rfc3986.uri import URIReference
 from ..compat import is_py3
-import re
 
 
 def to_bytestring(element):

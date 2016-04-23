@@ -163,7 +163,6 @@ class TestHyperH11Integration(SocketLevelTest):
 
         assert c._sock is None
 
-
     def test_response_with_body(self):
         self.set_up()
 
@@ -297,4 +296,4 @@ class TestHyperH11Integration(SocketLevelTest):
         send_event.set()
 
         with pytest.raises(HTTPUpgrade):
-            r = c.get_response()
+            c.get_response()

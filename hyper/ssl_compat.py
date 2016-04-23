@@ -3,7 +3,8 @@
 hyper/ssl_compat
 ~~~~~~~~~
 
-Shoves pyOpenSSL into an API that looks like the standard Python 3.x ssl module.
+Shoves pyOpenSSL into an API that looks like the standard Python 3.x ssl
+module.
 
 Currently exposes exactly those attributes, classes, and methods that we
 actually use in hyper (all method signatures are complete, however). May be
@@ -16,7 +17,6 @@ except ImportError:
 import errno
 import socket
 import time
-import re
 
 from OpenSSL import SSL as ossl
 from service_identity.pyopenssl import verify_hostname as _verify
@@ -36,17 +36,23 @@ for external, internal in _OPENSSL_ATTRS.items():
         locals()[external] = value
 
 OP_ALL = 0
-for bit in [31] + list(range(10)): # TODO figure out the names of these other flags
+# TODO: Find out the names of these other flags.
+for bit in [31] + list(range(10)):
     OP_ALL |= 1 << bit
 
 HAS_NPN = True
 
+
 def _proxy(method):
-    return lambda self, *args, **kwargs: getattr(self._conn, method)(*args, **kwargs)
+    def inner(self, *args, **kwargs):
+        getattr(self._conn, method)(*args, **kwargs)
+    return inner
+
 
 # TODO missing some attributes
 class SSLError(OSError):
     pass
+
 
 class CertificateError(SSLError):
     pass
@@ -76,9 +82,12 @@ class SSLSocket(object):
             self._conn.set_accept_state()
         else:
             if server_hostname:
-                self._conn.set_tlsext_host_name(server_hostname.encode('utf-8'))
+                self._conn.set_tlsext_host_name(
+                    server_hostname.encode('utf-8')
+                )
                 self._server_hostname = server_hostname
-            self._conn.set_connect_state() # FIXME does this override do_handshake_on_connect=False?
+            # FIXME does this override do_handshake_on_connect=False?
+            self._conn.set_connect_state()
 
         if self.connected and self._do_handshake_on_connect:
             self.do_handshake()
@@ -95,7 +104,8 @@ class SSLSocket(object):
             return False
         return True
 
-    # Lovingly stolen from CherryPy (http://svn.cherrypy.org/tags/cherrypy-3.2.1/cherrypy/wsgiserver/ssl_pyopenssl.py).
+    # Lovingly stolen from CherryPy
+    # (http://svn.cherrypy.org/tags/cherrypy-3.2.1/cherrypy/wsgiserver/ssl_pyopenssl.py).
     def _safe_ssl_call(self, suppress_ragged_eofs, call, *args, **kwargs):
         """Wrap the given call with SSL error-trapping."""
         start = time.time()
@@ -127,8 +137,12 @@ class SSLSocket(object):
             verify_hostname(self, self._server_hostname)
 
     def recv(self, bufsize, flags=None):
-        return self._safe_ssl_call(self._suppress_ragged_eofs, self._conn.recv,
-                               bufsize, flags)
+        return self._safe_ssl_call(
+            self._suppress_ragged_eofs,
+            self._conn.recv,
+            bufsize,
+            flags
+        )
 
     def recv_into(self, buffer, bufsize=None, flags=None):
         # A temporary recv_into implementation. Should be replaced when
@@ -143,6 +157,9 @@ class SSLSocket(object):
 
     def send(self, data, flags=None):
         return self._safe_ssl_call(False, self._conn.send, data, flags)
+
+    def sendall(self, data, flags=None):
+        return self._safe_ssl_call(False, self._conn.sendall, data, flags)
 
     def selected_npn_protocol(self):
         proto = self._conn.get_next_proto_negotiated()
@@ -170,9 +187,15 @@ class SSLSocket(object):
             ).get(alias, alias)
 
         def to_components(name):
-            # TODO Verify that these are actually *supposed* to all be single-element
-            # tuples, and that's not just a quirk of the examples I've seen.
-            return tuple([((resolve_alias(name.decode('utf-8')), value.decode('utf-8')),) for name, value in name.get_components()])
+            # TODO Verify that these are actually *supposed* to all be
+            # single-element tuples, and that's not just a quirk of the
+            # examples I've seen.
+            return tuple(
+                [
+                    (resolve_alias(k.decode('utf-8'), v.decode('utf-8')),)
+                    for k, v in name.get_components()
+                ]
+            )
 
         # The standard getpeercert() takes the nice X509 object tree returned
         # by OpenSSL and turns it into a dict according to some format it seems
@@ -186,11 +209,13 @@ class SSLSocket(object):
             notBefore=cert.get_notBefore(),
             notAfter=cert.get_notAfter(),
         )
-        # TODO extensions, including subjectAltName (see _decode_certificate in _ssl.c)
+        # TODO extensions, including subjectAltName
+        # (see _decode_certificate in _ssl.c)
         return result
 
     # a dash of magic to reduce boilerplate
-    for method in ['accept', 'bind', 'close', 'getsockname', 'listen', 'fileno']:
+    methods = ['accept', 'bind', 'close', 'getsockname', 'listen', 'fileno']
+    for method in methods:
         locals()[method] = _proxy(method)
 
 
@@ -218,7 +243,9 @@ class SSLContext(object):
     @verify_mode.setter
     def verify_mode(self, value):
         # TODO verify exception is raised on failure
-        self._ctx.set_verify(value, lambda conn, cert, errnum, errdepth, ok: ok)
+        self._ctx.set_verify(
+            value, lambda conn, cert, errnum, errdepth, ok: ok
+        )
 
     def set_default_verify_paths(self):
         self._ctx.set_default_verify_paths()
@@ -236,11 +263,13 @@ class SSLContext(object):
     def load_cert_chain(self, certfile, keyfile=None, password=None):
         self._ctx.use_certificate_file(certfile)
         if password is not None:
-            self._ctx.set_password_cb(lambda max_length, prompt_twice, userdata: password)
+            self._ctx.set_passwd_cb(
+                lambda max_length, prompt_twice, userdata: password
+            )
         self._ctx.use_privatekey_file(keyfile or certfile)
 
     def set_npn_protocols(self, protocols):
-        self.protocols = list(map(lambda x:x.encode('ascii'), protocols))
+        self.protocols = list(map(lambda x: x.encode('ascii'), protocols))
 
         def cb(conn, protos):
             # Detect the overlapping set of protocols.
@@ -259,8 +288,12 @@ class SSLContext(object):
         protocols = list(map(lambda x: x.encode('ascii'), protocols))
         self._ctx.set_alpn_protos(protocols)
 
-    def wrap_socket(self, sock, server_side=False, do_handshake_on_connect=True,
-                    suppress_ragged_eofs=True, server_hostname=None):
+    def wrap_socket(self,
+                    sock,
+                    server_side=False,
+                    do_handshake_on_connect=True,
+                    suppress_ragged_eofs=True,
+                    server_hostname=None):
         conn = ossl.Connection(self._ctx, sock)
         return SSLSocket(conn, server_side, do_handshake_on_connect,
                          suppress_ragged_eofs, server_hostname,

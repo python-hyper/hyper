@@ -11,10 +11,12 @@ import hyper.common.bufsocket
 from hyper.common.bufsocket import BufferedSocket
 from hyper.common.exceptions import ConnectionResetError, LineTooLongError
 
+
 # Patch the select method in bufsocket to make sure that it always returns
 # the dummy socket as readable.
 def dummy_select(a, b, c, d):
     return a
+
 
 class TestBufferedSocket(object):
     """
@@ -86,7 +88,9 @@ class TestBufferedSocket(object):
         )
         s = DummySocket()
         b = BufferedSocket(s)
-        s.inbound_packets = [b'Here', b'begins', b'the', b'test', b'data', b'!']
+        s.inbound_packets = [
+            b'Here', b'begins', b'the', b'test', b'data', b'!'
+        ]
         s.read_count = 3
 
         d = b''

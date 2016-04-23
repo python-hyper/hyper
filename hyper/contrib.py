@@ -16,6 +16,7 @@ except ImportError:  # pragma: no cover
 
 from hyper.common.connection import HTTPConnection
 from hyper.compat import urlparse
+from hyper.tls import init_context
 
 
 class HTTP20Adapter(HTTPAdapter):
@@ -28,31 +29,42 @@ class HTTP20Adapter(HTTPAdapter):
         #: A mapping between HTTP netlocs and ``HTTP20Connection`` objects.
         self.connections = {}
 
-    def get_connection(self, host, port, scheme):
+    def get_connection(self, host, port, scheme, cert=None):
         """
-        Gets an appropriate HTTP/2 connection object based on host/port/scheme
-        tuples.
+        Gets an appropriate HTTP/2 connection object based on
+        host/port/scheme/cert tuples.
         """
         secure = (scheme == 'https')
 
         if port is None:  # pragma: no cover
             port = 80 if not secure else 443
 
+        ssl_context = None
+        if cert is not None:
+            ssl_context = init_context(cert=cert)
+
         try:
-            conn = self.connections[(host, port, scheme)]
+            conn = self.connections[(host, port, scheme, cert)]
         except KeyError:
-            conn = HTTPConnection(host, port, secure=secure)
-            self.connections[(host, port, scheme)] = conn
+            conn = HTTPConnection(
+                host,
+                port,
+                secure=secure,
+                ssl_context=ssl_context)
+            self.connections[(host, port, scheme, cert)] = conn
 
         return conn
 
-    def send(self, request, stream=False, **kwargs):
+    def send(self, request, stream=False, cert=None, **kwargs):
         """
         Sends a HTTP message to the server.
         """
         parsed = urlparse(request.url)
-
-        conn = self.get_connection(parsed.hostname, parsed.port, parsed.scheme)
+        conn = self.get_connection(
+            parsed.hostname,
+            parsed.port,
+            parsed.scheme,
+            cert=cert)
 
         # Build the selector.
         selector = parsed.path
@@ -137,7 +149,6 @@ class HTTP20Adapter(HTTPAdapter):
 
             def getheaders(self, name):
                 return self.get_all(name, [])
-
 
         response.raw._original_response = orig = FakeOriginalResponse(None)
         orig.version = 20
