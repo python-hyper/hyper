@@ -1,6 +1,14 @@
 Release History
 ===============
 
+dev
+---
+
+*Bugfixes*
+
+- Overriding HTTP/2 special headers no longer leads to ill-formed header blocks
+  with special headers at the end.
+
 0.5.0 (2015-10-11)
 ------------------
 

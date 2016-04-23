@@ -1,6 +1,17 @@
 [run]
+source = hyper
 omit =
     hyper/compat.py
     hyper/httplib_compat.py
     hyper/ssl_compat.py
     hyper/packages/*
+
+[report]
+fail_under = 100
+show_missing = True
+
+[paths]
+source =
+    hyper/
+    .tox/*/lib/python*/site-packages/hyper
+    .tox/pypy*/site-packages/hyper

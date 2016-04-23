@@ -129,8 +129,8 @@ class HTTP20Response(object):
             if self._stream.response_headers:
                 self.headers.merge(self._stream.response_headers)
 
-        # We're at the end. Close the connection.
-        if not data:
+        # We're at the end, close the connection.
+        if response_complete:
             self.close()
 
         return data
@@ -195,7 +195,8 @@ class HTTP20Push(object):
     def __init__(self, request_headers, stream):
         #: The scheme of the simulated request
         self.scheme = request_headers[b':scheme'][0]
-        #: The method of the simulated request (must be safe and cacheable, e.g. GET)
+        #: The method of the simulated request (must be safe and cacheable,
+        #: e.g. GET)
         self.method = request_headers[b':method'][0]
         #: The authority of the simulated request (usually host:port)
         self.authority = request_headers[b':authority'][0]
@@ -224,4 +225,4 @@ class HTTP20Push(object):
 
         :returns: Nothing.
         """
-        self._stream.close(8) # CANCEL
+        self._stream.close(8)  # CANCEL

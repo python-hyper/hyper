@@ -1,4 +1,5 @@
 # -*- coding: utf-8 -*-
+# flake8: noqa
 """
 hyper/http20/errors
 ~~~~~~~~~~~~~~~~~~~
@@ -43,16 +44,16 @@ COMPRESSION_ERROR =   {'Name': 'COMPRESSION_ERROR',
                        'Description': 'Compression state not updated'}
 CONNECT_ERROR =       {'Name': 'CONNECT_ERROR',
                        'Code': '0xa',
-                       'Description': 
+                       'Description':
                        'TCP connection error for CONNECT method'}
 ENHANCE_YOUR_CALM =   {'Name': 'ENHANCE_YOUR_CALM',
                        'Code': '0xb',
                        'Description': 'Processing capacity exceeded'}
 INADEQUATE_SECURITY = {'Name': 'INADEQUATE_SECURITY',
                        'Code': '0xc',
-                       'Description': 
+                       'Description':
                        'Negotiated TLS parameters not acceptable'}
-HTTP_1_1_REQUIRED =   {'Name': 'HTTP_1_1_REQUIRED', 
+HTTP_1_1_REQUIRED =   {'Name': 'HTTP_1_1_REQUIRED',
                        'Code': '0xd',
                        'Description': 'Use HTTP/1.1 for the request'}
 
@@ -60,6 +61,7 @@ H2_ERRORS = [NO_ERROR, PROTOCOL_ERROR, INTERNAL_ERROR, FLOW_CONTROL_ERROR,
              SETTINGS_TIMEOUT, STREAM_CLOSED, FRAME_SIZE_ERROR, REFUSED_STREAM,
              CANCEL, COMPRESSION_ERROR, CONNECT_ERROR, ENHANCE_YOUR_CALM,
              INADEQUATE_SECURITY, HTTP_1_1_REQUIRED]
+
 
 def get_data(error_code):
     """
