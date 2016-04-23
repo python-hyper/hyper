@@ -28,6 +28,7 @@ def combine_repeated_headers(kvset):
     return [(set_pop(keys, k), b'\x00'.join(headers[k])) for k, v in kvset
             if k in keys]
 
+
 def split_repeated_headers(kvset):
     """
     Given a set of key-value pairs (like for HTTP headers!), finds values that
@@ -49,8 +50,11 @@ def h2_safe_headers(headers):
 
     Currently, this strips the Connection header and any header it refers to.
     """
-    stripped = {i.lower().strip() for k, v in headers if k == 'connection'
-                                  for i in v.split(',')}
+    stripped = {
+        i.lower().strip()
+        for k, v in headers if k == 'connection'
+        for i in v.split(',')
+    }
     stripped.add('connection')
 
     return [header for header in headers if header[0] not in stripped]

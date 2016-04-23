@@ -13,6 +13,8 @@ This module defines an interface for pluggable flow-control managers. These
 managers will define a flow-control policy. This policy will determine when to
 send WINDOWUPDATE frames.
 """
+
+
 class BaseFlowControlManager(object):
     """
     The abstract base class for flow control managers.
@@ -96,6 +98,7 @@ class BaseFlowControlManager(object):
         :returns: The amount to increase the receive window by. Return zero if
           the window should not be increased.
         """
+        # TODO: Is this method necessary?
         raise NotImplementedError(
             "FlowControlManager is an abstract base class"
         )
@@ -127,21 +130,22 @@ class FlowControlManager(BaseFlowControlManager):
     ``hyper``'s default flow control manager.
 
     This implements hyper's flow control algorithms. This algorithm attempts to
-    reduce the number of WINDOWUPDATE frames we send without blocking the remote
-    endpoint behind the flow control window.
+    reduce the number of WINDOWUPDATE frames we send without blocking the
+    remote endpoint behind the flow control window.
 
     This algorithm will become more complicated over time. In the current form,
     the algorithm is very simple:
-        - When the flow control window gets less than 1/4 of the maximum size,
-          increment back to the maximum.
-        - Otherwise, if the flow control window gets to less than 1kB, increment
-          back to the maximum.
+
+    - When the flow control window gets less than 1/4 of the maximum size,
+      increment back to the maximum.
+    - Otherwise, if the flow control window gets to less than 1kB, increment
+      back to the maximum.
     """
     def increase_window_size(self, frame_size):
         future_window_size = self.window_size - frame_size
 
         if ((future_window_size < (self.initial_window_size / 4)) or
-            (future_window_size < 1000)):
+                (future_window_size < 1000)):
             return self.initial_window_size - future_window_size
 
         return 0

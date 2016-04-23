@@ -1,19 +1,14 @@
 # -*- coding: utf-8 -*-
-from hyper.packages.hyperframe.frame import (
-    Frame, DataFrame, RstStreamFrame, SettingsFrame,
-    PushPromiseFrame, PingFrame, WindowUpdateFrame, HeadersFrame,
-    ContinuationFrame, BlockedFrame, GoAwayFrame, FRAME_MAX_LEN, FRAME_MAX_ALLOWED_LEN
+from h2.frame_buffer import FrameBuffer
+from hyperframe.frame import (
+    Frame, DataFrame, RstStreamFrame, SettingsFrame, PushPromiseFrame,
+    WindowUpdateFrame, HeadersFrame, ContinuationFrame, GoAwayFrame,
+    FRAME_MAX_ALLOWED_LEN
 )
-from hyper.packages.hpack.hpack_compat import Encoder, Decoder
+from hpack.hpack_compat import Encoder
 from hyper.http20.connection import HTTP20Connection
-from hyper.http20.stream import (
-    Stream, STATE_HALF_CLOSED_LOCAL, STATE_OPEN, MAX_CHUNK, STATE_CLOSED
-)
 from hyper.http20.response import HTTP20Response, HTTP20Push
-from hyper.http20.exceptions import (
-    HPACKDecodingError, HPACKEncodingError, ProtocolError, ConnectionError,
-)
-from hyper.http20.window import FlowControlManager
+from hyper.http20.exceptions import ConnectionError
 from hyper.http20.util import (
     combine_repeated_headers, split_repeated_headers, h2_safe_headers
 )
@@ -27,7 +22,11 @@ import pytest
 import socket
 import zlib
 from io import BytesIO
-import hyper
+
+
+TEST_DIR = os.path.abspath(os.path.dirname(__file__))
+TEST_CERTS_DIR = os.path.join(TEST_DIR, 'certs')
+CLIENT_PEM_FILE = os.path.join(TEST_CERTS_DIR, 'nopassword.pem')
 
 
 def decode_frame(frame_data):
@@ -37,18 +36,25 @@ def decode_frame(frame_data):
     return f
 
 
+@pytest.fixture
+def frame_buffer():
+    buffer = FrameBuffer()
+    buffer.max_frame_size = FRAME_MAX_ALLOWED_LEN
+    return buffer
+
+
 class TestHyperConnection(object):
     def test_connections_accept_hosts_and_ports(self):
         c = HTTP20Connection(host='www.google.com', port=8080)
-        assert c.host =='www.google.com'
+        assert c.host == 'www.google.com'
         assert c.port == 8080
-        assert c.proxy_host == None
+        assert c.proxy_host is None
 
     def test_connections_can_parse_hosts_and_ports(self):
         c = HTTP20Connection('www.google.com:8080')
         assert c.host == 'www.google.com'
         assert c.port == 8080
-        assert c.proxy_host == None
+        assert c.proxy_host is None
 
     def test_connections_accept_proxy_hosts_and_ports(self):
         c = HTTP20Connection('www.google.com', proxy_host='localhost:8443')
@@ -122,16 +128,14 @@ class TestHyperConnection(object):
         assert list(s.headers.items()) == [
             (b':method', b'GET'),
             (b':scheme', b'https'),
-            (b':path', b'/'),
             (b':authority', b'www.example.org'),
+            (b':path', b'/'),
             (b'name', b'value2'),
         ]
 
-    def test_endheaders_sends_data(self):
-        frames = []
-
-        def data_callback(frame):
-            frames.append(frame)
+    def test_endheaders_sends_data(self, frame_buffer):
+        def data_callback(chunk):
+            frame_buffer.add_data(chunk)
 
         c = HTTP20Connection('www.google.com')
         c._sock = DummySocket()
@@ -139,15 +143,14 @@ class TestHyperConnection(object):
         c.putrequest('GET', '/')
         c.endheaders()
 
+        frames = list(frame_buffer)
         assert len(frames) == 1
         f = frames[0]
         assert isinstance(f, HeadersFrame)
 
-    def test_we_can_send_data_using_endheaders(self):
-        frames = []
-
-        def data_callback(frame):
-            frames.append(frame)
+    def test_we_can_send_data_using_endheaders(self, frame_buffer):
+        def data_callback(chunk):
+            frame_buffer.add_data(chunk)
 
         c = HTTP20Connection('www.google.com')
         c._sock = DummySocket()
@@ -155,6 +158,7 @@ class TestHyperConnection(object):
         c.putrequest('GET', '/')
         c.endheaders(message_body=b'hello there', final=True)
 
+        frames = list(frame_buffer)
         assert len(frames) == 2
         assert isinstance(frames[0], HeadersFrame)
         assert frames[0].flags == set(['END_HEADERS'])
@@ -171,9 +175,7 @@ class TestHyperConnection(object):
 
         # Don't bother testing that the serialization was ok, that should be
         # fine.
-        assert len(sock.queue) == 2
-        # Confirm the window got shrunk.
-        assert c._out_flow_control_window == 65535 - len(b'hello there')
+        assert len(sock.queue) == 3
 
     def test_we_can_read_from_the_socket(self):
         sock = DummySocket()
@@ -188,23 +190,6 @@ class TestHyperConnection(object):
         s = c.recent_stream
         assert s.data == [b'testdata']
 
-    def test_we_can_read_fitfully_from_the_socket(self):
-        sock = DummyFitfullySocket()
-        sock.buffer = BytesIO(
-            b'\x00\x00\x18\x00\x01\x00\x00\x00\x01'
-            b'testdata'
-            b'+payload'
-        )
-
-        c = HTTP20Connection('www.google.com')
-        c._sock = sock
-        c.putrequest('GET', '/')
-        c.endheaders()
-        c._recv_cb()
-
-        s = c.recent_stream
-        assert s.data == [b'testdata+payload']
-
     def test_putrequest_sends_data(self):
         sock = DummySocket()
 
@@ -217,9 +202,21 @@ class TestHyperConnection(object):
             headers={'Content-Type': 'application/json'}
         )
 
-        # The socket should have received one headers frame and one body frame.
-        assert len(sock.queue) == 2
-        assert c._out_flow_control_window == 65535 - len(b'hello')
+        # The socket should have received one headers frame and two body
+        # frames.
+        assert len(sock.queue) == 3
+
+    def test_request_with_utf8_bytes_body(self):
+        c = HTTP20Connection('www.google.com')
+        c._sock = DummySocket()
+        body = '你好' if is_py2 else '你好'.encode('utf-8')
+        c.request('GET', '/', body=body)
+
+    def test_request_with_unicode_body(self):
+        c = HTTP20Connection('www.google.com')
+        c._sock = DummySocket()
+        body = '你好'.decode('unicode-escape') if is_py2 else '你好'
+        c.request('GET', '/', body=body)
 
     def test_different_request_headers(self):
         sock = DummySocket()
@@ -251,8 +248,6 @@ class TestHyperConnection(object):
     def test_closed_connections_are_reset(self):
         c = HTTP20Connection('www.google.com')
         c._sock = DummySocket()
-        encoder = c.encoder
-        decoder = c.decoder
         wm = c.window_manager
         c.request('GET', '/')
         c.close()
@@ -261,16 +256,9 @@ class TestHyperConnection(object):
         assert not c.streams
         assert c.recent_stream is None
         assert c.next_stream_id == 1
-        assert c.encoder is not encoder
-        assert c.decoder is not decoder
-        assert c._settings == {
-            SettingsFrame.INITIAL_WINDOW_SIZE: 65535,
-            SettingsFrame.SETTINGS_MAX_FRAME_SIZE: FRAME_MAX_LEN,
-        }
-        assert c._out_flow_control_window == 65535
         assert c.window_manager is not wm
 
-    def test_connection_doesnt_send_window_update_on_zero_length_data_frame(self):
+    def test_connection_no_window_update_on_zero_length_data_frame(self):
         # Prepare a socket with a data frame in it that has no length.
         sock = DummySocket()
         sock.buffer = BytesIO(DataFrame(1).serialize())
@@ -305,111 +293,16 @@ class TestHyperConnection(object):
         assert not c.streams
         assert c.next_stream_id == 3
 
-    def test_connections_increment_send_window_properly(self):
-        f = WindowUpdateFrame(0)
-        f.window_increment = 1000
-        c = HTTP20Connection('www.google.com')
-        c._sock = DummySocket()
-
-        # 'Receive' the WINDOWUPDATE frame.
-        c.receive_frame(f)
-
-        assert c._out_flow_control_window == 65535 + 1000
-
-    def test_connections_handle_resizing_max_frame_size_properly(self):
-        sock = DummySocket()
-        f = SettingsFrame(0)
-        f.settings[SettingsFrame.SETTINGS_MAX_FRAME_SIZE] = 65536 # 2^16
-        c = HTTP20Connection('www.google.com')
-        c._sock = sock
-
-        # 'Receive' the SETTINGS frame.
-        c.receive_frame(f)
-
-        # Confirm that the setting is stored and the max frame size increased.
-        assert c._settings[SettingsFrame.SETTINGS_MAX_FRAME_SIZE] == 65536
-
-        # Confirm we got a SETTINGS ACK.
-        f2 = decode_frame(sock.queue[0])
-        assert isinstance(f2, SettingsFrame)
-        assert f2.stream_id == 0
-        assert f2.flags == set(['ACK'])
-
-    def test_connections_handle_too_small_max_frame_size_properly(self):
-        sock = DummySocket()
-        f = SettingsFrame(0)
-        f.settings[SettingsFrame.SETTINGS_MAX_FRAME_SIZE] = 1024
-        c = HTTP20Connection('www.google.com')
-        c._sock = sock
-
-        # 'Receive' the SETTINGS frame.
-        with pytest.raises(ConnectionError):
-            c.receive_frame(f)
-
-        # The value advertised by an endpoint MUST be between 2^14 and
-        # 2^24-1 octets. Confirm that the max frame size did not increase.
-        assert c._settings[SettingsFrame.SETTINGS_MAX_FRAME_SIZE] == FRAME_MAX_LEN
-
-        # When the setting containing the max frame size value is out of range,
-        # the spec dictates to tear down the connection.
-        assert c._sock == None
-
-        # Check if GoAway frame was correctly sent to the endpoint
-        f = decode_frame(sock.queue[0])
-        assert isinstance(f, GoAwayFrame)
-
-    def test_connections_handle_too_big_max_frame_size_properly(self):
-        sock = DummySocket()
-        f = SettingsFrame(0)
-        f.settings[SettingsFrame.SETTINGS_MAX_FRAME_SIZE] = 67108864 # 2^26
-        c = HTTP20Connection('www.google.com')
-        c._sock = sock
-
-        # 'Receive' the SETTINGS frame.
-        with pytest.raises(ConnectionError):
-            c.receive_frame(f)
-
-        # The value advertised by an endpoint MUST be between 2^14 and
-        # 2^24-1 octets. Confirm that the max frame size did not increase.
-        assert c._settings[SettingsFrame.SETTINGS_MAX_FRAME_SIZE] == FRAME_MAX_LEN
-
-        # When the setting containing the max frame size value is out of range,
-        # the spec dictates to tear down the connection.
-        assert c._sock == None
-
-        # Check if GoAway frame was correctly sent to the endpoint
-        f = decode_frame(sock.queue[0])
-        assert isinstance(f, GoAwayFrame)
-
-    def test_connections_handle_resizing_header_tables_properly(self):
-        sock = DummySocket()
-        f = SettingsFrame(0)
-        f.settings[SettingsFrame.HEADER_TABLE_SIZE] = 1024
-        c = HTTP20Connection('www.google.com')
-        c._sock = sock
-
-        # 'Receive' the SETTINGS frame.
-        c.receive_frame(f)
-
-        # Confirm that the setting is stored and the header table shrunk.
-        assert c._settings[SettingsFrame.HEADER_TABLE_SIZE] == 1024
-
-        # Confirm we got a SETTINGS ACK.
-        f2 = decode_frame(sock.queue[0])
-        assert isinstance(f2, SettingsFrame)
-        assert f2.stream_id == 0
-        assert f2.flags == set(['ACK'])
-
     def test_read_headers_out_of_order(self):
         # If header blocks aren't decoded in the same order they're received,
-        # regardless of the stream they belong to, the decoder state will become
-        # corrupted.
+        # regardless of the stream they belong to, the decoder state will
+        # become corrupted.
         e = Encoder()
         h1 = HeadersFrame(1)
-        h1.data = e.encode({':status': 200, 'content-type': 'foo/bar'})
+        h1.data = e.encode([(':status', 200), ('content-type', 'foo/bar')])
         h1.flags |= set(['END_HEADERS', 'END_STREAM'])
         h3 = HeadersFrame(3)
-        h3.data = e.encode({':status': 200, 'content-type': 'baz/qux'})
+        h3.data = e.encode([(':status', 200), ('content-type', 'baz/qux')])
         h3.flags |= set(['END_HEADERS', 'END_STREAM'])
         sock = DummySocket()
         sock.buffer = BytesIO(h1.serialize() + h3.serialize())
@@ -419,14 +312,19 @@ class TestHyperConnection(object):
         r1 = c.request('GET', '/a')
         r3 = c.request('GET', '/b')
 
-        assert c.get_response(r3).headers == HTTPHeaderMap([('content-type', 'baz/qux')])
-        assert c.get_response(r1).headers == HTTPHeaderMap([('content-type', 'foo/bar')])
+        assert c.get_response(r3).headers == HTTPHeaderMap(
+            [('content-type', 'baz/qux')]
+        )
+        assert c.get_response(r1).headers == HTTPHeaderMap(
+            [('content-type', 'foo/bar')]
+        )
 
     def test_headers_with_continuation(self):
         e = Encoder()
-        header_data = e.encode(
-            {':status': 200, 'content-type': 'foo/bar', 'content-length': '0'}
-        )
+        header_data = e.encode([
+            (':status', 200), ('content-type', 'foo/bar'),
+            ('content-length', '0')
+        ])
         h = HeadersFrame(1)
         h.data = header_data[0:int(len(header_data)/2)]
         h.flags.add('END_STREAM')
@@ -440,20 +338,13 @@ class TestHyperConnection(object):
         c._sock = sock
         r = c.request('GET', '/')
 
-        assert set(c.get_response(r).headers.iter_raw()) == set([(b'content-type', b'foo/bar'), (b'content-length', b'0')])
-
-    def test_receive_unexpected_frame(self):
-        # RST_STREAM frames are never defined on connections, so send one of
-        # those.
-        c = HTTP20Connection('www.google.com')
-        f = RstStreamFrame(1)
-
-        with pytest.raises(ValueError):
-            c.receive_frame(f)
+        assert set(c.get_response(r).headers.iter_raw()) == set(
+            [(b'content-type', b'foo/bar'), (b'content-length', b'0')]
+        )
 
     def test_send_tolerate_peer_gone(self):
         class ErrorSocket(DummySocket):
-            def send(self, data):
+            def sendall(self, data):
                 raise socket.error(errno.EPIPE)
 
         c = HTTP20Connection('www.google.com')
@@ -462,12 +353,12 @@ class TestHyperConnection(object):
         with pytest.raises(socket.error):
             c._send_cb(f, False)
         c._sock = DummySocket()
-        c._send_cb(f, True) # shouldn't raise an error
+        c._send_cb(f, True)  # shouldn't raise an error
 
-    def test_window_increments_appropriately(self):
+    def test_connection_window_increments_appropriately(self, frame_buffer):
         e = Encoder()
         h = HeadersFrame(1)
-        h.data = e.encode({':status': 200, 'content-type': 'foo/bar'})
+        h.data = e.encode([(':status', 200), ('content-type', 'foo/bar')])
         h.flags = set(['END_HEADERS'])
         d = DataFrame(1)
         d.data = b'hi there sir'
@@ -485,64 +376,48 @@ class TestHyperConnection(object):
         resp = c.get_response()
         resp.read()
 
-        queue = list(map(decode_frame, map(memoryview, sock.queue)))
+        frame_buffer.add_data(b''.join(sock.queue))
+        queue = list(frame_buffer)
         assert len(queue) == 3  # one headers frame, two window update frames.
         assert isinstance(queue[1], WindowUpdateFrame)
         assert queue[1].window_increment == len(b'hi there sir')
         assert isinstance(queue[2], WindowUpdateFrame)
         assert queue[2].window_increment == len(b'hi there sir again')
 
-    def test_ping_with_ack_ignored(self):
-        c = HTTP20Connection('www.google.com')
-        f = PingFrame(0)
-        f.flags = set(['ACK'])
-        f.opaque_data = b'12345678'
-
-        def data_cb(frame, tolerate_peer_gone=False):
-            assert False, 'should not be called'
-        c._send_cb = data_cb
-        c.receive_frame(f)
-
-    def test_ping_without_ack_gets_reply(self):
-        c = HTTP20Connection('www.google.com')
-        f = PingFrame(0)
-        f.opaque_data = b'12345678'
-
-        frames = []
-
-        def data_cb(frame, tolerate_peer_gone=False):
-            frames.append(frame)
-        c._send_cb = data_cb
-        c.receive_frame(f)
-
-        assert len(frames) == 1
-        assert frames[0].type == PingFrame.type
-        assert frames[0].flags == set(['ACK'])
-        assert frames[0].opaque_data == b'12345678'
-
-    def test_blocked_causes_window_updates(self):
-        frames = []
-
-        def data_cb(frame, *args):
-            frames.append(frame)
+    def test_stream_window_increments_appropriately(self, frame_buffer):
+        e = Encoder()
+        h = HeadersFrame(1)
+        h.data = e.encode([(':status', 200), ('content-type', 'foo/bar')])
+        h.flags = set(['END_HEADERS'])
+        d = DataFrame(1)
+        d.data = b'hi there sir'
+        d2 = DataFrame(1)
+        d2.data = b'hi there sir again'
+        sock = DummySocket()
+        sock.buffer = BytesIO(h.serialize() + d.serialize() + d2.serialize())
 
         c = HTTP20Connection('www.google.com')
-        c._send_cb = data_cb
+        c._sock = sock
+        c.request('GET', '/')
+        c.streams[1]._in_window_manager.window_size = 1000
+        c.streams[1]._in_window_manager.initial_window_size = 1000
+        resp = c.get_response()
+        resp.read(len(b'hi there sir'))
+        resp.read(len(b'hi there sir again'))
 
-        # Change the window size.
-        c.window_manager.window_size = 60000
-
-        # Provide a BLOCKED frame.
-        f = BlockedFrame(1)
-        c.receive_frame(f)
-
-        assert len(frames) == 1
-        assert frames[0].type == WindowUpdateFrame.type
-        assert frames[0].window_increment == 5535
+        frame_buffer.add_data(b''.join(sock.queue))
+        queue = list(frame_buffer)
+        assert len(queue) == 3  # one headers frame, two window update frames.
+        assert isinstance(queue[1], WindowUpdateFrame)
+        assert queue[1].window_increment == len(b'hi there sir')
+        assert isinstance(queue[2], WindowUpdateFrame)
+        assert queue[2].window_increment == len(b'hi there sir again')
 
     def test_that_using_proxy_keeps_http_headers_intact(self):
         sock = DummySocket()
-        c = HTTP20Connection('www.google.com', secure=False, proxy_host='localhost')
+        c = HTTP20Connection(
+            'www.google.com', secure=False, proxy_host='localhost'
+        )
         c._sock = sock
         c.request('GET', '/')
         s = c.recent_stream
@@ -565,11 +440,55 @@ class TestHyperConnection(object):
 
         def consume_single_frame():
             mutable['counter'] += 1
-            
-        c._consume_single_frame = consume_single_frame
+
+        c._single_read = consume_single_frame
         c._recv_cb()
 
         assert mutable['counter'] == 10
+
+    def test_sending_file(self, frame_buffer):
+        # Prepare a socket so we can open a stream.
+        sock = DummySocket()
+        c = HTTP20Connection('www.google.com')
+        c._sock = sock
+
+        # Send a request that involves uploading a file handle.
+        with open(__file__, 'rb') as f:
+            c.request('GET', '/', body=f)
+
+        # Get all the frames
+        frame_buffer.add_data(b''.join(sock.queue))
+        frames = list(frame_buffer)
+
+        # Reconstruct the file from the sent data.
+        sent_data = b''.join(
+            f.data for f in frames if isinstance(f, DataFrame)
+        )
+
+        with open(__file__, 'rb') as f:
+            assert f.read() == sent_data
+
+    def test_closing_incomplete_stream(self, frame_buffer):
+        # Prepare a socket so we can open a stream.
+        sock = DummySocket()
+        c = HTTP20Connection('www.google.com')
+        c._sock = sock
+
+        # Send a request that involves uploading some data, but don't finish.
+        c.putrequest('POST', '/')
+        c.endheaders(message_body=b'some data', final=False)
+
+        # Close the stream.
+        c.streams[1].close()
+
+        # Get all the frames
+        frame_buffer.add_data(b''.join(sock.queue))
+        frames = list(frame_buffer)
+
+        # The last one should be a RST_STREAM frame.
+        f = frames[-1]
+        assert isinstance(f, RstStreamFrame)
+        assert 1 not in c.streams
 
 
 class TestServerPush(object):
@@ -578,7 +497,8 @@ class TestServerPush(object):
         self.encoder = Encoder()
         self.conn = None
 
-    def add_push_frame(self, stream_id, promised_stream_id, headers, end_block=True):
+    def add_push_frame(self, stream_id, promised_stream_id, headers,
+                       end_block=True):
         frame = PushPromiseFrame(stream_id)
         frame.promised_stream_id = promised_stream_id
         frame.data = self.encoder.encode(headers)
@@ -586,7 +506,8 @@ class TestServerPush(object):
             frame.flags.add('END_HEADERS')
         self.frames.append(frame)
 
-    def add_headers_frame(self, stream_id, headers, end_block=True, end_stream=False):
+    def add_headers_frame(self, stream_id, headers, end_block=True,
+                          end_stream=False):
         frame = HeadersFrame(stream_id)
         frame.data = self.encoder.encode(headers)
         if end_block:
@@ -605,7 +526,9 @@ class TestServerPush(object):
     def request(self):
         self.conn = HTTP20Connection('www.google.com', enable_push=True)
         self.conn._sock = DummySocket()
-        self.conn._sock.buffer = BytesIO(b''.join([frame.serialize() for frame in self.frames]))
+        self.conn._sock.buffer = BytesIO(
+            b''.join([frame.serialize() for frame in self.frames])
+        )
         self.conn.request('GET', '/')
 
     def assert_response(self):
@@ -626,14 +549,30 @@ class TestServerPush(object):
     def assert_push_response(self):
         push_response = self.pushes[0].get_response()
         assert push_response.status == 200
-        assert dict(push_response.headers) == {b'content-type': [b'application/javascript']}
+        assert dict(push_response.headers) == {
+            b'content-type': [b'application/javascript']
+        }
         assert push_response.read() == b'bar'
 
     def test_promise_before_headers(self):
-        self.add_push_frame(1, 2, [(':method', 'GET'), (':path', '/'), (':authority', 'www.google.com'), (':scheme', 'https'), ('accept-encoding', 'gzip')])
-        self.add_headers_frame(1, [(':status', '200'), ('content-type', 'text/html')])
+        self.add_push_frame(
+            1,
+            2,
+            [
+                (':method', 'GET'),
+                (':path', '/'),
+                (':authority', 'www.google.com'),
+                (':scheme', 'https'),
+                ('accept-encoding', 'gzip')
+            ]
+        )
+        self.add_headers_frame(
+            1, [(':status', '200'), ('content-type', 'text/html')]
+        )
         self.add_data_frame(1, b'foo', end_stream=True)
-        self.add_headers_frame(2, [(':status', '200'), ('content-type', 'application/javascript')])
+        self.add_headers_frame(
+            2, [(':status', '200'), ('content-type', 'application/javascript')]
+        )
         self.add_data_frame(2, b'bar', end_stream=True)
 
         self.request()
@@ -644,43 +583,95 @@ class TestServerPush(object):
         self.assert_push_response()
 
     def test_promise_after_headers(self):
-        self.add_headers_frame(1, [(':status', '200'), ('content-type', 'text/html')])
-        self.add_push_frame(1, 2, [(':method', 'GET'), (':path', '/'), (':authority', 'www.google.com'), (':scheme', 'https'), ('accept-encoding', 'gzip')])
+        self.add_headers_frame(
+            1, [(':status', '200'), ('content-type', 'text/html')]
+        )
+        self.add_push_frame(
+            1,
+            2,
+            [
+                (':method', 'GET'),
+                (':path', '/'),
+                (':authority', 'www.google.com'),
+                (':scheme', 'https'),
+                ('accept-encoding', 'gzip')
+            ]
+        )
         self.add_data_frame(1, b'foo', end_stream=True)
-        self.add_headers_frame(2, [(':status', '200'), ('content-type', 'application/javascript')])
+        self.add_headers_frame(
+            2, [(':status', '200'), ('content-type', 'application/javascript')]
+        )
         self.add_data_frame(2, b'bar', end_stream=True)
 
         self.request()
         assert len(list(self.conn.get_pushes())) == 0
         self.assert_response()
-        assert len(list(self.conn.get_pushes())) == 0
         assert self.response.read() == b'foo'
         self.assert_pushes()
         self.assert_push_response()
 
     def test_promise_after_data(self):
-        self.add_headers_frame(1, [(':status', '200'), ('content-type', 'text/html')])
+        self.add_headers_frame(
+            1, [(':status', '200'), ('content-type', 'text/html')]
+        )
         self.add_data_frame(1, b'fo')
-        self.add_push_frame(1, 2, [(':method', 'GET'), (':path', '/'), (':authority', 'www.google.com'), (':scheme', 'https'), ('accept-encoding', 'gzip')])
+        self.add_push_frame(
+            1,
+            2,
+            [
+                (':method', 'GET'),
+                (':path', '/'),
+                (':authority', 'www.google.com'),
+                (':scheme', 'https'),
+                ('accept-encoding', 'gzip')
+            ]
+        )
         self.add_data_frame(1, b'o', end_stream=True)
-        self.add_headers_frame(2, [(':status', '200'), ('content-type', 'application/javascript')])
+        self.add_headers_frame(
+            2, [(':status', '200'), ('content-type', 'application/javascript')]
+        )
         self.add_data_frame(2, b'bar', end_stream=True)
 
         self.request()
         assert len(list(self.conn.get_pushes())) == 0
         self.assert_response()
-        assert len(list(self.conn.get_pushes())) == 0
         assert self.response.read() == b'foo'
         self.assert_pushes()
         self.assert_push_response()
 
     def test_capture_all_promises(self):
-        self.add_push_frame(1, 2, [(':method', 'GET'), (':path', '/one'), (':authority', 'www.google.com'), (':scheme', 'https'), ('accept-encoding', 'gzip')])
-        self.add_headers_frame(1, [(':status', '200'), ('content-type', 'text/html')])
-        self.add_push_frame(1, 4, [(':method', 'GET'), (':path', '/two'), (':authority', 'www.google.com'), (':scheme', 'https'), ('accept-encoding', 'gzip')])
+        self.add_push_frame(
+            1,
+            2,
+            [
+                (':method', 'GET'),
+                (':path', '/one'),
+                (':authority', 'www.google.com'),
+                (':scheme', 'https'),
+                ('accept-encoding', 'gzip')
+            ]
+        )
+        self.add_headers_frame(
+            1, [(':status', '200'), ('content-type', 'text/html')]
+        )
+        self.add_push_frame(
+            1,
+            4,
+            [
+                (':method', 'GET'),
+                (':path', '/two'),
+                (':authority', 'www.google.com'),
+                (':scheme', 'https'),
+                ('accept-encoding', 'gzip')
+            ]
+        )
         self.add_data_frame(1, b'foo', end_stream=True)
-        self.add_headers_frame(4, [(':status', '200'), ('content-type', 'application/javascript')])
-        self.add_headers_frame(2, [(':status', '200'), ('content-type', 'application/javascript')])
+        self.add_headers_frame(
+            4, [(':status', '200'), ('content-type', 'application/javascript')]
+        )
+        self.add_headers_frame(
+            2, [(':status', '200'), ('content-type', 'application/javascript')]
+        )
         self.add_data_frame(4, b'two', end_stream=True)
         self.add_data_frame(2, b'one', end_stream=True)
 
@@ -696,8 +687,20 @@ class TestServerPush(object):
         assert self.response.read() == b'foo'
 
     def test_cancel_push(self):
-        self.add_push_frame(1, 2, [(':method', 'GET'), (':path', '/'), (':authority', 'www.google.com'), (':scheme', 'https'), ('accept-encoding', 'gzip')])
-        self.add_headers_frame(1, [(':status', '200'), ('content-type', 'text/html')])
+        self.add_push_frame(
+            1,
+            2,
+            [
+                (':method', 'GET'),
+                (':path', '/'),
+                (':authority', 'www.google.com'),
+                (':scheme', 'https'),
+                ('accept-encoding', 'gzip')
+            ]
+        )
+        self.add_headers_frame(
+            1, [(':status', '200'), ('content-type', 'text/html')]
+        )
 
         self.request()
         self.conn.get_response()
@@ -708,8 +711,20 @@ class TestServerPush(object):
         assert self.conn._sock.queue[-1] == f.serialize()
 
     def test_reset_pushed_streams_when_push_disabled(self):
-        self.add_push_frame(1, 2, [(':method', 'GET'), (':path', '/'), (':authority', 'www.google.com'), (':scheme', 'https'), ('accept-encoding', 'gzip')])
-        self.add_headers_frame(1, [(':status', '200'), ('content-type', 'text/html')])
+        self.add_push_frame(
+            1,
+            2,
+            [
+                (':method', 'GET'),
+                (':path', '/'),
+                (':authority', 'www.google.com'),
+                (':scheme', 'https'),
+                ('accept-encoding', 'gzip')
+            ]
+        )
+        self.add_headers_frame(
+            1, [(':status', '200'), ('content-type', 'text/html')]
+        )
 
         self.request()
         self.conn._enable_push = False
@@ -733,428 +748,6 @@ class TestServerPush(object):
         assert p.request_headers == HTTPHeaderMap([('no', 'no')])
 
 
-class TestHyperStream(object):
-    def test_streams_have_ids(self):
-        s = Stream(1, None, None, None, None, None, None)
-        assert s.stream_id == 1
-
-    def test_streams_initially_have_no_headers(self):
-        s = Stream(1, None, None, None, None, None, None)
-        assert list(s.headers.items()) == []
-
-    def test_streams_can_have_headers(self):
-        s = Stream(1, None, None, None, None, None, None)
-        s.add_header("name", "value")
-        assert list(s.headers.items()) == [(b"name", b"value")]
-
-    def test_streams_can_replace_headers(self):
-        s = Stream(1, None, None, None, None, None, None)
-        s.add_header("name", "value")
-        s.add_header("name", "other_value", replace=True)
-
-        assert list(s.headers.items()) == [(b"name", b"other_value")]
-
-    def test_streams_can_replace_none_headers(self):
-        s = Stream(1, None, None, None, None, None, None)
-        s.add_header("name", "value")
-        s.add_header("other_name", "other_value", replace=True)
-
-        assert list(s.headers.items()) == [
-            (b"name", b"value"),
-            (b"other_name", b"other_value")
-        ]
-        
-    def test_stream_opening_sends_headers(self):
-        def data_callback(frame):
-            assert isinstance(frame, HeadersFrame)
-            assert frame.data == 'testkeyTestVal'
-            assert frame.flags == set(['END_STREAM', 'END_HEADERS'])
-
-        s = Stream(1, data_callback, None, None, NullEncoder, None, None)
-        s.add_header("TestKey", "TestVal")
-        s.open(True)
-
-        assert s.state == STATE_HALF_CLOSED_LOCAL
-
-    def test_file_objects_can_be_sent(self):
-        def data_callback(frame):
-            assert isinstance(frame, DataFrame)
-            assert frame.data == b'Hi there!'
-            assert frame.flags == set(['END_STREAM'])
-
-        s = Stream(1, data_callback, None, None, NullEncoder, None, None)
-        s.state = STATE_OPEN
-        s.send_data(BytesIO(b'Hi there!'), True)
-
-        assert s.state == STATE_HALF_CLOSED_LOCAL
-        assert s._out_flow_control_window == 65535 - len(b'Hi there!')
-
-    def test_large_file_objects_are_broken_into_chunks(self):
-        frame_count = [0]
-        recent_frame = [None]
-
-        def data_callback(frame):
-            assert isinstance(frame, DataFrame)
-            assert len(frame.data) <= MAX_CHUNK
-            frame_count[0] += 1
-            recent_frame[0] = frame
-
-        data = b'test' * (MAX_CHUNK + 1)
-
-        s = Stream(1, data_callback, None, None, NullEncoder, None, None)
-        s.state = STATE_OPEN
-        s.send_data(BytesIO(data), True)
-
-        assert s.state == STATE_HALF_CLOSED_LOCAL
-        assert recent_frame[0].flags == set(['END_STREAM'])
-        assert frame_count[0] == 5
-        assert s._out_flow_control_window == 65535 - len(data)
-
-    def test_bytestrings_can_be_sent(self):
-        def data_callback(frame):
-            assert isinstance(frame, DataFrame)
-            assert frame.data == b'Hi there!'
-            assert frame.flags == set(['END_STREAM'])
-
-        s = Stream(1, data_callback, None, None, NullEncoder, None, None)
-        s.state = STATE_OPEN
-        s.send_data(b'Hi there!', True)
-
-        assert s.state == STATE_HALF_CLOSED_LOCAL
-        assert s._out_flow_control_window == 65535 - len(b'Hi there!')
-
-    def test_long_bytestrings_are_split(self):
-        frame_count = [0]
-        recent_frame = [None]
-
-        def data_callback(frame):
-            assert isinstance(frame, DataFrame)
-            assert len(frame.data) <= MAX_CHUNK
-            frame_count[0] += 1
-            recent_frame[0] = frame
-
-        data = b'test' * (MAX_CHUNK + 1)
-
-        s = Stream(1, data_callback, None, None, NullEncoder, None, None)
-        s.state = STATE_OPEN
-        s.send_data(data, True)
-
-        assert s.state == STATE_HALF_CLOSED_LOCAL
-        assert recent_frame[0].flags == set(['END_STREAM'])
-        assert frame_count[0] == 5
-        assert s._out_flow_control_window == 65535 - len(data)
-
-    def test_windowupdate_frames_update_windows(self):
-        s = Stream(1, None, None, None, None, None, None)
-        f = WindowUpdateFrame(1)
-        f.window_increment = 1000
-        s.receive_frame(f)
-
-        assert s._out_flow_control_window == 65535 + 1000
-
-    def test_flow_control_manager_update_includes_padding(self):
-        out_frames = []
-        in_frames = []
-
-        def send_cb(frame):
-            out_frames.append(frame)
-
-        def recv_cb(s):
-            def inner(stream_id=0):
-                s.receive_frame(in_frames.pop(0))
-            return inner
-
-        start_window = 65535
-        s = Stream(1, send_cb, None, None, None, None, FlowControlManager(start_window))
-        s._recv_cb = recv_cb(s)
-        s.state = STATE_HALF_CLOSED_LOCAL
-
-        # Provide two data frames to read.
-        f = DataFrame(1)
-        f.data = b'hi there!'
-        f.pad_length = 10
-        f.flags.add('END_STREAM')
-        in_frames.append(f)
-
-        data = s._read()
-        assert data == b'hi there!'
-        assert s._in_window_manager.window_size == start_window - f.pad_length - len(data) - 1
-
-    def test_blocked_frames_cause_window_updates(self):
-        out_frames = []
-
-        def send_cb(frame, *args):
-            out_frames.append(frame)
-
-        start_window = 65535
-        s = Stream(1, send_cb, None, None, None, None, FlowControlManager(start_window))
-        s._data_cb = send_cb
-        s.state = STATE_HALF_CLOSED_LOCAL
-
-        # Change the window size.
-        s._in_window_manager.window_size = 60000
-
-        # Provide a BLOCKED frame.
-        f = BlockedFrame(1)
-        s.receive_frame(f)
-
-        assert len(out_frames) == 1
-        assert out_frames[0].type == WindowUpdateFrame.type
-        assert out_frames[0].window_increment == 5535
-
-    def test_stream_reading_works(self):
-        out_frames = []
-        in_frames = []
-
-        def send_cb(frame, tolerate_peer_gone=False):
-            out_frames.append(frame)
-
-        def recv_cb(s):
-            def inner(stream_id=0):
-                s.receive_frame(in_frames.pop(0))
-            return inner
-
-        s = Stream(1, send_cb, None, None, None, None, FlowControlManager(65535))
-        s._recv_cb = recv_cb(s)
-        s.state = STATE_HALF_CLOSED_LOCAL
-
-        # Provide a data frame to read.
-        f = DataFrame(1)
-        f.data = b'hi there!'
-        f.flags.add('END_STREAM')
-        in_frames.append(f)
-
-        data = s._read()
-        assert data == b'hi there!'
-        assert len(out_frames) == 0
-
-    def test_can_read_multiple_frames_from_streams(self):
-        out_frames = []
-        in_frames = []
-
-        def send_cb(frame, tolerate_peer_gone=False):
-            out_frames.append(frame)
-
-        def recv_cb(s):
-            def inner(stream_id=0):
-                s.receive_frame(in_frames.pop(0))
-            return inner
-
-        s = Stream(1, send_cb, None, None, None, None, FlowControlManager(800))
-        s._recv_cb = recv_cb(s)
-        s.state = STATE_HALF_CLOSED_LOCAL
-
-        # Provide two data frames to read.
-        f = DataFrame(1)
-        f.data = b'hi there!'
-        in_frames.append(f)
-
-        f = DataFrame(1)
-        f.data = b'hi there again!'
-        f.flags.add('END_STREAM')
-        in_frames.append(f)
-
-        data = s._read()
-        assert data == b'hi there!hi there again!'
-        assert len(out_frames) == 1
-        assert isinstance(out_frames[0], WindowUpdateFrame)
-        assert out_frames[0].window_increment == len(b'hi there!')
-
-    def test_partial_reads_from_streams(self):
-        out_frames = []
-        in_frames = []
-
-        def send_cb(frame, tolerate_peer_gone=False):
-            out_frames.append(frame)
-
-        def recv_cb(s):
-            def inner(stream_id=0):
-                s.receive_frame(in_frames.pop(0))
-            return inner
-
-        s = Stream(1, send_cb, None, None, None, None, FlowControlManager(800))
-        s._recv_cb = recv_cb(s)
-        s.state = STATE_HALF_CLOSED_LOCAL
-
-        # Provide two data frames to read.
-        f = DataFrame(1)
-        f.data = b'hi there!'
-        in_frames.append(f)
-
-        f = DataFrame(1)
-        f.data = b'hi there again!'
-        f.flags.add('END_STREAM')
-        in_frames.append(f)
-
-        # We'll get the entire first frame.
-        data = s._read(4)
-        assert data == b'hi there!'
-        assert len(out_frames) == 1
-
-        # Now we'll get the entire of the second frame.
-        data = s._read(4)
-        assert data == b'hi there again!'
-        assert len(out_frames) == 1
-        assert s.state == STATE_CLOSED
-
-    def test_can_receive_continuation_frame_after_end_stream(self):
-        s = Stream(1, None, None, None, None, None, FlowControlManager(65535))
-        f = HeadersFrame(1)
-        f.data = 'hi there'
-        f.flags = set('END_STREAM')
-        f2 = ContinuationFrame(1)
-        f2.data = ' sir'
-        f2.flags = set('END_HEADERS')
-
-        s.receive_frame(f)
-        s.receive_frame(f2)
-
-    def test_receive_unexpected_frame(self):
-        # SETTINGS frames are never defined on streams, so send one of those.
-        s = Stream(1, None, None, None, None, None, None)
-        f = SettingsFrame(0)
-
-        with pytest.raises(ValueError):
-            s.receive_frame(f)
-
-    def test_can_receive_trailers(self):
-        headers = [('a', 'b'), ('c', 'd'), (':status', '200')]
-        trailers = [('e', 'f'), ('g', 'h')]
-
-        s = Stream(1, None, None, None, None, FixedDecoder(headers), None)
-        s.state = STATE_HALF_CLOSED_LOCAL
-
-        # Provide the first HEADERS frame.
-        f = HeadersFrame(1)
-        f.data = b'hi there!'
-        f.flags.add('END_HEADERS')
-        s.receive_frame(f)
-
-        assert s.response_headers == HTTPHeaderMap(headers)
-
-        # Now, replace the dummy decoder to ensure we get a new header block.
-        s._decoder = FixedDecoder(trailers)
-
-        # Provide the trailers.
-        f = HeadersFrame(1)
-        f.data = b'hi there again!'
-        f.flags.add('END_STREAM')
-        f.flags.add('END_HEADERS')
-        s.receive_frame(f)
-
-        # Now, check the trailers.
-        assert s.response_trailers == HTTPHeaderMap(trailers)
-
-        # Confirm we closed the stream.
-        assert s.state == STATE_CLOSED
-
-    def test_cannot_receive_three_header_blocks(self):
-        first = [('a', 'b'), ('c', 'd'), (':status', '200')]
-
-        s = Stream(1, None, None, None, None, FixedDecoder(first), None)
-        s.state = STATE_HALF_CLOSED_LOCAL
-
-        # Provide the first two header frames.
-        f = HeadersFrame(1)
-        f.data = b'hi there!'
-        f.flags.add('END_HEADERS')
-        s.receive_frame(f)
-
-        f = HeadersFrame(1)
-        f.data = b'hi there again!'
-        f.flags.add('END_HEADERS')
-        s.receive_frame(f)
-
-        # Provide the third. This one blows up.
-        f = HeadersFrame(1)
-        f.data = b'hi there again!'
-        f.flags.add('END_STREAM')
-        f.flags.add('END_HEADERS')
-
-        with pytest.raises(ProtocolError):
-            s.receive_frame(f)
-
-    def test_reading_trailers_early_reads_all_data(self):
-        in_frames = []
-        headers = [('a', 'b'), ('c', 'd'), (':status', '200')]
-        trailers = [('e', 'f'), ('g', 'h')]
-
-        def recv_cb(s):
-            def inner(stream_id=0):
-                s.receive_frame(in_frames.pop(0))
-            return inner
-
-        s = Stream(1, None, None, None, None, FixedDecoder(headers), FlowControlManager(65535))
-        s._recv_cb = recv_cb(s)
-        s.state = STATE_HALF_CLOSED_LOCAL
-
-        # Provide the first HEADERS frame.
-        f = HeadersFrame(1)
-        f.data = b'hi there!'
-        f.flags.add('END_HEADERS')
-        in_frames.append(f)
-
-        # Provide some data.
-        f = DataFrame(1)
-        f.data = b'testdata'
-        in_frames.append(f)
-
-        # Provide the trailers.
-        f = HeadersFrame(1)
-        f.data = b'hi there again!'
-        f.flags.add('END_STREAM')
-        f.flags.add('END_HEADERS')
-        in_frames.append(f)
-
-        # Begin by reading the first headers.
-        assert s.getheaders() == HTTPHeaderMap(headers)
-
-        # Now, replace the dummy decoder to ensure we get a new header block.
-        s._decoder = FixedDecoder(trailers)
-
-        # Ask for the trailers. This should also read the data frames.
-        assert s.gettrailers() == HTTPHeaderMap(trailers)
-        assert s.data == [b'testdata']
-
-    def test_can_read_single_frames_from_streams(self):
-        out_frames = []
-        in_frames = []
-
-        def send_cb(frame, tolerate_peer_gone=False):
-            out_frames.append(frame)
-
-        def recv_cb(s):
-            def inner(stream_id=0):
-                s.receive_frame(in_frames.pop(0))
-            return inner
-
-        s = Stream(1, send_cb, None, None, None, None, FlowControlManager(800))
-        s._recv_cb = recv_cb(s)
-        s.state = STATE_HALF_CLOSED_LOCAL
-
-        # Provide two data frames to read.
-        f = DataFrame(1)
-        f.data = b'hi there!'
-        in_frames.append(f)
-
-        f = DataFrame(1)
-        f.data = b'hi there again!'
-        f.flags.add('END_STREAM')
-        in_frames.append(f)
-
-        data = s._read_one_frame()
-        assert data == b'hi there!'
-
-        data = s._read_one_frame()
-        assert data == b'hi there again!'
-
-        data = s._read_one_frame()
-        assert data is None
-
-        data = s._read()
-        assert data == b''
-
-
 class TestResponse(object):
     def test_status_is_stripped_from_headers(self):
         headers = HTTPHeaderMap([(':status', '200')])
@@ -1164,7 +757,9 @@ class TestResponse(object):
         assert not resp.headers
 
     def test_response_transparently_decrypts_gzip(self):
-        headers = HTTPHeaderMap([(':status', '200'), ('content-encoding', 'gzip')])
+        headers = HTTPHeaderMap(
+            [(':status', '200'), ('content-encoding', 'gzip')]
+        )
         c = zlib_compressobj(wbits=24)
         body = c.compress(b'this is test data')
         body += c.flush()
@@ -1173,7 +768,9 @@ class TestResponse(object):
         assert resp.read() == b'this is test data'
 
     def test_response_transparently_decrypts_real_deflate(self):
-        headers = HTTPHeaderMap([(':status', '200'), ('content-encoding', 'deflate')])
+        headers = HTTPHeaderMap(
+            [(':status', '200'), ('content-encoding', 'deflate')]
+        )
         c = zlib_compressobj(wbits=zlib.MAX_WBITS)
         body = c.compress(b'this is test data')
         body += c.flush()
@@ -1182,7 +779,9 @@ class TestResponse(object):
         assert resp.read() == b'this is test data'
 
     def test_response_transparently_decrypts_wrong_deflate(self):
-        headers = HTTPHeaderMap([(':status', '200'), ('content-encoding', 'deflate')])
+        headers = HTTPHeaderMap(
+            [(':status', '200'), ('content-encoding', 'deflate')]
+        )
         c = zlib_compressobj(wbits=-zlib.MAX_WBITS)
         body = c.compress(b'this is test data')
         body += c.flush()
@@ -1202,7 +801,7 @@ class TestResponse(object):
         headers = HTTPHeaderMap([(':status', '200')])
         stream = DummyStream('')
 
-        with HTTP20Response(headers, stream) as resp:
+        with HTTP20Response(headers, stream):
             pass
 
         assert stream.closed
@@ -1231,14 +830,18 @@ class TestResponse(object):
         assert resp.read() == b''
 
     def test_getheader(self):
-        headers = HTTPHeaderMap([(':status', '200'), ('content-type', 'application/json')])
+        headers = HTTPHeaderMap(
+            [(':status', '200'), ('content-type', 'application/json')]
+        )
         stream = DummyStream(b'')
         resp = HTTP20Response(headers, stream)
 
         assert resp.headers[b'content-type'] == [b'application/json']
 
     def test_response_ignores_unknown_headers(self):
-        headers = HTTPHeaderMap([(':status', '200'), (':reserved', 'yes'), ('no', 'no')])
+        headers = HTTPHeaderMap(
+            [(':status', '200'), (':reserved', 'yes'), ('no', 'no')]
+        )
         stream = DummyStream(b'')
         resp = HTTP20Response(headers, stream)
 
@@ -1272,7 +875,9 @@ class TestResponse(object):
             assert recv == expected
 
     def test_read_compressed_frames(self):
-        headers = HTTPHeaderMap([(':status', '200'), ('content-encoding', 'gzip')])
+        headers = HTTPHeaderMap(
+            [(':status', '200'), ('content-encoding', 'gzip')]
+        )
         c = zlib_compressobj(wbits=24)
         body = c.compress(b'this is test data')
         body += c.flush()
@@ -1295,6 +900,20 @@ class TestHTTP20Adapter(object):
         conn1 = a.get_connection('http2bin.org', 80, 'http')
         conn2 = a.get_connection('http2bin.org', 80, 'http')
 
+        assert conn1 is conn2
+
+    def test_adapter_accept_client_certificate(self):
+        a = HTTP20Adapter()
+        conn1 = a.get_connection(
+            'http2bin.org',
+            80,
+            'http',
+            cert=CLIENT_PEM_FILE)
+        conn2 = a.get_connection(
+            'http2bin.org',
+            80,
+            'http',
+            cert=CLIENT_PEM_FILE)
         assert conn1 is conn2
 
 
@@ -1340,7 +959,7 @@ class TestUtilities(object):
             import nghttp2
         else:
             with pytest.raises(ImportError):
-                import nghttp2
+                import nghttp2  # noqa
 
         assert True
 
@@ -1372,16 +991,17 @@ class TestUtilities(object):
     def test_goaway_frame_PROTOCOL_ERROR(self):
         f = GoAwayFrame(0)
         # Set error code to PROTOCOL_ERROR
-        f.error_code = 1;
+        f.error_code = 1
 
         c = HTTP20Connection('www.google.com')
         c._sock = DummySocket()
+        c._sock.buffer = BytesIO(f.serialize())
 
         # 'Receive' the GOAWAY frame.
         # Validate that the spec error name and description are used to throw
         # the connection exception.
         with pytest.raises(ConnectionError) as conn_err:
-            c.receive_frame(f)
+            c._single_read()
 
         err_msg = str(conn_err)
         name, number, description = errors.get_data(1)
@@ -1393,16 +1013,17 @@ class TestUtilities(object):
     def test_goaway_frame_HTTP_1_1_REQUIRED(self):
         f = GoAwayFrame(0)
         # Set error code to HTTP_1_1_REQUIRED
-        f.error_code = 13;
+        f.error_code = 13
 
         c = HTTP20Connection('www.google.com')
         c._sock = DummySocket()
+        c._sock.buffer = BytesIO(f.serialize())
 
         # 'Receive' the GOAWAY frame.
         # Validate that the spec error name and description are used to throw
         # the connection exception.
         with pytest.raises(ConnectionError) as conn_err:
-            c.receive_frame(f)
+            c._single_read()
 
         err_msg = str(conn_err)
         name, number, description = errors.get_data(13)
@@ -1414,125 +1035,44 @@ class TestUtilities(object):
     def test_goaway_frame_NO_ERROR(self):
         f = GoAwayFrame(0)
         # Set error code to NO_ERROR
-        f.error_code = 0;
+        f.error_code = 0
 
         c = HTTP20Connection('www.google.com')
         c._sock = DummySocket()
+        c._sock.buffer = BytesIO(f.serialize())
 
         # 'Receive' the GOAWAY frame.
         # Test makes sure no exception is raised; error code 0 means we are
         # dealing with a standard and graceful shutdown.
-        c.receive_frame(f)
+        c._single_read()
 
     def test_goaway_frame_invalid_error_code(self):
         f = GoAwayFrame(0)
         # Set error code to non existing error
-        f.error_code = 100;
-        f.additional_data = 'data about non existing error code';
+        f.error_code = 100
 
         c = HTTP20Connection('www.google.com')
         c._sock = DummySocket()
+        c._sock.buffer = BytesIO(f.serialize())
 
         # 'Receive' the GOAWAY frame.
         # If the error code does not exist in the spec then the additional
         # data is used instead.
         with pytest.raises(ConnectionError) as conn_err:
-            c.receive_frame(f)
+            c._single_read()
 
         err_msg = str(conn_err)
         with pytest.raises(ValueError):
             name, number, description = errors.get_data(100)
 
-        assert 'data about non existing error code' in err_msg
         assert str(f.error_code) in err_msg
-
-    def test_receive_unexpected_stream_id(self):
-        frames = []
-
-        def data_callback(frame):
-            frames.append(frame)
-
-        c = HTTP20Connection('www.google.com')
-        c._send_cb = data_callback
-
-        f = DataFrame(2)
-        data = memoryview(b"hi there sir")
-        c._consume_frame_payload(f, data)
-
-        # If we receive an unexpected stream id then we cancel the stream
-        # by sending a reset stream that contains the protocol error code (1)
-        f = frames[0]
-        assert len(frames) == 1
-        assert f.stream_id == 2
-        assert isinstance(f, RstStreamFrame)
-        assert f.error_code == 1 # PROTOCOL_ERROR
-
-    def test_connection_sends_rst_frame_if_frame_size_too_large(self):
-        sock = DummySocket()
-        d = DataFrame(1)
-        # Receive oversized frame on the client side.
-        # Create huge data frame that exceeds the FRAME_MAX_LEN value in order
-        # to trigger the reset frame with error code 6 (FRAME_SIZE_ERROR).
-        # FRAME_MAX_LEN is a constant value for the hyper client and cannot
-        # be updated as of now.
-        d.data = b''.join([b"hi there client" for x in range(1500)])
-        sock.buffer = BytesIO(d.serialize())
-
-        frames = []
-
-        def send_rst_frame(stream_id, error_code):
-            f = RstStreamFrame(stream_id)
-            f.error_code = error_code
-            frames.append(f)
-
-        c = HTTP20Connection('www.google.com')
-        c._sock = sock
-        c._send_rst_frame = send_rst_frame
-        c.request('GET', '/')
-        c._recv_cb()
-
-        assert len(frames) == 1
-        f = frames[0]
-        assert isinstance(f, RstStreamFrame)
-        assert f.stream_id == 1
-        assert f.error_code == 6 #FRAME_SIZE_ERROR
-
-    def test_connection_stream_is_removed_when_receiving_out_of_range_frame(self):
-        sock = DummySocket()
-        d = DataFrame(1)
-        d.data = b''.join([b"hi there sir" for x in range(1500)])
-        sock.buffer = BytesIO(d.serialize())
-
-        c = HTTP20Connection('www.google.com')
-        c._sock = sock
-        c.request('GET', '/')
-
-        # Make sure the stream gets removed from the map
-        # after receiving an out of size data frame
-        assert len(c.streams) == 1
-        c._recv_cb()
-        assert len(c.streams) == 0
-
-    def test_connection_error_when_send_out_of_range_frame(self):
-        # Send oversized frame to the server side.
-        # Create huge data frame that exceeds the intitial FRAME_MAX_LEN setting
-        # in order to trigger a value error when sending it.
-        # Note that the value of the FRAME_MAX_LEN setting can be updated
-        # by the server through a settings frame.
-        d = DataFrame(1)
-        d.data = b''.join([b"hi there server" for x in range(1500)])
-
-        c = HTTP20Connection('www.google.com')
-        c._sock = DummySocket()
-        with pytest.raises(ValueError):
-            c._send_cb(d)
 
 
 # Some utility classes for the tests.
 class NullEncoder(object):
     @staticmethod
     def encode(headers):
-        
+
         def to_str(v):
             if is_py2:
                 return str(v)
@@ -1541,7 +1081,7 @@ class NullEncoder(object):
                     v = str(v, 'utf-8')
                 return v
 
-        return '\n'.join("%s%s" % (to_str(name), to_str(val)) 
+        return '\n'.join("%s%s" % (to_str(name), to_str(val))
                          for name, val in headers)
 
 
@@ -1556,25 +1096,37 @@ class FixedDecoder(object):
 class DummySocket(object):
     def __init__(self):
         self.queue = []
-        self.buffer = BytesIO()
+        self._buffer = BytesIO()
+        self._read_counter = 0
         self.can_read = False
+
+    @property
+    def buffer(self):
+        return memoryview(self._buffer.getvalue()[self._read_counter:])
+
+    @buffer.setter
+    def buffer(self, value):
+        self._buffer = value
+
+    def advance_buffer(self, amt):
+        self._read_counter += amt
+        self._buffer.read(amt)
 
     def send(self, data):
         self.queue.append(data)
 
+    sendall = send
+
     def recv(self, l):
-        return memoryview(self.buffer.read(l))
+        data = self._buffer.read(l)
+        self._read_counter += len(data)
+        return memoryview(data)
 
     def close(self):
         pass
 
-
-class DummyFitfullySocket(DummySocket):
-    def recv(self, l):
-        length = l
-        if l != 9 and l >= 4:
-            length = int(round(l / 2))
-        return memoryview(self.buffer.read(length))
+    def fill(self):
+        pass
 
 
 class DummyStream(object):

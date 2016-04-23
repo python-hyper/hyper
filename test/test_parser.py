@@ -5,7 +5,6 @@ test_http11_parser.py
 
 Unit tests for hyper's HTTP/1.1 parser.
 """
-import hyper
 import pytest
 
 from hyper.http11.parser import Parser, ParseError

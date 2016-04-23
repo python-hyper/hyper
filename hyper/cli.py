@@ -108,26 +108,30 @@ def make_troubleshooting_argument(parser):
         help='Show debugging information (loglevel=DEBUG)')
     parser.add_argument(
         '--h2', action='store_true', default=False,
-        help="Do HTTP/2 directly in plaintext: skip plaintext upgrade")
+        help="Do HTTP/2 directly, skipping plaintext upgrade and ignoring "
+             "NPN/ALPN."
+    )
+
+
+def split_host_and_port(hostname):
+    if ':' in hostname:
+        return to_host_port_tuple(hostname, default_port=443)
+    return hostname, None
+
+
+class UrlInfo(object):
+    def __init__(self):
+        self.fragment = None
+        self.host = 'localhost'
+        self.netloc = None
+        self.path = '/'
+        self.port = 443
+        self.query = None
+        self.scheme = 'https'
+        self.secure = False
 
 
 def set_url_info(args):
-    def split_host_and_port(hostname):
-        if ':' in hostname:
-            return to_host_port_tuple(hostname, default_port=443)
-        return hostname, None
-
-    class UrlInfo(object):
-        def __init__(self):
-            self.fragment = None
-            self.host = 'localhost'
-            self.netloc = None
-            self.path = '/'
-            self.port = 443
-            self.query = None
-            self.scheme = 'https'
-            self.secure = False
-
     info = UrlInfo()
     _result = urlsplit(args._url)
     for attr in vars(info).keys():
@@ -164,7 +168,14 @@ def set_request_data(args):
     body, headers, params = {}, {}, {}
     for i in args.items:
         if i.sep == SEP_HEADERS:
-            headers[i.key] = i.value
+            if i.key:
+                headers[i.key] = i.value
+            else:
+                # when overriding a HTTP/2 special header there will be a
+                # leading colon, which tricks the command line parser into
+                # thinking the header is empty
+                k, v = i.value.split(':', 1)
+                headers[':' + k] = v
         elif i.sep == SEP_QUERY:
             params[i.key] = i.value
         elif i.sep == SEP_DATA:
@@ -227,7 +238,10 @@ def request(args):
         )
     else:  # pragma: no cover
         conn = HTTP20Connection(
-            args.url.host, args.url.port, secure=args.url.secure
+            args.url.host,
+            args.url.port,
+            secure=args.url.secure,
+            force_proto='h2'
         )
 
     conn.request(args.method, args.url.path, args.body, args.headers)
