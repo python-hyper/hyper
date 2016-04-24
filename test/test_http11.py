@@ -510,6 +510,17 @@ class TestHTTP11Connection(object):
         assert 'File-like bodies must return bytestrings. ' \
                'Got: {}'.format(int) in str(exc_info)
 
+    def test_context_manager_enter_returns_self(self):
+        c = HTTP11Connection('httpbin.org')
+        with c as conn:
+            assert conn is c
+
+    def test_context_manager_connects_and_disconnects(self):
+        c = HTTP11Connection('httpbin.org')
+        with c:
+            assert c._sock is not None
+        assert c._sock is None
+
 
 class TestHTTP11Response(object):
     def test_short_circuit_read(self):
