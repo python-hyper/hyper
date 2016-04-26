@@ -311,7 +311,7 @@ class HTTP20Connection(object):
 
         """
         with self._lock:
-            if self._sock:
+            if self._sock is not None:
                 return
 
             if not self.proxy_host:
@@ -540,9 +540,7 @@ class HTTP20Connection(object):
         """
         # Concurrency
         #
-        # Synchronizes data writes.  This also ensures that only the current
-        # thread waits for window updates when the flow control window is
-        # blocked.
+        # Synchronizes data writes.
         #
         # i/o occurs while the lock is held; waiting threads will see a delay.
         with self._write_lock:
