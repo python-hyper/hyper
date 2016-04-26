@@ -477,15 +477,16 @@ class TestHTTP11Connection(object):
         c = HTTP11Connection('httpbin.org')
 
         rogue_element = 123
+        body = [b'legal1', b'legal2', rogue_element]
+        body_size = sum(len(bytes(x)) for x in body)
         with pytest.raises(ValueError) as exc_info:
             # content-length set so body type is set to BODY_FLAT. value
             # doesn't matter
-            body = ['legal1', 'legal2', rogue_element]
             c.request(
                 'GET',
                 '/get',
                 body=body,
-                headers={'content-length': str(len(map(str, body)))}
+                headers={'content-length': str(body_size)}
             )
         assert 'Elements in iterable body must be bytestrings. Illegal ' \
                'element: {}'.format(rogue_element) \
