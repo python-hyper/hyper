@@ -361,7 +361,9 @@ class TestHyperIntegration(SocketLevelTest):
             sock.send(f.serialize())
 
             # Now, send a headers frame again, containing trailing headers.
-            f = build_headers_frame([(':res', 'no'), ('trailing', 'sure')], e)
+            f = build_headers_frame([
+                ('trialing', 'no'),
+                ('trailing', 'sure')], e)
             f.flags.add('END_STREAM')
             f.stream_id = 1
             sock.send(f.serialize())
@@ -385,9 +387,10 @@ class TestHyperIntegration(SocketLevelTest):
         # Confirm that we got the trailing headers, and that they don't contain
         # reserved headers.
         assert resp.trailers['trailing'] == [b'sure']
+        assert resp.trailers['trialing'] == [b'no']
         assert resp.trailers.get(':res') is None
         assert len(resp.headers) == 1
-        assert len(resp.trailers) == 1
+        assert len(resp.trailers) == 2
 
         # Awesome, we're done now.
         recv_event.wait(5)
@@ -429,7 +432,9 @@ class TestHyperIntegration(SocketLevelTest):
             time.sleep(0.5)
 
             # Now, send a headers frame again, containing trailing headers.
-            f = build_headers_frame([(':res', 'no'), ('trailing', 'sure')], e)
+            f = build_headers_frame([
+                ('trialing', 'no'),
+                ('trailing', 'sure')], e)
             f.flags.add('END_STREAM')
             f.stream_id = 1
             sock.send(f.serialize())
@@ -453,9 +458,9 @@ class TestHyperIntegration(SocketLevelTest):
         # reserved headers. More importantly, check the trailers *first*,
         # before we read from the stream.
         assert resp.trailers['trailing'] == [b'sure']
-        assert resp.trailers.get(':res') is None
+        assert resp.trailers['trialing'] == [b'no']
         assert len(resp.headers) == 1
-        assert len(resp.trailers) == 1
+        assert len(resp.trailers) == 2
 
         # Confirm that the stream is still readable.
         assert resp.read() == b'have some data'
