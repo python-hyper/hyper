@@ -678,7 +678,7 @@ class TestHyperIntegration(SocketLevelTest):
         conn._recv_cb()
 
         # However, attempting to get the response should.
-        with pytest.raises(KeyError):
+        with pytest.raises(StreamResetError):
             conn.get_response(stream_id)
 
         # Awesome, we're done now.
@@ -716,13 +716,13 @@ class TestHyperIntegration(SocketLevelTest):
         conn = self.get_connection()
         conn.request('GET', '/')
 
-        # Now, eat the RstStream frames. The first one throws a
-        # StreamResetError.
-        with pytest.raises(StreamResetError):
-            conn._single_read()
-
-        # The next should throw no exception.
+        # Now, eat the Rst frames. These should not cause an exception.
         conn._single_read()
+        conn._single_read()
+
+        # However, attempting to get the response should.
+        with pytest.raises(StreamResetError):
+            conn.get_response(1)
 
         assert conn.reset_streams == set([1])
 

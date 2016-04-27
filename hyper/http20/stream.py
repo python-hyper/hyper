@@ -14,7 +14,6 @@ Each stream is identified by a monotonically increasing integer, assigned to
 the stream by the endpoint that initiated the stream.
 """
 from ..common.headers import HTTPHeaderMap
-from .exceptions import StreamResetError
 from .util import h2_safe_headers
 import logging
 
@@ -201,7 +200,7 @@ class Stream(object):
         Stream forcefully reset.
         """
         self.remote_closed = True
-        raise StreamResetError("Stream forcefully closed")
+        self._close_cb(self.stream_id)
 
     def get_headers(self):
         """

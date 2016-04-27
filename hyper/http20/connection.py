@@ -19,7 +19,7 @@ from ..compat import unicode, bytes
 from .stream import Stream
 from .response import HTTP20Response, HTTP20Push
 from .window import FlowControlManager
-from .exceptions import ConnectionError
+from .exceptions import ConnectionError, StreamResetError
 from . import errors
 
 import errno
@@ -186,8 +186,12 @@ class HTTP20Connection(object):
         return stream_id
 
     def _get_stream(self, stream_id):
-        return (self.streams[stream_id] if stream_id is not None
-                else self.recent_stream)
+        if stream_id is None:
+            return self.recent_stream
+        elif stream_id in self.reset_streams or stream_id not in self.streams:
+            raise StreamResetError("Stream forcefully closed")
+        else:
+            return self.streams[stream_id]
 
     def get_response(self, stream_id=None):
         """
