@@ -35,6 +35,20 @@ DEFAULT_WINDOW_SIZE = 65535
 TRANSIENT_SSL_ERRORS = (ssl.SSL_ERROR_WANT_READ, ssl.SSL_ERROR_WANT_WRITE)
 
 
+class _LockedObject(object):
+
+    def __init__(self, obj):
+        self.lock = threading.RLock()
+        self._obj = obj
+
+    def __enter__(self):
+        self.lock.acquire()
+        return self._obj
+
+    def __exit__(self, _exc_type, _exc_val, _exc_tb):
+        self.lock.release()
+
+
 class HTTP20Connection(object):
     """
     An object representing a single HTTP/2 connection to a server.
@@ -112,14 +126,10 @@ class HTTP20Connection(object):
         self.force_proto = force_proto
         # Concurrency
         #
-        # Use one lock (_lock) to synchronize
-        # - connect()
-        #   ensures that socket creation, sending the preamble, and the initial
-        #   settings exchange occur just once.
-        # - _new_stream()
-        #   ensures that stream creation sees a consistent connection state
-        # - close()
-        #   ensures that closing threads see a consistent connection state
+        # Use one lock (_lock) to synchronize any interaction with the
+        # connection.  This is because the h2.connection.H2Connection is
+        # completely unthreadsafe, for thread safety, all access to it must be
+        # synchronized.
         #
         # It's ok to use the same in lock all these cases as they occur at
         # different/linked points in the connection's lifecycle.
@@ -169,7 +179,7 @@ class HTTP20Connection(object):
         users should be strongly discouraged from messing about with connection
         objects themselves.
         """
-        self._conn = h2.connection.H2Connection()
+        self._conn = _LockedObject(h2.connection.H2Connection())
 
         # Streams are stored in a dictionary keyed off their stream IDs. We
         # also save the most recent one for easy access without having to walk
@@ -343,10 +353,11 @@ class HTTP20Connection(object):
         """
         # We need to send the connection header immediately on this
         # connection, followed by an initial settings frame.
-        self._conn.initiate_connection()
-        self._conn.update_settings(
-            {h2.settings.ENABLE_PUSH: int(self._enable_push)}
-        )
+        with self._conn as conn:
+            conn.initiate_connection()
+            conn.update_settings(
+                {h2.settings.ENABLE_PUSH: int(self._enable_push)}
+            )
         self._send_outstanding_data()
 
         # The server will also send an initial settings frame, so get it.
@@ -379,7 +390,8 @@ class HTTP20Connection(object):
 
             # Send GoAway frame to the server
             try:
-                self._conn.close_connection(error_code or 0)
+                with self._conn as conn:
+                    conn.close_connection(error_code or 0)
                 self._send_outstanding_data(tolerate_peer_gone=True)
             except Exception as e:  # pragma: no cover
                 log.warn("GoAway frame could not be sent: %s" % e)
@@ -397,7 +409,8 @@ class HTTP20Connection(object):
         #
         # i/o occurs while the lock is held; waiting threads will see a delay.
         with self._write_lock:
-            data = self._conn.data_to_send()
+            with self._conn as conn:
+                data = conn.data_to_send()
             if data or send_empty:
                 self._send_cb(data, tolerate_peer_gone=tolerate_peer_gone)
 
@@ -527,11 +540,11 @@ class HTTP20Connection(object):
         # self.next_stream_id in a consistent state
         #
         # No i/o occurs, the delay in waiting threads depends on their number.
-        with self._lock:
+        with self._lock, self._conn as conn:
             s = Stream(
                 stream_id or self.next_stream_id,
                 self.__wm_class(DEFAULT_WINDOW_SIZE),
-                self._conn,
+                conn,
                 self._send_cb,
                 self._recv_cb,
                 self._stream_close_cb,
@@ -577,7 +590,8 @@ class HTTP20Connection(object):
             increment = self.window_manager._handle_frame(frame_len)
 
             if increment:
-                self._conn.increment_flow_control_window(increment)
+                with self._conn as conn:
+                    conn.increment_flow_control_window(increment)
                 self._send_outstanding_data(tolerate_peer_gone=True)
 
         return
@@ -598,7 +612,8 @@ class HTTP20Connection(object):
             self._sock.fill()
             data = self._sock.buffer.tobytes()
             self._sock.advance_buffer(len(data))
-            events = self._conn.receive_data(data)
+            with self._conn as conn:
+                events = conn.receive_data(data)
             stream_ids = set(getattr(e, 'stream_id', -1) for e in events)
             stream_ids.discard(-1)  # sentinel
             stream_ids.discard(0)  # connection events
@@ -735,7 +750,8 @@ class HTTP20Connection(object):
         #
         # i/o occurs while the lock is held; waiting threads will see a delay.
         with self._write_lock:
-            self._conn.reset_stream(stream_id, error_code=error_code)
+            with self._conn as conn:
+                conn.reset_stream(stream_id, error_code=error_code)
             self._send_outstanding_data()
 
         # Concurrency
