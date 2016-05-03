@@ -133,7 +133,7 @@ class Stream(object):
         # Keep reading until the stream is closed or we get enough data.
         while (not self.remote_closed and
                 (amt is None or listlen(self.data) < amt)):
-            self._recv_cb()
+            self._recv_cb(stream_id=self.stream_id)
 
         result = b''.join(self.data)
         self.data = []
@@ -145,7 +145,7 @@ class Stream(object):
         """
         # Keep reading until the stream is closed or we have a data frame.
         while not self.remote_closed and not self.data:
-            self._recv_cb()
+            self._recv_cb(stream_id=self.stream_id)
 
         try:
             return self.data.pop(0)
@@ -216,7 +216,7 @@ class Stream(object):
         """
         # Keep reading until all headers are received.
         while self.response_headers is None:
-            self._recv_cb()
+            self._recv_cb(stream_id=self.stream_id)
 
         # Find the Content-Length header if present.
         self._in_window_manager.document_size = (
@@ -240,7 +240,7 @@ class Stream(object):
         """
         # Keep reading until the stream is done.
         while not self.remote_closed:
-            self._recv_cb()
+            self._recv_cb(stream_id=self.stream_id)
 
         return self.response_trailers
 
@@ -263,7 +263,7 @@ class Stream(object):
             self.promised_headers = {}
             if not capture_all or self.remote_closed:
                 break
-            self._recv_cb()
+            self._recv_cb(stream_id=self.stream_id)
 
     def close(self, error_code=None):
         """

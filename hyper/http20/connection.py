@@ -26,12 +26,34 @@ import errno
 import logging
 import socket
 import time
+import threading
 
 log = logging.getLogger(__name__)
 
 DEFAULT_WINDOW_SIZE = 65535
 
 TRANSIENT_SSL_ERRORS = (ssl.SSL_ERROR_WANT_READ, ssl.SSL_ERROR_WANT_WRITE)
+
+
+class _LockedObject(object):
+    """
+    A wrapper class that hides a specific object behind a lock.
+
+    The goal here is to provide a simple way to protect access to an object
+    that cannot safely be simultaneously accessed from multiple threads. The
+    intended use of this class is simple: take hold of it with a context
+    manager, which returns the protected object.
+    """
+    def __init__(self, obj):
+        self.lock = threading.RLock()
+        self._obj = obj
+
+    def __enter__(self):
+        self.lock.acquire()
+        return self._obj
+
+    def __exit__(self, _exc_type, _exc_val, _exc_tb):
+        self.lock.release()
 
 
 class HTTP20Connection(object):
@@ -110,6 +132,39 @@ class HTTP20Connection(object):
 
         self.force_proto = force_proto
 
+        # Concurrency
+        #
+        # Use one lock (_lock) to synchronize any interaction with global
+        # connection state, e.g. stream creation/deletion.
+        #
+        # It's ok to use the same in lock all these cases as they occur at
+        # different/linked points in the connection's lifecycle.
+        #
+        # Use another 2 locks (_write_lock, _read_lock) to synchronize
+        # - _send_cb
+        # - _recv_cb
+        # respectively.
+        #
+        # I.e, send/recieve on the connection and its streams are serialized
+        # separately across the threads accessing the connection.  This is a
+        # simple way of providing thread-safety.
+        #
+        # _write_lock and _read_lock synchronize all interactions between
+        # streams and the connnection.  There is a third I/O callback,
+        # _close_stream, passed to a stream's constructor.  It does not need to
+        # be synchronized, it uses _send_cb internally (which is serialized);
+        # its other activity (safe deletion of the stream from self.streams)
+        # does not require synchronization.
+        #
+        # _read_lock may be acquired when already holding the _write_lock,
+        # when they both held it is always by acquiring _write_lock first.
+        #
+        # Either _read_lock or _write_lock may be acquired whilst holding _lock
+        # which should always be acquired before either of the other two.
+        self._lock = threading.RLock()
+        self._write_lock = threading.RLock()
+        self._read_lock = threading.RLock()
+
         # Create the mutable state.
         self.__wm_class = window_manager or FlowControlManager
         self.__init_state()
@@ -130,18 +185,25 @@ class HTTP20Connection(object):
         users should be strongly discouraged from messing about with connection
         objects themselves.
         """
-        self._conn = h2.connection.H2Connection()
+        self._conn = _LockedObject(h2.connection.H2Connection())
 
         # Streams are stored in a dictionary keyed off their stream IDs. We
         # also save the most recent one for easy access without having to walk
         # the dictionary.
-        # Finally, we add a set of all streams that we or the remote party
-        # forcefully closed with RST_STREAM, to avoid encountering issues where
-        # frames were already in flight before the RST was processed.
+        #
+        # We add a set of all streams that we or the remote party forcefully
+        # closed with RST_STREAM, to avoid encountering issues where frames
+        # were already in flight before the RST was processed.
+        #
+        # Finally, we add a set of streams that recently received data.  When
+        # using multiple threads, this avoids reading on threads that have just
+        # acquired the I/O lock whose streams have already had their data read
+        # for them by prior threads.
         self.streams = {}
         self.recent_stream = None
         self.next_stream_id = 1
         self.reset_streams = set()
+        self.recent_recv_streams = set()
 
         # The socket used to send data.
         self._sock = None
@@ -160,6 +222,11 @@ class HTTP20Connection(object):
         encodings, pass a bytes object. The Content-Length header is set to the
         length of the body field.
 
+        Concurrency
+        -----------
+
+        This method is thread-safe.
+
         :param method: The request method, e.g. ``'GET'``.
         :param url: The URL to contact, e.g. ``'/path/segment'``.
         :param body: (optional) The request body to send. Must be a bytestring
@@ -167,23 +234,34 @@ class HTTP20Connection(object):
         :param headers: (optional) The headers to send on the request.
         :returns: A stream ID for the request.
         """
-
         headers = headers or {}
 
-        stream_id = self.putrequest(method, url)
+        # Concurrency
+        #
+        # It's necessary to hold a lock while this method runs to satisfy H2
+        # protocol requirements.
+        #
+        # - putrequest obtains the next valid new stream_id
+        # - endheaders sends a http2 message using the new stream_id
+        #
+        # If threads interleave these operations, it could result in messages
+        # being sent in the wrong order, which can lead to the out-of-order
+        # messages with lower stream IDs being closed prematurely.
+        with self._write_lock:
+            stream_id = self.putrequest(method, url)
 
-        default_headers = (':method', ':scheme', ':authority', ':path')
-        for name, value in headers.items():
-            is_default = to_native_string(name) in default_headers
-            self.putheader(name, value, stream_id, replace=is_default)
+            default_headers = (':method', ':scheme', ':authority', ':path')
+            for name, value in headers.items():
+                is_default = to_native_string(name) in default_headers
+                self.putheader(name, value, stream_id, replace=is_default)
 
-        # Convert the body to bytes if needed.
-        if body and isinstance(body, (unicode, bytes)):
-            body = to_bytestring(body)
+            # Convert the body to bytes if needed.
+            if body and isinstance(body, (unicode, bytes)):
+                body = to_bytestring(body)
 
-        self.endheaders(message_body=body, final=True, stream_id=stream_id)
+            self.endheaders(message_body=body, final=True, stream_id=stream_id)
 
-        return stream_id
+            return stream_id
 
     def _get_stream(self, stream_id):
         if stream_id is None:
@@ -201,6 +279,11 @@ class HTTP20Connection(object):
         :class:`HTTP20Response <hyper.HTTP20Response>` instance.
         If you pass no ``stream_id``, you will receive the oldest
         :class:`HTTPResponse <hyper.HTTP20Response>` still outstanding.
+
+        Concurrency
+        -----------
+
+        This method is thread-safe.
 
         :param stream_id: (optional) The stream ID of the request for which to
             get a response.
@@ -238,9 +321,19 @@ class HTTP20Connection(object):
         Connect to the server specified when the object was created. This is a
         no-op if we're already connected.
 
+        Concurrency
+        -----------
+
+        This method is thread-safe. It may be called from multiple threads, and
+        is a noop for all threads apart from the first.
+
         :returns: Nothing.
+
         """
-        if self._sock is None:
+        with self._lock:
+            if self._sock is not None:
+                return
+
             if not self.proxy_host:
                 host = self.host
                 port = self.port
@@ -264,19 +357,18 @@ class HTTP20Connection(object):
 
             self._send_preamble()
 
-        return
-
     def _send_preamble(self):
         """
         Sends the necessary HTTP/2 preamble.
         """
         # We need to send the connection header immediately on this
         # connection, followed by an initial settings frame.
-        self._conn.initiate_connection()
-        self._conn.update_settings(
-            {h2.settings.ENABLE_PUSH: int(self._enable_push)}
-        )
-        self._sock.sendall(self._conn.data_to_send())
+        with self._conn as conn:
+            conn.initiate_connection()
+            conn.update_settings(
+                {h2.settings.ENABLE_PUSH: int(self._enable_push)}
+            )
+        self._send_outstanding_data()
 
         # The server will also send an initial settings frame, so get it.
         self._recv_cb()
@@ -285,30 +377,63 @@ class HTTP20Connection(object):
         """
         Close the connection to the server.
 
+        Concurrency
+        -----------
+
+        This method is thread-safe.
+
         :param error_code: (optional) The error code to reset all streams with.
         :returns: Nothing.
         """
-        # Close all streams
-        for stream in list(self.streams.values()):
-            log.debug("Close stream %d" % stream.stream_id)
-            stream.close(error_code)
+        # Concurrency
+        #
+        # It's necessary to hold the lock here to ensure that threads closing
+        # the connection see consistent state, and to prevent creation of
+        # of new streams while the connection is being closed.
+        #
+        # I/O occurs while the lock is held; waiting threads will see a delay.
+        with self._lock:
+            # Close all streams
+            for stream in list(self.streams.values()):
+                log.debug("Close stream %d" % stream.stream_id)
+                stream.close(error_code)
 
-        # Send GoAway frame to the server
-        try:
-            self._conn.close_connection(error_code or 0)
-            self._send_cb(self._conn.data_to_send(), True)
-        except Exception as e:  # pragma: no cover
-            log.warn("GoAway frame could not be sent: %s" % e)
+            # Send GoAway frame to the server
+            try:
+                with self._conn as conn:
+                    conn.close_connection(error_code or 0)
+                self._send_outstanding_data(tolerate_peer_gone=True)
+            except Exception as e:  # pragma: no cover
+                log.warn("GoAway frame could not be sent: %s" % e)
 
-        if self._sock is not None:
-            self._sock.close()
-            self.__init_state()
+            if self._sock is not None:
+                self._sock.close()
+                self.__init_state()
+
+    def _send_outstanding_data(self, tolerate_peer_gone=False,
+                               send_empty=True):
+        # Concurrency
+        #
+        # Hold _write_lock; getting and writing data from _conn is synchronized
+        #
+        # I/O occurs while the lock is held; waiting threads will see a delay.
+        with self._write_lock:
+            with self._conn as conn:
+                data = conn.data_to_send()
+            if data or send_empty:
+                self._send_cb(data, tolerate_peer_gone=tolerate_peer_gone)
 
     def putrequest(self, method, selector, **kwargs):
         """
         This should be the first call for sending a given HTTP request to a
         server. It returns a stream ID for the given connection that should be
         passed to all subsequent request building calls.
+
+        Concurrency
+        -----------
+
+        This method is thread-safe. It can be called from multiple threads,
+        and each thread should receive a unique stream ID.
 
         :param method: The request method, e.g. ``'GET'``.
         :param selector: The path selector.
@@ -379,13 +504,19 @@ class HTTP20Connection(object):
         stream = self._get_stream(stream_id)
 
         headers_only = (message_body is None and final)
-        stream.send_headers(headers_only)
 
-        # Send whatever data we have.
-        if message_body is not None:
-            stream.send_data(message_body, final)
+        # Concurrency:
+        #
+        # Hold _write_lock: synchronize access to the connection's HPACK
+        # encoder and decoder and the subsquent write to the connection
+        with self._write_lock:
+            stream.send_headers(headers_only)
 
-        self._send_cb(self._conn.data_to_send())
+            # Send whatever data we have.
+            if message_body is not None:
+                stream.send_data(message_body, final)
+
+            self._send_outstanding_data()
 
         return
 
@@ -412,19 +543,26 @@ class HTTP20Connection(object):
         """
         Returns a new stream object for this connection.
         """
-        s = Stream(
-            stream_id or self.next_stream_id,
-            self.__wm_class(DEFAULT_WINDOW_SIZE),
-            self._conn,
-            self._send_cb,
-            self._recv_cb,
-            self._stream_close_cb,
-        )
-        s.local_closed = local_closed
-        self.streams[s.stream_id] = s
-        self.next_stream_id += 2
+        # Concurrency
+        #
+        # Hold _lock: ensure that threads accessing the connection see
+        # self.next_stream_id in a consistent state
+        #
+        # No I/O occurs, the delay in waiting threads depends on their number.
+        with self._lock, self._conn as conn:
+            s = Stream(
+                stream_id or self.next_stream_id,
+                self.__wm_class(DEFAULT_WINDOW_SIZE),
+                conn,
+                self._send_cb,
+                self._recv_cb,
+                self._stream_close_cb,
+            )
+            s.local_closed = local_closed
+            self.streams[s.stream_id] = s
+            self.next_stream_id += 2
 
-        return s
+            return s
 
     def _send_cb(self, data, tolerate_peer_gone=False):
         """
@@ -432,23 +570,38 @@ class HTTP20Connection(object):
 
         This acts as a dumb wrapper around the socket send method.
         """
-        try:
-            self._sock.sendall(data)
-        except socket.error as e:
-            if (not tolerate_peer_gone or
-                    e.errno not in (errno.EPIPE, errno.ECONNRESET)):
-                raise
+        # Concurrency
+        #
+        # Hold _write_lock: ensures only writer at a time
+        #
+        # I/O occurs while the lock is held; waiting threads will see a delay.
+        with self._write_lock:
+            try:
+                self._sock.sendall(data)
+            except socket.error as e:
+                if (not tolerate_peer_gone or
+                        e.errno not in (errno.EPIPE, errno.ECONNRESET)):
+                    raise
 
     def _adjust_receive_window(self, frame_len):
         """
         Adjusts the window size in response to receiving a DATA frame of length
         ``frame_len``. May send a WINDOWUPDATE frame if necessary.
         """
-        increment = self.window_manager._handle_frame(frame_len)
+        # Concurrency
+        #
+        # Hold _write_lock; synchronize the window manager update and the
+        # subsequent potential write to the connection
+        #
+        # I/O may occur while the lock is held; waiting threads may see a
+        # delay.
+        with self._write_lock:
+            increment = self.window_manager._handle_frame(frame_len)
 
-        if increment:
-            self._conn.increment_flow_control_window(increment)
-            self._send_cb(self._conn.data_to_send(), True)
+            if increment:
+                with self._conn as conn:
+                    conn.increment_flow_control_window(increment)
+                self._send_outstanding_data(tolerate_peer_gone=True)
 
         return
 
@@ -458,11 +611,23 @@ class HTTP20Connection(object):
         h2 connection object.
         """
         # Begin by reading what we can from the socket.
-        self._sock.fill()
-        data = self._sock.buffer.tobytes()
-        self._sock.advance_buffer(len(data))
+        #
+        # Concurrency
+        #
+        # Synchronizes reading the data
+        #
+        # I/O occurs while the lock is held; waiting threads will see a delay.
+        with self._read_lock:
+            self._sock.fill()
+            data = self._sock.buffer.tobytes()
+            self._sock.advance_buffer(len(data))
+            with self._conn as conn:
+                events = conn.receive_data(data)
+            stream_ids = set(getattr(e, 'stream_id', -1) for e in events)
+            stream_ids.discard(-1)  # sentinel
+            stream_ids.discard(0)  # connection events
+            self.recent_recv_streams |= stream_ids
 
-        events = self._conn.receive_data(data)
         for event in events:
             if isinstance(event, h2.events.DataReceived):
                 self._adjust_receive_window(event.flow_controlled_length)
@@ -514,11 +679,9 @@ class HTTP20Connection(object):
             else:
                 log.info("Received unhandled event %s", event)
 
-        data = self._conn.data_to_send()
-        if data:
-            self._send_cb(data, tolerate_peer_gone=True)
+        self._send_outstanding_data(tolerate_peer_gone=True, send_empty=False)
 
-    def _recv_cb(self):
+    def _recv_cb(self, stream_id=0):
         """
         This is the callback used by streams to read data from the connection.
 
@@ -529,55 +692,93 @@ class HTTP20Connection(object):
 
         This is generally called by a stream, not by the connection itself, and
         it's likely that streams will read a frame that doesn't belong to them.
+
+        :param stream_id: (optional) The stream ID of the stream reading data
+            from the connection.
+
         """
-        # TODO: Re-evaluate this.
-        self._single_read()
-        count = 9
-        retry_wait = 0.05  # can improve responsiveness to delay the retry
+        # Begin by reading what we can from the socket.
+        #
+        # Concurrency
+        #
+        # Ignore this read if some other thread has recently read data from
+        # from the requested stream.
+        #
+        # The lock here looks broad, but is need to ensure correct behavior
+        # when there are multiple readers of the same stream.  It is
+        # re-acquired in the calls to self._single_read.
+        #
+        # I/O occurs while the lock is held; waiting threads will see a delay.
+        with self._read_lock:
+            log.debug('recv for stream %d with %s already present',
+                      stream_id,
+                      self.recent_recv_streams)
+            if stream_id in self.recent_recv_streams:
+                self.recent_recv_streams.discard(stream_id)
+                return
 
-        while count and self._sock is not None and self._sock.can_read:
-            # If the connection has been closed, bail out, but retry
-            # on transient errors.
-            try:
-                self._single_read()
-            except ConnectionResetError:
-                break
-            except ssl.SSLError as e:  # pragma: no cover
-                # these are transient errors that can occur while reading from
-                # ssl connections.
-                if e.args[0] in TRANSIENT_SSL_ERRORS:
-                    continue
-                else:
-                    raise
-            except socket.error as e:  # pragma: no cover
-                if e.errno in (errno.EINTR, errno.EAGAIN):
-                    # if 'interrupted' or 'try again', continue
-                    time.sleep(retry_wait)
-                    continue
-                elif e.errno == errno.ECONNRESET:
+            # TODO: Re-evaluate this.
+            self._single_read()
+            count = 9
+            retry_wait = 0.05  # can improve responsiveness to delay the retry
+
+            while count and self._sock is not None and self._sock.can_read:
+                # If the connection has been closed, bail out, but retry
+                # on transient errors.
+                try:
+                    self._single_read()
+                except ConnectionResetError:
                     break
-                else:
-                    raise
+                except ssl.SSLError as e:  # pragma: no cover
+                    # these are transient errors that can occur while reading
+                    # from ssl connections.
+                    if e.args[0] in TRANSIENT_SSL_ERRORS:
+                        continue
+                    else:
+                        raise
+                except socket.error as e:  # pragma: no cover
+                    if e.errno in (errno.EINTR, errno.EAGAIN):
+                        # if 'interrupted' or 'try again', continue
+                        time.sleep(retry_wait)
+                        continue
+                    elif e.errno == errno.ECONNRESET:
+                        break
+                    else:
+                        raise
 
-            count -= 1
+                count -= 1
 
     def _send_rst_frame(self, stream_id, error_code):
         """
         Send reset stream frame with error code and remove stream from map.
         """
-        self._conn.reset_stream(stream_id, error_code=error_code)
-        self._send_cb(self._conn.data_to_send())
+        # Concurrency
+        #
+        # Hold _write_lock; synchronize generating the reset frame and writing
+        # it
+        #
+        # I/O occurs while the lock is held; waiting threads will see a delay.
+        with self._write_lock:
+            with self._conn as conn:
+                conn.reset_stream(stream_id, error_code=error_code)
+            self._send_outstanding_data()
 
-        try:
-            del self.streams[stream_id]
-        except KeyError as e:  # pragma: no cover
-            log.warn(
-                "Stream with id %d does not exist: %s",
-                stream_id, e)
+        # Concurrency
+        #
+        # Hold _lock; the stream storage is being updated. No I/O occurs, any
+        # delay is proportional to the number of waiting threads.
+        with self._lock:
+            try:
+                del self.streams[stream_id]
+                self.recent_recv_streams.discard(stream_id)
+            except KeyError as e:  # pragma: no cover
+                log.warn(
+                    "Stream with id %d does not exist: %s",
+                    stream_id, e)
 
-        # Keep track of the fact that we reset this stream in case there are
-        # other frames in flight.
-        self.reset_streams.add(stream_id)
+            # Keep track of the fact that we reset this stream in case there
+            # are other frames in flight.
+            self.reset_streams.add(stream_id)
 
     def _stream_close_cb(self, stream_id):
         """
