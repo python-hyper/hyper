@@ -36,7 +36,14 @@ TRANSIENT_SSL_ERRORS = (ssl.SSL_ERROR_WANT_READ, ssl.SSL_ERROR_WANT_WRITE)
 
 
 class _LockedObject(object):
+    """
+    A wrapper class that hides a specific object behind a lock.
 
+    The goal here is to provide a simple way to protect access to an object
+    that cannot safely be simultaneously accessed from multiple threads. The
+    intended use of this class is simple: take hold of it with a context
+    manager, which returns the protected object.
+    """
     def __init__(self, obj):
         self.lock = threading.RLock()
         self._obj = obj
@@ -124,12 +131,11 @@ class HTTP20Connection(object):
         self.network_buffer_size = 65536
 
         self.force_proto = force_proto
+
         # Concurrency
         #
-        # Use one lock (_lock) to synchronize any interaction with the
-        # connection.  This is because the h2.connection.H2Connection is
-        # completely unthreadsafe, for thread safety, all access to it must be
-        # synchronized.
+        # Use one lock (_lock) to synchronize any interaction with global
+        # connection state, e.g. stream creation/deletion.
         #
         # It's ok to use the same in lock all these cases as they occur at
         # different/linked points in the connection's lifecycle.
@@ -137,23 +143,23 @@ class HTTP20Connection(object):
         # Use another 2 locks (_write_lock, _read_lock) to synchronize
         # - _send_cb
         # - _recv_cb
-        # respectively
+        # respectively.
         #
-        # I.e, sends/receve on the connection and its streams are serialized
-        # and separately across the threads accessing the connection.  This is
-        # a simple way of providing thread-safety.
+        # I.e, send/recieve on the connection and its streams are serialized
+        # separately across the threads accessing the connection.  This is a
+        # simple way of providing thread-safety.
         #
         # _write_lock and _read_lock synchronize all interactions between
-        # streams and the connnection.  There is a third i/o callback,
+        # streams and the connnection.  There is a third I/O callback,
         # _close_stream, passed to a stream's constructor.  It does not need to
         # be synchronized, it uses _send_cb internally (which is serialized);
-        # it's other activity (safe deletion of the stream from self.streams)
+        # its other activity (safe deletion of the stream from self.streams)
         # does not require synchronization.
         #
         # _read_lock may be acquired when already holding the _write_lock,
-        # when they both held it is always by acquiring _write_lock first
+        # when they both held it is always by acquiring _write_lock first.
         #
-        # either _read_lock or _write_lock may be acquired whilst holding _lock
+        # Either _read_lock or _write_lock may be acquired whilst holding _lock
         # which should always be acquired before either of the other two.
         self._lock = threading.RLock()
         self._write_lock = threading.RLock()
@@ -191,7 +197,7 @@ class HTTP20Connection(object):
         #
         # Finally, we add a set of streams that recently received data.  When
         # using multiple threads, this avoids reading on threads that have just
-        # acquired the io lock whose streams have already had their data read
+        # acquired the I/O lock whose streams have already had their data read
         # for them by prior threads.
         self.streams = {}
         self.recent_stream = None
@@ -232,7 +238,7 @@ class HTTP20Connection(object):
 
         # Concurrency
         #
-        # It's necessary to hold a lock while this method runs to satisfy HTTP2
+        # It's necessary to hold a lock while this method runs to satisfy H2
         # protocol requirements.
         #
         # - putrequest obtains the next valid new stream_id
@@ -240,7 +246,7 @@ class HTTP20Connection(object):
         #
         # If threads interleave these operations, it could result in messages
         # being sent in the wrong order, which can lead to the out-of-order
-        # messages with lower stream_ids being closed prematurely.
+        # messages with lower stream IDs being closed prematurely.
         with self._write_lock:
             stream_id = self.putrequest(method, url)
 
@@ -381,7 +387,7 @@ class HTTP20Connection(object):
         # the connection see consistent state, and to prevent creation of
         # of new streams while the connection is being closed.
         #
-        # i/o occurs while the lock is held; waiting threads will see a delay.
+        # I/O occurs while the lock is held; waiting threads will see a delay.
         with self._lock:
             # Close all streams
             for stream in list(self.streams.values()):
@@ -404,10 +410,9 @@ class HTTP20Connection(object):
                                send_empty=True):
         # Concurrency
         #
-        # Hold _write_lock; getting and writing data from _conn are
-        # synchronized
+        # Hold _write_lock; getting and writing data from _conn is synchronized
         #
-        # i/o occurs while the lock is held; waiting threads will see a delay.
+        # I/O occurs while the lock is held; waiting threads will see a delay.
         with self._write_lock:
             with self._conn as conn:
                 data = conn.data_to_send()
@@ -424,7 +429,7 @@ class HTTP20Connection(object):
         -----------
 
         This method is thread-safe. It can be called from multiple threads,
-        with each thread should receive a unique stream_id.
+        and each thread should receive a unique stream ID.
 
         :param method: The request method, e.g. ``'GET'``.
         :param selector: The path selector.
@@ -498,7 +503,7 @@ class HTTP20Connection(object):
 
         # Concurrency:
         #
-        # Hold _write_lock: synchronize access to the connection's hpack
+        # Hold _write_lock: synchronize access to the connection's HPACK
         # encoder and decoder and the subsquent write to the connection
         with self._write_lock:
             stream.send_headers(headers_only)
@@ -539,7 +544,7 @@ class HTTP20Connection(object):
         # Hold _lock: ensure that threads accessing the connection see
         # self.next_stream_id in a consistent state
         #
-        # No i/o occurs, the delay in waiting threads depends on their number.
+        # No I/O occurs, the delay in waiting threads depends on their number.
         with self._lock, self._conn as conn:
             s = Stream(
                 stream_id or self.next_stream_id,
@@ -565,7 +570,7 @@ class HTTP20Connection(object):
         #
         # Hold _write_lock: ensures only writer at a time
         #
-        # i/o occurs while the lock is held; waiting threads will see a delay.
+        # I/O occurs while the lock is held; waiting threads will see a delay.
         with self._write_lock:
             try:
                 self._sock.sendall(data)
@@ -581,10 +586,10 @@ class HTTP20Connection(object):
         """
         # Concurrency
         #
-        # Hold _write_lock; synchronize the window manager update, the
+        # Hold _write_lock; synchronize the window manager update and the
         # subsequent potential write to the connection
         #
-        # i/o may occurs while the lock is held; waiting threads may see a
+        # I/O may occur while the lock is held; waiting threads may see a
         # delay.
         with self._write_lock:
             increment = self.window_manager._handle_frame(frame_len)
@@ -607,7 +612,7 @@ class HTTP20Connection(object):
         #
         # Synchronizes reading the data
         #
-        # i/o occurs while the lock is held; waiting threads will see a delay.
+        # I/O occurs while the lock is held; waiting threads will see a delay.
         with self._read_lock:
             self._sock.fill()
             data = self._sock.buffer.tobytes()
@@ -696,10 +701,10 @@ class HTTP20Connection(object):
         # from the requested stream.
         #
         # The lock here looks broad, but is need to ensure correct behavior
-        # when there are multiple readers of the same stream.  It re-acquired
-        # in the calls to self._single_read.
+        # when there are multiple readers of the same stream.  It is
+        # re-acquired in the calls to self._single_read.
         #
-        # i/o occurs while the lock is held; waiting threads will see a delay.
+        # I/O occurs while the lock is held; waiting threads will see a delay.
         with self._read_lock:
             log.debug('recv for stream %d with %s already present',
                       stream_id,
@@ -748,7 +753,7 @@ class HTTP20Connection(object):
         # Hold _write_lock; synchronize generating the reset frame and writing
         # it
         #
-        # i/o occurs while the lock is held; waiting threads will see a delay.
+        # I/O occurs while the lock is held; waiting threads will see a delay.
         with self._write_lock:
             with self._conn as conn:
                 conn.reset_stream(stream_id, error_code=error_code)
@@ -756,7 +761,7 @@ class HTTP20Connection(object):
 
         # Concurrency
         #
-        # Hold _lock; the stream storage is being updated. No i/o occurs, any
+        # Hold _lock; the stream storage is being updated. No I/O occurs, any
         # delay is proportional to the number of waiting threads.
         with self._lock:
             try:
