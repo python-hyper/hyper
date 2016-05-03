@@ -134,7 +134,7 @@ class TestHyperConnection(object):
         ]
 
     def test_endheaders_sends_data(self, frame_buffer):
-        def data_callback(chunk):
+        def data_callback(chunk, **kwargs):
             frame_buffer.add_data(chunk)
 
         c = HTTP20Connection('www.google.com')
@@ -149,7 +149,7 @@ class TestHyperConnection(object):
         assert isinstance(f, HeadersFrame)
 
     def test_we_can_send_data_using_endheaders(self, frame_buffer):
-        def data_callback(chunk):
+        def data_callback(chunk, **kwargs):
             frame_buffer.add_data(chunk)
 
         c = HTTP20Connection('www.google.com')
