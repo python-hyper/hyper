@@ -110,6 +110,9 @@ class DummyH2Connection(object):
     def _send_preamble(self):
         pass
 
+    def _connect_upgrade(self, sock):
+        self._sock = sock
+
     def _new_stream(self, *args, **kwargs):
         pass
 
