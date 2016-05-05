@@ -373,10 +373,12 @@ class HTTP20Connection(object):
         self._send_outstanding_data()
 
         # The server will also send an initial settings frame, so get it.
-        self._recv_cb()
-
+        # However, we need to make sure our stream state is set up properly
+        # first, or any extra data we receive might cause us problems.
         s = self._new_stream(local_closed=True)
         self.recent_stream = s
+
+        self._recv_cb()
 
     def _send_preamble(self):
         """
