@@ -357,6 +357,29 @@ class HTTP20Connection(object):
 
             self._send_preamble()
 
+    def _connect_upgrade(self, sock):
+        """
+        Called by the generic HTTP connection when we're being upgraded. Locks
+        in a new socket and places the backing state machine into an upgrade
+        state, then sends the preamble.
+        """
+        self._sock = sock
+
+        with self._conn as conn:
+            conn.initiate_upgrade_connection()
+            conn.update_settings(
+                {h2.settings.ENABLE_PUSH: int(self._enable_push)}
+            )
+        self._send_outstanding_data()
+
+        # The server will also send an initial settings frame, so get it.
+        # However, we need to make sure our stream state is set up properly
+        # first, or any extra data we receive might cause us problems.
+        s = self._new_stream(local_closed=True)
+        self.recent_stream = s
+
+        self._recv_cb()
+
     def _send_preamble(self):
         """
         Sends the necessary HTTP/2 preamble.

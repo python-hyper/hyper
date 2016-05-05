@@ -137,13 +137,9 @@ class HTTPConnection(object):
                 self._host, self._port, **self._h2_kwargs
             )
 
-            self._conn._sock = e.sock
+            self._conn._connect_upgrade(e.sock)
             # stream id 1 is used by the upgrade request and response
             # and is half-closed by the client
-            self._conn._new_stream(stream_id=1, local_closed=True)
-
-            # HTTP/2 preamble must be sent after receipt of a HTTP/1.1 101
-            self._conn._send_preamble()
 
             return self._conn.get_response(1)
 
