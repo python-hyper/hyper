@@ -4,10 +4,35 @@ Release History
 dev
 ---
 
+*Major Changes*
+
+- The ``HTTP20Connection`` object is now thread-safe, so long as stream IDs are
+  used on all method calls.
+- Replaced the HTTP/2 state machine logic entirely to use hyper-h2. This will
+  dramatically change the behaviour of the library in many situations, mostly
+  for the better. However, this is also likely to introduce new bugs, so please
+  be cautious.
+
+*API Changes*
+
+- Allow non-dictionary headers in ``request``.
+- ``HTTP20Connection`` now has a ``force_proto`` keyword argument to allow the
+  ``HTTP20Connection`` to ignore the NPN/ALPN result.
+- The ``--h2`` CLI flag now ignores the result of NPN/ALPN negotiation when
+  hitting HTTPS URLs.
+- Added support for HTTPS client certificates.
+- Notifications about streams being reset is now delayed to fire when the
+  stream in question is next accessed, rather than immediately.
+
 *Bugfixes*
 
 - Overriding HTTP/2 special headers no longer leads to ill-formed header blocks
   with special headers at the end.
+- Vastly improved IPv6 support.
+- Fix converting unicode bodies to bytestrings on Python 2.7.
+- Allow overriding the HTTP/2 pseudo-headers from the CLI.
+- Fixed problems with incorrectly generating the ``HTTP2-Settings`` header.
+- Improved handling of socket errors.
 
 0.5.0 (2015-10-11)
 ------------------
