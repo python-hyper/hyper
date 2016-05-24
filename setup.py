@@ -53,7 +53,7 @@ except AttributeError:
 
 
 def resolve_install_requires():
-    basic_dependencies = ['h2>=2.3,<3.0', 'hyperframe~=3.2']
+    basic_dependencies = ['h2>=2.3,<3.0', 'hyperframe>=3.2,<4.0']
 
     if py_version == (3, 3):
         basic_dependencies.extend(
