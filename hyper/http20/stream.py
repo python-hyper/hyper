@@ -13,6 +13,8 @@ stream is an independent, bi-directional sequence of HTTP headers and data.
 Each stream is identified by a monotonically increasing integer, assigned to
 the stream by the endpoint that initiated the stream.
 """
+import h2.exceptions
+
 from ..common.headers import HTTPHeaderMap
 from .util import h2_safe_headers
 import logging
@@ -275,8 +277,16 @@ class Stream(object):
         """
         # FIXME: I think this is overbroad, but for now it's probably ok.
         if not (self.remote_closed and self.local_closed):
-            self._conn.reset_stream(self.stream_id, error_code or 0)
-            self._send_cb(self._conn.data_to_send())
+            try:
+                self._conn.reset_stream(self.stream_id, error_code or 0)
+            except h2.exceptions.ProtocolError:
+                # If for any reason we can't reset the stream, just tolerate
+                # it.
+                pass
+            else:
+                self._send_cb(
+                    self._conn.data_to_send(), tolerate_peer_gone=True
+                )
             self.remote_closed = True
             self.local_closed = True
 
