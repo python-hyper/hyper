@@ -1067,6 +1067,29 @@ class TestUtilities(object):
 
         assert str(f.error_code) in err_msg
 
+    def test_resetting_streams_after_close(self):
+        """
+        Attempts to reset streams when the connection is torn down are
+        tolerated.
+        """
+        f = SettingsFrame(0)
+
+        c = HTTP20Connection('www.google.com')
+        c._sock = DummySocket()
+        c._sock.buffer = BytesIO(f.serialize())
+
+        # Open stream 1.
+        c.request('GET', '/')
+
+        # Swap out the buffer to get a GoAway frame.
+        f = GoAwayFrame(0)
+        f.error_code = 1
+        c._sock.buffer = BytesIO(f.serialize())
+
+        # "Read" the GoAway
+        with pytest.raises(ConnectionError):
+            c._single_read()
+
 
 # Some utility classes for the tests.
 class NullEncoder(object):
@@ -1107,6 +1130,7 @@ class DummySocket(object):
     @buffer.setter
     def buffer(self, value):
         self._buffer = value
+        self._read_counter = 0
 
     def advance_buffer(self, amt):
         self._read_counter += amt
