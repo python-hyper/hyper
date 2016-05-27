@@ -727,7 +727,7 @@ class HTTP20Connection(object):
         # Ignore this read if some other thread has recently read data from
         # from the requested stream.
         #
-        # The lock here looks broad, but is need to ensure correct behavior
+        # The lock here looks broad, but is needed to ensure correct behavior
         # when there are multiple readers of the same stream.  It is
         # re-acquired in the calls to self._single_read.
         #
