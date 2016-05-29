@@ -4,6 +4,10 @@ Release History
 dev
 ---
 
+*Bugfixes*
+
+- Tolerate errors when attempting to send a RST_STREAM frame.
+
 0.6.0 (2016-05-06)
 ------------------
 
