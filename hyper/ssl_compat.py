@@ -45,7 +45,7 @@ HAS_NPN = True
 
 def _proxy(method):
     def inner(self, *args, **kwargs):
-        getattr(self._conn, method)(*args, **kwargs)
+        return getattr(self._conn, method)(*args, **kwargs)
     return inner
 
 
