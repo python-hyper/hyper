@@ -50,6 +50,8 @@ def _proxy(method):
 
 
 # TODO missing some attributes
+SSL_ERROR_WANT_READ = 2
+SSL_ERROR_WANT_WRITE = 3
 class SSLError(OSError):
     pass
 
