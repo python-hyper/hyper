@@ -29,14 +29,16 @@ def wrap_socket(sock, server_hostname, ssl_context=None, force_proto=None):
     A vastly simplified SSL wrapping function. We'll probably extend this to
     do more things later.
     """
-    global _context
+    if ssl_context:
+        # if an SSLContext is provided then use it instead of default context
+        _ssl_context = ssl_context
+    else:
+        global _context
 
-    # create the singleton SSLContext we use
-    if _context is None:  # pragma: no cover
-        _context = init_context()
-
-    # if an SSLContext is provided then use it instead of default context
-    _ssl_context = ssl_context or _context
+        # create the singleton SSLContext we use
+        if _context is None:  # pragma: no cover
+            _context = init_context()
+        _ssl_context = _context
 
     # the spec requires SNI support
     ssl_sock = _ssl_context.wrap_socket(sock, server_hostname=server_hostname)
