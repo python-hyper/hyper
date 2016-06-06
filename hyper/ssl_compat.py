@@ -48,7 +48,8 @@ def _proxy(method):
         return getattr(self._conn, method)(*args, **kwargs)
     return inner
 
-
+# Referenced in hyper/http20/connection.py. These values come from the python ssl package, and
+# must be defined in this file for hyper to work in python versions <2.7.9
 SSL_ERROR_WANT_READ = 2
 SSL_ERROR_WANT_WRITE = 3
 
