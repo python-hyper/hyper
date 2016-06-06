@@ -96,9 +96,12 @@ def init_context(cert_path=None, cert=None, cert_password=None):
         encrypted and no password is needed.
     :returns: An ``SSLContext`` correctly set up for HTTP/2.
     """
+    cafile = cert_path or cert_loc
+    if not cafile or not path.exists(cafile):
+        raise Exception, "No certificate found at " + str(cafile) + ". Either ensure the default cert.pem file is included in the distribution or provide a custom certificate when creating the connection."
     context = ssl.SSLContext(ssl.PROTOCOL_SSLv23)
     context.set_default_verify_paths()
-    context.load_verify_locations(cafile=cert_path or cert_loc)
+    context.load_verify_locations(cafile=cafile)
     context.verify_mode = ssl.CERT_REQUIRED
     context.check_hostname = True
 
