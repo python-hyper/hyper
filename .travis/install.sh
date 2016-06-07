@@ -47,5 +47,6 @@ if [[ "$HYPER_FAST_PARSE" = true ]]; then
 fi
 
 pip install .
+pip install -U setuptools
 pip install -r test_requirements.txt
 pip install flake8
