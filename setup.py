@@ -43,32 +43,6 @@ if sys.argv[-1] == 'publish':
     os.system('python setup.py sdist upload')
     sys.exit()
 
-py_version = sys.version_info[:2]
-py_long_version = sys.version_info[:3]
-
-try:
-    pypy_version = sys.pypy_version_info[:2]
-except AttributeError:
-    pypy_version = None
-
-
-def resolve_install_requires():
-    basic_dependencies = ['h2>=2.3,<3.0', 'hyperframe>=3.2,<4.0']
-
-    if py_version == (3, 3):
-        basic_dependencies.extend(
-            ['pyOpenSSL>=0.15', 'service_identity>=14.0.0']
-        )
-    elif py_version == (2, 7) and py_long_version < (2, 7, 9):
-        basic_dependencies.extend(
-            ['pyOpenSSL>=0.15', 'service_identity>=14.0.0']
-        )
-
-        # PyPy earlier than 2.6.0 doesn't support cryptography 1.0
-        if pypy_version and pypy_version < (2, 6):
-            basic_dependencies.append('cryptography<1.0')
-
-    return basic_dependencies
 
 packages = [
     'hyper',
@@ -104,7 +78,7 @@ setup(
         'Programming Language :: Python :: 3.5',
         'Programming Language :: Python :: Implementation :: CPython',
     ],
-    install_requires=resolve_install_requires(),
+    install_requires=['h2>=2.3,<3.0', 'hyperframe>=3.2,<4.0'],
     tests_require=['pytest', 'requests', 'mock'],
     cmdclass={'test': PyTest},
     entry_points={
@@ -114,5 +88,14 @@ setup(
     },
     extras_require={
         'fast': ['pycohttpparser'],
+        # Fallback to good SSL on bad Python versions.
+        ':python_full_version < "2.7.9"': [
+            'pyOpenSSL>=0.15', 'service_identity>=14.0.0'
+        ],
+        # PyPy with bad SSL modules will likely also need the cryptography
+        # module at lower than 1.0, because it doesn't support CFFI v1.0 yet.
+        ':platform_python_implementation == "PyPy" and python_full_version < "2.7.9"': [
+            'cryptography<1.0'
+        ]
     }
 )
