@@ -577,7 +577,7 @@ class HTTP20Connection(object):
                 stream_id or self.next_stream_id,
                 self.__wm_class(DEFAULT_WINDOW_SIZE),
                 self._conn,
-                self._send_cb,
+                self._send_outstanding_data,
                 self._recv_cb,
                 self._stream_close_cb,
             )

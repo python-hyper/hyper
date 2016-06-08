@@ -96,7 +96,7 @@ class Stream(object):
         headers = self.get_headers()
         with self._conn as conn:
             conn.send_headers(self.stream_id, headers, end_stream)
-            self._send_cb(conn.data_to_send())
+        self._send_cb()
 
         if end_stream:
             self.local_closed = True
@@ -191,7 +191,7 @@ class Stream(object):
                 conn.increment_flow_control_window(
                     increment, stream_id=self.stream_id
                 )
-                self._send_cb(conn.data_to_send())
+            self._send_cb()
 
     def receive_end_stream(self, event):
         """
@@ -280,16 +280,18 @@ class Stream(object):
         # FIXME: I think this is overbroad, but for now it's probably ok.
         if not (self.remote_closed and self.local_closed):
             with self._conn as conn:
+                send = False
+
                 try:
                     conn.reset_stream(self.stream_id, error_code or 0)
                 except h2.exceptions.ProtocolError:
-                    # If for any reason we can't reset the stream, just tolerate
-                    # it.
+                    # If for any reason we can't reset the stream, just
+                    # tolerate it.
                     pass
                 else:
-                    self._send_cb(
-                        conn.data_to_send(), tolerate_peer_gone=True
-                    )
+                    send = True
+            if send:
+                self._send_cb(tolerate_peer_gone=True)
             self.remote_closed = True
             self.local_closed = True
 
@@ -329,7 +331,7 @@ class Stream(object):
             conn.send_data(
                 stream_id=self.stream_id, data=data, end_stream=end_stream
             )
-            self._send_cb(conn.data_to_send())
+        self._send_cb()
 
         if end_stream:
             self.local_closed = True
