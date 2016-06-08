@@ -89,7 +89,7 @@ setup(
     extras_require={
         'fast': ['pycohttpparser'],
         # Fallback to good SSL on bad Python versions.
-        ':python_full_version < "2.7.9" or python_version == "3.3"': [
+        ':python_full_version < "2.7.9"': [
             'pyOpenSSL>=0.15', 'service_identity>=14.0.0'
         ],
         # PyPy with bad SSL modules will likely also need the cryptography
