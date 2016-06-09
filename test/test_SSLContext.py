@@ -103,4 +103,3 @@ class TestSSLContext(object):
         assert conn.ssl_context.check_hostname
         assert conn.ssl_context.verify_mode == ssl.CERT_REQUIRED
         assert conn.ssl_context.options & ssl.OP_NO_COMPRESSION != 0
-
