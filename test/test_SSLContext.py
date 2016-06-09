@@ -64,6 +64,7 @@ class TestSSLContext(object):
 
     def test_HTTPConnection_with_missing_certs(self):
         # Clear any prevously created global context
+        backup_context = hyper.tls._context
         hyper.tls._context = None
         backup_cert_loc = hyper.tls.cert_loc
         hyper.tls.cert_loc = MISSING_PEM_FILE
@@ -71,7 +72,8 @@ class TestSSLContext(object):
         succeeded = False
         threwExpectedException = False
         try:
-            hyper.HTTP20Connection('http2bin.org', 443)
+            conn = hyper.HTTP20Connection('http2bin.org', 443)
+            conn.request('GET', '/', None, {})
             succeeded = True
         except hyper.common.exceptions.MissingCertFile:
             threwExpectedException = True
@@ -79,12 +81,14 @@ class TestSSLContext(object):
             pass
 
         hyper.tls.cert_loc = backup_cert_loc
+        hyper.tls._context = backup_context
 
         assert not succeeded
         assert threwExpectedException
 
     def test_HTTPConnection_with_missing_certs_and_custom_context(self):
         # Clear any prevously created global context
+        backup_context = hyper.tls._context
         hyper.tls._context = None
         backup_cert_loc = hyper.tls.cert_loc
         hyper.tls.cert_loc = MISSING_PEM_FILE
@@ -97,8 +101,10 @@ class TestSSLContext(object):
         context.options |= ssl.OP_NO_COMPRESSION
 
         conn = hyper.HTTP20Connection('http2bin.org', 443, ssl_context=context)
+        conn.request('GET', '/', None, {})
 
         hyper.tls.cert_loc = backup_cert_loc
+        hyper.tls._context = backup_context
 
         assert conn.ssl_context.check_hostname
         assert conn.ssl_context.verify_mode == ssl.CERT_REQUIRED
