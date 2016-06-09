@@ -303,7 +303,9 @@ class Stream(object):
         The size of our outbound flow control window.
         """
 
-        return self._conn._obj.local_flow_control_window(self.stream_id)
+        with self._conn as conn:
+            out_fc_with_size = conn.local_flow_control_window(self.stream_id)
+        return out_fc_with_size
 
     def _send_chunk(self, data, final):
         """
