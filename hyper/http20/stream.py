@@ -40,7 +40,7 @@ class Stream(object):
                  stream_id,
                  window_manager,
                  connection,
-                 send_cb,
+                 send_outstanding_data,
                  recv_cb,
                  close_cb):
         self.stream_id = stream_id
@@ -76,7 +76,7 @@ class Stream(object):
         self._conn = connection
 
         # Save off a data callback.
-        self._send_cb = send_cb
+        self._send_outstanding_data = send_outstanding_data
         self._recv_cb = recv_cb
         self._close_cb = close_cb
 
@@ -96,7 +96,7 @@ class Stream(object):
         headers = self.get_headers()
         with self._conn as conn:
             conn.send_headers(self.stream_id, headers, end_stream)
-        self._send_cb()
+        self._send_outstanding_data()
 
         if end_stream:
             self.local_closed = True
@@ -191,7 +191,7 @@ class Stream(object):
                 conn.increment_flow_control_window(
                     increment, stream_id=self.stream_id
                 )
-            self._send_cb()
+            self._send_outstanding_data()
 
     def receive_end_stream(self, event):
         """
@@ -291,7 +291,7 @@ class Stream(object):
                 else:
                     send = True
             if send:
-                self._send_cb(tolerate_peer_gone=True)
+                self._send_outstanding_data(tolerate_peer_gone=True)
             self.remote_closed = True
             self.local_closed = True
 
@@ -333,7 +333,7 @@ class Stream(object):
             conn.send_data(
                 stream_id=self.stream_id, data=data, end_stream=end_stream
             )
-        self._send_cb()
+        self._send_outstanding_data()
 
         if end_stream:
             self.local_closed = True
