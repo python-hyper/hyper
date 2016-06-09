@@ -64,3 +64,10 @@ class HTTPUpgrade(Exception):
         super(HTTPUpgrade, self).__init__()
         self.negotiated = negotiated
         self.sock = sock
+
+
+class MissingCertFile(Exception):
+    """
+    The certificate file could not be found.
+    """
+    pass

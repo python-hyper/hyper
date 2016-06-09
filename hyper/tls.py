@@ -6,7 +6,7 @@ hyper/tls
 Contains the TLS/SSL logic for use in hyper.
 """
 import os.path as path
-
+from common.exceptions import MissingCertFile
 from .compat import ignore_missing, ssl
 
 
@@ -29,12 +29,13 @@ def wrap_socket(sock, server_hostname, ssl_context=None, force_proto=None):
     A vastly simplified SSL wrapping function. We'll probably extend this to
     do more things later.
     """
+
+    global _context
+
     if ssl_context:
         # if an SSLContext is provided then use it instead of default context
         _ssl_context = ssl_context
     else:
-        global _context
-
         # create the singleton SSLContext we use
         if _context is None:  # pragma: no cover
             _context = init_context()
@@ -102,7 +103,7 @@ def init_context(cert_path=None, cert=None, cert_password=None):
                   "ensure the default cert.pem file is included in the " +
                   "distribution or provide a custom certificate when " +
                   "creating the connection.")
-        raise Exception(errMsg)
+        raise MissingCertFile(errMsg)
 
     context = ssl.SSLContext(ssl.PROTOCOL_SSLv23)
     context.set_default_verify_paths()
