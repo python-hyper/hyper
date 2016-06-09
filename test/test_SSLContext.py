@@ -71,7 +71,7 @@ class TestSSLContext(object):
         succeeded = False
         threwExpectedException = False
         try:
-            HTTPConnection('http2bin.org', 443)
+            hyper.HTTP20Connection('http2bin.org', 443)
             succeeded = True
         except hyper.common.exceptions.MissingCertFile:
             threwExpectedException = True
@@ -96,7 +96,7 @@ class TestSSLContext(object):
         context.set_npn_protocols(['h2', 'h2-15'])
         context.options |= ssl.OP_NO_COMPRESSION
 
-        conn = HTTPConnection('http2bin.org', 443, ssl_context=context)
+        conn = hyper.HTTP20Connection('http2bin.org', 443, ssl_context=context)
 
         hyper.tls.cert_loc = backup_cert_loc
 
