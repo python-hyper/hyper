@@ -99,8 +99,9 @@ def init_context(cert_path=None, cert=None, cert_password=None):
     cafile = cert_path or cert_loc
     if not cafile or not path.exists(cafile):
         errMsg = ("No certificate found at " + str(cafile) + ". Either " +
-        "ensure the default cert.pem file is included in the distribution " +
-        "or provide a custom certificate when creating the connection.")
+                  "ensure the default cert.pem file is included in the " +
+                  "distribution or provide a custom certificate when " +
+                  "creating the connection.")
         raise Exception(errMsg)
 
     context = ssl.SSLContext(ssl.PROTOCOL_SSLv23)
