@@ -6,7 +6,7 @@ hyper/tls
 Contains the TLS/SSL logic for use in hyper.
 """
 import os.path as path
-from common.exceptions import MissingCertFile
+from .common.exceptions import MissingCertFile
 from .compat import ignore_missing, ssl
 
 
