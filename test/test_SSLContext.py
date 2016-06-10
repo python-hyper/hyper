@@ -62,50 +62,16 @@ class TestSSLContext(object):
             cert_password=b'abc123')
         hyper.tls.init_context(cert=CLIENT_PEM_FILE)
 
-    def test_HTTPConnection_with_missing_certs(self):
-        # Clear any prevously created global context
-        backup_context = hyper.tls._context
-        hyper.tls._context = None
-        backup_cert_loc = hyper.tls.cert_loc
-        hyper.tls.cert_loc = MISSING_PEM_FILE
-
+    def test_missing_certs(self):
         succeeded = False
-        threwExpectedException = False
+        threw_expected_exception = False
         try:
-            conn = hyper.HTTP20Connection('http2bin.org', 443)
-            conn.request('GET', '/', None, {})
+            conn = hyper.tls.init_context(MISSING_PEM_FILE)
             succeeded = True
         except hyper.common.exceptions.MissingCertFile:
-            threwExpectedException = True
+            threw_expected_exception = True
         except:
             pass
 
-        hyper.tls.cert_loc = backup_cert_loc
-        hyper.tls._context = backup_context
-
         assert not succeeded
-        assert threwExpectedException
-
-    def test_HTTPConnection_with_missing_certs_and_custom_context(self):
-        # Clear any prevously created global context
-        backup_context = hyper.tls._context
-        hyper.tls._context = None
-        backup_cert_loc = hyper.tls.cert_loc
-        hyper.tls.cert_loc = MISSING_PEM_FILE
-
-        context = ssl.SSLContext(ssl.PROTOCOL_SSLv23)
-        context.set_default_verify_paths()
-        context.verify_mode = ssl.CERT_REQUIRED
-        context.check_hostname = True
-        context.set_npn_protocols(['h2', 'h2-15'])
-        context.options |= ssl.OP_NO_COMPRESSION
-
-        conn = hyper.HTTP20Connection('http2bin.org', 443, ssl_context=context)
-        conn.request('GET', '/', None, {})
-
-        hyper.tls.cert_loc = backup_cert_loc
-        hyper.tls._context = backup_context
-
-        assert conn.ssl_context.check_hostname
-        assert conn.ssl_context.verify_mode == ssl.CERT_REQUIRED
-        assert conn.ssl_context.options & ssl.OP_NO_COMPRESSION != 0
+        assert threw_expected_exception
