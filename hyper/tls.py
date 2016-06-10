@@ -103,7 +103,7 @@ def init_context(cert_path=None, cert=None, cert_password=None):
                   "ensure the default cert.pem file is included in the " +
                   "distribution or provide a custom certificate when " +
                   "creating the connection.")
-        raise MissingCertFile(errMsg)
+        raise MissingCertFile(err_msg)
 
     context = ssl.SSLContext(ssl.PROTOCOL_SSLv23)
     context.set_default_verify_paths()

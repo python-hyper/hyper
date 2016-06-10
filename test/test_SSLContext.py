@@ -66,7 +66,7 @@ class TestSSLContext(object):
         succeeded = False
         threw_expected_exception = False
         try:
-            conn = hyper.tls.init_context(MISSING_PEM_FILE)
+            hyper.tls.init_context(MISSING_PEM_FILE)
             succeeded = True
         except hyper.common.exceptions.MissingCertFile:
             threw_expected_exception = True
