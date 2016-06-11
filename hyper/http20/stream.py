@@ -304,8 +304,7 @@ class Stream(object):
         """
 
         with self._conn as conn:
-            out_fc_with_size = conn.local_flow_control_window(self.stream_id)
-        return out_fc_with_size
+            return conn.local_flow_control_window(self.stream_id)
 
     def _send_chunk(self, data, final):
         """
