@@ -280,8 +280,6 @@ class Stream(object):
         # FIXME: I think this is overbroad, but for now it's probably ok.
         if not (self.remote_closed and self.local_closed):
             with self._conn as conn:
-                send = False
-
                 try:
                     conn.reset_stream(self.stream_id, error_code or 0)
                 except h2.exceptions.ProtocolError:
@@ -289,9 +287,7 @@ class Stream(object):
                     # tolerate it.
                     pass
                 else:
-                    send = True
-            if send:
-                self._send_outstanding_data(tolerate_peer_gone=True)
+                    self._send_outstanding_data(tolerate_peer_gone=True)
             self.remote_closed = True
             self.local_closed = True
 
