@@ -572,12 +572,12 @@ class HTTP20Connection(object):
         # self.next_stream_id in a consistent state
         #
         # No I/O occurs, the delay in waiting threads depends on their number.
-        with self._lock, self._conn as conn:
+        with self._lock:
             s = Stream(
                 stream_id or self.next_stream_id,
                 self.__wm_class(DEFAULT_WINDOW_SIZE),
-                conn,
-                self._send_cb,
+                self._conn,
+                self._send_outstanding_data,
                 self._recv_cb,
                 self._stream_close_cb,
             )

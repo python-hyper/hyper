@@ -40,7 +40,7 @@ class Stream(object):
                  stream_id,
                  window_manager,
                  connection,
-                 send_cb,
+                 send_outstanding_data,
                  recv_cb,
                  close_cb):
         self.stream_id = stream_id
@@ -72,11 +72,11 @@ class Stream(object):
         # one for data being sent to us.
         self._in_window_manager = window_manager
 
-        # Save off a reference to the state machine.
+        # Save off a reference to the state machine wrapped with lock.
         self._conn = connection
 
         # Save off a data callback.
-        self._send_cb = send_cb
+        self._send_outstanding_data = send_outstanding_data
         self._recv_cb = recv_cb
         self._close_cb = close_cb
 
@@ -94,8 +94,9 @@ class Stream(object):
         Sends the complete saved header block on the stream.
         """
         headers = self.get_headers()
-        self._conn.send_headers(self.stream_id, headers, end_stream)
-        self._send_cb(self._conn.data_to_send())
+        with self._conn as conn:
+            conn.send_headers(self.stream_id, headers, end_stream)
+        self._send_outstanding_data()
 
         if end_stream:
             self.local_closed = True
@@ -186,10 +187,11 @@ class Stream(object):
         self.data.append(event.data)
 
         if increment and not self.remote_closed:
-            self._conn.increment_flow_control_window(
-                increment, stream_id=self.stream_id
-            )
-            self._send_cb(self._conn.data_to_send())
+            with self._conn as conn:
+                conn.increment_flow_control_window(
+                    increment, stream_id=self.stream_id
+                )
+            self._send_outstanding_data()
 
     def receive_end_stream(self, event):
         """
@@ -277,16 +279,15 @@ class Stream(object):
         """
         # FIXME: I think this is overbroad, but for now it's probably ok.
         if not (self.remote_closed and self.local_closed):
-            try:
-                self._conn.reset_stream(self.stream_id, error_code or 0)
-            except h2.exceptions.ProtocolError:
-                # If for any reason we can't reset the stream, just tolerate
-                # it.
-                pass
-            else:
-                self._send_cb(
-                    self._conn.data_to_send(), tolerate_peer_gone=True
-                )
+            with self._conn as conn:
+                try:
+                    conn.reset_stream(self.stream_id, error_code or 0)
+                except h2.exceptions.ProtocolError:
+                    # If for any reason we can't reset the stream, just
+                    # tolerate it.
+                    pass
+                else:
+                    self._send_outstanding_data(tolerate_peer_gone=True)
             self.remote_closed = True
             self.local_closed = True
 
@@ -297,7 +298,9 @@ class Stream(object):
         """
         The size of our outbound flow control window.
         """
-        return self._conn.local_flow_control_window(self.stream_id)
+
+        with self._conn as conn:
+            return conn.local_flow_control_window(self.stream_id)
 
     def _send_chunk(self, data, final):
         """
@@ -321,10 +324,11 @@ class Stream(object):
             end_stream = True
 
         # Send the frame and decrement the flow control window.
-        self._conn.send_data(
-            stream_id=self.stream_id, data=data, end_stream=end_stream
-        )
-        self._send_cb(self._conn.data_to_send())
+        with self._conn as conn:
+            conn.send_data(
+                stream_id=self.stream_id, data=data, end_stream=end_stream
+            )
+        self._send_outstanding_data()
 
         if end_stream:
             self.local_closed = True
