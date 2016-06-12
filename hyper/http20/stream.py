@@ -279,15 +279,15 @@ class Stream(object):
         """
         # FIXME: I think this is overbroad, but for now it's probably ok.
         if not (self.remote_closed and self.local_closed):
-            with self._conn as conn:
-                try:
+            try:
+                with self._conn as conn:
                     conn.reset_stream(self.stream_id, error_code or 0)
-                except h2.exceptions.ProtocolError:
-                    # If for any reason we can't reset the stream, just
-                    # tolerate it.
-                    pass
-                else:
-                    self._send_outstanding_data(tolerate_peer_gone=True)
+            except h2.exceptions.ProtocolError:
+                # If for any reason we can't reset the stream, just
+                # tolerate it.
+                pass
+            else:
+                self._send_outstanding_data(tolerate_peer_gone=True)
             self.remote_closed = True
             self.local_closed = True
 
