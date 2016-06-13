@@ -6,7 +6,7 @@ hyper/tls
 Contains the TLS/SSL logic for use in hyper.
 """
 import os.path as path
-
+from .common.exceptions import MissingCertFile
 from .compat import ignore_missing, ssl
 
 
@@ -29,14 +29,17 @@ def wrap_socket(sock, server_hostname, ssl_context=None, force_proto=None):
     A vastly simplified SSL wrapping function. We'll probably extend this to
     do more things later.
     """
+
     global _context
 
-    # create the singleton SSLContext we use
-    if _context is None:  # pragma: no cover
-        _context = init_context()
-
-    # if an SSLContext is provided then use it instead of default context
-    _ssl_context = ssl_context or _context
+    if ssl_context:
+        # if an SSLContext is provided then use it instead of default context
+        _ssl_context = ssl_context
+    else:
+        # create the singleton SSLContext we use
+        if _context is None:  # pragma: no cover
+            _context = init_context()
+        _ssl_context = _context
 
     # the spec requires SNI support
     ssl_sock = _ssl_context.wrap_socket(sock, server_hostname=server_hostname)
@@ -94,9 +97,17 @@ def init_context(cert_path=None, cert=None, cert_password=None):
         encrypted and no password is needed.
     :returns: An ``SSLContext`` correctly set up for HTTP/2.
     """
+    cafile = cert_path or cert_loc
+    if not cafile or not path.exists(cafile):
+        err_msg = ("No certificate found at " + str(cafile) + ". Either " +
+                   "ensure the default cert.pem file is included in the " +
+                   "distribution or provide a custom certificate when " +
+                   "creating the connection.")
+        raise MissingCertFile(err_msg)
+
     context = ssl.SSLContext(ssl.PROTOCOL_SSLv23)
     context.set_default_verify_paths()
-    context.load_verify_locations(cafile=cert_path or cert_loc)
+    context.load_verify_locations(cafile=cafile)
     context.verify_mode = ssl.CERT_REQUIRED
     context.check_hostname = True
 
