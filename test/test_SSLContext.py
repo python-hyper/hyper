@@ -14,6 +14,7 @@ TEST_CERTS_DIR = os.path.join(TEST_DIR, 'certs')
 CLIENT_CERT_FILE = os.path.join(TEST_CERTS_DIR, 'client.crt')
 CLIENT_KEY_FILE = os.path.join(TEST_CERTS_DIR, 'client.key')
 CLIENT_PEM_FILE = os.path.join(TEST_CERTS_DIR, 'nopassword.pem')
+MISSING_PEM_FILE = os.path.join(TEST_CERTS_DIR, 'missing.pem')
 
 
 class TestSSLContext(object):
@@ -60,3 +61,17 @@ class TestSSLContext(object):
             cert=(CLIENT_CERT_FILE, CLIENT_KEY_FILE),
             cert_password=b'abc123')
         hyper.tls.init_context(cert=CLIENT_PEM_FILE)
+
+    def test_missing_certs(self):
+        succeeded = False
+        threw_expected_exception = False
+        try:
+            hyper.tls.init_context(MISSING_PEM_FILE)
+            succeeded = True
+        except hyper.common.exceptions.MissingCertFile:
+            threw_expected_exception = True
+        except:
+            pass
+
+        assert not succeeded
+        assert threw_expected_exception
