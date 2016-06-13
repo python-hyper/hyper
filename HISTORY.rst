@@ -1,12 +1,18 @@
 Release History
 ===============
 
-dev
----
+0.6.1 (2016-06-13)
+------------------
 
 *Bugfixes*
 
 - Tolerate errors when attempting to send a RST_STREAM frame.
+- Ensure that calls to ``fileno()`` on the compatibility ``SSLSocket`` object
+  actually work correctly. Thanks to @benlast!
+- Improved some problems with thread-safety in the ``Stream`` class. Thanks to
+  @fredthomsen!
+- Allowed for systems to use hyper without the bundled cert file being present.
+  Thanks to @JasonGowthorpe!
 
 0.6.0 (2016-05-06)
 ------------------
