@@ -1,6 +1,13 @@
 Release History
 ===============
 
+0.6.2 (2016-03-13)
+------------------
+
+*Bugfixes*
+
+- Fixed packaging error made in prior release.
+
 0.6.1 (2016-06-13)
 ------------------
 
