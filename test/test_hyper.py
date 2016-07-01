@@ -8,7 +8,7 @@ from hyperframe.frame import (
 from hpack.hpack_compat import Encoder
 from hyper.http20.connection import HTTP20Connection
 from hyper.http20.response import HTTP20Response, HTTP20Push
-from hyper.http20.exceptions import ConnectionError
+from hyper.http20.exceptions import ConnectionError, StreamResetError
 from hyper.http20.util import (
     combine_repeated_headers, split_repeated_headers, h2_safe_headers
 )
@@ -22,7 +22,6 @@ import pytest
 import socket
 import zlib
 from io import BytesIO
-
 
 TEST_DIR = os.path.abspath(os.path.dirname(__file__))
 TEST_CERTS_DIR = os.path.join(TEST_DIR, 'certs')
@@ -293,6 +292,100 @@ class TestHyperConnection(object):
         assert not c.streams
         assert c.next_stream_id == 3
 
+    def test_streams_raise_error_on_read_after_close(self):
+        # Prepare a socket so we can open a stream.
+        sock = DummySocket()
+        c = HTTP20Connection('www.google.com')
+        c._sock = sock
+
+        # Open a request (which creates a stream)
+        stream_id = c.request('GET', '/')
+
+        # close connection
+        c.close()
+
+        # try to read the stream
+        with pytest.raises(StreamResetError):
+            c.get_response(stream_id)
+
+    def test_reads_on_remote_close(self):
+        # Prepare a socket so we can open a stream.
+        sock = DummySocket()
+        c = HTTP20Connection('www.google.com')
+        c._sock = sock
+
+        # Open a few requests (which creates a stream)
+        s1 = c.request('GET', '/')
+        s2 = c.request('GET', '/')
+
+        # simulate state of blocking on read while sock
+        f = GoAwayFrame(0)
+        # Set error code to PROTOCOL_ERROR
+        f.error_code = 1
+        c._sock.buffer = BytesIO(f.serialize())
+
+        # 'Receive' the GOAWAY frame.
+        # Validate that the spec error name and description are used to throw
+        # the connection exception.
+        with pytest.raises(ConnectionError):
+            c.get_response(s1)
+
+        # try to read the stream
+        with pytest.raises(StreamResetError):
+            c.get_response(s2)
+
+    def test_race_condition_on_socket_close(self):
+        # Prepare a socket so we can open a stream.
+        sock = DummySocket()
+        c = HTTP20Connection('www.google.com')
+        c._sock = sock
+
+        # Open a few requests (which creates a stream)
+        s1 = c.request('GET', '/')
+        c.request('GET', '/')
+
+        # simulate state of blocking on read while sock
+        f = GoAwayFrame(0)
+        # Set error code to PROTOCOL_ERROR
+        f.error_code = 1
+        c._sock.buffer = BytesIO(f.serialize())
+
+        # 'Receive' the GOAWAY frame.
+        # Validate that the spec error name and description are used to throw
+        # the connection exception.
+        with pytest.raises(ConnectionError):
+            c.get_response(s1)
+
+        # try to read again after close
+        with pytest.raises(ConnectionError):
+            c._single_read()
+
+    def test_stream_close_behavior(self):
+        # Prepare a socket so we can open a stream.
+        sock = DummySocket()
+        c = HTTP20Connection('www.google.com')
+        c._sock = sock
+
+        # Open a few requests (which creates a stream)
+        s1 = c.request('GET', '/')
+        c.request('GET', '/')
+
+        # simulate state of blocking on read while sock
+        f = GoAwayFrame(0)
+        # Set error code to PROTOCOL_ERROR
+        f.error_code = 1
+        c._sock.buffer = BytesIO(f.serialize())
+
+        # 'Receive' the GOAWAY frame.
+        # Validate that the spec error name and description are used to throw
+        # the connection exception.
+        with pytest.raises(ConnectionError):
+            c.get_response(s1)
+
+        # try to read again after close
+        with pytest.raises(ConnectionError):
+            c._single_read()
+
     def test_read_headers_out_of_order(self):
         # If header blocks aren't decoded in the same order they're received,
         # regardless of the stream they belong to, the decoder state will
@@ -326,10 +419,10 @@ class TestHyperConnection(object):
             ('content-length', '0')
         ])
         h = HeadersFrame(1)
-        h.data = header_data[0:int(len(header_data)/2)]
+        h.data = header_data[0:int(len(header_data) / 2)]
         h.flags.add('END_STREAM')
         c = ContinuationFrame(1)
-        c.data = header_data[int(len(header_data)/2):]
+        c.data = header_data[int(len(header_data) / 2):]
         c.flags.add('END_HEADERS')
         sock = DummySocket()
         sock.buffer = BytesIO(h.serialize() + c.serialize())
@@ -883,7 +976,7 @@ class TestResponse(object):
         body += c.flush()
 
         stream = DummyStream(None)
-        chunks = [body[x:x+2] for x in range(0, len(body), 2)]
+        chunks = [body[x:x + 2] for x in range(0, len(body), 2)]
         stream.data_frames = chunks
         resp = HTTP20Response(headers, stream)
 

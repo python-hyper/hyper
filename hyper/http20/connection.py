@@ -641,6 +641,8 @@ class HTTP20Connection(object):
         #
         # I/O occurs while the lock is held; waiting threads will see a delay.
         with self._read_lock:
+            if self._sock is None:
+                raise ConnectionError('tried to read after connection close')
             self._sock.fill()
             data = self._sock.buffer.tobytes()
             self._sock.advance_buffer(len(data))
@@ -739,6 +741,12 @@ class HTTP20Connection(object):
             if stream_id in self.recent_recv_streams:
                 self.recent_recv_streams.discard(stream_id)
                 return
+
+            # make sure to validate the stream is readable.
+            # if the connection was reset, this stream id won't appear in
+            # self.streams and will cause this call to raise an exception.
+            if stream_id:
+                self._get_stream(stream_id)
 
             # TODO: Re-evaluate this.
             self._single_read()
