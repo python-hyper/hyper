@@ -1,6 +1,13 @@
 Release History
 ===============
 
+dev
+---
+
+*Bugfixes*
+
+- Don't send WINDOWUPDATE frames on closed streams.
+
 0.6.2 (2016-06-13)
 ------------------
 
