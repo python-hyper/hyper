@@ -1,4 +1,6 @@
 # -*- coding: utf-8 -*-
+import h2.settings
+
 from h2.frame_buffer import FrameBuffer
 from hyperframe.frame import (
     Frame, DataFrame, RstStreamFrame, SettingsFrame, PushPromiseFrame,
@@ -582,6 +584,60 @@ class TestHyperConnection(object):
         f = frames[-1]
         assert isinstance(f, RstStreamFrame)
         assert 1 not in c.streams
+
+    def test_incrementing_window_after_close(self):
+        """
+        Hyper does not attempt to increment the flow control window once the
+        stream is closed.
+        """
+        # For this test, we want to send a response that has three frames at
+        # the default max frame size (16,384 bytes). That will, on the third
+        # frame, trigger the processing to increment the flow control window,
+        # which should then not happen.
+        f = SettingsFrame(0, settings={h2.settings.INITIAL_WINDOW_SIZE: 100})
+
+        c = HTTP20Connection('www.google.com')
+        c._sock = DummySocket()
+        c._sock.buffer = BytesIO(f.serialize())
+
+        # Open stream 1.
+        c.request('GET', '/')
+
+        # Check what data we've sent right now.
+        originally_sent_data = c._sock.queue[:]
+
+        # Swap out the buffer to get a GoAway frame.
+        length = 16384
+        total_length = (3 * 16384) + len(b'some more data')
+        e = Encoder()
+        h1 = HeadersFrame(1)
+        h1.data = e.encode(
+            [(':status', 200), ('content-length', '%d' % total_length)]
+        )
+        h1.flags |= set(['END_HEADERS'])
+
+        d1 = DataFrame(1)
+        d1.data = b'\x00' * length
+        d2 = d1
+        d3 = d1
+        d4 = DataFrame(1)
+        d4.data = b'some more data'
+        d4.flags |= set(['END_STREAM'])
+
+        buffer = BytesIO(
+            b''.join(f.serialize() for f in [h1, d1, d2, d3, d4])
+        )
+        c._sock.buffer = buffer
+
+        # Read the response
+        resp = c.get_response(stream_id=1)
+        assert resp.status == 200
+        assert resp.read() == b''.join(
+            [b'\x00' * (3 * length), b'some more data']
+        )
+
+        # We should have sent only one extra frame
+        assert len(originally_sent_data) + 1 == len(c._sock.queue)
 
 
 class TestServerPush(object):
