@@ -186,7 +186,9 @@ class Stream(object):
         # Append the data to the buffer.
         self.data.append(event.data)
 
-        if increment and not self.remote_closed:
+        stream_about_to_close = (event.stream_ended is not None)
+
+        if increment and not self.remote_closed and not stream_about_to_close:
             with self._conn as conn:
                 conn.increment_flow_control_window(
                     increment, stream_id=self.stream_id
