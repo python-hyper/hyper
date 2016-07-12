@@ -1240,7 +1240,6 @@ class TestUtilities(object):
             c._single_read()
 
 
-
 # Some utility classes for the tests.
 class NullEncoder(object):
     @staticmethod
