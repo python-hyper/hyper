@@ -19,7 +19,7 @@ matrix:
     - env: TEST_RELEASE=true HYPER_FAST_PARSE=false
   exclude:
     - env: NGHTTP2=true
-      python: pypy
+      python: "pypy-5.3.1"
 
 install:
   - ".travis/install.sh"
