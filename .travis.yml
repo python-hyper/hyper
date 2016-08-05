@@ -4,7 +4,7 @@ python:
   - "2.7"
   - "3.4"
   - "3.5"
-  - pypy
+  - "pypy-5.3.1"
 
 env:
   - TEST_RELEASE=false HYPER_FAST_PARSE=false
