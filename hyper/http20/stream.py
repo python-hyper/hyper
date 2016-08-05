@@ -186,14 +186,19 @@ class Stream(object):
         # Append the data to the buffer.
         self.data.append(event.data)
 
-        stream_about_to_close = (event.stream_ended is not None)
-
-        if increment and not self.remote_closed and not stream_about_to_close:
-            with self._conn as conn:
-                conn.increment_flow_control_window(
-                    increment, stream_id=self.stream_id
-                )
-            self._send_outstanding_data()
+        if increment:
+            try:
+                with self._conn as conn:
+                    conn.increment_flow_control_window(
+                        increment, stream_id=self.stream_id
+                    )
+            except h2.exceptions.StreamClosedError:
+                # We haven't got to it yet, but the stream is already
+                # closed. We don't need to increment the window in this
+                # case!
+                pass
+            else:
+                self._send_outstanding_data()
 
     def receive_end_stream(self, event):
         """
