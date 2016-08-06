@@ -235,7 +235,7 @@ class HTTP20Connection(object):
         :returns: A stream ID for the request.
         """
         headers = headers or {}
-
+        upcased_method = method.upper()
         # Concurrency
         #
         # It's necessary to hold a lock while this method runs to satisfy H2
@@ -248,7 +248,7 @@ class HTTP20Connection(object):
         # being sent in the wrong order, which can lead to the out-of-order
         # messages with lower stream IDs being closed prematurely.
         with self._write_lock:
-            stream_id = self.putrequest(method, url)
+            stream_id = self.putrequest(upcased_method, url)
 
             default_headers = (':method', ':scheme', ':authority', ':path')
             for name, value in headers.items():

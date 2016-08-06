@@ -38,6 +38,13 @@ class TestHTTPConnection(object):
             'other_kwarg': True,
         }
 
+    def test_get_method_with_lower_case(self):
+        conn = HTTPConnection('http2bin.org:443')
+        conn.request('get', '/get')
+        resp = conn.get_response()
+
+        assert resp.status == 200
+
     def test_tls_upgrade(self, monkeypatch):
         monkeypatch.setattr(
             hyper.common.connection, 'HTTP11Connection', DummyH1Connection

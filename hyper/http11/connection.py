@@ -153,6 +153,7 @@ class HTTP11Connection(object):
         headers = headers or {}
 
         method = to_bytestring(method)
+        upcased_method = method.upper()
         url = to_bytestring(url)
 
         if not isinstance(headers, HTTPHeaderMap):
@@ -180,7 +181,7 @@ class HTTP11Connection(object):
             headers[b'host'] = self.host
 
         # Begin by emitting the header block.
-        self._send_headers(method, url, headers)
+        self._send_headers(upcased_method, url, headers)
 
         # Next, send the request body.
         if body:
