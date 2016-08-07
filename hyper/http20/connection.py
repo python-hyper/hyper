@@ -235,6 +235,7 @@ class HTTP20Connection(object):
         :returns: A stream ID for the request.
         """
         headers = headers or {}
+
         # Concurrency
         #
         # It's necessary to hold a lock while this method runs to satisfy H2
