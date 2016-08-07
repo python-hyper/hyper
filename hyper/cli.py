@@ -195,6 +195,7 @@ def set_request_data(args):
     if args.method is None:
         args.method = 'POST' if args.body else 'GET'
 
+    args.method = args.method.upper()
     args.headers = headers
 
 

@@ -104,6 +104,7 @@ def test_cli_with_system_exit(argv):
 
 @pytest.mark.parametrize(('argv', 'expected'), [
     (['--debug', 'example.com'], {'debug': True}),
+    (['get', 'example.com'], {'method': 'GET'}),
     (['GET', 'example.com', 'x-test:header'],
      {'method': 'GET', 'headers': {'x-test': 'header'}}),
     (['GET', 'example.com', 'param==test'],
@@ -119,6 +120,7 @@ def test_cli_with_system_exit(argv):
                             'x-test': 'header'}}),
 ], ids=[
     'specified "--debug" option',
+    'specify host with lower get method',
     'specified host and additional header',
     'specified host and get parameter',
     'specified host and post data',

@@ -89,15 +89,6 @@ class TestHyperConnection(object):
         assert len(c.streams) == 1
         assert c.recent_stream is stream
 
-    def test_putrequest_establishes_new_stream_with_lower_case_method(self):
-        c = HTTP20Connection("www.google.com")
-
-        stream_id = c.putrequest('get', '/')
-        stream = c.streams[stream_id]
-
-        assert len(c.streams) == 1
-        assert c.recent_stream is stream
-
     def test_putrequest_autosets_headers(self):
         c = HTTP20Connection("www.google.com")
 

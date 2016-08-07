@@ -128,25 +128,6 @@ class TestHTTP11Connection(object):
 
         assert received == expected
 
-    def test_basic_request_with_lower_case_method(self):
-        c = HTTP11Connection('httpbin.org')
-        c._sock = sock = DummySocket()
-
-        c.request('get', '/get', headers={'User-Agent': 'hyper'})
-
-        expected = (
-            b"GET /get HTTP/1.1\r\n"
-            b"User-Agent: hyper\r\n"
-            b"connection: Upgrade, HTTP2-Settings\r\n"
-            b"upgrade: h2c\r\n"
-            b"HTTP2-Settings: AAQAAP__\r\n"
-            b"host: httpbin.org\r\n"
-            b"\r\n"
-        )
-        received = b''.join(sock.queue)
-
-        assert received == expected
-
     def test_iterable_header(self):
         c = HTTP11Connection('httpbin.org')
         c._sock = sock = DummySocket()

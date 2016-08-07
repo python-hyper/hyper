@@ -99,9 +99,8 @@ class HTTPConnection(object):
         headers = headers or {}
 
         try:
-            upcased_method = method.upper()
             return self._conn.request(
-                method=upcased_method, url=url, body=body, headers=headers
+                method=method, url=url, body=body, headers=headers
             )
         except TLSUpgrade as e:
             # We upgraded in the NPN/ALPN handshake. We can just go straight to
