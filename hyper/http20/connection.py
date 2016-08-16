@@ -817,6 +817,7 @@ class HTTP20Connection(object):
         """
         try:
             del self.streams[stream_id]
+            self.recent_recv_streams.discard(stream_id)
         except KeyError:
             pass
 
