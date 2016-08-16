@@ -7,6 +7,7 @@ dev
 *Bugfixes*
 
 - Don't send WINDOWUPDATE frames on closed streams.
+- Clean up the outstanding stream reads on stream close.
 
 0.6.2 (2016-06-13)
 ------------------
