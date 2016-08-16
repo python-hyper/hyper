@@ -47,6 +47,13 @@ same way ``http.client`` does. This is because most servers do not support
 HTTP/2 at this time: I don't want you accidentally using ``hyper`` when you
 wanted ``http.client``.
 
+Documentation
+=============
+
+Looking to learn more? Documentation for ``hyper`` can be found on `Read the Docs`_.
+
+.. _Read the Docs: http://hyper.readthedocs.io/en/latest/
+
 Contributing
 ============
 
