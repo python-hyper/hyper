@@ -259,6 +259,30 @@ class TestHyperConnection(object):
         assert c.next_stream_id == 1
         assert c.window_manager is not wm
 
+    def test_streams_removed_on_close(self):
+        # Create content for read from socket
+        e = Encoder()
+        h1 = HeadersFrame(1)
+        h1.data = e.encode([(':status', 200), ('content-type', 'foo/bar')])
+        h1.flags |= set(['END_HEADERS', 'END_STREAM'])
+        sock = DummySocket()
+        sock.buffer = BytesIO(h1.serialize())
+
+        c = HTTP20Connection('www.google.com')
+        c._sock = sock
+        stream_id = c.request('GET', '/')
+
+        # Create reference to current recent_recv_streams set
+        recent_recv_streams = c.recent_recv_streams
+        streams = c.streams
+
+        resp = c.get_response(stream_id=stream_id)
+        assert stream_id in recent_recv_streams
+        assert stream_id in streams
+        resp.read()
+        assert stream_id not in recent_recv_streams
+        assert stream_id not in streams
+
     def test_connection_no_window_update_on_zero_length_data_frame(self):
         # Prepare a socket with a data frame in it that has no length.
         sock = DummySocket()
