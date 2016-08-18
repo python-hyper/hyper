@@ -15,6 +15,7 @@ from hyper.http20.util import (
     combine_repeated_headers, split_repeated_headers, h2_safe_headers
 )
 from hyper.common.headers import HTTPHeaderMap
+from hyper.common.util import to_bytestring
 from hyper.compat import zlib_compressobj, is_py2
 from hyper.contrib import HTTP20Adapter
 import hyper.http20.errors as errors
@@ -87,12 +88,14 @@ class TestHyperConnection(object):
         c = HTTP20Connection('www.google.com')
         c._sock = DummySocket()
         c._send_cb = data_callback
-        c.ping('00000000')
+        opaque = '00000000'
+        c.ping(opaque)
 
         frames = list(frame_buffer)
         assert len(frames) == 1
         f = frames[0]
         assert isinstance(f, PingFrame)
+        assert f.opaque_data == to_bytestring(opaque)
 
     def test_putrequest_establishes_new_stream(self):
         c = HTTP20Connection("www.google.com")
