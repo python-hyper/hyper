@@ -5,7 +5,7 @@ from h2.frame_buffer import FrameBuffer
 from hyperframe.frame import (
     Frame, DataFrame, RstStreamFrame, SettingsFrame, PushPromiseFrame,
     WindowUpdateFrame, HeadersFrame, ContinuationFrame, GoAwayFrame,
-    FRAME_MAX_ALLOWED_LEN
+    PingFrame, FRAME_MAX_ALLOWED_LEN
 )
 from hpack.hpack_compat import Encoder
 from hyper.http20.connection import HTTP20Connection
@@ -79,6 +79,20 @@ class TestHyperConnection(object):
         assert c.port == 443
         assert c.proxy_host == 'ffff:aaaa::1'
         assert c.proxy_port == 8443
+
+    def test_ping(self, frame_buffer):
+        def data_callback(chunk, **kwargs):
+            frame_buffer.add_data(chunk)
+
+        c = HTTP20Connection('www.google.com')
+        c._sock = DummySocket()
+        c._send_cb = data_callback
+        c.ping('00000000')
+
+        frames = list(frame_buffer)
+        assert len(frames) == 1
+        f = frames[0]
+        assert isinstance(f, PingFrame)
 
     def test_putrequest_establishes_new_stream(self):
         c = HTTP20Connection("www.google.com")
