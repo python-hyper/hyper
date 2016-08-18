@@ -213,6 +213,25 @@ class HTTP20Connection(object):
 
         return
 
+    def ping(self, opaque_data):
+        """
+        Send a PING frame.
+
+        Concurrency
+        -----------
+
+        This method is thread-safe.
+
+        :param opaque_data: A bytestring of length 8 that will be sent in the
+                            PING frame.
+        :returns: Nothing
+        """
+        self.connect()
+        with self._write_lock:
+            with self._conn as conn:
+                conn.ping(to_bytestring(opaque_data))
+            self._send_outstanding_data()
+
     def request(self, method, url, body=None, headers=None):
         """
         This will send a request to the server using the HTTP request method
