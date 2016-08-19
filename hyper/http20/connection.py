@@ -450,7 +450,7 @@ class HTTP20Connection(object):
 
             if self._sock is not None:
                 self._sock.close()
-                self.__init_state()
+            self.__init_state()
 
     def _send_outstanding_data(self, tolerate_peer_gone=False,
                                send_empty=True):
