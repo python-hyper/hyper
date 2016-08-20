@@ -278,8 +278,8 @@ class TestHyperConnection(object):
         assert c.window_manager is not wm
         with c._conn as conn:
             assert conn.state_machine.state == ConnectionState.IDLE
+            origin_h2_conn = conn
 
-        c = HTTP20Connection('www.google.com')
         c.close()
         assert c._sock is None
         assert not c.streams
@@ -288,6 +288,7 @@ class TestHyperConnection(object):
         assert c.window_manager is not wm
         with c._conn as conn:
             assert conn.state_machine.state == ConnectionState.IDLE
+            assert conn != origin_h2_conn
 
     def test_streams_removed_on_close(self):
         # Create content for read from socket
