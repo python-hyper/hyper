@@ -8,6 +8,8 @@ dev
 
 - Don't send WINDOWUPDATE frames on closed streams.
 - Clean up the outstanding stream reads on stream close.
+- Ensured that connection state is always unconditionally reset on stream
+  close, regardless of whether the connection has a socket object open or not.
 
 0.6.2 (2016-06-13)
 ------------------
