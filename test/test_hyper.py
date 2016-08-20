@@ -2,6 +2,7 @@
 import h2.settings
 
 from h2.frame_buffer import FrameBuffer
+from h2.connection import ConnectionState
 from hyperframe.frame import (
     Frame, DataFrame, RstStreamFrame, SettingsFrame, PushPromiseFrame,
     WindowUpdateFrame, HeadersFrame, ContinuationFrame, GoAwayFrame,
@@ -275,6 +276,19 @@ class TestHyperConnection(object):
         assert c.recent_stream is None
         assert c.next_stream_id == 1
         assert c.window_manager is not wm
+        with c._conn as conn:
+            assert conn.state_machine.state == ConnectionState.IDLE
+            origin_h2_conn = conn
+
+        c.close()
+        assert c._sock is None
+        assert not c.streams
+        assert c.recent_stream is None
+        assert c.next_stream_id == 1
+        assert c.window_manager is not wm
+        with c._conn as conn:
+            assert conn.state_machine.state == ConnectionState.IDLE
+            assert conn != origin_h2_conn
 
     def test_streams_removed_on_close(self):
         # Create content for read from socket
