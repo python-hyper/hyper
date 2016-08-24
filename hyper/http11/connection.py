@@ -55,9 +55,13 @@ class HTTP11Connection(object):
     :param proxy_port: (optional) The proxy port to connect to. If not provided
         and one also isn't provided in the ``proxy`` parameter,
         defaults to 8080.
+    :param socket_timeout: (optional) Specify a timeout for the underlying
+        socket. Defaults to ``None``. For more information on socket timeouts,
+        see :meth:`socket.socket.settimeout`.
     """
     def __init__(self, host, port=None, secure=None, ssl_context=None,
-                 proxy_host=None, proxy_port=None, **kwargs):
+                 proxy_host=None, proxy_port=None, socket_timeout=None,
+                 **kwargs):
         if port is None:
             self.host, self.port = to_host_port_tuple(host, default_port=80)
         else:
@@ -78,6 +82,7 @@ class HTTP11Connection(object):
 
         self.ssl_context = ssl_context
         self._sock = None
+        self._socket_timeout = socket_timeout
 
         # Setup proxy details if applicable.
         if proxy_host:
@@ -117,6 +122,7 @@ class HTTP11Connection(object):
                 port = self.proxy_port
 
             sock = socket.create_connection((host, port), 5)
+            sock.settimeout(self._socket_timeout)
             proto = None
 
             if self.secure:

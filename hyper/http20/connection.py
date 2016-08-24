@@ -90,10 +90,14 @@ class HTTP20Connection(object):
     :param proxy_port: (optional) The proxy port to connect to. If not provided
         and one also isn't provided in the ``proxy`` parameter, defaults to
         8080.
+    :param socket_timeout: (optional) Specify a timeout for the underlying
+        socket. Defaults to ``None``. For more information on socket timeouts,
+        see :meth:`socket.socket.settimeout`.
     """
     def __init__(self, host, port=None, secure=None, window_manager=None,
                  enable_push=False, ssl_context=None, proxy_host=None,
-                 proxy_port=None, force_proto=None, **kwargs):
+                 proxy_port=None, force_proto=None,  socket_timeout=None,
+                 **kwargs):
         """
         Creates an HTTP/2 connection to a specific server.
         """
@@ -110,6 +114,7 @@ class HTTP20Connection(object):
             self.secure = False
 
         self._enable_push = enable_push
+        self._socket_timeout = socket_timeout
         self.ssl_context = ssl_context
 
         # Setup proxy details if applicable.
@@ -361,6 +366,7 @@ class HTTP20Connection(object):
                 port = self.proxy_port
 
             sock = socket.create_connection((host, port))
+            sock.settimeout(self._socket_timeout)
 
             if self.secure:
                 assert not self.proxy_host, "Proxy with HTTPS not supported."
