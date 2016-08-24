@@ -6,7 +6,6 @@ test_http11.py
 Unit tests for hyper's HTTP/1.1 implementation.
 """
 import os
-import socket
 import zlib
 
 from collections import namedtuple
@@ -511,13 +510,6 @@ class TestHTTP11Connection(object):
             )
         assert 'File-like bodies must return bytestrings. ' \
                'Got: {}'.format(int) in str(exc_info)
-
-    def test_exception_raised_on_socket_timeout(self):
-        c = HTTP11Connection('httpbin.org', socket_timeout=0.01)
-        c.request('GET', '/delay/1')
-
-        with pytest.raises(socket.timeout):
-            c.get_response()
 
 
 class TestHTTP11Response(object):

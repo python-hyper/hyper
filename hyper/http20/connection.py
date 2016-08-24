@@ -365,7 +365,7 @@ class HTTP20Connection(object):
                 host = self.proxy_host
                 port = self.proxy_port
 
-            sock = socket.create_connection((host, port))
+            sock = socket.create_connection((host, port), self._socket_timeout)
             sock.settimeout(self._socket_timeout)
 
             if self.secure:

@@ -121,7 +121,7 @@ class HTTP11Connection(object):
                 host = self.proxy_host
                 port = self.proxy_port
 
-            sock = socket.create_connection((host, port), 5)
+            sock = socket.create_connection((host, port), self._socket_timeout)
             sock.settimeout(self._socket_timeout)
             proto = None
 
