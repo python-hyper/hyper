@@ -33,4 +33,4 @@ __all__ = [
 # Set default logging handler.
 logging.getLogger(__name__).addHandler(logging.NullHandler())
 
-__version__ = '0.7.0'
+__version__ = '0.8.0dev0'
