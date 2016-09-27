@@ -1,8 +1,13 @@
 Release History
 ===============
 
-dev
----
+v0.7.0 (2016-09-27)
+-------------------
+
+*Major Changes*
+
+- Added a ``ping`` method, allowing the user to use the HTTP/2 ``PING`` frame
+  to check connection liveness before, instead of, or between issuing requests.
 
 *Bugfixes*
 
