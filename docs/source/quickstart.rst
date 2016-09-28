@@ -99,7 +99,7 @@ the response from any of them, and switch between them using their stream IDs.
 For example::
 
     >>> from hyper import HTTPConnection
-    >>> c = HTTPConnection('http2bin.org')
+    >>> c = HTTPConnection('http2bin.org', port=443)
     >>> first = c.request('GET', '/get', headers={'key': 'value'})
     >>> second = c.request('POST', '/post', body=b'hello')
     >>> third = c.request('GET', '/ip')
