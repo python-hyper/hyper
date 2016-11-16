@@ -14,6 +14,7 @@ import hyper.http11.connection
 import pytest
 from contextlib import contextmanager
 from mock import patch
+from concurrent.futures import ThreadPoolExecutor, TimeoutError
 from h2.frame_buffer import FrameBuffer
 from hyper.compat import ssl
 from hyper.contrib import HTTP20Adapter
@@ -1039,7 +1040,6 @@ class TestHyperIntegration(SocketLevelTest):
 
         def socket_handler(listener):
             sock = listener.accept()[0]
-
             # We should get the initial request.
             data = b''
             while not data.endswith(b'\r\n\r\n'):
@@ -1086,6 +1086,44 @@ class TestHyperIntegration(SocketLevelTest):
         assert c.version is HTTPVersion.http20
         assert resp.version is HTTPVersion.http20
         recv_event.set()
+
+        self.tear_down()
+
+    def test_connection_and_send_simultaneously(self):
+        # Since deadlock occurs probabilistic,
+        # It still has deadlock probability
+        # even the testcase is passed.
+        self.set_up()
+
+        recv_event = threading.Event()
+
+        def socket_handler(listener):
+            sock = listener.accept()[0]
+
+            receive_preamble(sock)
+            sock.recv(65535)
+
+            recv_event.set()
+            sock.close()
+
+        def do_req(conn):
+            conn.request('GET', '/')
+            recv_event.wait()
+
+        def do_connect(conn):
+            conn.connect()
+
+        self._start_server(socket_handler)
+        conn = self.get_connection()
+
+        pool = ThreadPoolExecutor(max_workers=2)
+        pool.submit(do_connect, conn)
+        f = pool.submit(do_req, conn)
+
+        try:
+            f.result(timeout=10)
+        except TimeoutError:
+            assert False
 
         self.tear_down()
 
