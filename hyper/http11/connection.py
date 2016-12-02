@@ -20,7 +20,7 @@ from ..tls import wrap_socket, H2C_PROTOCOL
 from ..common.bufsocket import BufferedSocket
 from ..common.exceptions import TLSUpgrade, HTTPUpgrade
 from ..common.headers import HTTPHeaderMap
-from ..common.util import to_bytestring, to_host_port_tuple
+from ..common.util import to_bytestring, to_host_port_tuple, HTTPVersion
 from ..compat import bytes
 
 # We prefer pycohttpparser to the pure-Python interpretation
@@ -56,6 +56,9 @@ class HTTP11Connection(object):
         and one also isn't provided in the ``proxy`` parameter,
         defaults to 8080.
     """
+
+    version = HTTPVersion.http11
+
     def __init__(self, host, port=None, secure=None, ssl_context=None,
                  proxy_host=None, proxy_port=None, **kwargs):
         if port is None:

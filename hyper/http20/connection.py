@@ -14,7 +14,9 @@ from ..tls import wrap_socket, H2_NPN_PROTOCOLS, H2C_PROTOCOL
 from ..common.exceptions import ConnectionResetError
 from ..common.bufsocket import BufferedSocket
 from ..common.headers import HTTPHeaderMap
-from ..common.util import to_host_port_tuple, to_native_string, to_bytestring
+from ..common.util import (
+    to_host_port_tuple, to_native_string, to_bytestring, HTTPVersion
+)
 from ..compat import unicode, bytes
 from .stream import Stream
 from .response import HTTP20Response, HTTP20Push
@@ -91,6 +93,9 @@ class HTTP20Connection(object):
         and one also isn't provided in the ``proxy`` parameter, defaults to
         8080.
     """
+
+    version = HTTPVersion.http20
+
     def __init__(self, host, port=None, secure=None, window_manager=None,
                  enable_push=False, ssl_context=None, proxy_host=None,
                  proxy_port=None, force_proto=None, **kwargs):

@@ -13,6 +13,7 @@ import zlib
 from ..common.decoder import DeflateDecoder
 from ..common.exceptions import ChunkedDecodeError, InvalidResponseError
 from ..common.exceptions import ConnectionResetError
+from ..common.util import HTTPVersion
 
 log = logging.getLogger(__name__)
 
@@ -23,6 +24,9 @@ class HTTP11Response(object):
     provides access to the response headers and the entity body. The response
     is an iterable object and can be used in a with statement.
     """
+
+    version = HTTPVersion.http11
+
     def __init__(self, code, reason, headers, sock, connection=None):
         #: The reason phrase returned by the server.
         self.reason = reason

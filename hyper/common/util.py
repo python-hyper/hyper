@@ -5,6 +5,8 @@ hyper/common/util
 
 General utility functions for use with hyper.
 """
+from enum import Enum
+
 from hyper.compat import unicode, bytes, imap
 from ..packages.rfc3986.uri import URIReference
 from ..compat import is_py3
@@ -57,3 +59,11 @@ def to_native_string(string, encoding='utf-8'):
         return string
 
     return string.decode(encoding) if is_py3 else string.encode(encoding)
+
+
+class HTTPVersion(Enum):
+    """
+    Collection of all HTTP versions used in hyper.
+    """
+    http11 = "HTTP/1.1"
+    http20 = "HTTP/2"

@@ -16,7 +16,7 @@ from hyper.http20.util import (
     combine_repeated_headers, split_repeated_headers, h2_safe_headers
 )
 from hyper.common.headers import HTTPHeaderMap
-from hyper.common.util import to_bytestring
+from hyper.common.util import to_bytestring, HTTPVersion
 from hyper.compat import zlib_compressobj, is_py2
 from hyper.contrib import HTTP20Adapter
 import hyper.http20.errors as errors
@@ -81,6 +81,10 @@ class TestHyperConnection(object):
         assert c.port == 443
         assert c.proxy_host == 'ffff:aaaa::1'
         assert c.proxy_port == 8443
+
+    def test_connection_version(self):
+        c = HTTP20Connection('www.google.com')
+        assert c.version is HTTPVersion.http20
 
     def test_ping(self, frame_buffer):
         def data_callback(chunk, **kwargs):
@@ -1096,6 +1100,10 @@ class TestResponse(object):
             received += chunk
 
         assert received == b'this is test data'
+
+    def test_response_version(self):
+        r = HTTP20Response(HTTPHeaderMap([(':status', '200')]), None)
+        assert r.version is HTTPVersion.http20
 
 
 class TestHTTP20Adapter(object):

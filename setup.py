@@ -96,6 +96,7 @@ setup(
         # module at lower than 1.0, because it doesn't support CFFI v1.0 yet.
         ':platform_python_implementation == "PyPy" and python_full_version < "2.7.9"': [
             'cryptography<1.0'
-        ]
+        ],
+        ':python_version == "2.7" or python_version == "3.3"': ['enum34>=1.0.4, <2']
     }
 )
