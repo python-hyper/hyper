@@ -78,7 +78,7 @@ setup(
         'Programming Language :: Python :: 3.5',
         'Programming Language :: Python :: Implementation :: CPython',
     ],
-    install_requires=['h2>=2.4,<3.0', 'hyperframe>=3.2,<4.0'],
+    install_requires=['h2>=2.4,<3.0,!=2.5.0', 'hyperframe>=3.2,<4.0'],
     tests_require=['pytest', 'requests', 'mock'],
     cmdclass={'test': PyTest},
     entry_points={
