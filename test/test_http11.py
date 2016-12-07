@@ -838,6 +838,18 @@ class TestHTTP11Response(object):
         assert r._sock is None
         assert connection.close.call_count == 1
 
+    def test_regular_response_with_missing_headers_raises_error(self):
+        headers = {}
+        sock = DummySocket()
+        connection = mock.MagicMock()
+
+        with pytest.raises(ValueError) as exc_info:
+            HTTP11Response(200, 'OK', headers, sock, connection)
+        assert 'A response must either specify a content-length, ' \
+               'be a chunked response, or specify that the ' \
+               'connection be closed after the response. ' \
+               in str(exc_info)
+
 
 class DummySocket(object):
     def __init__(self):
