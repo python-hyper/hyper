@@ -11,6 +11,7 @@ import zlib
 
 from ..common.decoder import DeflateDecoder
 from ..common.headers import HTTPHeaderMap
+from ..common.util import HTTPVersion
 
 log = logging.getLogger(__name__)
 
@@ -36,6 +37,9 @@ class HTTP20Response(object):
     the persistent connections used in HTTP/2 this has no effect, and is done
     soley for compatibility).
     """
+
+    version = HTTPVersion.http20
+
     def __init__(self, headers, stream):
         #: The reason phrase returned by the server. This is not used in
         #: HTTP/2, and so is always the empty string.

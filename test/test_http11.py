@@ -19,6 +19,7 @@ from hyper.http11.connection import HTTP11Connection
 from hyper.http11.response import HTTP11Response
 from hyper.common.headers import HTTPHeaderMap
 from hyper.common.exceptions import ChunkedDecodeError, ConnectionResetError
+from hyper.common.util import HTTPVersion
 from hyper.compat import bytes, zlib_compressobj
 
 
@@ -837,6 +838,18 @@ class TestHTTP11Response(object):
 
         assert r._sock is None
         assert connection.close.call_count == 1
+
+    def test_connection_version(self):
+        c = HTTP11Connection('httpbin.org')
+        assert c.version is HTTPVersion.http11
+
+    def test_response_version(self):
+        d = DummySocket()
+        headers = {
+            b'transfer-encoding': [b'chunked'], b'connection': [b'close']
+        }
+        r = HTTP11Response(200, 'OK', headers, d)
+        assert r.version is HTTPVersion.http11
 
 
 class DummySocket(object):

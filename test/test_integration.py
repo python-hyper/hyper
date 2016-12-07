@@ -15,6 +15,7 @@ import pytest
 from h2.frame_buffer import FrameBuffer
 from hyper.compat import ssl
 from hyper.contrib import HTTP20Adapter
+from hyper.common.util import HTTPVersion
 from hyperframe.frame import (
     Frame, SettingsFrame, WindowUpdateFrame, DataFrame, HeadersFrame,
     GoAwayFrame, RstStreamFrame
@@ -932,6 +933,100 @@ class TestHyperIntegration(SocketLevelTest):
 
         # Awesome, we're done now.
         recv_event.wait(5)
+
+        self.tear_down()
+
+    def test_version_after_tls_upgrade(self, monkeypatch):
+        self.set_up()
+
+        # We need to patch the ssl_wrap_socket method to ensure that we
+        # forcefully upgrade.
+        old_wrap_socket = hyper.http11.connection.wrap_socket
+
+        def wrap(*args):
+            sock, _ = old_wrap_socket(*args)
+            return sock, 'h2'
+
+        monkeypatch.setattr(hyper.http11.connection, 'wrap_socket', wrap)
+
+        send_event = threading.Event()
+
+        def socket_handler(listener):
+            sock = listener.accept()[0]
+
+            receive_preamble(sock)
+
+            # Send the headers for the response. This response has no body.
+            f = build_headers_frame(
+                [(':status', '200'), ('content-length', '0')]
+            )
+            f.flags.add('END_STREAM')
+            f.stream_id = 1
+            sock.sendall(f.serialize())
+
+            # Wait for the message from the main thread.
+            send_event.wait()
+            sock.close()
+
+        self._start_server(socket_handler)
+        c = hyper.HTTPConnection(self.host, self.port, secure=True)
+
+        assert c.version is HTTPVersion.http11
+        assert c.version is not HTTPVersion.http20
+        c.request('GET', '/')
+        send_event.set()
+        assert c.version is HTTPVersion.http20
+
+        self.tear_down()
+
+    def test_version_after_http_upgrade(self):
+        self.set_up()
+        self.secure = False
+
+        send_event = threading.Event()
+
+        def socket_handler(listener):
+            sock = listener.accept()[0]
+
+            # We should get the initial request.
+            data = b''
+            while not data.endswith(b'\r\n\r\n'):
+                data += sock.recv(65535)
+            assert b'upgrade: h2c\r\n' in data
+
+            send_event.wait()
+
+            # We need to send back a response.
+            resp = (
+                b'HTTP/1.1 101 Upgrade\r\n'
+                b'Server: socket-level-server\r\n'
+                b'Content-Length: 0\r\n'
+                b'Connection: upgrade\r\n'
+                b'Upgrade: h2c\r\n'
+                b'\r\n'
+            )
+            sock.sendall(resp)
+
+            # We get a message for connection open, specifically the preamble.
+            receive_preamble(sock)
+
+            # Send the headers for the response. This response has a body.
+            f = build_headers_frame(
+                [(':status', '200'), ('content-length', '0')]
+            )
+            f.stream_id = 1
+            f.flags.add('END_STREAM')
+            sock.sendall(f.serialize())
+
+        self._start_server(socket_handler)
+
+        c = hyper.HTTPConnection(self.host, self.port)
+        assert c.version is HTTPVersion.http11
+        c.request('GET', '/')
+        send_event.set()
+        resp = c.get_response()
+        assert c.version is HTTPVersion.http20
+        assert resp.version is HTTPVersion.http20
 
         self.tear_down()
 
