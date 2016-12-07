@@ -11,29 +11,15 @@ env:
   - TEST_RELEASE=false HYPER_FAST_PARSE=true
   - TEST_RELEASE=true HYPER_FAST_PARSE=false
   - TEST_RELEASE=true HYPER_FAST_PARSE=true
-  - NGHTTP2=true
 
 matrix:
   allow_failures:
     - env: TEST_RELEASE=true HYPER_FAST_PARSE=true
     - env: TEST_RELEASE=true HYPER_FAST_PARSE=false
-  exclude:
-    - env: NGHTTP2=true
-      python: "pypy-5.3.1"
 
 install:
   - ".travis/install.sh"
 before_script: "flake8 --max-complexity 15 --exclude 'hyper/packages/*' hyper test"
 
 script:
-  - >
-      if [[ "$TEST_RELEASE" == true ]]; then
-        py.test test_release.py
-      else
-        if [[ $TRAVIS_PYTHON_VERSION == pypy ]]; then
-          py.test test/
-        else
-          coverage run -m py.test test/
-          coverage report
-        fi
-      fi
+  - ".travis/run.sh"
