@@ -11,6 +11,7 @@ from hyperframe.frame import (
 from hpack.hpack_compat import Encoder
 from hyper.common.connection import HTTPConnection
 from hyper.http20.connection import HTTP20Connection
+from hyper.http20.stream import MAX_CHUNK
 from hyper.http20.response import HTTP20Response, HTTP20Push
 from hyper.http20.exceptions import ConnectionError, StreamResetError
 from hyper.http20.util import (
@@ -27,6 +28,7 @@ import pytest
 import socket
 import zlib
 from io import BytesIO
+import random
 
 TEST_DIR = os.path.abspath(os.path.dirname(__file__))
 TEST_CERTS_DIR = os.path.join(TEST_DIR, 'certs')
@@ -610,6 +612,38 @@ class TestHyperConnection(object):
         # Send a request that involves uploading a file handle.
         with open(__file__, 'rb') as f:
             c.request('GET', '/', body=f)
+
+        # Get all the frames
+        frame_buffer.add_data(b''.join(sock.queue))
+        frames = list(frame_buffer)
+
+        # Reconstruct the file from the sent data.
+        sent_data = b''.join(
+            f.data for f in frames if isinstance(f, DataFrame)
+        )
+
+        with open(__file__, 'rb') as f:
+            assert f.read() == sent_data
+
+    def test_sending_generator(self, frame_buffer):
+        # Prepare a socket so we can open a stream.
+        sock = DummySocket()
+        c = HTTP20Connection('www.google.com')
+        c._sock = sock
+
+        def gen():
+            with open(__file__, 'rb') as f:
+                while True:
+                    chunk = f.read(
+                        random.randint(MAX_CHUNK / 2, MAX_CHUNK * 2)
+                    )
+                    if chunk:
+                        yield chunk
+                    else:
+                        break
+
+        # Send a request that involves uploading a generator.
+        c.request('GET', '/', body=gen())
 
         # Get all the frames
         frame_buffer.add_data(b''.join(sock.queue))
