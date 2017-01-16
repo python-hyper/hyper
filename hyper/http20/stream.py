@@ -13,6 +13,7 @@ stream is an independent, bi-directional sequence of HTTP headers and data.
 Each stream is identified by a monotonically increasing integer, assigned to
 the stream by the endpoint that initiated the stream.
 """
+import types
 import h2.exceptions
 
 from ..common.headers import HTTPHeaderMap
@@ -107,23 +108,26 @@ class Stream(object):
         sent, the ``final`` flag _must_ be set to True. If no data is to be
         sent, set ``data`` to ``None``.
         """
-        # Define a utility iterator for file objects.
-        def file_iterator(fobj):
+        if isinstance(data, types.GeneratorType):
+            for chunk in data:
+                for i in range(0, len(chunk), MAX_CHUNK):
+                    self._send_chunk(chunk[i:i + MAX_CHUNK], False)
+
+            # If ``final`` is True, send a empty chunk to end stream
+            if final:
+                self._send_chunk('', final)
+        elif hasattr(data, 'read'):
             while True:
-                data = fobj.read(MAX_CHUNK)
-                yield data
-                if len(data) < MAX_CHUNK:
+                chunk = data.read(MAX_CHUNK)
+                if len(chunk) < MAX_CHUNK:
+                    self._send_chunk(chunk, final)
                     break
-
-        # Build the appropriate iterator for the data, in chunks of CHUNK_SIZE.
-        if hasattr(data, 'read'):
-            chunks = file_iterator(data)
+                self._send_chunk(chunk, False)
         else:
-            chunks = (data[i:i+MAX_CHUNK]
-                      for i in range(0, len(data), MAX_CHUNK))
-
-        for chunk in chunks:
-            self._send_chunk(chunk, final)
+            for i in range(0, len(data), MAX_CHUNK):
+                chunk = data[i:i + MAX_CHUNK]
+                last_one = (i + MAX_CHUNK) >= len(data)
+                self._send_chunk(chunk, last_one and final)
 
     def _read(self, amt=None):
         """
@@ -314,8 +318,7 @@ class Stream(object):
         Implements most of the sending logic.
 
         Takes a single chunk of size at most MAX_CHUNK, wraps it in a frame and
-        sends it. Optionally sets the END_STREAM flag if this is the last chunk
-        (determined by being of size less than MAX_CHUNK) and no more data is
+        sends it. Optionally sets the END_STREAM flag if no more data is
         to be sent.
         """
         # If we don't fit in the connection window, try popping frames off the
@@ -323,19 +326,12 @@ class Stream(object):
         while len(data) > self._out_flow_control_window:
             self._recv_cb()
 
-        # If the length of the data is less than MAX_CHUNK, we're probably
-        # at the end of the file. If this is the end of the data, mark it
-        # as END_STREAM.
-        end_stream = False
-        if len(data) < MAX_CHUNK and final:
-            end_stream = True
-
         # Send the frame and decrement the flow control window.
         with self._conn as conn:
             conn.send_data(
-                stream_id=self.stream_id, data=data, end_stream=end_stream
+                stream_id=self.stream_id, data=data, end_stream=final
             )
         self._send_outstanding_data()
 
-        if end_stream:
+        if final:
             self.local_closed = True
