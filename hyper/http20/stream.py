@@ -115,7 +115,7 @@ class Stream(object):
 
             # If ``final`` is True, send a empty chunk to end stream
             if final:
-                self._send_chunk('', final)
+                self._send_chunk(b'', final)
         elif hasattr(data, 'read'):
             while True:
                 chunk = data.read(MAX_CHUNK)
