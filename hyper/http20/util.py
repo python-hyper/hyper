@@ -52,9 +52,9 @@ def h2_safe_headers(headers):
     """
     stripped = {
         i.lower().strip()
-        for k, v in headers if k == 'connection'
-        for i in v.split(',')
+        for k, v in headers if k == b'connection'
+        for i in v.split(b',')
     }
-    stripped.add('connection')
+    stripped.add(b'connection')
 
     return [header for header in headers if header[0] not in stripped]
