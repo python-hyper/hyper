@@ -1176,27 +1176,27 @@ class TestUtilities(object):
         assert True
 
     def test_stripping_connection_header(self):
-        headers = [('one', 'two'), ('connection', 'close')]
-        stripped = [('one', 'two')]
+        headers = [(b'one', b'two'), (b'connection', b'close')]
+        stripped = [(b'one', b'two')]
 
         assert h2_safe_headers(headers) == stripped
 
     def test_stripping_related_headers(self):
         headers = [
-            ('one', 'two'), ('three', 'four'), ('five', 'six'),
-            ('connection', 'close, three, five')
+            (b'one', b'two'), (b'three', b'four'), (b'five', b'six'),
+            (b'connection', b'close, three, five')
         ]
-        stripped = [('one', 'two')]
+        stripped = [(b'one', b'two')]
 
         assert h2_safe_headers(headers) == stripped
 
     def test_stripping_multiple_connection_headers(self):
         headers = [
-            ('one', 'two'), ('three', 'four'), ('five', 'six'),
-            ('connection', 'close'),
-            ('connection', 'three, five')
+            (b'one', b'two'), (b'three', b'four'), (b'five', b'six'),
+            (b'connection', b'close'),
+            (b'connection', b'three, five')
         ]
-        stripped = [('one', 'two')]
+        stripped = [(b'one', b'two')]
 
         assert h2_safe_headers(headers) == stripped
 
