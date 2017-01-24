@@ -12,6 +12,7 @@ import time
 import hyper
 import hyper.http11.connection
 import pytest
+from mock import patch
 from h2.frame_buffer import FrameBuffer
 from hyper.compat import ssl
 from hyper.contrib import HTTP20Adapter
@@ -34,8 +35,8 @@ if ssl is not None:
     hyper.tls._context.check_hostname = False
     hyper.tls._context.verify_mode = ssl.CERT_NONE
 
-    # Cover our bases because NPN doesn't yet work on all our test platforms.
-    hyper.http20.connection.H2_NPN_PROTOCOLS += ['', None]
+# Cover our bases because NPN doesn't yet work on all our test platforms.
+PROTOCOLS = hyper.http20.connection.H2_NPN_PROTOCOLS + ['', None]
 
 
 def decode_frame(frame_data):
@@ -76,6 +77,7 @@ def receive_preamble(sock):
     return
 
 
+@patch('hyper.http20.connection.H2_NPN_PROTOCOLS', PROTOCOLS)
 class TestHyperIntegration(SocketLevelTest):
     # These are HTTP/2 tests.
     h2 = True
@@ -1031,6 +1033,7 @@ class TestHyperIntegration(SocketLevelTest):
         self.tear_down()
 
 
+@patch('hyper.http20.connection.H2_NPN_PROTOCOLS', PROTOCOLS)
 class TestRequestsAdapter(SocketLevelTest):
     # This uses HTTP/2.
     h2 = True
