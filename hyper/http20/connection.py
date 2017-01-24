@@ -375,7 +375,10 @@ class HTTP20Connection(object):
                 proto = H2C_PROTOCOL
 
             log.debug("Selected NPN protocol: %s", proto)
-            assert proto in H2_NPN_PROTOCOLS or proto == H2C_PROTOCOL
+            assert proto in H2_NPN_PROTOCOLS or proto == H2C_PROTOCOL, (
+                "No suitable protocol found. Supported protocols: %s. "
+                "Check your OpenSSL version."
+            ) % ','.join(H2_NPN_PROTOCOLS + [H2C_PROTOCOL])
 
             self._sock = BufferedSocket(sock, self.network_buffer_size)
 
