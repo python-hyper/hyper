@@ -46,6 +46,9 @@ class HTTPConnection(object):
     :param proxy_port: (optional) The proxy port to connect to. If not provided
         and one also isn't provided in the ``proxy`` parameter, defaults to
         8080.
+    :param socket_timeout: (optional) Specify a timeout for the underlying
+        socket. Defaults to ``None``. For more information on socket timeouts,
+        see :meth:`socket.socket.settimeout`.
     """
     def __init__(self,
                  host,
@@ -56,18 +59,21 @@ class HTTPConnection(object):
                  ssl_context=None,
                  proxy_host=None,
                  proxy_port=None,
+                 socket_timeout=None,
                  **kwargs):
 
         self._host = host
         self._port = port
         self._h1_kwargs = {
             'secure': secure, 'ssl_context': ssl_context,
-            'proxy_host': proxy_host, 'proxy_port': proxy_port
+            'proxy_host': proxy_host, 'proxy_port': proxy_port,
+            'socket_timeout': socket_timeout
         }
         self._h2_kwargs = {
             'window_manager': window_manager, 'enable_push': enable_push,
             'secure': secure, 'ssl_context': ssl_context,
-            'proxy_host': proxy_host, 'proxy_port': proxy_port
+            'proxy_host': proxy_host, 'proxy_port': proxy_port,
+            'socket_timeout': socket_timeout
         }
 
         # Add any unexpected kwargs to both dictionaries.

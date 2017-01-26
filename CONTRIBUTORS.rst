@@ -102,3 +102,7 @@ In no particular order:
 - Huayi Zhang (@irachex)
 
   - Fixed bugs with Python 2.7 compatibility.
+
+- John Wheeler(@johnwheeler)
+
+  - Added socket timeout.
