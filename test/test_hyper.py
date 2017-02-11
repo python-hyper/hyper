@@ -26,6 +26,7 @@ import pytest
 import socket
 import zlib
 from io import BytesIO
+import requests
 
 TEST_DIR = os.path.abspath(os.path.dirname(__file__))
 TEST_CERTS_DIR = os.path.join(TEST_DIR, 'certs')
@@ -1127,6 +1128,22 @@ class TestHTTP20Adapter(object):
             'http',
             cert=CLIENT_PEM_FILE)
         assert conn1 is conn2
+
+    def test_adapter_close(self):
+        """
+        Tests HTTP20Adapter properly closes connections
+        """
+        s = requests.Session()
+        s.mount('https://', HTTP20Adapter())
+        s.close()
+
+    def test_adapter_close_context_manager(self):
+        """
+        Tests HTTP20Adapter properly closes connections via context manager
+        """
+        with requests.Session() as s:
+            a = HTTP20Adapter()
+            s.mount('https://', a)
 
 
 class TestUtilities(object):
