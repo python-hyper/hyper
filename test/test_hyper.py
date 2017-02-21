@@ -959,12 +959,12 @@ class TestServerPush(object):
 
 class TestUpgradingPush(TestServerPush):
     http101 = (b"HTTP/1.1 101 Switching Protocols\r\n"
-        b"Connection: upgrade\r\n"
-        b"Upgrade: h2c\r\n"
-        b"\r\n")
+               b"Connection: upgrade\r\n"
+               b"Upgrade: h2c\r\n"
+               b"\r\n")
 
     def setup_method(self, method):
-        self.frames = [SettingsFrame(0)] # Server-side preface
+        self.frames = [SettingsFrame(0)]  # Server-side preface
         self.encoder = Encoder()
         self.conn = None
 
