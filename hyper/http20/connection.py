@@ -114,6 +114,7 @@ class HTTP20Connection(object):
         else:
             self.secure = False
 
+        self._delay_recv = False
         self._enable_push = enable_push
         self.ssl_context = ssl_context
 
@@ -313,6 +314,9 @@ class HTTP20Connection(object):
             get a response.
         :returns: A :class:`HTTP20Response <hyper.HTTP20Response>` object.
         """
+        if self._delay_recv:
+            self._recv_cb()
+            self._delay_recv = False
         stream = self._get_stream(stream_id)
         return HTTP20Response(stream.getheaders(), stream)
 
@@ -384,7 +388,7 @@ class HTTP20Connection(object):
 
             self._send_preamble()
 
-    def _connect_upgrade(self, sock):
+    def _connect_upgrade(self, sock, no_recv=False):
         """
         Called by the generic HTTP connection when we're being upgraded. Locks
         in a new socket and places the backing state machine into an upgrade
@@ -405,7 +409,10 @@ class HTTP20Connection(object):
         s = self._new_stream(local_closed=True)
         self.recent_stream = s
 
-        self._recv_cb()
+        if no_recv: # To delay I/O operation
+            self._recv_delay = True
+        else:
+            self._recv_cb()
 
     def _send_preamble(self):
         """

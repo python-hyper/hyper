@@ -58,6 +58,7 @@ class HTTP11Connection(object):
     """
 
     version = HTTPVersion.http11
+    _response = None
 
     def __init__(self, host, port=None, secure=None, ssl_context=None,
                  proxy_host=None, proxy_port=None, **kwargs):
@@ -104,6 +105,12 @@ class HTTP11Connection(object):
         #: The object used to perform HTTP/1.1 parsing. Needs to conform to
         #: the standard hyper parsing interface.
         self.parser = Parser()
+
+    def get_pushes(self, stream_id=None, capture_all=False):
+        """
+        Dummy method to trigger h2c upgrade.
+        """
+        self._get_response()
 
     def connect(self):
         """
@@ -189,6 +196,7 @@ class HTTP11Connection(object):
         # Next, send the request body.
         if body:
             self._send_body(body, body_type)
+        self._response = None
 
         return
 
@@ -199,6 +207,14 @@ class HTTP11Connection(object):
         This is an early beta, so the response object is pretty stupid. That's
         ok, we'll fix it later.
         """
+        resp = self._get_response()
+        self._response = None
+        return resp
+
+    def _get_response(self):
+        if self._response is not None:
+            return self._response
+
         headers = HTTPHeaderMap()
 
         response = None
@@ -217,13 +233,14 @@ class HTTP11Connection(object):
                 H2C_PROTOCOL.encode('utf-8') in headers['upgrade']):
             raise HTTPUpgrade(H2C_PROTOCOL, self._sock)
 
-        return HTTP11Response(
+        self._response = HTTP11Response(
             response.status,
             response.msg.tobytes(),
             headers,
             self._sock,
             self
         )
+        return self._response
 
     def _send_headers(self, method, url, headers):
         """
