@@ -972,12 +972,14 @@ class TestUpgradingPush(TestServerPush):
         self.conn = HTTPConnection('www.google.com', enable_push=enable_push)
         self.conn._conn._sock = DummySocket()
         self.conn._conn._sock.buffer = BytesIO(
-            self.http101 + b''.join([frame.serialize() for frame in self.frames])
+            self.http101 + b''.join([frame.serialize()
+                                     for frame in self.frames])
         )
         self.conn.request('GET', '/')
 
 
 class TestResponse(object):
+
     def test_status_is_stripped_from_headers(self):
         headers = HTTPHeaderMap([(':status', '200')])
         resp = HTTP20Response(headers, None)
