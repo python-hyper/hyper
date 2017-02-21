@@ -278,7 +278,8 @@ class HTTP11Connection(object):
         http2_settings = SettingsFrame(0)
         http2_settings.settings[SettingsFrame.INITIAL_WINDOW_SIZE] = 65535
         if self._enable_push is not None:
-            http2_settings.settings[SettingsFrame.ENABLE_PUSH] = int(self._enable_push)
+            http2_settings.settings[
+                SettingsFrame.ENABLE_PUSH] = int(self._enable_push)
         encoded_settings = base64.urlsafe_b64encode(
             http2_settings.serialize_body()
         )
