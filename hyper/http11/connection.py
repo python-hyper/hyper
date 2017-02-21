@@ -212,34 +212,33 @@ class HTTP11Connection(object):
         return resp
 
     def _get_response(self):
-        if self._response is not None:
-            return self._response
+        if self._response is None:
 
-        headers = HTTPHeaderMap()
+            headers = HTTPHeaderMap()
 
-        response = None
-        while response is None:
-            # 'encourage' the socket to receive data.
-            self._sock.fill()
-            response = self.parser.parse_response(self._sock.buffer)
+            response = None
+            while response is None:
+                # 'encourage' the socket to receive data.
+                self._sock.fill()
+                response = self.parser.parse_response(self._sock.buffer)
 
-        for n, v in response.headers:
-            headers[n.tobytes()] = v.tobytes()
+            for n, v in response.headers:
+                headers[n.tobytes()] = v.tobytes()
 
-        self._sock.advance_buffer(response.consumed)
+            self._sock.advance_buffer(response.consumed)
 
-        if (response.status == 101 and
+            if (response.status == 101 and
                 b'upgrade' in headers['connection'] and
-                H2C_PROTOCOL.encode('utf-8') in headers['upgrade']):
-            raise HTTPUpgrade(H2C_PROTOCOL, self._sock)
+                    H2C_PROTOCOL.encode('utf-8') in headers['upgrade']):
+                raise HTTPUpgrade(H2C_PROTOCOL, self._sock)
 
-        self._response = HTTP11Response(
-            response.status,
-            response.msg.tobytes(),
-            headers,
-            self._sock,
-            self
-        )
+            self._response = HTTP11Response(
+                response.status,
+                response.msg.tobytes(),
+                headers,
+                self._sock,
+                self
+            )
         return self._response
 
     def _send_headers(self, method, url, headers):

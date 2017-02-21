@@ -410,7 +410,7 @@ class HTTP20Connection(object):
         self.recent_stream = s
 
         if no_recv:  # To delay I/O operation
-            self._recv_delay = True
+            self._delay_recv = True
         else:
             self._recv_cb()
 
