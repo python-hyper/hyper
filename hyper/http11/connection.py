@@ -78,6 +78,7 @@ class HTTP11Connection(object):
 
         # only send http upgrade headers for non-secure connection
         self._send_http_upgrade = not self.secure
+        self._enable_push = kwargs.get('enable_push')
 
         self.ssl_context = ssl_context
         self._sock = None
@@ -276,6 +277,10 @@ class HTTP11Connection(object):
         # Settings header.
         http2_settings = SettingsFrame(0)
         http2_settings.settings[SettingsFrame.INITIAL_WINDOW_SIZE] = 65535
+        if self._enable_push is not None:
+            http2_settings.settings[SettingsFrame.ENABLE_PUSH] = (
+                int(self._enable_push)
+            )
         encoded_settings = base64.urlsafe_b64encode(
             http2_settings.serialize_body()
         )

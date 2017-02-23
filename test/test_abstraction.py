@@ -19,6 +19,7 @@ class TestHTTPConnection(object):
             'proxy_host': False,
             'proxy_port': False,
             'other_kwarg': True,
+            'enable_push': True,
         }
 
     def test_h2_kwargs(self):

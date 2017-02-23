@@ -9,6 +9,7 @@ from hyperframe.frame import (
     PingFrame, FRAME_MAX_ALLOWED_LEN
 )
 from hpack.hpack_compat import Encoder
+from hyper.common.connection import HTTPConnection
 from hyper.http20.connection import HTTP20Connection
 from hyper.http20.response import HTTP20Response, HTTP20Push
 from hyper.http20.exceptions import ConnectionError, StreamResetError
@@ -731,8 +732,8 @@ class TestServerPush(object):
             frame.flags.add('END_STREAM')
         self.frames.append(frame)
 
-    def request(self):
-        self.conn = HTTP20Connection('www.google.com', enable_push=True)
+    def request(self, enable_push=True):
+        self.conn = HTTP20Connection('www.google.com', enable_push=enable_push)
         self.conn._sock = DummySocket()
         self.conn._sock.buffer = BytesIO(
             b''.join([frame.serialize() for frame in self.frames])
@@ -934,8 +935,7 @@ class TestServerPush(object):
             1, [(':status', '200'), ('content-type', 'text/html')]
         )
 
-        self.request()
-        self.conn._enable_push = False
+        self.request(False)
         self.conn.get_response()
 
         f = RstStreamFrame(2)
@@ -1301,6 +1301,188 @@ class TestUtilities(object):
         # "Read" the GoAway
         with pytest.raises(ConnectionError):
             c._single_read()
+
+
+class TestUpgradingPush(object):
+    http101 = (b"HTTP/1.1 101 Switching Protocols\r\n"
+               b"Connection: upgrade\r\n"
+               b"Upgrade: h2c\r\n"
+               b"\r\n")
+
+    def setup_method(self, method):
+        self.frames = [SettingsFrame(0)]  # Server side preface
+        self.encoder = Encoder()
+        self.conn = None
+
+    def add_push_frame(self, stream_id, promised_stream_id, headers,
+                       end_block=True):
+        frame = PushPromiseFrame(stream_id)
+        frame.promised_stream_id = promised_stream_id
+        frame.data = self.encoder.encode(headers)
+        if end_block:
+            frame.flags.add('END_HEADERS')
+        self.frames.append(frame)
+
+    def add_headers_frame(self, stream_id, headers, end_block=True,
+                          end_stream=False):
+        frame = HeadersFrame(stream_id)
+        frame.data = self.encoder.encode(headers)
+        if end_block:
+            frame.flags.add('END_HEADERS')
+        if end_stream:
+            frame.flags.add('END_STREAM')
+        self.frames.append(frame)
+
+    def add_data_frame(self, stream_id, data, end_stream=False):
+        frame = DataFrame(stream_id)
+        frame.data = data
+        if end_stream:
+            frame.flags.add('END_STREAM')
+        self.frames.append(frame)
+
+    def request(self, enable_push=True):
+        self.conn = HTTPConnection('www.google.com', enable_push=enable_push)
+        self.conn._conn._sock = DummySocket()
+        self.conn._conn._sock.buffer = BytesIO(
+            self.http101 + b''.join([frame.serialize()
+                                     for frame in self.frames])
+        )
+        self.conn.request('GET', '/')
+
+    def assert_response(self):
+        self.response = self.conn.get_response()
+        assert self.response.status == 200
+        assert dict(self.response.headers) == {b'content-type': [b'text/html']}
+
+    def assert_pushes(self):
+        self.pushes = list(self.conn.get_pushes())
+        assert len(self.pushes) == 1
+        assert self.pushes[0].method == b'GET'
+        assert self.pushes[0].scheme == b'http'
+        assert self.pushes[0].authority == b'www.google.com'
+        assert self.pushes[0].path == b'/'
+        expected_headers = {b'accept-encoding': [b'gzip']}
+        assert dict(self.pushes[0].request_headers) == expected_headers
+
+    def assert_push_response(self):
+        push_response = self.pushes[0].get_response()
+        assert push_response.status == 200
+        assert dict(push_response.headers) == {
+            b'content-type': [b'application/javascript']
+        }
+        assert push_response.read() == b'bar'
+
+    def test_promise_before_headers(self):
+        # Current implementation only support get_pushes call
+        # after get_response
+        pass
+
+    def test_promise_after_headers(self):
+        self.add_headers_frame(
+            1, [(':status', '200'), ('content-type', 'text/html')]
+        )
+        self.add_push_frame(
+            1,
+            2,
+            [
+                (':method', 'GET'),
+                (':path', '/'),
+                (':authority', 'www.google.com'),
+                (':scheme', 'http'),
+                ('accept-encoding', 'gzip')
+            ]
+        )
+        self.add_data_frame(1, b'foo', end_stream=True)
+        self.add_headers_frame(
+            2, [(':status', '200'), ('content-type', 'application/javascript')]
+        )
+        self.add_data_frame(2, b'bar', end_stream=True)
+
+        self.request()
+        self.assert_response()
+        assert self.response.read() == b'foo'
+        self.assert_pushes()
+        self.assert_push_response()
+
+    def test_promise_after_data(self):
+        self.add_headers_frame(
+            1, [(':status', '200'), ('content-type', 'text/html')]
+        )
+        self.add_data_frame(1, b'fo')
+        self.add_push_frame(
+            1,
+            2,
+            [
+                (':method', 'GET'),
+                (':path', '/'),
+                (':authority', 'www.google.com'),
+                (':scheme', 'http'),
+                ('accept-encoding', 'gzip')
+            ]
+        )
+        self.add_data_frame(1, b'o', end_stream=True)
+        self.add_headers_frame(
+            2, [(':status', '200'), ('content-type', 'application/javascript')]
+        )
+        self.add_data_frame(2, b'bar', end_stream=True)
+
+        self.request()
+        self.assert_response()
+        assert self.response.read() == b'foo'
+        self.assert_pushes()
+        self.assert_push_response()
+
+    def test_capture_all_promises(self):
+        # Current implementation does not support capture_all
+        # for h2c upgrading connection.
+        pass
+
+    def test_cancel_push(self):
+        self.add_push_frame(
+            1,
+            2,
+            [
+                (':method', 'GET'),
+                (':path', '/'),
+                (':authority', 'www.google.com'),
+                (':scheme', 'http'),
+                ('accept-encoding', 'gzip')
+            ]
+        )
+        self.add_headers_frame(
+            1, [(':status', '200'), ('content-type', 'text/html')]
+        )
+
+        self.request()
+        self.conn.get_response()
+        list(self.conn.get_pushes())[0].cancel()
+
+        f = RstStreamFrame(2)
+        f.error_code = 8
+        assert self.conn._sock.queue[-1] == f.serialize()
+
+    def test_reset_pushed_streams_when_push_disabled(self):
+        self.add_push_frame(
+            1,
+            2,
+            [
+                (':method', 'GET'),
+                (':path', '/'),
+                (':authority', 'www.google.com'),
+                (':scheme', 'http'),
+                ('accept-encoding', 'gzip')
+            ]
+        )
+        self.add_headers_frame(
+            1, [(':status', '200'), ('content-type', 'text/html')]
+        )
+
+        self.request(False)
+        self.conn.get_response()
+
+        f = RstStreamFrame(2)
+        f.error_code = 7
+        assert self.conn._sock.queue[-1].endswith(f.serialize())
 
 
 # Some utility classes for the tests.
