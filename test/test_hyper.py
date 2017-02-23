@@ -48,7 +48,6 @@ def frame_buffer():
 
 
 class TestHyperConnection(object):
-
     def test_connections_accept_hosts_and_ports(self):
         c = HTTP20Connection(host='www.google.com', port=8080)
         assert c.host == 'www.google.com'
@@ -500,7 +499,6 @@ class TestHyperConnection(object):
 
     def test_send_tolerate_peer_gone(self):
         class ErrorSocket(DummySocket):
-
             def sendall(self, data):
                 raise socket.error(errno.EPIPE)
 
@@ -703,7 +701,6 @@ class TestHyperConnection(object):
 
 
 class FrameEncoderMixin(object):
-
     def setup_method(self, method):
         self.frames = []
         self.encoder = Encoder()
@@ -737,7 +734,6 @@ class FrameEncoderMixin(object):
 
 
 class TestServerPush(FrameEncoderMixin):
-
     def request(self, enable_push=True):
         self.conn = HTTP20Connection('www.google.com', enable_push=enable_push)
         self.conn._sock = DummySocket()
@@ -963,7 +959,6 @@ class TestServerPush(FrameEncoderMixin):
 
 
 class TestResponse(object):
-
     def test_status_is_stripped_from_headers(self):
         headers = HTTPHeaderMap([(':status', '200')])
         resp = HTTP20Response(headers, None)
@@ -1114,7 +1109,6 @@ class TestResponse(object):
 
 
 class TestHTTP20Adapter(object):
-
     def test_adapter_reuses_connections(self):
         a = HTTP20Adapter()
         conn1 = a.get_connection('http2bin.org', 80, 'http')
@@ -1138,7 +1132,6 @@ class TestHTTP20Adapter(object):
 
 
 class TestUtilities(object):
-
     def test_combining_repeated_headers(self):
         test_headers = [
             (b'key1', b'val1'),
@@ -1466,7 +1459,6 @@ class TestUpgradingPush(FrameEncoderMixin):
 
 # Some utility classes for the tests.
 class NullEncoder(object):
-
     @staticmethod
     def encode(headers):
 
@@ -1483,7 +1475,6 @@ class NullEncoder(object):
 
 
 class FixedDecoder(object):
-
     def __init__(self, result):
         self.result = result
 
@@ -1492,7 +1483,6 @@ class FixedDecoder(object):
 
 
 class DummySocket(object):
-
     def __init__(self):
         self.queue = []
         self._buffer = BytesIO()
@@ -1530,7 +1520,6 @@ class DummySocket(object):
 
 
 class DummyStream(object):
-
     def __init__(self, data, trailers=None):
         self.data = data
         self.data_frames = []
