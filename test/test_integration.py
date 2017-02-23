@@ -76,10 +76,11 @@ def reusable_frame_buffer(buffer):
 def receive_preamble(sock):
     # Receive the HTTP/2 'preamble'.
     client_preface = b'PRI * HTTP/2.0\r\n\r\nSM\r\n\r\n'
-    timeout = time.time() + 5
     got = b''
-    while len(got) < len(client_preface) and time.time() < timeout:
-        got += sock.recv(len(client_preface) - len(got))
+    while len(got) < len(client_preface):
+        tmp = sock.recv(len(client_preface) - len(got))
+        assert len(tmp) > 0, "unexpected EOF"
+        got += tmp
 
     assert got == client_preface, "client preface mismatch"
 
