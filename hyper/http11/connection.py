@@ -58,6 +58,7 @@ class HTTP11Connection(object):
     """
 
     version = HTTPVersion.http11
+    _response = None
 
     def __init__(self, host, port=None, secure=None, ssl_context=None,
                  proxy_host=None, proxy_port=None, **kwargs):
@@ -78,6 +79,7 @@ class HTTP11Connection(object):
 
         # only send http upgrade headers for non-secure connection
         self._send_http_upgrade = not self.secure
+        self._enable_push = kwargs.get('enable_push')
 
         self.ssl_context = ssl_context
         self._sock = None
@@ -103,6 +105,12 @@ class HTTP11Connection(object):
         #: The object used to perform HTTP/1.1 parsing. Needs to conform to
         #: the standard hyper parsing interface.
         self.parser = Parser()
+
+    def get_pushes(self, stream_id=None, capture_all=False):
+        """
+        Dummy method to trigger h2c upgrade.
+        """
+        self._get_response()
 
     def connect(self):
         """
@@ -188,6 +196,7 @@ class HTTP11Connection(object):
         # Next, send the request body.
         if body:
             self._send_body(body, body_type)
+        self._response = None
 
         return
 
@@ -198,31 +207,39 @@ class HTTP11Connection(object):
         This is an early beta, so the response object is pretty stupid. That's
         ok, we'll fix it later.
         """
-        headers = HTTPHeaderMap()
+        resp = self._get_response()
+        self._response = None
+        return resp
 
-        response = None
-        while response is None:
-            # 'encourage' the socket to receive data.
-            self._sock.fill()
-            response = self.parser.parse_response(self._sock.buffer)
+    def _get_response(self):
+        if self._response is None:
 
-        for n, v in response.headers:
-            headers[n.tobytes()] = v.tobytes()
+            headers = HTTPHeaderMap()
 
-        self._sock.advance_buffer(response.consumed)
+            response = None
+            while response is None:
+                # 'encourage' the socket to receive data.
+                self._sock.fill()
+                response = self.parser.parse_response(self._sock.buffer)
 
-        if (response.status == 101 and
+            for n, v in response.headers:
+                headers[n.tobytes()] = v.tobytes()
+
+            self._sock.advance_buffer(response.consumed)
+
+            if (response.status == 101 and
                 b'upgrade' in headers['connection'] and
-                H2C_PROTOCOL.encode('utf-8') in headers['upgrade']):
-            raise HTTPUpgrade(H2C_PROTOCOL, self._sock)
+                    H2C_PROTOCOL.encode('utf-8') in headers['upgrade']):
+                raise HTTPUpgrade(H2C_PROTOCOL, self._sock)
 
-        return HTTP11Response(
-            response.status,
-            response.msg.tobytes(),
-            headers,
-            self._sock,
-            self
-        )
+            self._response = HTTP11Response(
+                response.status,
+                response.msg.tobytes(),
+                headers,
+                self._sock,
+                self
+            )
+        return self._response
 
     def _send_headers(self, method, url, headers):
         """
@@ -276,6 +293,10 @@ class HTTP11Connection(object):
         # Settings header.
         http2_settings = SettingsFrame(0)
         http2_settings.settings[SettingsFrame.INITIAL_WINDOW_SIZE] = 65535
+        if self._enable_push is not None:
+            http2_settings.settings[SettingsFrame.ENABLE_PUSH] = (
+                int(self._enable_push)
+            )
         encoded_settings = base64.urlsafe_b64encode(
             http2_settings.serialize_body()
         )
@@ -348,7 +369,7 @@ class HTTP11Connection(object):
         Handles streaming a file-like object to the network.
         """
         while True:
-            block = fobj.read(16*1024)
+            block = fobj.read(16 * 1024)
             if not block:
                 break
 

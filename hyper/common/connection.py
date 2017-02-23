@@ -62,7 +62,8 @@ class HTTPConnection(object):
         self._port = port
         self._h1_kwargs = {
             'secure': secure, 'ssl_context': ssl_context,
-            'proxy_host': proxy_host, 'proxy_port': proxy_port
+            'proxy_host': proxy_host, 'proxy_port': proxy_port,
+            'enable_push': enable_push
         }
         self._h2_kwargs = {
             'window_manager': window_manager, 'enable_push': enable_push,
@@ -142,6 +143,22 @@ class HTTPConnection(object):
             # and is half-closed by the client
 
             return self._conn.get_response(1)
+
+    def get_pushes(self, *args, **kwargs):
+        try:
+            return self._conn.get_pushes(*args, **kwargs)
+        except HTTPUpgrade as e:
+            assert e.negotiated == H2C_PROTOCOL
+
+            self._conn = HTTP20Connection(
+                self._host, self._port, **self._h2_kwargs
+            )
+
+            self._conn._connect_upgrade(e.sock, True)
+            # stream id 1 is used by the upgrade request and response
+            # and is half-closed by the client
+
+            return self._conn.get_pushes(*args, **kwargs)
 
     # The following two methods are the implementation of the context manager
     # protocol.

@@ -9,6 +9,7 @@ from hyperframe.frame import (
     PingFrame, FRAME_MAX_ALLOWED_LEN
 )
 from hpack.hpack_compat import Encoder
+from hyper import HTTPConnection
 from hyper.http20.connection import HTTP20Connection
 from hyper.http20.response import HTTP20Response, HTTP20Push
 from hyper.http20.exceptions import ConnectionError, StreamResetError
@@ -731,8 +732,8 @@ class TestServerPush(object):
             frame.flags.add('END_STREAM')
         self.frames.append(frame)
 
-    def request(self):
-        self.conn = HTTP20Connection('www.google.com', enable_push=True)
+    def request(self, enable_push=True):
+        self.conn = HTTP20Connection('www.google.com', enable_push=enable_push)
         self.conn._sock = DummySocket()
         self.conn._sock.buffer = BytesIO(
             b''.join([frame.serialize() for frame in self.frames])
@@ -934,13 +935,13 @@ class TestServerPush(object):
             1, [(':status', '200'), ('content-type', 'text/html')]
         )
 
-        self.request()
-        self.conn._enable_push = False
+        self.request(enable_push=False)
         self.conn.get_response()
 
         f = RstStreamFrame(2)
         f.error_code = 7
-        assert self.conn._sock.queue[-1] == f.serialize()
+        print(self.conn._sock.queue)
+        assert self.conn._sock.queue[-1].endswith(f.serialize())
 
     def test_pushed_requests_ignore_unexpected_headers(self):
         headers = HTTPHeaderMap([
@@ -956,7 +957,29 @@ class TestServerPush(object):
         assert p.request_headers == HTTPHeaderMap([('no', 'no')])
 
 
+class TestUpgradingPush(TestServerPush):
+    http101 = (b"HTTP/1.1 101 Switching Protocols\r\n"
+               b"Connection: upgrade\r\n"
+               b"Upgrade: h2c\r\n"
+               b"\r\n")
+
+    def setup_method(self, method):
+        self.frames = [SettingsFrame(0)]  # Server-side preface
+        self.encoder = Encoder()
+        self.conn = None
+
+    def request(self, enable_push=True):
+        self.conn = HTTPConnection('www.google.com', enable_push=enable_push)
+        self.conn._conn._sock = DummySocket()
+        self.conn._conn._sock.buffer = BytesIO(
+            self.http101 + b''.join([frame.serialize()
+                                     for frame in self.frames])
+        )
+        self.conn.request('GET', '/')
+
+
 class TestResponse(object):
+
     def test_status_is_stripped_from_headers(self):
         headers = HTTPHeaderMap([(':status', '200')])
         resp = HTTP20Response(headers, None)
