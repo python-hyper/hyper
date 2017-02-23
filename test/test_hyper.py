@@ -48,6 +48,7 @@ def frame_buffer():
 
 
 class TestHyperConnection(object):
+
     def test_connections_accept_hosts_and_ports(self):
         c = HTTP20Connection(host='www.google.com', port=8080)
         assert c.host == 'www.google.com'
@@ -499,6 +500,7 @@ class TestHyperConnection(object):
 
     def test_send_tolerate_peer_gone(self):
         class ErrorSocket(DummySocket):
+
             def sendall(self, data):
                 raise socket.error(errno.EPIPE)
 
@@ -700,7 +702,8 @@ class TestHyperConnection(object):
         assert len(originally_sent_data) + 1 == len(c._sock.queue)
 
 
-class TestServerPush(object):
+class FrameEncoderMixin(object):
+
     def setup_method(self, method):
         self.frames = []
         self.encoder = Encoder()
@@ -731,6 +734,9 @@ class TestServerPush(object):
         if end_stream:
             frame.flags.add('END_STREAM')
         self.frames.append(frame)
+
+
+class TestServerPush(FrameEncoderMixin):
 
     def request(self, enable_push=True):
         self.conn = HTTP20Connection('www.google.com', enable_push=enable_push)
@@ -957,6 +963,7 @@ class TestServerPush(object):
 
 
 class TestResponse(object):
+
     def test_status_is_stripped_from_headers(self):
         headers = HTTPHeaderMap([(':status', '200')])
         resp = HTTP20Response(headers, None)
@@ -1107,6 +1114,7 @@ class TestResponse(object):
 
 
 class TestHTTP20Adapter(object):
+
     def test_adapter_reuses_connections(self):
         a = HTTP20Adapter()
         conn1 = a.get_connection('http2bin.org', 80, 'http')
@@ -1130,6 +1138,7 @@ class TestHTTP20Adapter(object):
 
 
 class TestUtilities(object):
+
     def test_combining_repeated_headers(self):
         test_headers = [
             (b'key1', b'val1'),
@@ -1303,44 +1312,14 @@ class TestUtilities(object):
             c._single_read()
 
 
-class TestUpgradingPush(object):
+class TestUpgradingPush(FrameEncoderMixin):
     http101 = (b"HTTP/1.1 101 Switching Protocols\r\n"
                b"Connection: upgrade\r\n"
                b"Upgrade: h2c\r\n"
                b"\r\n")
 
-    def setup_method(self, method):
-        self.frames = [SettingsFrame(0)]  # Server side preface
-        self.encoder = Encoder()
-        self.conn = None
-
-    def add_push_frame(self, stream_id, promised_stream_id, headers,
-                       end_block=True):
-        frame = PushPromiseFrame(stream_id)
-        frame.promised_stream_id = promised_stream_id
-        frame.data = self.encoder.encode(headers)
-        if end_block:
-            frame.flags.add('END_HEADERS')
-        self.frames.append(frame)
-
-    def add_headers_frame(self, stream_id, headers, end_block=True,
-                          end_stream=False):
-        frame = HeadersFrame(stream_id)
-        frame.data = self.encoder.encode(headers)
-        if end_block:
-            frame.flags.add('END_HEADERS')
-        if end_stream:
-            frame.flags.add('END_STREAM')
-        self.frames.append(frame)
-
-    def add_data_frame(self, stream_id, data, end_stream=False):
-        frame = DataFrame(stream_id)
-        frame.data = data
-        if end_stream:
-            frame.flags.add('END_STREAM')
-        self.frames.append(frame)
-
     def request(self, enable_push=True):
+        self.frames = [SettingsFrame(0)] + self.frames  # Server side preface
         self.conn = HTTPConnection('www.google.com', enable_push=enable_push)
         self.conn._conn._sock = DummySocket()
         self.conn._conn._sock.buffer = BytesIO(
@@ -1487,6 +1466,7 @@ class TestUpgradingPush(object):
 
 # Some utility classes for the tests.
 class NullEncoder(object):
+
     @staticmethod
     def encode(headers):
 
@@ -1503,6 +1483,7 @@ class NullEncoder(object):
 
 
 class FixedDecoder(object):
+
     def __init__(self, result):
         self.result = result
 
@@ -1511,6 +1492,7 @@ class FixedDecoder(object):
 
 
 class DummySocket(object):
+
     def __init__(self):
         self.queue = []
         self._buffer = BytesIO()
@@ -1548,6 +1530,7 @@ class DummySocket(object):
 
 
 class DummyStream(object):
+
     def __init__(self, data, trailers=None):
         self.data = data
         self.data_frames = []
