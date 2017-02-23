@@ -1154,8 +1154,6 @@ class TestRequestsAdapter(SocketLevelTest):
 
         monkeypatch.setattr(hyper.http11.connection, 'wrap_socket', wrap)
 
-        send_event = threading.Event()
-
         def socket_handler(listener):
             sock = listener.accept()[0]
 
