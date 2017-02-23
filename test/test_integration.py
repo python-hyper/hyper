@@ -12,6 +12,7 @@ import time
 import hyper
 import hyper.http11.connection
 import pytest
+from contextlib import contextmanager
 from mock import patch
 from h2.frame_buffer import FrameBuffer
 from hyper.compat import ssl
@@ -64,17 +65,30 @@ def frame_buffer():
     return buffer
 
 
+@contextmanager
+def reusable_frame_buffer(buffer):
+    # FrameBuffer does not return new iterator for iteration.
+    data = buffer.data
+    yield buffer
+    buffer.data = data
+
+
 def receive_preamble(sock):
     # Receive the HTTP/2 'preamble'.
-    first = sock.recv(65535)
+    client_preface = b'PRI * HTTP/2.0\r\n\r\nSM\r\n\r\n'
+    timeout = time.time() + 5
+    got = b''
+    while len(got) < len(client_preface) and time.time() < timeout:
+        got += sock.recv(len(client_preface) - len(got))
 
-    # Work around some bugs: if the first message received was only the PRI
-    # string, aim to receive a settings frame as well.
-    if len(first) <= len(b'PRI * HTTP/2.0\r\n\r\nSM\r\n\r\n'):
-        sock.recv(65535)
+    assert got == client_preface, "client preface mismatch"
+
+    # Send server side HTTP/2 preface
     sock.send(SettingsFrame(0).serialize())
-    sock.recv(65535)
-    return
+    # Drain to let the client proceed.
+    # Note that in the lower socket level, this method is not
+    # just doing "receive".
+    return sock.recv(65535)
 
 
 @patch('hyper.http20.connection.H2_NPN_PROTOCOLS', PROTOCOLS)
@@ -138,7 +152,7 @@ class TestHyperIntegration(SocketLevelTest):
         self._start_server(socket_handler)
         conn = self.get_connection()
         conn.connect()
-        send_event.wait()
+        send_event.wait(5)
 
         # Get the chunk of data after the preamble and decode it into frames.
         # We actually expect two, but only the second one contains ENABLE_PUSH.
@@ -242,7 +256,7 @@ class TestHyperIntegration(SocketLevelTest):
             f = SettingsFrame(0)
             sock.send(f.serialize())
 
-            send_event.wait()
+            send_event.wait(5)
             sock.recv(65535)
             sock.close()
 
@@ -260,6 +274,7 @@ class TestHyperIntegration(SocketLevelTest):
     def test_closed_responses_remove_their_streams_from_conn(self):
         self.set_up()
 
+        req_event = threading.Event()
         recv_event = threading.Event()
 
         def socket_handler(listener):
@@ -270,6 +285,8 @@ class TestHyperIntegration(SocketLevelTest):
             receive_preamble(sock)
             sock.recv(65535)
 
+            # Wait for request
+            req_event.wait(5)
             # Now, send the headers for the response.
             f = build_headers_frame([(':status', '200')])
             f.stream_id = 1
@@ -282,6 +299,7 @@ class TestHyperIntegration(SocketLevelTest):
         self._start_server(socket_handler)
         conn = self.get_connection()
         conn.request('GET', '/')
+        req_event.set()
         resp = conn.get_response()
 
         # Close the response.
@@ -296,6 +314,7 @@ class TestHyperIntegration(SocketLevelTest):
     def test_receiving_responses_with_no_body(self):
         self.set_up()
 
+        req_event = threading.Event()
         recv_event = threading.Event()
 
         def socket_handler(listener):
@@ -306,6 +325,8 @@ class TestHyperIntegration(SocketLevelTest):
             receive_preamble(sock)
             sock.recv(65535)
 
+            # Wait for request
+            req_event.wait(5)
             # Now, send the headers for the response. This response has no body
             f = build_headers_frame(
                 [(':status', '204'), ('content-length', '0')]
@@ -321,6 +342,7 @@ class TestHyperIntegration(SocketLevelTest):
         self._start_server(socket_handler)
         conn = self.get_connection()
         conn.request('GET', '/')
+        req_event.set()
         resp = conn.get_response()
 
         # Confirm the status code.
@@ -338,6 +360,7 @@ class TestHyperIntegration(SocketLevelTest):
     def test_receiving_trailers(self):
         self.set_up()
 
+        req_event = threading.Event()
         recv_event = threading.Event()
 
         def socket_handler(listener):
@@ -350,6 +373,8 @@ class TestHyperIntegration(SocketLevelTest):
             receive_preamble(sock)
             sock.recv(65535)
 
+            # Wait for request
+            req_event.wait(5)
             # Now, send the headers for the response.
             f = build_headers_frame(
                 [(':status', '200'), ('content-length', '14')],
@@ -372,12 +397,13 @@ class TestHyperIntegration(SocketLevelTest):
             sock.send(f.serialize())
 
             # Wait for the message from the main thread.
-            recv_event.set()
+            recv_event.wait(5)
             sock.close()
 
         self._start_server(socket_handler)
         conn = self.get_connection()
         conn.request('GET', '/')
+        req_event.set()
         resp = conn.get_response()
 
         # Confirm the status code.
@@ -396,13 +422,14 @@ class TestHyperIntegration(SocketLevelTest):
         assert len(resp.trailers) == 2
 
         # Awesome, we're done now.
-        recv_event.wait(5)
+        recv_event.set()
 
         self.tear_down()
 
     def test_receiving_trailers_before_reading(self):
         self.set_up()
 
+        req_event = threading.Event()
         recv_event = threading.Event()
         wait_event = threading.Event()
 
@@ -416,6 +443,8 @@ class TestHyperIntegration(SocketLevelTest):
             receive_preamble(sock)
             sock.recv(65535)
 
+            # Wait for request
+            req_event.wait(5)
             # Now, send the headers for the response.
             f = build_headers_frame(
                 [(':status', '200'), ('content-length', '14')],
@@ -449,6 +478,7 @@ class TestHyperIntegration(SocketLevelTest):
         self._start_server(socket_handler)
         conn = self.get_connection()
         conn.request('GET', '/')
+        req_event.set()
         resp = conn.get_response()
 
         # Confirm the status code.
@@ -647,6 +677,7 @@ class TestHyperIntegration(SocketLevelTest):
         """
         self.set_up()
 
+        req_event = threading.Event()
         recv_event = threading.Event()
 
         def socket_handler(listener):
@@ -657,6 +688,8 @@ class TestHyperIntegration(SocketLevelTest):
             receive_preamble(sock)
             sock.recv(65535)
 
+            # Wait for request
+            req_event.wait(5)
             # Now, send the headers for the response. This response has no
             # body.
             f = build_headers_frame(
@@ -673,6 +706,7 @@ class TestHyperIntegration(SocketLevelTest):
         self._start_server(socket_handler)
         conn = self.get_connection()
         stream_id = conn.request('GET', '/')
+        req_event.set()
 
         # Now, trigger the RST_STREAM frame by closing the stream.
         conn._send_rst_frame(stream_id, 0)
@@ -696,6 +730,7 @@ class TestHyperIntegration(SocketLevelTest):
         """
         self.set_up()
 
+        req_event = threading.Event()
         recv_event = threading.Event()
 
         def socket_handler(listener):
@@ -706,6 +741,8 @@ class TestHyperIntegration(SocketLevelTest):
             receive_preamble(sock)
             sock.recv(65535)
 
+            # Wait for request
+            req_event.wait(5)
             # Now, send two RST_STREAM frames.
             for _ in range(0, 2):
                 f = RstStreamFrame(1)
@@ -718,6 +755,7 @@ class TestHyperIntegration(SocketLevelTest):
         self._start_server(socket_handler)
         conn = self.get_connection()
         conn.request('GET', '/')
+        req_event.set()
 
         # Now, eat the Rst frames. These should not cause an exception.
         conn._single_read()
@@ -737,6 +775,7 @@ class TestHyperIntegration(SocketLevelTest):
     def test_read_chunked_http2(self):
         self.set_up()
 
+        req_event = threading.Event()
         recv_event = threading.Event()
         wait_event = threading.Event()
 
@@ -748,6 +787,8 @@ class TestHyperIntegration(SocketLevelTest):
             receive_preamble(sock)
             sock.recv(65535)
 
+            # Wait for request
+            req_event.wait(5)
             # Now, send the headers for the response. This response has a body.
             f = build_headers_frame([(':status', '200')])
             f.stream_id = 1
@@ -777,6 +818,7 @@ class TestHyperIntegration(SocketLevelTest):
         self._start_server(socket_handler)
         conn = self.get_connection()
         conn.request('GET', '/')
+        req_event.set()
         resp = conn.get_response()
 
         # Confirm the status code.
@@ -805,6 +847,7 @@ class TestHyperIntegration(SocketLevelTest):
     def test_read_delayed(self):
         self.set_up()
 
+        req_event = threading.Event()
         recv_event = threading.Event()
         wait_event = threading.Event()
 
@@ -816,6 +859,8 @@ class TestHyperIntegration(SocketLevelTest):
             receive_preamble(sock)
             sock.recv(65535)
 
+            # Wait for request
+            req_event.wait(5)
             # Now, send the headers for the response. This response has a body.
             f = build_headers_frame([(':status', '200')])
             f.stream_id = 1
@@ -845,6 +890,7 @@ class TestHyperIntegration(SocketLevelTest):
         self._start_server(socket_handler)
         conn = self.get_connection()
         conn.request('GET', '/')
+        req_event.set()
         resp = conn.get_response()
 
         # Confirm the status code.
@@ -958,6 +1004,8 @@ class TestHyperIntegration(SocketLevelTest):
 
             receive_preamble(sock)
 
+            # Wait for the message from the main thread.
+            send_event.wait()
             # Send the headers for the response. This response has no body.
             f = build_headers_frame(
                 [(':status', '200'), ('content-length', '0')]
@@ -965,9 +1013,6 @@ class TestHyperIntegration(SocketLevelTest):
             f.flags.add('END_STREAM')
             f.stream_id = 1
             sock.sendall(f.serialize())
-
-            # Wait for the message from the main thread.
-            send_event.wait()
             sock.close()
 
         self._start_server(socket_handler)
@@ -996,7 +1041,7 @@ class TestHyperIntegration(SocketLevelTest):
                 data += sock.recv(65535)
             assert b'upgrade: h2c\r\n' in data
 
-            send_event.wait()
+            send_event.wait(5)
 
             # We need to send back a response.
             resp = (
@@ -1038,7 +1083,7 @@ class TestRequestsAdapter(SocketLevelTest):
     # This uses HTTP/2.
     h2 = True
 
-    def test_adapter_received_values(self, monkeypatch):
+    def test_adapter_received_values(self, monkeypatch, frame_buffer):
         self.set_up()
 
         # We need to patch the ssl_wrap_socket method to ensure that we
@@ -1051,17 +1096,20 @@ class TestRequestsAdapter(SocketLevelTest):
 
         monkeypatch.setattr(hyper.http11.connection, 'wrap_socket', wrap)
 
-        data = []
-        send_event = threading.Event()
-
         def socket_handler(listener):
             sock = listener.accept()[0]
 
             # Do the handshake: conn header, settings, send settings, recv ack.
-            receive_preamble(sock)
+            frame_buffer.add_data(receive_preamble(sock))
 
             # Now expect some data. One headers frame.
-            data.append(sock.recv(65535))
+            req_wait = True
+            while req_wait:
+                frame_buffer.add_data(sock.recv(65535))
+                with reusable_frame_buffer(frame_buffer) as fr:
+                    for f in fr:
+                        if isinstance(f, HeadersFrame):
+                            req_wait = False
 
             # Respond!
             h = HeadersFrame(1)
@@ -1078,8 +1126,6 @@ class TestRequestsAdapter(SocketLevelTest):
             d.data = b'1234567890' * 2
             d.flags.add('END_STREAM')
             sock.send(d.serialize())
-
-            send_event.wait(5)
             sock.close()
 
         self._start_server(socket_handler)
@@ -1093,11 +1139,9 @@ class TestRequestsAdapter(SocketLevelTest):
         assert r.headers[b'Content-Type'] == b'not/real'
         assert r.content == b'1234567890' * 2
 
-        send_event.set()
-
         self.tear_down()
 
-    def test_adapter_sending_values(self, monkeypatch):
+    def test_adapter_sending_values(self, monkeypatch, frame_buffer):
         self.set_up()
 
         # We need to patch the ssl_wrap_socket method to ensure that we
@@ -1110,17 +1154,22 @@ class TestRequestsAdapter(SocketLevelTest):
 
         monkeypatch.setattr(hyper.http11.connection, 'wrap_socket', wrap)
 
-        data = []
+        send_event = threading.Event()
 
         def socket_handler(listener):
             sock = listener.accept()[0]
 
             # Do the handshake: conn header, settings, send settings, recv ack.
-            receive_preamble(sock)
+            frame_buffer.add_data(receive_preamble(sock))
 
             # Now expect some data. One headers frame and one data frame.
-            data.append(sock.recv(65535))
-            data.append(sock.recv(65535))
+            req_wait = True
+            while req_wait:
+                frame_buffer.add_data(sock.recv(65535))
+                with reusable_frame_buffer(frame_buffer) as fr:
+                    for f in fr:
+                        if isinstance(f, DataFrame):
+                            req_wait = False
 
             # Respond!
             h = HeadersFrame(1)
@@ -1137,7 +1186,6 @@ class TestRequestsAdapter(SocketLevelTest):
             d.data = b'1234567890' * 2
             d.flags.add('END_STREAM')
             sock.send(d.serialize())
-
             sock.close()
 
         self._start_server(socket_handler)
@@ -1152,11 +1200,10 @@ class TestRequestsAdapter(SocketLevelTest):
         # Assert about the sent values.
         assert r.status_code == 200
 
-        f = decode_frame(data[0])
-        assert isinstance(f, HeadersFrame)
+        frames = list(frame_buffer)
+        assert isinstance(frames[-2], HeadersFrame)
 
-        f = decode_frame(data[1])
-        assert isinstance(f, DataFrame)
-        assert f.data == b'hi there'
+        assert isinstance(frames[-1], DataFrame)
+        assert frames[-1].data == b'hi there'
 
         self.tear_down()
