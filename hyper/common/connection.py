@@ -62,7 +62,8 @@ class HTTPConnection(object):
         self._port = port
         self._h1_kwargs = {
             'secure': secure, 'ssl_context': ssl_context,
-            'proxy_host': proxy_host, 'proxy_port': proxy_port
+            'proxy_host': proxy_host, 'proxy_port': proxy_port,
+            'enable_push': enable_push
         }
         self._h2_kwargs = {
             'window_manager': window_manager, 'enable_push': enable_push,
