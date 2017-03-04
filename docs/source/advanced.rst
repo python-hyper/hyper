@@ -71,7 +71,14 @@ SSL/TLS Certificate Verification
 
 By default, all HTTP/2 connections are made over TLS, and ``hyper`` bundles
 certificate authorities that it uses to verify the offered TLS certificates.
-Currently certificate verification cannot be disabled.
+
+You can change how certificates are verified by passing your own
+``ssl_context`` to the :class:`HTTPConnection <hyper.HTTPConnection>`.
+For example, this will disable verification altogether::
+
+    import ssl
+    context = ssl.SSLContext(ssl.PROTOCOL_TLSv1_2)
+    conn = HTTPConnection('http2bin.org:443', ssl_context=context)
 
 Streaming Uploads
 -----------------
