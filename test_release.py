@@ -15,7 +15,8 @@ import logging
 import random
 import requests
 import threading
-from hyper import HTTP20Connection, HTTP11Connection
+from hyper import HTTP20Connection, HTTP11Connection, HTTPConnection
+from hyper.common.util import HTTPVersion
 from hyper.contrib import HTTP20Adapter
 
 logging.basicConfig(level=logging.INFO)
@@ -149,3 +150,19 @@ class TestHyperActuallyWorks(object):
 
             assert resp.status == 200
             assert resp.read()
+
+    def test_hitting_nghttp2_org_via_h2c_upgrade(self):
+        """
+        This tests our support for cleartext HTTP/1.1 -> HTTP/2 upgrade
+        against the most common open source HTTP/2 server implementation.
+        """
+        c = HTTPConnection('nghttp2.org:80')
+
+        # Make the request.
+        c.request('GET', '/')
+        response = c.get_response()
+
+        # Check that the response is OK and that we did upgrade to HTTP/2.
+        assert response.status == 200
+        assert response.read()
+        assert response.version == HTTPVersion.http20

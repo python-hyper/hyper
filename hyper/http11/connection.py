@@ -212,8 +212,14 @@ class HTTP11Connection(object):
 
         self._sock.advance_buffer(response.consumed)
 
+        # Check for a successful "switching protocols to h2c" response.
+        # "Connection: upgrade" is not strictly necessary on the receiving end,
+        # but we want to fail fast on broken servers or intermediaries:
+        # https://github.com/Lukasa/hyper/issues/312.
+        # Connection options are case-insensitive, while upgrade tokens are
+        # case-sensitive: https://github.com/httpwg/http11bis/issues/8.
         if (response.status == 101 and
-                b'upgrade' in headers['connection'] and
+                b'upgrade' in map(bytes.lower, headers['connection']) and
                 H2C_PROTOCOL.encode('utf-8') in headers['upgrade']):
             raise HTTPUpgrade(H2C_PROTOCOL, self._sock)
 
