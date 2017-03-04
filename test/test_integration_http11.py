@@ -282,7 +282,7 @@ class TestHyperH11Integration(SocketLevelTest):
                 b'HTTP/1.1 101 Upgrade\r\n'
                 b'Server: socket-level-server\r\n'
                 b'Content-Length: 0\r\n'
-                b'Connection: upgrade\r\n'
+                b'Connection: Upgrade\r\n'
                 b'Upgrade: h2c\r\n'
                 b'\r\n'
             )
