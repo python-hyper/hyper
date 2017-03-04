@@ -77,7 +77,7 @@ You can change how certificates are verified by passing your own
 For example, this will disable verification altogether::
 
     import ssl
-    context = ssl.SSLContext(ssl.PROTOCOL_TLSv1_2)
+    context = ssl.SSLContext(ssl.PROTOCOL_SSLv23)
     conn = HTTPConnection('http2bin.org:443', ssl_context=context)
 
 Streaming Uploads
