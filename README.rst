@@ -4,7 +4,7 @@ Hyper: HTTP/2 Client for Python
 
 .. image:: https://raw.github.com/Lukasa/hyper/development/docs/source/images/hyper.png
 
-.. image:: https://travis-ci.org/Lukasa/hyper.png?branch=master
+.. image:: https://travis-ci.org/Lukasa/hyper.svg?branch=master
     :target: https://travis-ci.org/Lukasa/hyper
 
 HTTP is changing under our feet. HTTP/1.1, our old friend, is being
