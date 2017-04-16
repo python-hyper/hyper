@@ -391,6 +391,7 @@ class HTTP11Connection(object):
     # The following two methods are the implementation of the context manager
     # protocol.
     def __enter__(self):
+        self.connect()
         return self
 
     def __exit__(self, type, value, tb):
