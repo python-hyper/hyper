@@ -6,6 +6,7 @@ test/integration
 This file defines integration-type tests for hyper. These are still not fully
 hitting the network, so that's alright.
 """
+import base64
 import requests
 import threading
 import time
@@ -17,7 +18,8 @@ from mock import patch
 from h2.frame_buffer import FrameBuffer
 from hyper.compat import ssl
 from hyper.contrib import HTTP20Adapter
-from hyper.common.util import HTTPVersion
+from hyper.common.exceptions import ProxyError
+from hyper.common.util import HTTPVersion, to_bytestring
 from hyperframe.frame import (
     Frame, SettingsFrame, WindowUpdateFrame, DataFrame, HeadersFrame,
     GoAwayFrame, RstStreamFrame
@@ -28,7 +30,7 @@ from hpack.huffman_constants import (
     REQUEST_CODES, REQUEST_CODES_LENGTH
 )
 from hyper.http20.exceptions import ConnectionError, StreamResetError
-from server import SocketLevelTest
+from server import SocketLevelTest, SocketSecuritySetting
 
 # Turn off certificate verification for the tests.
 if ssl is not None:
@@ -620,8 +622,8 @@ class TestHyperIntegration(SocketLevelTest):
         recv_event.set()
         self.tear_down()
 
-    def test_proxy_connection(self):
-        self.set_up(proxy=True)
+    def test_insecure_proxy_connection(self):
+        self.set_up(secure=False, proxy=True)
 
         data = []
         req_event = threading.Event()
@@ -668,6 +670,107 @@ class TestHyperIntegration(SocketLevelTest):
         assert r.headers[b'content-type'] == [b'not/real']
 
         assert r.read() == b'thisisaproxy'
+
+        recv_event.set()
+        self.tear_down()
+
+    def test_secure_proxy_connection(self):
+        self.set_up(secure=SocketSecuritySetting.SECURE_NO_AUTO_WRAP,
+                    proxy=True)
+
+        data = []
+        connect_request_headers = []
+        req_event = threading.Event()
+        recv_event = threading.Event()
+
+        def socket_handler(listener):
+            sock = listener.accept()[0]
+
+            # Read the CONNECT request
+            while not b''.join(connect_request_headers).endswith(b'\r\n\r\n'):
+                connect_request_headers.append(sock.recv(65535))
+
+            sock.send(b'HTTP/1.0 200 Connection established\r\n\r\n')
+
+            sock = self.server_thread.wrap_socket(sock)
+
+            receive_preamble(sock)
+
+            data.append(sock.recv(65535))
+            req_event.wait(5)
+
+            h = HeadersFrame(1)
+            h.data = self.get_encoder().encode(
+                [
+                    (':status', 200),
+                    ('content-type', 'not/real'),
+                    ('content-length', 12),
+                    ('server', 'socket-level-server')
+                ]
+            )
+            h.flags.add('END_HEADERS')
+            sock.send(h.serialize())
+
+            d = DataFrame(1)
+            d.data = b'thisisaproxy'
+            d.flags.add('END_STREAM')
+            sock.send(d.serialize())
+
+            recv_event.wait(5)
+            sock.close()
+
+        self._start_server(socket_handler)
+        c = self.get_connection()
+        c.request('GET', '/')
+        req_event.set()
+        r = c.get_response()
+
+        assert r.status == 200
+        assert len(r.headers) == 3
+        assert r.headers[b'server'] == [b'socket-level-server']
+        assert r.headers[b'content-length'] == [b'12']
+        assert r.headers[b'content-type'] == [b'not/real']
+
+        assert r.read() == b'thisisaproxy'
+
+        assert (to_bytestring(
+            'CONNECT %s:%d HTTP/1.1\r\n\r\n' % (c.host, c.port)) ==
+                b''.join(connect_request_headers))
+
+        recv_event.set()
+        self.tear_down()
+
+    def test_failing_proxy_tunnel(self):
+        self.set_up(secure=SocketSecuritySetting.SECURE_NO_AUTO_WRAP,
+                    proxy=True)
+
+        recv_event = threading.Event()
+
+        def socket_handler(listener):
+            sock = listener.accept()[0]
+
+            # Read the CONNECT request
+            connect_data = b''
+            while not connect_data.endswith(b'\r\n\r\n'):
+                connect_data += sock.recv(65535)
+
+            sock.send(b'HTTP/1.0 407 Proxy Authentication Required\r\n\r\n')
+
+            recv_event.wait(5)
+            sock.close()
+
+        self._start_server(socket_handler)
+        conn = self.get_connection()
+
+        try:
+            conn.connect()
+            assert False, "Exception should have been thrown"
+        except ProxyError as e:
+            assert e.response.status == 407
+            assert e.response.reason == b'Proxy Authentication Required'
+
+        # Confirm the connection is closed.
+        assert conn._sock is None
 
         recv_event.set()
         self.tear_down()
@@ -1228,4 +1331,171 @@ class TestRequestsAdapter(SocketLevelTest):
         assert frames[-1].data == b'hi there'
 
         recv_event.set()
+        self.tear_down()
+
+    def test_adapter_uses_proxies(self):
+        self.set_up(secure=SocketSecuritySetting.SECURE_NO_AUTO_WRAP,
+                    proxy=True)
+
+        send_event = threading.Event()
+
+        def socket_handler(listener):
+            sock = listener.accept()[0]
+
+            # Read the CONNECT request
+            connect_data = b''
+            while not connect_data.endswith(b'\r\n\r\n'):
+                connect_data += sock.recv(65535)
+
+            sock.send(b'HTTP/1.0 200 Connection established\r\n\r\n')
+
+            sock = self.server_thread.wrap_socket(sock)
+
+            # We should get the initial request.
+            data = b''
+            while not data.endswith(b'\r\n\r\n'):
+                data += sock.recv(65535)
+
+            send_event.wait()
+
+            # We need to send back a response.
+            resp = (
+                b'HTTP/1.1 201 No Content\r\n'
+                b'Server: socket-level-server\r\n'
+                b'Content-Length: 0\r\n'
+                b'Connection: close\r\n'
+                b'\r\n'
+            )
+            sock.send(resp)
+
+            sock.close()
+
+        self._start_server(socket_handler)
+        s = requests.Session()
+        s.proxies = {'all': 'http://%s:%s' % (self.host, self.port)}
+        s.mount('https://', HTTP20Adapter())
+        send_event.set()
+        r = s.get('https://foobar/')
+
+        assert r.status_code == 201
+        assert len(r.headers) == 3
+        assert r.headers[b'server'] == b'socket-level-server'
+        assert r.headers[b'content-length'] == b'0'
+        assert r.headers[b'connection'] == b'close'
+
+        assert r.content == b''
+
+        self.tear_down()
+
+    def test_adapter_uses_proxy_auth_for_secure(self):
+        self.set_up(secure=SocketSecuritySetting.SECURE_NO_AUTO_WRAP,
+                    proxy=True)
+
+        send_event = threading.Event()
+
+        def socket_handler(listener):
+            sock = listener.accept()[0]
+
+            # Read the CONNECT request
+            connect_data = b''
+            while not connect_data.endswith(b'\r\n\r\n'):
+                connect_data += sock.recv(65535)
+
+            # Ensure that request contains the proper Proxy-Authorization
+            # header
+            assert (b'CONNECT foobar:443 HTTP/1.1\r\n'
+                    b'Proxy-Authorization: Basic ' +
+                    base64.b64encode(b'foo:bar') + b'\r\n'
+                    b'\r\n') == connect_data
+
+            sock.send(b'HTTP/1.0 200 Connection established\r\n\r\n')
+
+            sock = self.server_thread.wrap_socket(sock)
+
+            # We should get the initial request.
+            data = b''
+            while not data.endswith(b'\r\n\r\n'):
+                data += sock.recv(65535)
+            # Ensure that proxy headers are not passed via tunnelled connection
+            assert b'Proxy-Authorization:' not in data
+
+            send_event.wait()
+
+            # We need to send back a response.
+            resp = (
+                b'HTTP/1.1 201 No Content\r\n'
+                b'Server: socket-level-server\r\n'
+                b'Content-Length: 0\r\n'
+                b'Connection: close\r\n'
+                b'\r\n'
+            )
+            sock.send(resp)
+
+            sock.close()
+
+        self._start_server(socket_handler)
+        s = requests.Session()
+        s.proxies = {'all': 'http://foo:bar@%s:%s' % (self.host, self.port)}
+        s.mount('https://', HTTP20Adapter())
+        send_event.set()
+        r = s.get('https://foobar/')
+
+        assert r.status_code == 201
+        assert len(r.headers) == 3
+        assert r.headers[b'server'] == b'socket-level-server'
+        assert r.headers[b'content-length'] == b'0'
+        assert r.headers[b'connection'] == b'close'
+
+        assert r.content == b''
+
+        self.tear_down()
+
+    def test_adapter_uses_proxy_auth_for_insecure(self):
+        self.set_up(secure=False, proxy=True)
+
+        send_event = threading.Event()
+
+        def socket_handler(listener):
+            sock = listener.accept()[0]
+
+            # We should get the initial request.
+            connect_data = b''
+            while not connect_data.endswith(b'\r\n\r\n'):
+                connect_data += sock.recv(65535)
+
+            # Ensure that request contains the proper Proxy-Authorization
+            # header
+            assert (b'Proxy-Authorization: Basic ' +
+                    base64.b64encode(b'foo:bar') + b'\r\n'
+                    ).lower() in connect_data.lower()
+
+            send_event.wait()
+
+            # We need to send back a response.
+            resp = (
+                b'HTTP/1.1 201 No Content\r\n'
+                b'Server: socket-level-server\r\n'
+                b'Content-Length: 0\r\n'
+                b'Connection: close\r\n'
+                b'\r\n'
+            )
+            sock.send(resp)
+
+            sock.close()
+
+        self._start_server(socket_handler)
+        s = requests.Session()
+        s.proxies = {'all': 'http://foo:bar@%s:%s' % (self.host, self.port)}
+        s.mount('http://', HTTP20Adapter())
+        send_event.set()
+        r = s.get('http://foobar/')
+
+        assert r.status_code == 201
+        assert len(r.headers) == 3
+        assert r.headers[b'server'] == b'socket-level-server'
+        assert r.headers[b'content-length'] == b'0'
+        assert r.headers[b'connection'] == b'close'
+
+        assert r.content == b''
+
         self.tear_down()

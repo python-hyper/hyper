@@ -10,7 +10,7 @@ class TestHTTPConnection(object):
         c = HTTPConnection(
             'test', 443, secure=False, window_manager=True, enable_push=True,
             ssl_context=False, proxy_host=False, proxy_port=False,
-            other_kwarg=True
+            proxy_headers=False, other_kwarg=True
         )
 
         assert c._h1_kwargs == {
@@ -18,6 +18,7 @@ class TestHTTPConnection(object):
             'ssl_context': False,
             'proxy_host': False,
             'proxy_port': False,
+            'proxy_headers': False,
             'other_kwarg': True,
             'enable_push': True,
         }
@@ -26,7 +27,7 @@ class TestHTTPConnection(object):
         c = HTTPConnection(
             'test', 443, secure=False, window_manager=True, enable_push=True,
             ssl_context=True, proxy_host=False, proxy_port=False,
-            other_kwarg=True
+            proxy_headers=False, other_kwarg=True
         )
 
         assert c._h2_kwargs == {
@@ -36,6 +37,7 @@ class TestHTTPConnection(object):
             'ssl_context': True,
             'proxy_host': False,
             'proxy_port': False,
+            'proxy_headers': False,
             'other_kwarg': True,
         }
 

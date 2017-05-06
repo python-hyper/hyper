@@ -27,7 +27,8 @@ class HTTP11Response(object):
 
     version = HTTPVersion.http11
 
-    def __init__(self, code, reason, headers, sock, connection=None):
+    def __init__(self, code, reason, headers, sock, connection=None,
+                 request_method=None):
         #: The reason phrase returned by the server.
         self.reason = reason
 
@@ -62,11 +63,19 @@ class HTTP11Response(object):
             b'chunked' in self.headers.get(b'transfer-encoding', [])
         )
 
-        # One of the following must be true: we must expect that the connection
-        # will be closed following the body, or that a content-length was sent,
-        # or that we're getting a chunked response.
-        # FIXME: Remove naked assert, replace with something better.
-        assert self._expect_close or self._length is not None or self._chunked
+        # When content-length is absent and response is not chunked,
+        # body length is determined by connection closure.
+        # https://tools.ietf.org/html/rfc7230#section-3.3.3
+        if self._length is None and not self._chunked:
+            # 200 response to a CONNECT request means that proxy has connected
+            # to the target host and it will start forwarding everything sent
+            # from the either side. Thus we must not try to read body of this
+            # response. Socket of current connection will be taken over by
+            # the code that has sent a CONNECT request.
+            if not (request_method is not None and
+                    b'CONNECT' == request_method.upper() and
+                    code == 200):
+                self._expect_close = True
 
         # This object is used for decompressing gzipped request bodies. Right
         # now we only support gzip because that's all the RFC mandates of us.

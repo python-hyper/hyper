@@ -18,6 +18,7 @@ from ..common.util import (
     to_host_port_tuple, to_native_string, to_bytestring, HTTPVersion
 )
 from ..compat import unicode, bytes
+from ..http11.connection import _create_tunnel
 from .stream import Stream
 from .response import HTTP20Response, HTTP20Push
 from .window import FlowControlManager
@@ -29,6 +30,7 @@ import logging
 import socket
 import time
 import threading
+import itertools
 
 log = logging.getLogger(__name__)
 
@@ -90,15 +92,17 @@ class HTTP20Connection(object):
     :param proxy_host: (optional) The proxy to connect to.  This can be an IP
         address or a host name and may include a port.
     :param proxy_port: (optional) The proxy port to connect to. If not provided
-        and one also isn't provided in the ``proxy`` parameter, defaults to
-        8080.
+        and one also isn't provided in the ``proxy_host`` parameter, defaults
+        to 8080.
+    :param proxy_headers: (optional) The headers to send to a proxy.
     """
 
     version = HTTPVersion.http20
 
     def __init__(self, host, port=None, secure=None, window_manager=None,
                  enable_push=False, ssl_context=None, proxy_host=None,
-                 proxy_port=None, force_proto=None, **kwargs):
+                 proxy_port=None, force_proto=None, proxy_headers=None,
+                 **kwargs):
         """
         Creates an HTTP/2 connection to a specific server.
         """
@@ -118,16 +122,16 @@ class HTTP20Connection(object):
         self.ssl_context = ssl_context
 
         # Setup proxy details if applicable.
-        if proxy_host:
-            if proxy_port is None:
-                self.proxy_host, self.proxy_port = to_host_port_tuple(
-                    proxy_host, default_port=8080
-                )
-            else:
-                self.proxy_host, self.proxy_port = proxy_host, proxy_port
+        if proxy_host and proxy_port is None:
+            self.proxy_host, self.proxy_port = to_host_port_tuple(
+                proxy_host, default_port=8080
+            )
+        elif proxy_host:
+            self.proxy_host, self.proxy_port = proxy_host, proxy_port
         else:
             self.proxy_host = None
             self.proxy_port = None
+        self.proxy_headers = proxy_headers
 
         #: The size of the in-memory buffer used to store data from the
         #: network. This is used as a performance optimisation. Increase buffer
@@ -272,10 +276,18 @@ class HTTP20Connection(object):
         # being sent in the wrong order, which can lead to the out-of-order
         # messages with lower stream IDs being closed prematurely.
         with self._write_lock:
+            # Unlike HTTP/1.1, HTTP/2 (according to RFC 7540) doesn't require
+            # to use absolute URI when proxying.
+
             stream_id = self.putrequest(method, url)
 
             default_headers = (':method', ':scheme', ':authority', ':path')
-            for name, value in headers.items():
+            all_headers = headers.items()
+            if self.proxy_host and not self.secure:
+                proxy_headers = self.proxy_headers or {}
+                all_headers = itertools.chain(all_headers,
+                                              proxy_headers.items())
+            for name, value in all_headers:
                 is_default = to_native_string(name) in default_headers
                 self.putheader(name, value, stream_id, replace=is_default)
 
@@ -358,18 +370,25 @@ class HTTP20Connection(object):
             if self._sock is not None:
                 return
 
-            if not self.proxy_host:
-                host = self.host
-                port = self.port
+            if self.proxy_host and self.secure:
+                # Send http CONNECT method to a proxy and acquire the socket
+                sock = _create_tunnel(
+                    self.proxy_host,
+                    self.proxy_port,
+                    self.host,
+                    self.port,
+                    proxy_headers=self.proxy_headers
+                )
+            elif self.proxy_host:
+                # Simple http proxy
+                sock = socket.create_connection(
+                    (self.proxy_host, self.proxy_port)
+                )
             else:
-                host = self.proxy_host
-                port = self.proxy_port
-
-            sock = socket.create_connection((host, port))
+                sock = socket.create_connection((self.host, self.port))
 
             if self.secure:
-                assert not self.proxy_host, "Proxy with HTTPS not supported."
-                sock, proto = wrap_socket(sock, host, self.ssl_context,
+                sock, proto = wrap_socket(sock, self.host, self.ssl_context,
                                           force_proto=self.force_proto)
             else:
                 proto = H2C_PROTOCOL
