@@ -18,7 +18,7 @@ from hyper.http20.util import (
 )
 from hyper.common.headers import HTTPHeaderMap
 from hyper.common.util import to_bytestring, HTTPVersion
-from hyper.compat import zlib_compressobj, is_py2
+from hyper.compat import zlib_compressobj, is_py2, ssl
 from hyper.contrib import HTTP20Adapter
 import hyper.http20.errors as errors
 import errno
@@ -31,6 +31,7 @@ from io import BytesIO
 TEST_DIR = os.path.abspath(os.path.dirname(__file__))
 TEST_CERTS_DIR = os.path.join(TEST_DIR, 'certs')
 CLIENT_PEM_FILE = os.path.join(TEST_CERTS_DIR, 'nopassword.pem')
+SERVER_CERT_FILE = os.path.join(TEST_CERTS_DIR, 'server.crt')
 
 
 def decode_frame(frame_data):
@@ -1129,6 +1130,29 @@ class TestHTTP20Adapter(object):
             'http',
             cert=CLIENT_PEM_FILE)
         assert conn1 is conn2
+        assert conn1._conn.ssl_context.check_hostname
+        assert conn1._conn.ssl_context.verify_mode == ssl.CERT_REQUIRED
+
+    def test_adapter_respects_disabled_ca_verification(self):
+        a = HTTP20Adapter()
+        conn = a.get_connection(
+            'http2bin.org',
+            80,
+            'http',
+            verify=False,
+            cert=CLIENT_PEM_FILE)
+        assert not conn._conn.ssl_context.check_hostname
+        assert conn._conn.ssl_context.verify_mode == ssl.CERT_NONE
+
+    def test_adapter_respects_custom_ca_verification(self):
+        a = HTTP20Adapter()
+        conn = a.get_connection(
+            'http2bin.org',
+            80,
+            'http',
+            verify=SERVER_CERT_FILE)
+        assert conn._conn.ssl_context.check_hostname
+        assert conn._conn.ssl_context.verify_mode == ssl.CERT_REQUIRED
 
 
 class TestUtilities(object):
