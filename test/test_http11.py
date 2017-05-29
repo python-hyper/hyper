@@ -328,7 +328,7 @@ class TestHTTP11Connection(object):
         received = b''.join(sock.queue)
 
         assert received == expected
-        
+
     def test_response_with_empty_reason(self):
         c = HTTP11Connection('httpbin.org')
         c._sock = sock = DummySocket()
@@ -342,7 +342,7 @@ class TestHTTP11Connection(object):
         )
 
         r = c.get_response()
-        
+
         assert r.status == 201
         assert r.reason == b''
 
