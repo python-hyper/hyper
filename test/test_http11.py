@@ -328,6 +328,23 @@ class TestHTTP11Connection(object):
         received = b''.join(sock.queue)
 
         assert received == expected
+        
+    def test_response_with_empty_reason(self):
+        c = HTTP11Connection('httpbin.org')
+        c._sock = sock = DummySocket()
+
+        sock._buffer = BytesIO(
+            b"HTTP/1.1 201\r\n"
+            b"Connection: close\r\n"
+            b"Server: Socket\r\n"
+            b"Content-Length: 0\r\n"
+            b"\r\n"
+        )
+
+        r = c.get_response()
+        
+        assert r.status == 201
+        assert r.reason == b''
 
     def test_get_response(self):
         c = HTTP11Connection('httpbin.org')
