@@ -334,7 +334,7 @@ class TestHTTP11Connection(object):
         c._sock = sock = DummySocket()
 
         sock._buffer = BytesIO(
-            b"HTTP/1.1 201\r\n"
+            b"HTTP/1.1 201 \r\n"
             b"Connection: close\r\n"
             b"Server: Socket\r\n"
             b"Content-Length: 0\r\n"
