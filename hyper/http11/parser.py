@@ -49,7 +49,8 @@ class Parser(object):
         if index == -1:
             return None
 
-        version, status, reason = temp_buffer[0:index].split(None, 2)
+        version, status, reason = (
+                temp_buffer[0:index].split(None, 2) + [b''])[:3]
         if not version.startswith(b'HTTP/1.'):
             raise ParseError("Not HTTP/1.X!")
 
