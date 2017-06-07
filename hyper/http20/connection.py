@@ -776,7 +776,7 @@ class HTTP20Connection(object):
                 self._get_stream(stream_id)
 
             # TODO: Re-evaluate this.
-            self._single_read()
+            # self._single_read()
             count = 9
             retry_wait = 0.05  # can improve responsiveness to delay the retry
 
