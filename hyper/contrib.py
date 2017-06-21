@@ -9,7 +9,9 @@ try:
     from requests.adapters import HTTPAdapter
     from requests.models import Response
     from requests.structures import CaseInsensitiveDict
-    from requests.utils import get_encoding_from_headers
+    from requests.utils import (
+        get_encoding_from_headers, select_proxy, prepend_scheme_if_needed
+    )
     from requests.cookies import extract_cookies_to_jar
 except ImportError:  # pragma: no cover
     HTTPAdapter = object
@@ -29,7 +31,8 @@ class HTTP20Adapter(HTTPAdapter):
         #: A mapping between HTTP netlocs and ``HTTP20Connection`` objects.
         self.connections = {}
 
-    def get_connection(self, host, port, scheme, cert=None, verify=True):
+    def get_connection(self, host, port, scheme, cert=None, verify=True,
+                       proxy=None):
         """
         Gets an appropriate HTTP/2 connection object based on
         host/port/scheme/cert tuples.
@@ -50,29 +53,51 @@ class HTTP20Adapter(HTTPAdapter):
         elif verify is not True:
             ssl_context = init_context(cert_path=verify, cert=cert)
 
+        if proxy:
+            proxy_headers = self.proxy_headers(proxy)
+            proxy_netloc = urlparse(proxy).netloc
+        else:
+            proxy_headers = None
+            proxy_netloc = None
+
+        # We put proxy headers in the connection_key, because
+        # ``proxy_headers`` method might be overridden, so we can't
+        # rely on proxy headers being the same for the same proxies.
+        proxy_headers_key = (frozenset(proxy_headers.items())
+                             if proxy_headers else None)
+        connection_key = (host, port, scheme, cert, verify,
+                          proxy_netloc, proxy_headers_key)
         try:
-            conn = self.connections[(host, port, scheme, cert, verify)]
+            conn = self.connections[connection_key]
         except KeyError:
             conn = HTTPConnection(
                 host,
                 port,
                 secure=secure,
-                ssl_context=ssl_context)
-            self.connections[(host, port, scheme, cert, verify)] = conn
+                ssl_context=ssl_context,
+                proxy_host=proxy_netloc,
+                proxy_headers=proxy_headers)
+            self.connections[connection_key] = conn
 
         return conn
 
-    def send(self, request, stream=False, cert=None, verify=True, **kwargs):
+    def send(self, request, stream=False, cert=None, verify=True, proxies=None,
+             **kwargs):
         """
         Sends a HTTP message to the server.
         """
+        proxy = select_proxy(request.url, proxies)
+        if proxy:
+            proxy = prepend_scheme_if_needed(proxy, 'http')
+
         parsed = urlparse(request.url)
         conn = self.get_connection(
             parsed.hostname,
             parsed.port,
             parsed.scheme,
             cert=cert,
-            verify=verify)
+            verify=verify,
+            proxy=proxy)
 
         # Build the selector.
         selector = parsed.path
@@ -97,7 +122,7 @@ class HTTP20Adapter(HTTPAdapter):
     def build_response(self, request, resp):
         """
         Builds a Requests' response object.  This emulates most of the logic of
-        the standard fuction but deals with the lack of the ``.headers``
+        the standard function but deals with the lack of the ``.headers``
         property on the HTTP20Response object.
 
         Additionally, this function builds in a number of features that are

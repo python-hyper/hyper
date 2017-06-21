@@ -585,6 +585,41 @@ class TestHyperConnection(object):
             (b':path', b'/'),
         ]
 
+    def test_proxy_headers_presence_for_insecure_request(self):
+        sock = DummySocket()
+        c = HTTP20Connection(
+            'www.google.com', secure=False, proxy_host='localhost',
+            proxy_headers={'Proxy-Authorization': 'Basic ==='}
+        )
+        c._sock = sock
+        c.request('GET', '/')
+        s = c.recent_stream
+
+        assert list(s.headers.items()) == [
+            (b':method', b'GET'),
+            (b':scheme', b'http'),
+            (b':authority', b'www.google.com'),
+            (b':path', b'/'),
+            (b'proxy-authorization', b'Basic ==='),
+        ]
+
+    def test_proxy_headers_absence_for_secure_request(self):
+        sock = DummySocket()
+        c = HTTP20Connection(
+            'www.google.com', secure=True, proxy_host='localhost',
+            proxy_headers={'Proxy-Authorization': 'Basic ==='}
+        )
+        c._sock = sock
+        c.request('GET', '/')
+        s = c.recent_stream
+
+        assert list(s.headers.items()) == [
+            (b':method', b'GET'),
+            (b':scheme', b'https'),
+            (b':authority', b'www.google.com'),
+            (b':path', b'/'),
+        ]
+
     def test_recv_cb_n_times(self):
         sock = DummySocket()
         sock.can_read = True

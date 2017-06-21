@@ -15,6 +15,7 @@ ingenuity and about a million beers. The license is available in NOTICES.
 import threading
 import socket
 import sys
+from enum import Enum
 
 from hyper import HTTP20Connection
 from hyper.compat import ssl
@@ -25,6 +26,23 @@ from hpack.huffman_constants import (
     REQUEST_CODES, REQUEST_CODES_LENGTH
 )
 from hyper.tls import NPN_PROTOCOL
+
+
+class SocketSecuritySetting(Enum):
+    """
+    Server socket TLS wrapping strategy:
+
+    SECURE - automatically wrap socket
+    INSECURE - never wrap
+    SECURE_NO_AUTO_WRAP - init context, but socket must be wrapped manually
+
+    The values are needed to be able to convert ``secure`` boolean flag of
+    a client to a member of this enum:
+    ``socket_security = SocketSecuritySetting(secure)``
+    """
+    SECURE = True
+    INSECURE = False
+    SECURE_NO_AUTO_WRAP = 'NO_AUTO_WRAP'
 
 
 class SocketServerThread(threading.Thread):
@@ -42,16 +60,17 @@ class SocketServerThread(threading.Thread):
                  host='localhost',
                  ready_event=None,
                  h2=True,
-                 secure=True):
+                 socket_security=SocketSecuritySetting.SECURE):
         threading.Thread.__init__(self)
 
         self.socket_handler = socket_handler
         self.host = host
-        self.secure = secure
+        self.socket_security = socket_security
         self.ready_event = ready_event
         self.daemon = True
 
-        if self.secure:
+        if self.socket_security in (SocketSecuritySetting.SECURE,
+                                    SocketSecuritySetting.SECURE_NO_AUTO_WRAP):
             self.cxt = ssl.SSLContext(ssl.PROTOCOL_SSLv23)
             if ssl.HAS_NPN and h2:
                 self.cxt.set_npn_protocols([NPN_PROTOCOL])
@@ -63,8 +82,8 @@ class SocketServerThread(threading.Thread):
         if sys.platform != 'win32':
             sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
 
-        if self.secure:
-            sock = self.cxt.wrap_socket(sock, server_side=True)
+        if self.socket_security == SocketSecuritySetting.SECURE:
+            sock = self.wrap_socket(sock)
         sock.bind((self.host, 0))
         self.port = sock.getsockname()[1]
 
@@ -77,8 +96,8 @@ class SocketServerThread(threading.Thread):
         self.socket_handler(sock)
         sock.close()
 
-    def _wrap_socket(self, sock):
-        raise NotImplementedError()
+    def wrap_socket(self, sock):
+        return self.cxt.wrap_socket(sock, server_side=True)
 
     def run(self):
         self.server = self._start_server()
@@ -92,7 +111,7 @@ class SocketLevelTest(object):
     def set_up(self, secure=True, proxy=False):
         self.host = None
         self.port = None
-        self.secure = secure if not proxy else False
+        self.socket_security = SocketSecuritySetting(secure)
         self.proxy = proxy
         self.server_thread = None
 
@@ -105,14 +124,24 @@ class SocketLevelTest(object):
             socket_handler=socket_handler,
             ready_event=ready_event,
             h2=self.h2,
-            secure=self.secure
+            socket_security=self.socket_security
         )
         self.server_thread.start()
         ready_event.wait()
 
         self.host = self.server_thread.host
         self.port = self.server_thread.port
-        self.secure = self.server_thread.secure
+        self.socket_security = self.server_thread.socket_security
+
+    @property
+    def secure(self):
+        return self.socket_security in \
+               (SocketSecuritySetting.SECURE,
+                SocketSecuritySetting.SECURE_NO_AUTO_WRAP)
+
+    @secure.setter
+    def secure(self, value):
+        self.socket_security = SocketSecuritySetting(value)
 
     def get_connection(self):
         if self.h2:

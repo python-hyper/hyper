@@ -44,8 +44,9 @@ class HTTPConnection(object):
     :param proxy_host: (optional) The proxy to connect to.  This can be an IP
         address or a host name and may include a port.
     :param proxy_port: (optional) The proxy port to connect to. If not provided
-        and one also isn't provided in the ``proxy`` parameter, defaults to
-        8080.
+        and one also isn't provided in the ``proxy_host`` parameter, defaults
+        to 8080.
+    :param proxy_headers: (optional) The headers to send to a proxy.
     """
     def __init__(self,
                  host,
@@ -56,6 +57,7 @@ class HTTPConnection(object):
                  ssl_context=None,
                  proxy_host=None,
                  proxy_port=None,
+                 proxy_headers=None,
                  **kwargs):
 
         self._host = host
@@ -63,12 +65,13 @@ class HTTPConnection(object):
         self._h1_kwargs = {
             'secure': secure, 'ssl_context': ssl_context,
             'proxy_host': proxy_host, 'proxy_port': proxy_port,
-            'enable_push': enable_push
+            'proxy_headers': proxy_headers, 'enable_push': enable_push
         }
         self._h2_kwargs = {
             'window_manager': window_manager, 'enable_push': enable_push,
             'secure': secure, 'ssl_context': ssl_context,
-            'proxy_host': proxy_host, 'proxy_port': proxy_port
+            'proxy_host': proxy_host, 'proxy_port': proxy_port,
+            'proxy_headers': proxy_headers
         }
 
         # Add any unexpected kwargs to both dictionaries.

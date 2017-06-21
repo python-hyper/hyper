@@ -18,9 +18,11 @@ from hyperframe.frame import SettingsFrame
 from .response import HTTP11Response
 from ..tls import wrap_socket, H2C_PROTOCOL
 from ..common.bufsocket import BufferedSocket
-from ..common.exceptions import TLSUpgrade, HTTPUpgrade
+from ..common.exceptions import TLSUpgrade, HTTPUpgrade, ProxyError
 from ..common.headers import HTTPHeaderMap
-from ..common.util import to_bytestring, to_host_port_tuple, HTTPVersion
+from ..common.util import (
+    to_bytestring, to_host_port_tuple, to_native_string, HTTPVersion
+)
 from ..compat import bytes
 
 # We prefer pycohttpparser to the pure-Python interpretation
@@ -34,6 +36,43 @@ log = logging.getLogger(__name__)
 
 BODY_CHUNKED = 1
 BODY_FLAT = 2
+
+
+def _create_tunnel(proxy_host, proxy_port, target_host, target_port,
+                   proxy_headers=None):
+    """
+    Sends CONNECT method to a proxy and returns a socket with established
+    connection to the target.
+
+    :returns: socket
+    """
+    conn = HTTP11Connection(proxy_host, proxy_port)
+    conn.request('CONNECT', '%s:%d' % (target_host, target_port),
+                 headers=proxy_headers)
+
+    resp = conn.get_response()
+    if resp.status != 200:
+        raise ProxyError(
+            "Tunnel connection failed: %d %s" %
+            (resp.status, to_native_string(resp.reason)),
+            response=resp
+        )
+    return conn._sock
+
+
+def _headers_to_http_header_map(headers):
+    # TODO turn this to a classmethod of HTTPHeaderMap
+    headers = headers or {}
+    if not isinstance(headers, HTTPHeaderMap):
+        if isinstance(headers, Mapping):
+            headers = HTTPHeaderMap(headers.items())
+        elif isinstance(headers, Iterable):
+            headers = HTTPHeaderMap(headers)
+        else:
+            raise ValueError(
+                'Header argument must be a dictionary or an iterable'
+            )
+    return headers
 
 
 class HTTP11Connection(object):
@@ -53,14 +92,16 @@ class HTTP11Connection(object):
     :param proxy_host: (optional) The proxy to connect to.  This can be an IP
         address or a host name and may include a port.
     :param proxy_port: (optional) The proxy port to connect to. If not provided
-        and one also isn't provided in the ``proxy`` parameter,
+        and one also isn't provided in the ``proxy_host`` parameter,
         defaults to 8080.
+    :param proxy_headers: (optional) The headers to send to a proxy.
     """
 
     version = HTTPVersion.http11
 
     def __init__(self, host, port=None, secure=None, ssl_context=None,
-                 proxy_host=None, proxy_port=None, **kwargs):
+                 proxy_host=None, proxy_port=None, proxy_headers=None,
+                 **kwargs):
         if port is None:
             self.host, self.port = to_host_port_tuple(host, default_port=80)
         else:
@@ -83,17 +124,21 @@ class HTTP11Connection(object):
         self.ssl_context = ssl_context
         self._sock = None
 
+        # Keep the current request method in order to be able to know
+        # in get_response() what was the request verb.
+        self._current_request_method = None
+
         # Setup proxy details if applicable.
-        if proxy_host:
-            if proxy_port is None:
-                self.proxy_host, self.proxy_port = to_host_port_tuple(
-                    proxy_host, default_port=8080
-                )
-            else:
-                self.proxy_host, self.proxy_port = proxy_host, proxy_port
+        if proxy_host and proxy_port is None:
+            self.proxy_host, self.proxy_port = to_host_port_tuple(
+                proxy_host, default_port=8080
+            )
+        elif proxy_host:
+            self.proxy_host, self.proxy_port = proxy_host, proxy_port
         else:
             self.proxy_host = None
             self.proxy_port = None
+        self.proxy_headers = proxy_headers
 
         #: The size of the in-memory buffer used to store data from the
         #: network. This is used as a performance optimisation. Increase buffer
@@ -113,19 +158,28 @@ class HTTP11Connection(object):
         :returns: Nothing.
         """
         if self._sock is None:
-            if not self.proxy_host:
-                host = self.host
-                port = self.port
-            else:
-                host = self.proxy_host
-                port = self.proxy_port
 
-            sock = socket.create_connection((host, port), 5)
+            if self.proxy_host and self.secure:
+                # Send http CONNECT method to a proxy and acquire the socket
+                sock = _create_tunnel(
+                    self.proxy_host,
+                    self.proxy_port,
+                    self.host,
+                    self.port,
+                    proxy_headers=self.proxy_headers
+                )
+            elif self.proxy_host:
+                # Simple http proxy
+                sock = socket.create_connection(
+                    (self.proxy_host, self.proxy_port),
+                    5
+                )
+            else:
+                sock = socket.create_connection((self.host, self.port), 5)
             proto = None
 
             if self.secure:
-                assert not self.proxy_host, "Proxy with HTTPS not supported."
-                sock, proto = wrap_socket(sock, host, self.ssl_context)
+                sock, proto = wrap_socket(sock, self.host, self.ssl_context)
 
             log.debug("Selected protocol: %s", proto)
             sock = BufferedSocket(sock, self.network_buffer_size)
@@ -154,25 +208,29 @@ class HTTP11Connection(object):
         :returns: Nothing.
         """
 
-        headers = headers or {}
-
         method = to_bytestring(method)
+        is_connect_method = b'CONNECT' == method.upper()
+        self._current_request_method = method
+
+        if self.proxy_host and not self.secure:
+            # As per https://tools.ietf.org/html/rfc2068#section-5.1.2:
+            # The absoluteURI form is required when the request is being made
+            # to a proxy.
+            url = self._absolute_http_url(url)
         url = to_bytestring(url)
 
-        if not isinstance(headers, HTTPHeaderMap):
-            if isinstance(headers, Mapping):
-                headers = HTTPHeaderMap(headers.items())
-            elif isinstance(headers, Iterable):
-                headers = HTTPHeaderMap(headers)
-            else:
-                raise ValueError(
-                    'Header argument must be a dictionary or an iterable'
-                )
+        headers = _headers_to_http_header_map(headers)
+
+        # Append proxy headers.
+        if self.proxy_host and not self.secure:
+            headers.update(
+                _headers_to_http_header_map(self.proxy_headers).items()
+            )
 
         if self._sock is None:
             self.connect()
 
-        if self._send_http_upgrade:
+        if not is_connect_method and self._send_http_upgrade:
             self._add_upgrade_headers(headers)
             self._send_http_upgrade = False
 
@@ -180,7 +238,7 @@ class HTTP11Connection(object):
         if body:
             body_type = self._add_body_headers(headers, body)
 
-        if b'host' not in headers:
+        if not is_connect_method and b'host' not in headers:
             headers[b'host'] = self.host
 
         # Begin by emitting the header block.
@@ -192,6 +250,10 @@ class HTTP11Connection(object):
 
         return
 
+    def _absolute_http_url(self, url):
+        port_part = ':%d' % self.port if self.port != 80 else ''
+        return 'http://%s%s%s' % (self.host, port_part, url)
+
     def get_response(self):
         """
         Returns a response object.
@@ -199,6 +261,9 @@ class HTTP11Connection(object):
         This is an early beta, so the response object is pretty stupid. That's
         ok, we'll fix it later.
         """
+        method = self._current_request_method
+        self._current_request_method = None
+
         headers = HTTPHeaderMap()
 
         response = None
@@ -228,7 +293,8 @@ class HTTP11Connection(object):
             response.msg.tobytes(),
             headers,
             self._sock,
-            self
+            self,
+            method
         )
 
     def _send_headers(self, method, url, headers):
