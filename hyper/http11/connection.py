@@ -451,7 +451,8 @@ class HTTP11Connection(object):
         .. warning:: This method should absolutely only be called when you are
                      certain the connection object is no longer needed.
         """
-        self._sock.close()
+        if self._sock is not None:
+            self._sock.close()
         self._sock = None
 
     # The following two methods are the implementation of the context manager

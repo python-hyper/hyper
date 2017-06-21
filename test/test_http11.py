@@ -588,6 +588,10 @@ class TestHTTP11Connection(object):
         assert 'File-like bodies must return bytestrings. ' \
                'Got: {}'.format(int) in str(exc_info)
 
+    def test_close_with_uninitialized_socket(self):
+        c = HTTP11Connection('httpbin.org')
+        c.close()
+
 
 class TestHTTP11Response(object):
     def test_short_circuit_read(self):
