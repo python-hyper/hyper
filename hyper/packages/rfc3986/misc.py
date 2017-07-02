@@ -124,7 +124,7 @@ ip_literal = '\[({0}|{1})\]'.format(ipv6, ipv_future)
 HOST_PATTERN = '({0}|{1}|{2})'.format(reg_name, ipv4, ip_literal)
 
 SUBAUTHORITY_MATCHER = re.compile((
-    '^(?:(?P<userinfo>[A-Za-z0-9_.~\-%:]+)@)?'  # userinfo
+    '^(?:(?P<userinfo>[A-Za-z0-9\-._~%!$&\'()*+,;=:]+)@)?'  # userinfo
     '(?P<host>{0}?)'  # host
     ':?(?P<port>\d+)?$'  # port
     ).format(HOST_PATTERN))
