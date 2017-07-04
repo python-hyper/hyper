@@ -34,6 +34,12 @@ decompressors = {
     b'deflate': DeflateDecoder
 }
 
+try:
+    import brotli
+    decompressors[b"br"] = brotli.Decompressor
+except ImportError:
+    pass
+
 
 class HTTP20Response(object):
     """
