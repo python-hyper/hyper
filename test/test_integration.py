@@ -1295,7 +1295,7 @@ class TestRequestsAdapter(SocketLevelTest):
         # Assert about the received values.
         assert r.status_code == 200
         assert r.headers['Content-Type'] == 'not/real'
-        assert r.content == '1234567890' * 2
+        assert r.content == b'1234567890' * 2
 
         recv_event.set()
         self.tear_down()
