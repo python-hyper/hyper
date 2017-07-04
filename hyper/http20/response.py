@@ -28,6 +28,10 @@ def strip_headers(headers):
         if name.startswith(b':'):
             del headers[name]
 
+decoders={
+    b'gzip': lambda: zlib.decompressobj(16 + zlib.MAX_WBITS),
+    b'deflate': DeflateDecoder
+}
 
 class HTTP20Response(object):
     """
@@ -71,10 +75,9 @@ class HTTP20Response(object):
         # This 16 + MAX_WBITS nonsense is to force gzip. See this
         # Stack Overflow answer for more:
         # http://stackoverflow.com/a/2695466/1401686
-        if b'gzip' in self.headers.get(b'content-encoding', []):
-            self._decompressobj = zlib.decompressobj(16 + zlib.MAX_WBITS)
-        elif b'deflate' in self.headers.get(b'content-encoding', []):
-            self._decompressobj = DeflateDecoder()
+        compressionType = self.headers.get(b'content-encoding', [])
+        if compressionType in decompressors:
+            self._decompressobj = decompressors[compressionType]
         else:
             self._decompressobj = None
 
