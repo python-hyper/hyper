@@ -77,9 +77,10 @@ class HTTP20Response(object):
         # This 16 + MAX_WBITS nonsense is to force gzip. See this
         # Stack Overflow answer for more:
         # http://stackoverflow.com/a/2695466/1401686
-        compressionType = self.headers.get(b'content-encoding', [])
-        if compressionType in decompressors:
-            self._decompressobj = decompressors[compressionType]
+        compressionTypes = set(self.headers.get(b'content-encoding', []))
+        compressionTypes &= decompressors.keys()
+        if compressionTypes:
+            self._decompressobj = decompressors[next(iter(compressionTypes))]
         else:
             self._decompressobj = None
 
