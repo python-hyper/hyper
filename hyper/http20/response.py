@@ -80,7 +80,7 @@ class HTTP20Response(object):
         compressionTypes = set(self.headers.get(b'content-encoding', []))
         compressionTypes &= set(decompressors.keys())
         if compressionTypes:
-            self._decompressobj = decompressors[next(iter(compressionTypes))]
+            self._decompressobj = decompressors[next(iter(compressionTypes))]()
         else:
             self._decompressobj = None
 
