@@ -132,7 +132,10 @@ class HTTP20Adapter(HTTPAdapter):
         response = Response()
 
         response.status_code = resp.status
-        response.headers = CaseInsensitiveDict(((hn.decode("utf-8"), h.decode("utf-8")) for hn, h in resp.headers.iter_raw()))
+        response.headers = CaseInsensitiveDict((
+            map(lambda h: h.decode("utf-8"), h)
+            for h in resp.headers.iter_raw()
+        ))
         response.raw = resp
         response.reason = resp.reason
         response.encoding = get_encoding_from_headers(response.headers)
