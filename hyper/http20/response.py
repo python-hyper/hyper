@@ -28,10 +28,11 @@ def strip_headers(headers):
         if name.startswith(b':'):
             del headers[name]
 
-decoders={
+decompressors = {
     b'gzip': lambda: zlib.decompressobj(16 + zlib.MAX_WBITS),
     b'deflate': DeflateDecoder
 }
+
 
 class HTTP20Response(object):
     """
