@@ -20,7 +20,6 @@ from hyper.common.connection import HTTPConnection
 from hyper.compat import urlparse, ssl
 from hyper.tls import init_context
 from hyper.util import to_native_string
-from sys import version_info as pyver
 
 
 class HTTP20Adapter(HTTPAdapter):
