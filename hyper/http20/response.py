@@ -77,12 +77,15 @@ class HTTP20Response(object):
         # This 16 + MAX_WBITS nonsense is to force gzip. See this
         # Stack Overflow answer for more:
         # http://stackoverflow.com/a/2695466/1401686
-        compressionTypes = set(self.headers.get(b'content-encoding', []))
-        compressionTypes &= set(decompressors.keys())
-        if compressionTypes:
-            self._decompressobj = decompressors[next(iter(compressionTypes))]()
-        else:
-            self._decompressobj = None
+        self._decompressobj = next(
+            filter(None,
+                (
+                    decompressors.get(c)
+                    for c in self.headers.get(b'content-encoding', [])
+                )
+            ),
+            None
+        )
 
     @property
     def trailers(self):
