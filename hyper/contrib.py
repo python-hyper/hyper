@@ -19,6 +19,7 @@ except ImportError:  # pragma: no cover
 from hyper.common.connection import HTTPConnection
 from hyper.compat import urlparse, ssl
 from hyper.tls import init_context
+from hyper.common.util import to_native_string
 
 
 class HTTP20Adapter(HTTPAdapter):
@@ -132,7 +133,10 @@ class HTTP20Adapter(HTTPAdapter):
         response = Response()
 
         response.status_code = resp.status
-        response.headers = CaseInsensitiveDict(resp.headers.iter_raw())
+        response.headers = CaseInsensitiveDict((
+            map(to_native_string, h)
+            for h in resp.headers.iter_raw()
+        ))
         response.raw = resp
         response.reason = resp.reason
         response.encoding = get_encoding_from_headers(response.headers)

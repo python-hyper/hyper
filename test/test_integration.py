@@ -1294,7 +1294,7 @@ class TestRequestsAdapter(SocketLevelTest):
 
         # Assert about the received values.
         assert r.status_code == 200
-        assert r.headers[b'Content-Type'] == b'not/real'
+        assert r.headers['Content-Type'] == 'not/real'
         assert r.content == b'1234567890' * 2
 
         recv_event.set()
@@ -1417,9 +1417,9 @@ class TestRequestsAdapter(SocketLevelTest):
 
         assert r.status_code == 201
         assert len(r.headers) == 3
-        assert r.headers[b'server'] == b'socket-level-server'
-        assert r.headers[b'content-length'] == b'0'
-        assert r.headers[b'connection'] == b'close'
+        assert r.headers['server'] == 'socket-level-server'
+        assert r.headers['content-length'] == '0'
+        assert r.headers['connection'] == 'close'
 
         assert r.content == b''
 
@@ -1480,9 +1480,9 @@ class TestRequestsAdapter(SocketLevelTest):
 
         assert r.status_code == 201
         assert len(r.headers) == 3
-        assert r.headers[b'server'] == b'socket-level-server'
-        assert r.headers[b'content-length'] == b'0'
-        assert r.headers[b'connection'] == b'close'
+        assert r.headers['server'] == 'socket-level-server'
+        assert r.headers['content-length'] == '0'
+        assert r.headers['connection'] == 'close'
 
         assert r.content == b''
 
@@ -1530,9 +1530,9 @@ class TestRequestsAdapter(SocketLevelTest):
 
         assert r.status_code == 201
         assert len(r.headers) == 3
-        assert r.headers[b'server'] == b'socket-level-server'
-        assert r.headers[b'content-length'] == b'0'
-        assert r.headers[b'connection'] == b'close'
+        assert r.headers['server'] == 'socket-level-server'
+        assert r.headers['content-length'] == '0'
+        assert r.headers['connection'] == 'close'
 
         assert r.content == b''
 
