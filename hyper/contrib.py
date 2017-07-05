@@ -19,7 +19,7 @@ except ImportError:  # pragma: no cover
 from hyper.common.connection import HTTPConnection
 from hyper.compat import urlparse, ssl
 from hyper.tls import init_context
-from hyper.util import to_native_string
+from hyper.common.util import to_native_string
 
 
 class HTTP20Adapter(HTTPAdapter):
