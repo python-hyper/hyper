@@ -29,6 +29,12 @@ def strip_headers(headers):
             del headers[name]
 
 
+decompressors = {
+    b'gzip': lambda: zlib.decompressobj(16 + zlib.MAX_WBITS),
+    b'deflate': DeflateDecoder
+}
+
+
 class HTTP20Response(object):
     """
     An ``HTTP20Response`` wraps the HTTP/2 response from the server. It
@@ -39,6 +45,7 @@ class HTTP20Response(object):
     """
 
     version = HTTPVersion.http20
+    _decompressobj = None
 
     def __init__(self, headers, stream):
         #: The reason phrase returned by the server. This is not used in
@@ -71,12 +78,9 @@ class HTTP20Response(object):
         # This 16 + MAX_WBITS nonsense is to force gzip. See this
         # Stack Overflow answer for more:
         # http://stackoverflow.com/a/2695466/1401686
-        if b'gzip' in self.headers.get(b'content-encoding', []):
-            self._decompressobj = zlib.decompressobj(16 + zlib.MAX_WBITS)
-        elif b'deflate' in self.headers.get(b'content-encoding', []):
-            self._decompressobj = DeflateDecoder()
-        else:
-            self._decompressobj = None
+        for c in self.headers.get(b'content-encoding', []):
+            self._decompressobj = decompressors.get(c)()
+            break
 
     @property
     def trailers(self):
