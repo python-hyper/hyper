@@ -19,6 +19,10 @@ except ImportError:  # pragma: no cover
 from hyper.common.connection import HTTPConnection
 from hyper.compat import urlparse, ssl
 from hyper.tls import init_context
+from sys import version_info as pyver
+
+
+conditionalToStr=lambda s: s.decode("utf-8") if pyver > 2 else lambda s: s
 
 
 class HTTP20Adapter(HTTPAdapter):
@@ -133,7 +137,7 @@ class HTTP20Adapter(HTTPAdapter):
 
         response.status_code = resp.status
         response.headers = CaseInsensitiveDict((
-            map(lambda h: h.decode("utf-8"), h)
+            map(conditionalToStr, h)
             for h in resp.headers.iter_raw()
         ))
         response.raw = resp
