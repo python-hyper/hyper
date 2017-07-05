@@ -81,7 +81,8 @@ class HTTP20Response(object):
             (
                 decompressors.get(c)
                 for c in self.headers.get(b'content-encoding', [])
-            )
+            ),
+            None
         )
 
     @property
