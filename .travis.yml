@@ -19,7 +19,7 @@ matrix:
 
 install:
   - ".travis/install.sh"
-before_script: "flake8 --max-complexity 15 --exclude 'hyper/packages/*' hyper test"
+before_script: "flake8 --max-complexity 15 hyper test"
 
 script:
   - ".travis/run.sh"

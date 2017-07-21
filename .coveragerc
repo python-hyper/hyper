@@ -4,7 +4,6 @@ omit =
     hyper/compat.py
     hyper/httplib_compat.py
     hyper/ssl_compat.py
-    hyper/packages/*
 
 [report]
 fail_under = 100
