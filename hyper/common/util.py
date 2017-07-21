@@ -8,7 +8,7 @@ General utility functions for use with hyper.
 from enum import Enum
 
 from hyper.compat import unicode, bytes, imap
-from ..packages.rfc3986.uri import URIReference
+from rfc3986 import URIReference
 from ..compat import is_py3
 
 

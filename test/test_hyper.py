@@ -67,6 +67,16 @@ class TestHyperConnection(object):
         assert c.proxy_host == 'localhost'
         assert c.proxy_port == 8443
 
+    def test_connections_can_parse_proxy_hosts_with_userinfo(self):
+        c = HTTP20Connection('www.google.com',
+                             proxy_host='azAz09!==:fakepaswd@localhost:8443')
+        # Note that the userinfo part is getting stripped out,
+        # it's not automatically added as Basic Auth header to
+        # the proxy_headers! It should be done manually.
+        assert c.host == 'www.google.com'
+        assert c.proxy_host == 'localhost'
+        assert c.proxy_port == 8443
+
     def test_connections_can_parse_proxy_hosts_and_ports(self):
         c = HTTP20Connection('www.google.com',
                              proxy_host='localhost',
