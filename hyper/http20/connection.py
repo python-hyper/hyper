@@ -368,7 +368,7 @@ class HTTP20Connection(object):
                     timeout=self._connect_timeout
                 )
             else:
-                sock = socket.create_connection((self.host, self.port), 
+                sock = socket.create_connection((self.host, self.port),
                                                 timeout=self._connect_timeout)
 
             if self.secure:

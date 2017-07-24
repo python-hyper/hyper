@@ -159,7 +159,6 @@ class HTTP11Connection(object):
             self._connect_timeout = timeout
             self._read_timeout = timeout
 
-
     def connect(self):
         """
         Connect to the server specified when the object was created. This is a
@@ -185,7 +184,7 @@ class HTTP11Connection(object):
                     timeout=self._connect_timeout
                 )
             else:
-                sock = socket.create_connection((self.host, self.port), 
+                sock = socket.create_connection((self.host, self.port),
                                                 timeout=self._connect_timeout)
             proto = None
 
