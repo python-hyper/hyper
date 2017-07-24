@@ -1290,7 +1290,7 @@ class TestRequestsAdapter(SocketLevelTest):
 
         s = requests.Session()
         s.mount('https://%s' % self.host, HTTP20Adapter())
-        r = s.get('https://%s:%s/some/path' % (self.host, self.port))
+        r = s.get('https://%s:%s/some/path' % (self.host, self.port), timeout=(10, 30))
 
         # Assert about the received values.
         assert r.status_code == 200
