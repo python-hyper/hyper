@@ -33,7 +33,7 @@ class HTTP20Adapter(HTTPAdapter):
         self.connections = {}
 
     def get_connection(self, host, port, scheme, cert=None, verify=True,
-                       proxy=None):
+                       proxy=None, **kwargs):
         """
         Gets an appropriate HTTP/2 connection object based on
         host/port/scheme/cert tuples.
@@ -77,7 +77,8 @@ class HTTP20Adapter(HTTPAdapter):
                 secure=secure,
                 ssl_context=ssl_context,
                 proxy_host=proxy_netloc,
-                proxy_headers=proxy_headers)
+                proxy_headers=proxy_headers,
+                **kwargs)
             self.connections[connection_key] = conn
 
         return conn
@@ -98,7 +99,8 @@ class HTTP20Adapter(HTTPAdapter):
             parsed.scheme,
             cert=cert,
             verify=verify,
-            proxy=proxy)
+            proxy=proxy,
+            **kwargs)
 
         # Build the selector.
         selector = parsed.path

@@ -151,6 +151,15 @@ class HTTP20Connection(object):
         self.__wm_class = window_manager or FlowControlManager
         self.__init_state()
 
+        # timeout
+        timeout = kwargs.get('timeout')
+        if isinstance(timeout, tuple):
+            self._connect_timeout = timeout[0]
+            self._read_timeout = timeout[1]
+        else:
+            self._connect_timeout = timeout
+            self._read_timeout = timeout
+
         return
 
     def __init_state(self):
@@ -355,10 +364,12 @@ class HTTP20Connection(object):
             elif self.proxy_host:
                 # Simple http proxy
                 sock = socket.create_connection(
-                    (self.proxy_host, self.proxy_port)
+                    (self.proxy_host, self.proxy_port),
+                    timeout=self._connect_timeout
                 )
             else:
-                sock = socket.create_connection((self.host, self.port))
+                sock = socket.create_connection((self.host, self.port), 
+                                                timeout=self._connect_timeout)
 
             if self.secure:
                 sock, proto = wrap_socket(sock, self.host, self.ssl_context,
@@ -373,6 +384,9 @@ class HTTP20Connection(object):
             ) % ','.join(H2_NPN_PROTOCOLS + [H2C_PROTOCOL])
 
             self._sock = BufferedSocket(sock, self.network_buffer_size)
+
+            # Set read timeout
+            self._sock.settimeout(self._read_timeout)
 
             self._send_preamble()
 

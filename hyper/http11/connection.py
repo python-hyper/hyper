@@ -150,6 +150,16 @@ class HTTP11Connection(object):
         #: the standard hyper parsing interface.
         self.parser = Parser()
 
+        # timeout
+        timeout = kwargs.get('timeout')
+        if isinstance(timeout, tuple):
+            self._connect_timeout = timeout[0]
+            self._read_timeout = timeout[1]
+        else:
+            self._connect_timeout = timeout
+            self._read_timeout = timeout
+
+
     def connect(self):
         """
         Connect to the server specified when the object was created. This is a
@@ -172,10 +182,11 @@ class HTTP11Connection(object):
                 # Simple http proxy
                 sock = socket.create_connection(
                     (self.proxy_host, self.proxy_port),
-                    5
+                    timeout=self._connect_timeout
                 )
             else:
-                sock = socket.create_connection((self.host, self.port), 5)
+                sock = socket.create_connection((self.host, self.port), 
+                                                timeout=self._connect_timeout)
             proto = None
 
             if self.secure:
@@ -183,6 +194,9 @@ class HTTP11Connection(object):
 
             log.debug("Selected protocol: %s", proto)
             sock = BufferedSocket(sock, self.network_buffer_size)
+
+            # Set read timeout
+            sock.settimeout(self._read_timeout)
 
             if proto not in ('http/1.1', None):
                 raise TLSUpgrade(proto, sock)
