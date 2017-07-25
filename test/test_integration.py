@@ -13,6 +13,7 @@ import time
 import hyper
 import hyper.http11.connection
 import pytest
+from socket import timeout as SocketTimeout
 from contextlib import contextmanager
 from mock import patch
 from concurrent.futures import ThreadPoolExecutor, TimeoutError
@@ -1243,7 +1244,9 @@ class TestHyperIntegration(SocketLevelTest):
         try:
             conn.connect()
             assert False
-        except ssl.SSLError as e:
+        except (SocketTimeout, ssl.SSLError) as e:
+            # Py2 raises this as a BaseSSLError,
+            # Py3 raises it as socket timeout.
             assert 'timed out' in e.message
 
         self.tear_down()
@@ -1287,7 +1290,9 @@ class TestHyperIntegration(SocketLevelTest):
         try:
             conn.get_response()
             assert False
-        except ssl.SSLError as e:
+        except (SocketTimeout, ssl.SSLError) as e:
+            # Py2 raises this as a BaseSSLError,
+            # Py3 raises it as socket timeout.
             assert 'timed out' in e.message
 
         # Awesome, we're done now.
@@ -1321,7 +1326,9 @@ class TestHyperIntegration(SocketLevelTest):
         conn = self.get_connection()
         try:
             conn.connect()
-        except ssl.SSLError:
+        except (SocketTimeout, ssl.SSLError):
+            # Py2 raises this as a BaseSSLError,
+            # Py3 raises it as socket timeout.
             assert False
 
         send_event.wait(5)
