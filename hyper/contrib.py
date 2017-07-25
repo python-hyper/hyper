@@ -84,7 +84,7 @@ class HTTP20Adapter(HTTPAdapter):
         return conn
 
     def send(self, request, stream=False, cert=None, verify=True, proxies=None,
-             **kwargs):
+             timeout=None, **kwargs):
         """
         Sends a HTTP message to the server.
         """
@@ -93,7 +93,6 @@ class HTTP20Adapter(HTTPAdapter):
             proxy = prepend_scheme_if_needed(proxy, 'http')
 
         parsed = urlparse(request.url)
-        timeout = kwargs.get('timeout')
         conn = self.get_connection(
             parsed.hostname,
             parsed.port,

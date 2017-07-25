@@ -1243,12 +1243,13 @@ class TestHyperIntegration(SocketLevelTest):
         conn = self.get_connection()
         try:
             conn.connect()
-            assert False
         except (SocketTimeout, ssl.SSLError):
             # Py2 raises this as a BaseSSLError,
             # Py3 raises it as socket timeout.
             # assert 'timed out' in e.message
             pass
+        else:
+            assert False
 
         self.tear_down()
 
@@ -1256,7 +1257,6 @@ class TestHyperIntegration(SocketLevelTest):
         self.set_up(timeout=0.5)
 
         req_event = threading.Event()
-        recv_event = threading.Event()
 
         def socket_handler(listener):
             sock = listener.accept()[0]
@@ -1268,19 +1268,10 @@ class TestHyperIntegration(SocketLevelTest):
 
             # Wait for request
             req_event.wait(5)
-            # Now, send the headers for the response. This response has no body
+
+            # Sleep wait for read timeout
             time.sleep(1)
 
-            # Now, send the headers for the response. This response has no body
-            f = build_headers_frame(
-                [(':status', '204'), ('content-length', '0')]
-            )
-            f.flags.add('END_STREAM')
-            f.stream_id = 1
-            sock.send(f.serialize())
-
-            # Wait for the message from the main thread.
-            recv_event.wait(5)
             sock.close()
 
         self._start_server(socket_handler)
@@ -1290,15 +1281,14 @@ class TestHyperIntegration(SocketLevelTest):
 
         try:
             conn.get_response()
-            assert False
         except (SocketTimeout, ssl.SSLError):
             # Py2 raises this as a BaseSSLError,
             # Py3 raises it as socket timeout.
             # assert 'timed out' in e.message
             pass
+        else:
+            assert False
 
-        # Awesome, we're done now.
-        recv_event.set()
         self.tear_down()
 
     def test_default_connection_timeout(self):
