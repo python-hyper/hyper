@@ -110,6 +110,18 @@ class TestHTTP11Connection(object):
         assert c.proxy_host == 'ffff:aaaa::1'
         assert c.proxy_port == 8443
 
+    def test_initialization_timeout(self):
+        c = HTTP11Connection('httpbin.org', timeout=30)
+
+        assert c._connect_timeout == 30
+        assert c._read_timeout == 30
+
+    def test_initialization_tuple_timeout(self):
+        c = HTTP11Connection('httpbin.org', timeout=(5, 60))
+
+        assert c._connect_timeout == 5
+        assert c._read_timeout == 60
+
     def test_basic_request(self):
         c = HTTP11Connection('httpbin.org')
         c._sock = sock = DummySocket()

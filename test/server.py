@@ -108,12 +108,13 @@ class SocketLevelTest(object):
     A test-class that defines a few helper methods for running socket-level
     tests.
     """
-    def set_up(self, secure=True, proxy=False):
+    def set_up(self, secure=True, proxy=False, timeout=None):
         self.host = None
         self.port = None
         self.socket_security = SocketSecuritySetting(secure)
         self.proxy = proxy
         self.server_thread = None
+        self.timeout = timeout
 
     def _start_server(self, socket_handler):
         """
@@ -146,18 +147,22 @@ class SocketLevelTest(object):
     def get_connection(self):
         if self.h2:
             if not self.proxy:
-                return HTTP20Connection(self.host, self.port, self.secure)
+                return HTTP20Connection(self.host, self.port, self.secure,
+                                        timeout=self.timeout)
             else:
                 return HTTP20Connection('http2bin.org', secure=self.secure,
                                         proxy_host=self.host,
-                                        proxy_port=self.port)
+                                        proxy_port=self.port,
+                                        timeout=self.timeout)
         else:
             if not self.proxy:
-                return HTTP11Connection(self.host, self.port, self.secure)
+                return HTTP11Connection(self.host, self.port, self.secure,
+                                        timeout=self.timeout)
             else:
                 return HTTP11Connection('httpbin.org', secure=self.secure,
                                         proxy_host=self.host,
-                                        proxy_port=self.port)
+                                        proxy_port=self.port,
+                                        timeout=self.timeout)
 
     def get_encoder(self):
         """

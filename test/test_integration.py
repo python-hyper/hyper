@@ -1230,6 +1230,106 @@ class TestHyperIntegration(SocketLevelTest):
 
         self.tear_down()
 
+    def test_connection_timeout(self):
+        self.set_up(timeout=0.5)
+
+        def socket_handler(listener):
+            time.sleep(1)
+            sock = listener.accept()[0]
+            sock.close()
+
+        self._start_server(socket_handler)
+        conn = self.get_connection()
+        try:
+            conn.connect()
+            assert False
+        except ssl.SSLError as e:
+            assert 'timed out' in e.message
+
+        self.tear_down()
+
+    def test_read_timeout(self):
+        self.set_up(timeout=0.5)
+
+        req_event = threading.Event()
+        recv_event = threading.Event()
+
+        def socket_handler(listener):
+            sock = listener.accept()[0]
+
+            # We get two messages for the connection open and then a HEADERS
+            # frame.
+            receive_preamble(sock)
+            sock.recv(65535)
+
+            # Wait for request
+            req_event.wait(5)
+            # Now, send the headers for the response. This response has no body
+            time.sleep(1)
+
+            # Now, send the headers for the response. This response has no body
+            f = build_headers_frame(
+                [(':status', '204'), ('content-length', '0')]
+            )
+            f.flags.add('END_STREAM')
+            f.stream_id = 1
+            sock.send(f.serialize())
+
+            # Wait for the message from the main thread.
+            recv_event.wait(5)
+            sock.close()
+
+        self._start_server(socket_handler)
+        conn = self.get_connection()
+        conn.request('GET', '/')
+        req_event.set()
+
+        try:
+            conn.get_response()
+            assert False
+        except ssl.SSLError as e:
+            assert 'timed out' in e.message
+
+        # Awesome, we're done now.
+        recv_event.set()
+        self.tear_down()
+
+    def test_default_connection_timeout(self):
+        self.set_up(timeout=None)
+
+        # Confirm that we send the connection upgrade string and the initial
+        # SettingsFrame.
+        data = []
+        send_event = threading.Event()
+
+        def socket_handler(listener):
+            time.sleep(1)
+            sock = listener.accept()[0]
+
+            # We should get one big chunk.
+            first = sock.recv(65535)
+            data.append(first)
+
+            # We need to send back a SettingsFrame.
+            f = SettingsFrame(0)
+            sock.send(f.serialize())
+
+            send_event.set()
+            sock.close()
+
+        self._start_server(socket_handler)
+        conn = self.get_connection()
+        try:
+            conn.connect()
+        except ssl.SSLError:
+            assert False
+
+        send_event.wait(5)
+
+        assert data[0].startswith(b'PRI * HTTP/2.0\r\n\r\nSM\r\n\r\n')
+
+        self.tear_down()
+
 
 @patch('hyper.http20.connection.H2_NPN_PROTOCOLS', PROTOCOLS)
 class TestRequestsAdapter(SocketLevelTest):
@@ -1290,7 +1390,8 @@ class TestRequestsAdapter(SocketLevelTest):
 
         s = requests.Session()
         s.mount('https://%s' % self.host, HTTP20Adapter())
-        r = s.get('https://%s:%s/some/path' % (self.host, self.port), timeout=(10, 30))
+        r = s.get('https://%s:%s/some/path' % (self.host, self.port),
+                  timeout=(10, 60))
 
         # Assert about the received values.
         assert r.status_code == 200

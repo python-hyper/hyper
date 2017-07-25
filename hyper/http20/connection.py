@@ -102,7 +102,7 @@ class HTTP20Connection(object):
     def __init__(self, host, port=None, secure=None, window_manager=None,
                  enable_push=False, ssl_context=None, proxy_host=None,
                  proxy_port=None, force_proto=None, proxy_headers=None,
-                 **kwargs):
+                 timeout=None, **kwargs):
         """
         Creates an HTTP/2 connection to a specific server.
         """
@@ -152,7 +152,6 @@ class HTTP20Connection(object):
         self.__init_state()
 
         # timeout
-        timeout = kwargs.get('timeout')
         if isinstance(timeout, tuple):
             self._connect_timeout = timeout[0]
             self._read_timeout = timeout[1]

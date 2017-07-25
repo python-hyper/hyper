@@ -101,7 +101,7 @@ class HTTP11Connection(object):
 
     def __init__(self, host, port=None, secure=None, ssl_context=None,
                  proxy_host=None, proxy_port=None, proxy_headers=None,
-                 **kwargs):
+                 timeout=None, **kwargs):
         if port is None:
             self.host, self.port = to_host_port_tuple(host, default_port=80)
         else:
@@ -151,7 +151,6 @@ class HTTP11Connection(object):
         self.parser = Parser()
 
         # timeout
-        timeout = kwargs.get('timeout')
         if isinstance(timeout, tuple):
             self._connect_timeout = timeout[0]
             self._read_timeout = timeout[1]
