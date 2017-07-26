@@ -58,6 +58,7 @@ class HTTPConnection(object):
                  proxy_host=None,
                  proxy_port=None,
                  proxy_headers=None,
+                 timeout=None,
                  **kwargs):
 
         self._host = host
@@ -78,8 +79,10 @@ class HTTPConnection(object):
         self._h1_kwargs.update(kwargs)
         self._h2_kwargs.update(kwargs)
 
+        self._timeout = timeout
+
         self._conn = HTTP11Connection(
-            self._host, self._port, **self._h1_kwargs
+            self._host, self._port, timeout=self._timeout, **self._h1_kwargs
         )
 
     def request(self, method, url, body=None, headers=None):
@@ -113,7 +116,8 @@ class HTTPConnection(object):
             assert e.negotiated in H2_NPN_PROTOCOLS
 
             self._conn = HTTP20Connection(
-                self._host, self._port, **self._h2_kwargs
+                self._host, self._port,
+                timeout=self._timeout, **self._h2_kwargs
             )
             self._conn._sock = e.sock
 
@@ -138,7 +142,8 @@ class HTTPConnection(object):
             assert e.negotiated == H2C_PROTOCOL
 
             self._conn = HTTP20Connection(
-                self._host, self._port, **self._h2_kwargs
+                self._host, self._port,
+                timeout=self._timeout, **self._h2_kwargs
             )
 
             self._conn._connect_upgrade(e.sock)

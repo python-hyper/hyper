@@ -1236,20 +1236,14 @@ class TestHyperIntegration(SocketLevelTest):
 
         def socket_handler(listener):
             time.sleep(1)
-            sock = listener.accept()[0]
-            sock.close()
 
         self._start_server(socket_handler)
         conn = self.get_connection()
-        try:
-            conn.connect()
-        except (SocketTimeout, ssl.SSLError):
+
+        with pytest.raises((SocketTimeout, ssl.SSLError)):
             # Py2 raises this as a BaseSSLError,
             # Py3 raises it as socket timeout.
-            # assert 'timed out' in e.message
-            pass
-        else:
-            assert False
+            conn.connect()
 
         self.tear_down()
 
@@ -1279,15 +1273,10 @@ class TestHyperIntegration(SocketLevelTest):
         conn.request('GET', '/')
         req_event.set()
 
-        try:
-            conn.get_response()
-        except (SocketTimeout, ssl.SSLError):
+        with pytest.raises((SocketTimeout, ssl.SSLError)):
             # Py2 raises this as a BaseSSLError,
             # Py3 raises it as socket timeout.
-            # assert 'timed out' in e.message
-            pass
-        else:
-            assert False
+            conn.get_response()
 
         self.tear_down()
 
@@ -1321,7 +1310,7 @@ class TestHyperIntegration(SocketLevelTest):
         except (SocketTimeout, ssl.SSLError):
             # Py2 raises this as a BaseSSLError,
             # Py3 raises it as socket timeout.
-            assert False
+            pytest.fail()
 
         send_event.wait(5)
 
