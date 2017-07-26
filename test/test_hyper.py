@@ -101,14 +101,12 @@ class TestHyperConnection(object):
     def test_connection_timeout(self):
         c = HTTP20Connection('httpbin.org', timeout=30)
 
-        assert c._connect_timeout == 30
-        assert c._read_timeout == 30
+        assert c._timeout == 30
 
     def test_connection_tuple_timeout(self):
         c = HTTP20Connection('httpbin.org', timeout=(5, 60))
 
-        assert c._connect_timeout == 5
-        assert c._read_timeout == 60
+        assert c._timeout == (5, 60)
 
     def test_ping(self, frame_buffer):
         def data_callback(chunk, **kwargs):

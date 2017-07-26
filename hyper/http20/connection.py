@@ -152,12 +152,7 @@ class HTTP20Connection(object):
         self.__init_state()
 
         # timeout
-        if isinstance(timeout, tuple):
-            self._connect_timeout = timeout[0]
-            self._read_timeout = timeout[1]
-        else:
-            self._connect_timeout = timeout
-            self._read_timeout = timeout
+        self._timeout = timeout
 
         return
 
@@ -351,6 +346,13 @@ class HTTP20Connection(object):
             if self._sock is not None:
                 return
 
+            if isinstance(self._timeout, tuple):
+                connect_timeout = self._timeout[0]
+                read_timeout = self._timeout[1]
+            else:
+                connect_timeout = self._timeout
+                read_timeout = self._timeout
+
             if self.proxy_host and self.secure:
                 # Send http CONNECT method to a proxy and acquire the socket
                 sock = _create_tunnel(
@@ -358,17 +360,18 @@ class HTTP20Connection(object):
                     self.proxy_port,
                     self.host,
                     self.port,
-                    proxy_headers=self.proxy_headers
+                    proxy_headers=self.proxy_headers,
+                    timeout=self._timeout
                 )
             elif self.proxy_host:
                 # Simple http proxy
                 sock = socket.create_connection(
                     (self.proxy_host, self.proxy_port),
-                    timeout=self._connect_timeout
+                    timeout=connect_timeout
                 )
             else:
                 sock = socket.create_connection((self.host, self.port),
-                                                timeout=self._connect_timeout)
+                                                timeout=connect_timeout)
 
             if self.secure:
                 sock, proto = wrap_socket(sock, self.host, self.ssl_context,
@@ -385,7 +388,7 @@ class HTTP20Connection(object):
             self._sock = BufferedSocket(sock, self.network_buffer_size)
 
             # Set read timeout
-            self._sock.settimeout(self._read_timeout)
+            self._sock.settimeout(read_timeout)
 
             self._send_preamble()
 

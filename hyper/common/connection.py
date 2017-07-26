@@ -66,23 +66,23 @@ class HTTPConnection(object):
         self._h1_kwargs = {
             'secure': secure, 'ssl_context': ssl_context,
             'proxy_host': proxy_host, 'proxy_port': proxy_port,
-            'proxy_headers': proxy_headers, 'enable_push': enable_push
+            'proxy_headers': proxy_headers, 'enable_push': enable_push,
+            'timeout': timeout
         }
         self._h2_kwargs = {
             'window_manager': window_manager, 'enable_push': enable_push,
             'secure': secure, 'ssl_context': ssl_context,
             'proxy_host': proxy_host, 'proxy_port': proxy_port,
-            'proxy_headers': proxy_headers
+            'proxy_headers': proxy_headers,
+            'timeout': timeout
         }
 
         # Add any unexpected kwargs to both dictionaries.
         self._h1_kwargs.update(kwargs)
         self._h2_kwargs.update(kwargs)
 
-        self._timeout = timeout
-
         self._conn = HTTP11Connection(
-            self._host, self._port, timeout=self._timeout, **self._h1_kwargs
+            self._host, self._port, **self._h1_kwargs
         )
 
     def request(self, method, url, body=None, headers=None):
@@ -116,8 +116,7 @@ class HTTPConnection(object):
             assert e.negotiated in H2_NPN_PROTOCOLS
 
             self._conn = HTTP20Connection(
-                self._host, self._port,
-                timeout=self._timeout, **self._h2_kwargs
+                self._host, self._port, **self._h2_kwargs
             )
             self._conn._sock = e.sock
 
@@ -142,8 +141,7 @@ class HTTPConnection(object):
             assert e.negotiated == H2C_PROTOCOL
 
             self._conn = HTTP20Connection(
-                self._host, self._port,
-                timeout=self._timeout, **self._h2_kwargs
+                self._host, self._port, **self._h2_kwargs
             )
 
             self._conn._connect_upgrade(e.sock)

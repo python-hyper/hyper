@@ -1247,8 +1247,25 @@ class TestHyperIntegration(SocketLevelTest):
 
         self.tear_down()
 
-    def test_read_timeout(self):
+    def test_hyper_connection_timeout(self):
         self.set_up(timeout=0.5)
+
+        def socket_handler(listener):
+            time.sleep(1)
+
+        self._start_server(socket_handler)
+        conn = hyper.HTTPConnection(self.host, self.port, self.secure,
+                                    timeout=self.timeout)
+
+        with pytest.raises((SocketTimeout, ssl.SSLError)):
+            # Py2 raises this as a BaseSSLError,
+            # Py3 raises it as socket timeout.
+            conn.request('GET', '/')
+
+        self.tear_down()
+
+    def test_read_timeout(self):
+        self.set_up(timeout=(10, 0.5))
 
         req_event = threading.Event()
 
@@ -1378,8 +1395,7 @@ class TestRequestsAdapter(SocketLevelTest):
 
         s = requests.Session()
         s.mount('https://%s' % self.host, HTTP20Adapter())
-        r = s.get('https://%s:%s/some/path' % (self.host, self.port),
-                  timeout=(10, 60))
+        r = s.get('https://%s:%s/some/path' % (self.host, self.port))
 
         # Assert about the received values.
         assert r.status_code == 200
@@ -1624,5 +1640,80 @@ class TestRequestsAdapter(SocketLevelTest):
         assert r.headers['connection'] == 'close'
 
         assert r.content == b''
+
+        self.tear_down()
+
+    def test_adapter_connection_timeout(self, monkeypatch, frame_buffer):
+        self.set_up()
+
+        # We need to patch the ssl_wrap_socket method to ensure that we
+        # forcefully upgrade.
+        old_wrap_socket = hyper.http11.connection.wrap_socket
+
+        def wrap(*args):
+            sock, _ = old_wrap_socket(*args)
+            return sock, 'h2'
+
+        monkeypatch.setattr(hyper.http11.connection, 'wrap_socket', wrap)
+
+        def socket_handler(listener):
+            time.sleep(1)
+
+        self._start_server(socket_handler)
+
+        s = requests.Session()
+        s.mount('https://%s' % self.host, HTTP20Adapter())
+
+        with pytest.raises((SocketTimeout, ssl.SSLError)):
+            # Py2 raises this as a BaseSSLError,
+            # Py3 raises it as socket timeout.
+            s.get('https://%s:%s/some/path' % (self.host, self.port),
+                  timeout=0.5)
+
+        self.tear_down()
+
+    def test_adapter_read_timeout(self, monkeypatch, frame_buffer):
+        self.set_up()
+
+        # We need to patch the ssl_wrap_socket method to ensure that we
+        # forcefully upgrade.
+        old_wrap_socket = hyper.http11.connection.wrap_socket
+
+        def wrap(*args):
+            sock, _ = old_wrap_socket(*args)
+            return sock, 'h2'
+
+        monkeypatch.setattr(hyper.http11.connection, 'wrap_socket', wrap)
+
+        def socket_handler(listener):
+            sock = listener.accept()[0]
+
+            # Do the handshake: conn header, settings, send settings, recv ack.
+            frame_buffer.add_data(receive_preamble(sock))
+
+            # Now expect some data. One headers frame.
+            req_wait = True
+            while req_wait:
+                frame_buffer.add_data(sock.recv(65535))
+                with reusable_frame_buffer(frame_buffer) as fr:
+                    for f in fr:
+                        if isinstance(f, HeadersFrame):
+                            req_wait = False
+
+            # Sleep wait for read timeout
+            time.sleep(1)
+
+            sock.close()
+
+        self._start_server(socket_handler)
+
+        s = requests.Session()
+        s.mount('https://%s' % self.host, HTTP20Adapter())
+
+        with pytest.raises((SocketTimeout, ssl.SSLError)):
+            # Py2 raises this as a BaseSSLError,
+            # Py3 raises it as socket timeout.
+            s.get('https://%s:%s/some/path' % (self.host, self.port),
+                  timeout=(10, 0.5))
 
         self.tear_down()

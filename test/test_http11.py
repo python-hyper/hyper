@@ -113,14 +113,12 @@ class TestHTTP11Connection(object):
     def test_initialization_timeout(self):
         c = HTTP11Connection('httpbin.org', timeout=30)
 
-        assert c._connect_timeout == 30
-        assert c._read_timeout == 30
+        assert c._timeout == 30
 
     def test_initialization_tuple_timeout(self):
         c = HTTP11Connection('httpbin.org', timeout=(5, 60))
 
-        assert c._connect_timeout == 5
-        assert c._read_timeout == 60
+        assert c._timeout == (5, 60)
 
     def test_basic_request(self):
         c = HTTP11Connection('httpbin.org')
