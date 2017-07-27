@@ -39,14 +39,14 @@ BODY_FLAT = 2
 
 
 def _create_tunnel(proxy_host, proxy_port, target_host, target_port,
-                   proxy_headers=None):
+                   proxy_headers=None, timeout=None):
     """
     Sends CONNECT method to a proxy and returns a socket with established
     connection to the target.
 
     :returns: socket
     """
-    conn = HTTP11Connection(proxy_host, proxy_port)
+    conn = HTTP11Connection(proxy_host, proxy_port, timeout=timeout)
     conn.request('CONNECT', '%s:%d' % (target_host, target_port),
                  headers=proxy_headers)
 
@@ -101,7 +101,7 @@ class HTTP11Connection(object):
 
     def __init__(self, host, port=None, secure=None, ssl_context=None,
                  proxy_host=None, proxy_port=None, proxy_headers=None,
-                 **kwargs):
+                 timeout=None, **kwargs):
         if port is None:
             self.host, self.port = to_host_port_tuple(host, default_port=80)
         else:
@@ -150,6 +150,9 @@ class HTTP11Connection(object):
         #: the standard hyper parsing interface.
         self.parser = Parser()
 
+        # timeout
+        self._timeout = timeout
+
     def connect(self):
         """
         Connect to the server specified when the object was created. This is a
@@ -159,6 +162,13 @@ class HTTP11Connection(object):
         """
         if self._sock is None:
 
+            if isinstance(self._timeout, tuple):
+                connect_timeout = self._timeout[0]
+                read_timeout = self._timeout[1]
+            else:
+                connect_timeout = self._timeout
+                read_timeout = self._timeout
+
             if self.proxy_host and self.secure:
                 # Send http CONNECT method to a proxy and acquire the socket
                 sock = _create_tunnel(
@@ -166,16 +176,18 @@ class HTTP11Connection(object):
                     self.proxy_port,
                     self.host,
                     self.port,
-                    proxy_headers=self.proxy_headers
+                    proxy_headers=self.proxy_headers,
+                    timeout=self._timeout
                 )
             elif self.proxy_host:
                 # Simple http proxy
                 sock = socket.create_connection(
                     (self.proxy_host, self.proxy_port),
-                    5
+                    timeout=connect_timeout
                 )
             else:
-                sock = socket.create_connection((self.host, self.port), 5)
+                sock = socket.create_connection((self.host, self.port),
+                                                timeout=connect_timeout)
             proto = None
 
             if self.secure:
@@ -183,6 +195,9 @@ class HTTP11Connection(object):
 
             log.debug("Selected protocol: %s", proto)
             sock = BufferedSocket(sock, self.network_buffer_size)
+
+            # Set read timeout
+            sock.settimeout(read_timeout)
 
             if proto not in ('http/1.1', None):
                 raise TLSUpgrade(proto, sock)

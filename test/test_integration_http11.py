@@ -9,6 +9,8 @@ still not fully hitting the network, so that's alright.
 import hyper
 import threading
 import pytest
+import time
+from socket import timeout as SocketTimeout
 
 from hyper.compat import ssl
 from server import SocketLevelTest, SocketSecuritySetting
@@ -442,3 +444,68 @@ class TestHyperH11Integration(SocketLevelTest):
 
         with pytest.raises(HTTPUpgrade):
             c.get_response()
+
+    def test_connection_timeout(self):
+        self.set_up(timeout=0.5)
+
+        def socket_handler(listener):
+            time.sleep(1)
+
+        self._start_server(socket_handler)
+        conn = self.get_connection()
+
+        with pytest.raises((SocketTimeout, ssl.SSLError)):
+            # Py2 raises this as a BaseSSLError,
+            # Py3 raises it as socket timeout.
+            conn.connect()
+
+        self.tear_down()
+
+    def test_hyper_connection_timeout(self):
+        self.set_up(timeout=0.5)
+
+        def socket_handler(listener):
+            time.sleep(1)
+
+        self._start_server(socket_handler)
+        conn = hyper.HTTPConnection(self.host, self.port, self.secure,
+                                    timeout=self.timeout)
+
+        with pytest.raises((SocketTimeout, ssl.SSLError)):
+            # Py2 raises this as a BaseSSLError,
+            # Py3 raises it as socket timeout.
+            conn.request('GET', '/')
+
+        self.tear_down()
+
+    def test_read_timeout(self):
+        self.set_up(timeout=(10, 0.5))
+
+        send_event = threading.Event()
+
+        def socket_handler(listener):
+            sock = listener.accept()[0]
+
+            # We should get the initial request.
+            data = b''
+            while not data.endswith(b'\r\n\r\n'):
+                data += sock.recv(65535)
+
+            send_event.wait()
+
+            # Sleep wait for read timeout
+            time.sleep(1)
+
+            sock.close()
+
+        self._start_server(socket_handler)
+        conn = self.get_connection()
+        conn.request('GET', '/')
+        send_event.set()
+
+        with pytest.raises((SocketTimeout, ssl.SSLError)):
+            # Py2 raises this as a BaseSSLError,
+            # Py3 raises it as socket timeout.
+            conn.get_response()
+
+        self.tear_down()

@@ -33,7 +33,7 @@ class HTTP20Adapter(HTTPAdapter):
         self.connections = {}
 
     def get_connection(self, host, port, scheme, cert=None, verify=True,
-                       proxy=None):
+                       proxy=None, timeout=None):
         """
         Gets an appropriate HTTP/2 connection object based on
         host/port/scheme/cert tuples.
@@ -77,13 +77,14 @@ class HTTP20Adapter(HTTPAdapter):
                 secure=secure,
                 ssl_context=ssl_context,
                 proxy_host=proxy_netloc,
-                proxy_headers=proxy_headers)
+                proxy_headers=proxy_headers,
+                timeout=timeout)
             self.connections[connection_key] = conn
 
         return conn
 
     def send(self, request, stream=False, cert=None, verify=True, proxies=None,
-             **kwargs):
+             timeout=None, **kwargs):
         """
         Sends a HTTP message to the server.
         """
@@ -98,7 +99,8 @@ class HTTP20Adapter(HTTPAdapter):
             parsed.scheme,
             cert=cert,
             verify=verify,
-            proxy=proxy)
+            proxy=proxy,
+            timeout=timeout)
 
         # Build the selector.
         selector = parsed.path

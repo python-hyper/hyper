@@ -98,6 +98,16 @@ class TestHyperConnection(object):
         c = HTTP20Connection('www.google.com')
         assert c.version is HTTPVersion.http20
 
+    def test_connection_timeout(self):
+        c = HTTP20Connection('httpbin.org', timeout=30)
+
+        assert c._timeout == 30
+
+    def test_connection_tuple_timeout(self):
+        c = HTTP20Connection('httpbin.org', timeout=(5, 60))
+
+        assert c._timeout == (5, 60)
+
     def test_ping(self, frame_buffer):
         def data_callback(chunk, **kwargs):
             frame_buffer.add_data(chunk)

@@ -102,7 +102,7 @@ class HTTP20Connection(object):
     def __init__(self, host, port=None, secure=None, window_manager=None,
                  enable_push=False, ssl_context=None, proxy_host=None,
                  proxy_port=None, force_proto=None, proxy_headers=None,
-                 **kwargs):
+                 timeout=None, **kwargs):
         """
         Creates an HTTP/2 connection to a specific server.
         """
@@ -150,6 +150,9 @@ class HTTP20Connection(object):
         # Create the mutable state.
         self.__wm_class = window_manager or FlowControlManager
         self.__init_state()
+
+        # timeout
+        self._timeout = timeout
 
         return
 
@@ -343,6 +346,13 @@ class HTTP20Connection(object):
             if self._sock is not None:
                 return
 
+            if isinstance(self._timeout, tuple):
+                connect_timeout = self._timeout[0]
+                read_timeout = self._timeout[1]
+            else:
+                connect_timeout = self._timeout
+                read_timeout = self._timeout
+
             if self.proxy_host and self.secure:
                 # Send http CONNECT method to a proxy and acquire the socket
                 sock = _create_tunnel(
@@ -350,15 +360,18 @@ class HTTP20Connection(object):
                     self.proxy_port,
                     self.host,
                     self.port,
-                    proxy_headers=self.proxy_headers
+                    proxy_headers=self.proxy_headers,
+                    timeout=self._timeout
                 )
             elif self.proxy_host:
                 # Simple http proxy
                 sock = socket.create_connection(
-                    (self.proxy_host, self.proxy_port)
+                    (self.proxy_host, self.proxy_port),
+                    timeout=connect_timeout
                 )
             else:
-                sock = socket.create_connection((self.host, self.port))
+                sock = socket.create_connection((self.host, self.port),
+                                                timeout=connect_timeout)
 
             if self.secure:
                 sock, proto = wrap_socket(sock, self.host, self.ssl_context,
@@ -373,6 +386,9 @@ class HTTP20Connection(object):
             ) % ','.join(H2_NPN_PROTOCOLS + [H2C_PROTOCOL])
 
             self._sock = BufferedSocket(sock, self.network_buffer_size)
+
+            # Set read timeout
+            self._sock.settimeout(read_timeout)
 
             self._send_preamble()
 

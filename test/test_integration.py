@@ -13,6 +13,7 @@ import time
 import hyper
 import hyper.http11.connection
 import pytest
+from socket import timeout as SocketTimeout
 from contextlib import contextmanager
 from mock import patch
 from concurrent.futures import ThreadPoolExecutor, TimeoutError
@@ -1230,6 +1231,110 @@ class TestHyperIntegration(SocketLevelTest):
 
         self.tear_down()
 
+    def test_connection_timeout(self):
+        self.set_up(timeout=0.5)
+
+        def socket_handler(listener):
+            time.sleep(1)
+
+        self._start_server(socket_handler)
+        conn = self.get_connection()
+
+        with pytest.raises((SocketTimeout, ssl.SSLError)):
+            # Py2 raises this as a BaseSSLError,
+            # Py3 raises it as socket timeout.
+            conn.connect()
+
+        self.tear_down()
+
+    def test_hyper_connection_timeout(self):
+        self.set_up(timeout=0.5)
+
+        def socket_handler(listener):
+            time.sleep(1)
+
+        self._start_server(socket_handler)
+        conn = hyper.HTTPConnection(self.host, self.port, self.secure,
+                                    timeout=self.timeout)
+
+        with pytest.raises((SocketTimeout, ssl.SSLError)):
+            # Py2 raises this as a BaseSSLError,
+            # Py3 raises it as socket timeout.
+            conn.request('GET', '/')
+
+        self.tear_down()
+
+    def test_read_timeout(self):
+        self.set_up(timeout=(10, 0.5))
+
+        req_event = threading.Event()
+
+        def socket_handler(listener):
+            sock = listener.accept()[0]
+
+            # We get two messages for the connection open and then a HEADERS
+            # frame.
+            receive_preamble(sock)
+            sock.recv(65535)
+
+            # Wait for request
+            req_event.wait(5)
+
+            # Sleep wait for read timeout
+            time.sleep(1)
+
+            sock.close()
+
+        self._start_server(socket_handler)
+        conn = self.get_connection()
+        conn.request('GET', '/')
+        req_event.set()
+
+        with pytest.raises((SocketTimeout, ssl.SSLError)):
+            # Py2 raises this as a BaseSSLError,
+            # Py3 raises it as socket timeout.
+            conn.get_response()
+
+        self.tear_down()
+
+    def test_default_connection_timeout(self):
+        self.set_up(timeout=None)
+
+        # Confirm that we send the connection upgrade string and the initial
+        # SettingsFrame.
+        data = []
+        send_event = threading.Event()
+
+        def socket_handler(listener):
+            time.sleep(1)
+            sock = listener.accept()[0]
+
+            # We should get one big chunk.
+            first = sock.recv(65535)
+            data.append(first)
+
+            # We need to send back a SettingsFrame.
+            f = SettingsFrame(0)
+            sock.send(f.serialize())
+
+            send_event.set()
+            sock.close()
+
+        self._start_server(socket_handler)
+        conn = self.get_connection()
+        try:
+            conn.connect()
+        except (SocketTimeout, ssl.SSLError):
+            # Py2 raises this as a BaseSSLError,
+            # Py3 raises it as socket timeout.
+            pytest.fail()
+
+        send_event.wait(5)
+
+        assert data[0].startswith(b'PRI * HTTP/2.0\r\n\r\nSM\r\n\r\n')
+
+        self.tear_down()
+
 
 @patch('hyper.http20.connection.H2_NPN_PROTOCOLS', PROTOCOLS)
 class TestRequestsAdapter(SocketLevelTest):
@@ -1535,5 +1640,80 @@ class TestRequestsAdapter(SocketLevelTest):
         assert r.headers['connection'] == 'close'
 
         assert r.content == b''
+
+        self.tear_down()
+
+    def test_adapter_connection_timeout(self, monkeypatch, frame_buffer):
+        self.set_up()
+
+        # We need to patch the ssl_wrap_socket method to ensure that we
+        # forcefully upgrade.
+        old_wrap_socket = hyper.http11.connection.wrap_socket
+
+        def wrap(*args):
+            sock, _ = old_wrap_socket(*args)
+            return sock, 'h2'
+
+        monkeypatch.setattr(hyper.http11.connection, 'wrap_socket', wrap)
+
+        def socket_handler(listener):
+            time.sleep(1)
+
+        self._start_server(socket_handler)
+
+        s = requests.Session()
+        s.mount('https://%s' % self.host, HTTP20Adapter())
+
+        with pytest.raises((SocketTimeout, ssl.SSLError)):
+            # Py2 raises this as a BaseSSLError,
+            # Py3 raises it as socket timeout.
+            s.get('https://%s:%s/some/path' % (self.host, self.port),
+                  timeout=0.5)
+
+        self.tear_down()
+
+    def test_adapter_read_timeout(self, monkeypatch, frame_buffer):
+        self.set_up()
+
+        # We need to patch the ssl_wrap_socket method to ensure that we
+        # forcefully upgrade.
+        old_wrap_socket = hyper.http11.connection.wrap_socket
+
+        def wrap(*args):
+            sock, _ = old_wrap_socket(*args)
+            return sock, 'h2'
+
+        monkeypatch.setattr(hyper.http11.connection, 'wrap_socket', wrap)
+
+        def socket_handler(listener):
+            sock = listener.accept()[0]
+
+            # Do the handshake: conn header, settings, send settings, recv ack.
+            frame_buffer.add_data(receive_preamble(sock))
+
+            # Now expect some data. One headers frame.
+            req_wait = True
+            while req_wait:
+                frame_buffer.add_data(sock.recv(65535))
+                with reusable_frame_buffer(frame_buffer) as fr:
+                    for f in fr:
+                        if isinstance(f, HeadersFrame):
+                            req_wait = False
+
+            # Sleep wait for read timeout
+            time.sleep(1)
+
+            sock.close()
+
+        self._start_server(socket_handler)
+
+        s = requests.Session()
+        s.mount('https://%s' % self.host, HTTP20Adapter())
+
+        with pytest.raises((SocketTimeout, ssl.SSLError)):
+            # Py2 raises this as a BaseSSLError,
+            # Py3 raises it as socket timeout.
+            s.get('https://%s:%s/some/path' % (self.host, self.port),
+                  timeout=(10, 0.5))
 
         self.tear_down()
