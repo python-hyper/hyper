@@ -1742,10 +1742,19 @@ class TestRequestsAdapter(SocketLevelTest):
 
         self._start_server(socket_handler)
 
+        a = HTTP20Adapter()
         s = requests.Session()
-        s.mount('http://', HTTP20Adapter())
+        s.mount('http://', a)
         r = s.get('http://%s:%s' % (self.host, self.port))
+        connections_before_close = list(a.connections.values())
         s.close()
+
+        # check that connections cache is empty
+        assert not a.connections
+
+        # check that all connections are actually closed
+        assert (connections_before_close and
+                all(conn._sock is None for conn in connections_before_close))
 
         assert r.status_code == 201
         assert len(r.headers) == 3
@@ -1782,8 +1791,17 @@ class TestRequestsAdapter(SocketLevelTest):
         self._start_server(socket_handler)
 
         with requests.Session() as s:
-            s.mount('http://', HTTP20Adapter())
+            a = HTTP20Adapter()
+            s.mount('http://', a)
             r = s.get('http://%s:%s' % (self.host, self.port))
+            connections_before_close = list(a.connections.values())
+
+        # check that connections cache is empty
+        assert not a.connections
+
+        # check that all connections are actually closed
+        assert (connections_before_close and
+                all(conn._sock is None for conn in connections_before_close))
 
         assert r.status_code == 201
         assert len(r.headers) == 3
