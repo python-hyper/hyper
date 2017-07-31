@@ -199,4 +199,5 @@ class HTTP20Adapter(HTTPAdapter):
 
     def close(self):
         for connection in self.connections.values():
-            connection._conn.close()
+            connection.close()
+        self.connections.clear()
