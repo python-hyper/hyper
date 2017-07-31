@@ -196,3 +196,8 @@ class HTTP20Adapter(HTTPAdapter):
         orig.msg = FakeOriginalResponse(resp.headers.iter_raw())
 
         return response
+
+    def close(self):
+        for connection in self.connections.values():
+            connection.close()
+        self.connections.clear()
