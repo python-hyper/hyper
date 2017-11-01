@@ -53,10 +53,13 @@ class HTTP11Response(object):
             self._expect_close = True
 
         # The expected length of the body.
-        try:
-            self._length = int(self.headers[b'content-length'][0])
-        except KeyError:
-            self._length = None
+        if request_method != b'HEAD':
+            try:
+                self._length = int(self.headers[b'content-length'][0])
+            except KeyError:
+                self._length = None
+        else:
+            self._length = 0
 
         # Whether we expect a chunked response.
         self._chunked = (
