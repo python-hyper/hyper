@@ -188,7 +188,7 @@ class SSLSocket(object):
                 C='countryName',
                 ST='stateOrProvinceName',
                 L='localityName',
-                O='organizationName',
+                O='organizationName',  # noqa: E741
                 OU='organizationalUnitName',
                 CN='commonName',
             ).get(alias, alias)
