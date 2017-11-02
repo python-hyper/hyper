@@ -69,7 +69,7 @@ class TestSSLContext(object):
             succeeded = True
         except hyper.common.exceptions.MissingCertFile:
             threw_expected_exception = True
-        except:
+        except Exception:
             pass
 
         assert not succeeded

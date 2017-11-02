@@ -191,7 +191,7 @@ class SSLSocket(object):
                 O='organizationName',
                 OU='organizationalUnitName',
                 CN='commonName',
-            ).get(alias, alias)
+            ).get(alias, alias)  # noqa: E741
 
         def to_components(name):
             # TODO Verify that these are actually *supposed* to all be
