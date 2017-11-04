@@ -1026,7 +1026,7 @@ class TestResponse(object):
         headers = HTTPHeaderMap(
             [(':status', '200'), ('content-encoding', 'gzip')]
         )
-        c = zlib_compressobj(wbits=24)
+        c = zlib_compressobj(wbits=25)
         body = c.compress(b'this is test data')
         body += c.flush()
         resp = HTTP20Response(headers, DummyStream(body))
@@ -1144,7 +1144,7 @@ class TestResponse(object):
         headers = HTTPHeaderMap(
             [(':status', '200'), ('content-encoding', 'gzip')]
         )
-        c = zlib_compressobj(wbits=24)
+        c = zlib_compressobj(wbits=25)
         body = c.compress(b'this is test data')
         body += c.flush()
 
