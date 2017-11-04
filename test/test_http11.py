@@ -637,7 +637,7 @@ class TestHTTP11Response(object):
         headers = {b'content-encoding': [b'gzip'], b'connection': [b'close']}
         r = HTTP11Response(200, 'OK', headers, d, None)
 
-        c = zlib_compressobj(wbits=24)
+        c = zlib_compressobj(wbits=25)
         body = c.compress(b'this is test data')
         body += c.flush()
         d._buffer = BytesIO(body)
@@ -719,7 +719,7 @@ class TestHTTP11Response(object):
         }
         r = HTTP11Response(200, 'OK', headers, d, None)
 
-        c = zlib_compressobj(wbits=24)
+        c = zlib_compressobj(wbits=25)
         body = c.compress(b'this is test data')
         body += c.flush()
 
@@ -804,7 +804,7 @@ class TestHTTP11Response(object):
     def test_compressed_bounded_read_expect_close(self):
         headers = {b'connection': [b'close'], b'content-encoding': [b'gzip']}
 
-        c = zlib_compressobj(wbits=24)
+        c = zlib_compressobj(wbits=25)
         body = c.compress(b'hello there sir')
         body += c.flush()
 
