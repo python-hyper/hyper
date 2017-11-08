@@ -211,6 +211,61 @@ class TestHyperConnection(object):
         assert frames[1].data == b'hello there'
         assert frames[1].flags == set(['END_STREAM'])
 
+    def test_request_correctly_sent_max_chunk(self, frame_buffer):
+        """
+        Test that request correctly sent when data length multiple
+        max chunk. We check last chunk has a end flag and correct number
+        of chunks.
+        """
+        def data_callback(chunk, **kwargs):
+            frame_buffer.add_data(chunk)
+
+        # one chunk
+        c = HTTP20Connection('www.google.com')
+        c._sock = DummySocket()
+        c._send_cb = data_callback
+        c.putrequest('GET', '/')
+        c.endheaders(message_body=b'1'*1024, final=True)
+
+        frames = list(frame_buffer)
+        assert len(frames) == 2
+        assert isinstance(frames[1], DataFrame)
+        assert frames[1].flags == set(['END_STREAM'])
+
+        # two chunks
+        c = HTTP20Connection('www.google.com')
+        c._sock = DummySocket()
+        c._send_cb = data_callback
+        c.putrequest('GET', '/')
+        c.endheaders(message_body=b'1' * 2024, final=True)
+
+        frames = list(frame_buffer)
+        assert len(frames) == 3
+        assert isinstance(frames[1], DataFrame)
+        assert frames[2].flags == set(['END_STREAM'])
+
+        # two chunks with last chunk < 1024
+        c = HTTP20Connection('www.google.com')
+        c._sock = DummySocket()
+        c._send_cb = data_callback
+        c.putrequest('GET', '/')
+        c.endheaders(message_body=b'1' * 2000, final=True)
+
+        frames = list(frame_buffer)
+        assert len(frames) == 3
+        assert isinstance(frames[1], DataFrame)
+        assert frames[2].flags == set(['END_STREAM'])
+
+        # no chunks
+        c = HTTP20Connection('www.google.com')
+        c._sock = DummySocket()
+        c._send_cb = data_callback
+        c.putrequest('GET', '/')
+        c.endheaders(message_body=b'', final=True)
+
+        frames = list(frame_buffer)
+        assert len(frames) == 1
+
     def test_that_we_correctly_send_over_the_socket(self):
         sock = DummySocket()
         c = HTTP20Connection('www.google.com')
