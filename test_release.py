@@ -10,16 +10,18 @@ as a sanity check to confirm that the library itself appears to function and is
 capable of achieving basic tasks.
 """
 
-from concurrent.futures import as_completed, ThreadPoolExecutor
 import logging
 import random
+from concurrent.futures import as_completed, ThreadPoolExecutor
+
 import requests
-import threading
+
 from hyper import HTTP20Connection, HTTP11Connection, HTTPConnection
 from hyper.common.util import HTTPVersion
 from hyper.contrib import HTTP20Adapter
 
 logging.basicConfig(level=logging.INFO)
+
 
 class TestHyperActuallyWorks(object):
     def test_abusing_nghttp2_org(self):
@@ -93,32 +95,32 @@ class TestHyperActuallyWorks(object):
             assert text_data
 
         max_workers = len(paths)
-        with ThreadPoolExecutor(max_workers=len(paths)) as ex:
+        with ThreadPoolExecutor(max_workers=max_workers) as ex:
             futures = [ex.submit(do_one_page, p) for p in paths]
             for f in as_completed(futures):
                 f.result()
 
-    def test_hitting_http2bin_org(self):
+    def test_hitting_nghttp2_org(self):
         """
-        This test function uses the requests adapter and requests to talk to http2bin.
+        This test function uses the requests adapter and requests to talk to nghttp2.org/httpbin.
         """
         s = requests.Session()
         a = HTTP20Adapter()
-        s.mount('https://http2bin', a)
-        s.mount('https://www.http2bin', a)
+        s.mount('https://nghttp2', a)
+        s.mount('https://www.nghttp2', a)
 
         # Here are some nice URLs.
         urls = [
-            'https://www.http2bin.org/',
-            'https://www.http2bin.org/ip',
-            'https://www.http2bin.org/user-agent',
-            'https://www.http2bin.org/headers',
-            'https://www.http2bin.org/get',
-            'https://http2bin.org/',
-            'https://http2bin.org/ip',
-            'https://http2bin.org/user-agent',
-            'https://http2bin.org/headers',
-            'https://http2bin.org/get',
+            'https://www.nghttp2.org/httpbin/',
+            'https://www.nghttp2.org/httpbin/ip',
+            'https://www.nghttp2.org/httpbin/user-agent',
+            'https://www.nghttp2.org/httpbin/headers',
+            'https://www.nghttp2.org/httpbin/get',
+            'https://nghttp2.org/httpbin/',
+            'https://nghttp2.org/httpbin/ip',
+            'https://nghttp2.org/httpbin/user-agent',
+            'https://nghttp2.org/httpbin/headers',
+            'https://nghttp2.org/httpbin/get',
         ]
 
         # Go get everything.
@@ -132,7 +134,7 @@ class TestHyperActuallyWorks(object):
         """
         This test function uses hyper's HTTP/1.1 support to talk to httpbin
         """
-        c = HTTP11Connection('httpbin.org')
+        c = HTTP11Connection('httpbin.org:443')
 
         # Here are some nice URLs.
         urls = [

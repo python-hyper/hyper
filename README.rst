@@ -15,8 +15,8 @@ improved speed, lower bandwidth usage, better connection management, and more.
 
     from hyper import HTTPConnection
 
-    conn = HTTPConnection('http2bin.org:443')
-    conn.request('GET', '/get')
+    conn = HTTPConnection('nghttp2.org:443')
+    conn.request('GET', '/httpbin/get')
     resp = conn.get_response()
 
     print(resp.read())
