@@ -63,7 +63,7 @@ class HTTP11Response(object):
 
         # Whether we expect a chunked response.
         self._chunked = (
-                b'chunked' in self.headers.get(b'transfer-encoding', [])
+            b'chunked' in self.headers.get(b'transfer-encoding', [])
         )
 
         # When content-length is absent and response is not chunked,
