@@ -53,7 +53,7 @@ class HTTP11Response(object):
             self._expect_close = True
 
         # The expected length of the body.
-        if request_method.upper() != b'HEAD':
+        if request_method != b'HEAD':
             try:
                 self._length = int(self.headers[b'content-length'][0])
             except KeyError:
