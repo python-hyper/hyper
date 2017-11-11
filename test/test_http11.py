@@ -941,6 +941,18 @@ class TestHTTP11Response(object):
         r = HTTP11Response(200, 'OK', headers, d)
         assert r.version is HTTPVersion.http11
 
+    def test_response_body_length(self):
+        methods = [b'HEAD', b'GET']
+        headers = {b'content-length': [b'15']}
+        d = DummySocket()
+        for method in methods:
+            d.queue = []
+            r = HTTP11Response(200, 'OK', headers, d, request_method=method)
+            if method == b'HEAD':
+                assert r._length == 0
+            else:
+                assert r._length == int(r.headers[b'content-length'][0])
+
 
 class DummySocket(object):
     def __init__(self):
