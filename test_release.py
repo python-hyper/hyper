@@ -168,3 +168,27 @@ class TestHyperActuallyWorks(object):
         assert response.status == 200
         assert response.read()
         assert response.version == HTTPVersion.http20
+
+    def test_http11_response_body_length(self):
+        """
+        This test function uses check the expected length of the HTTP/1.1-response-body.
+        """
+        c = HTTP11Connection('httpbin.org:443')
+
+        # Make some HTTP/1.1 requests.
+        methods = ['GET', 'HEAD']
+        for method in methods:
+            c.request(method, '/')
+            resp = c.get_response()
+
+            # Check the expected length of the body.
+            if method == 'HEAD':
+                assert resp._length == 0
+                assert resp.read() == b''
+            else:
+                try:
+                    content_length = int(resp.headers[b'Content-Length'][0])
+                except KeyError:
+                    continue
+                assert resp._length == content_length
+                assert resp.read()
