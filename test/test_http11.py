@@ -7,6 +7,7 @@ Unit tests for hyper's HTTP/1.1 implementation.
 """
 import os
 import zlib
+import brotli
 
 from collections import namedtuple
 from io import BytesIO, StringIO
@@ -640,6 +641,16 @@ class TestHTTP11Response(object):
         c = zlib_compressobj(wbits=25)
         body = c.compress(b'this is test data')
         body += c.flush()
+        d._buffer = BytesIO(body)
+
+        assert r.read() == b'this is test data'
+
+    def test_response_transparently_decrypts_brotli(self):
+        d = DummySocket()
+        headers = {b'content-encoding': [b'br'], b'connection': [b'close']}
+        r = HTTP11Response(200, 'OK', headers, d, None)
+
+        body = brotli.compress(b'this is test data')
         d._buffer = BytesIO(body)
 
         assert r.read() == b'this is test data'

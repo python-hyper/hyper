@@ -9,6 +9,7 @@ httplib/http.client.
 import logging
 import weakref
 import zlib
+import brotli
 
 from ..common.decoder import DeflateDecoder
 from ..common.exceptions import ChunkedDecodeError, InvalidResponseError
@@ -88,6 +89,8 @@ class HTTP11Response(object):
         # http://stackoverflow.com/a/2695466/1401686
         if b'gzip' in self.headers.get(b'content-encoding', []):
             self._decompressobj = zlib.decompressobj(16 + zlib.MAX_WBITS)
+        elif b'br' in self.headers.get(b'content-encoding', []):
+            self._decompressobj = brotli.Decompressor()
         elif b'deflate' in self.headers.get(b'content-encoding', []):
             self._decompressobj = DeflateDecoder()
         else:
