@@ -26,6 +26,7 @@ import os
 import pytest
 import socket
 import zlib
+import brotli
 from io import BytesIO
 
 TEST_DIR = os.path.abspath(os.path.dirname(__file__))
@@ -1084,6 +1085,15 @@ class TestResponse(object):
         c = zlib_compressobj(wbits=25)
         body = c.compress(b'this is test data')
         body += c.flush()
+        resp = HTTP20Response(headers, DummyStream(body))
+
+        assert resp.read() == b'this is test data'
+
+    def test_response_transparently_decrypts_brotli(self):
+        headers = HTTPHeaderMap(
+            [(':status', '200'), ('content-encoding', 'br')]
+        )
+        body = brotli.compress(b'this is test data')
         resp = HTTP20Response(headers, DummyStream(body))
 
         assert resp.read() == b'this is test data'

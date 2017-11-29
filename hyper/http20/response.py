@@ -8,6 +8,7 @@ httplib/http.client.
 """
 import logging
 import zlib
+import brotli
 
 from ..common.decoder import DeflateDecoder
 from ..common.headers import HTTPHeaderMap
@@ -31,6 +32,7 @@ def strip_headers(headers):
 
 decompressors = {
     b'gzip': lambda: zlib.decompressobj(16 + zlib.MAX_WBITS),
+    b'br': brotli.Decompressor,
     b'deflate': DeflateDecoder
 }
 
