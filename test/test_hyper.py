@@ -1110,6 +1110,15 @@ class TestResponse(object):
 
         assert resp.read() == b'this is test data'
 
+    def test_response_ignored_unsupported_compression(self):
+        headers = HTTPHeaderMap(
+            [(':status', '200'), ('content-encoding', 'invalid')]
+        )
+        body = b'this is test data'
+        resp = HTTP20Response(headers, DummyStream(body))
+
+        assert resp.read() == b'this is test data'
+
     def test_response_calls_stream_close(self):
         headers = HTTPHeaderMap([(':status', '200')])
         stream = DummyStream('')

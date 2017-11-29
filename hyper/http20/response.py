@@ -79,8 +79,9 @@ class HTTP20Response(object):
         # Stack Overflow answer for more:
         # http://stackoverflow.com/a/2695466/1401686
         for c in self.headers.get(b'content-encoding', []):
-            self._decompressobj = decompressors.get(c)()
-            break
+            if c in decompressors:
+                self._decompressobj = decompressors.get(c)()
+                break
 
     @property
     def trailers(self):
