@@ -125,6 +125,12 @@ class TestHTTPHeaderMap(object):
         assert h['set-cookie'] == [b'v1, v2']
         assert h.get(b'set-cookie') == [b'v1, v2']
 
+    def test_doesnt_split_authorization(self):
+        h = HTTPHeaderMap()
+        h['Authorization'] = 'Do, Not, Split'
+        assert h['authorization'] == [b'Do, Not, Split']
+        assert h.get(b'authorization') == [b'Do, Not, Split']
+
     def test_equality(self):
         h1 = HTTPHeaderMap()
         h1['k1'] = 'v1, v2'
