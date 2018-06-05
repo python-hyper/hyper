@@ -44,17 +44,6 @@ class HTTP20Adapter(HTTPAdapter):
         if port is None:  # pragma: no cover
             port = 80 if not secure else 443
 
-        ssl_context = None
-        if not verify:
-            verify = False
-            ssl_context = init_context(cert=cert)
-            ssl_context.check_hostname = False
-            ssl_context.verify_mode = ssl.CERT_NONE
-        elif verify is True and cert is not None:
-            ssl_context = init_context(cert=cert)
-        elif verify is not True:
-            ssl_context = init_context(cert_path=verify, cert=cert)
-
         if proxy:
             proxy_headers = self.proxy_headers(proxy)
             proxy_netloc = urlparse(proxy).netloc
@@ -72,6 +61,18 @@ class HTTP20Adapter(HTTPAdapter):
         try:
             conn = self.connections[connection_key]
         except KeyError:
+
+            ssl_context = None
+            if not verify:
+                verify = False
+                ssl_context = init_context(cert=cert)
+                ssl_context.check_hostname = False
+                ssl_context.verify_mode = ssl.CERT_NONE
+            elif verify is True and cert is not None:
+                ssl_context = init_context(cert=cert)
+            elif verify is not True:
+                ssl_context = init_context(cert_path=verify, cert=cert)
+
             conn = HTTPConnection(
                 host,
                 port,
