@@ -177,7 +177,7 @@ def set_request_data(args):
             try:
                 value = json.loads(i.value)
                 body[i.key] = value
-            except:
+            except ValueError:
                 log.warning('Unable to decode JSON, ignoring it (%s)', i.value)
         elif i.sep == SEP_HEADERS:
             if i.key:
