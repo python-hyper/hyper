@@ -101,7 +101,7 @@ def make_positional_argument(parser):
 
         '@=' JSON data fields
 
-            name='{"name": "John", "surname": "Doe"}' list='[1, 2, 3]'
+            name@='{"name": "John", "surname": "Doe"}' list@='[1, 2, 3]'
         """))
 
 
