@@ -54,7 +54,7 @@ class BufferedSocket(object):
         """
         The maximum number of bytes the buffer could still contain.
         """
-        return self._buffer_size - self._index
+        return self._buffer_size - self._index - self._bytes_in_buffer
 
     @property
     def _buffer_end(self):
