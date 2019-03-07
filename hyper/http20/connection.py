@@ -505,7 +505,8 @@ class HTTP20Connection(object):
         # ":path". We can set all of these now.
         s.add_header(":method", method)
         s.add_header(":scheme", "https" if self.secure else "http")
-        s.add_header(":authority", self.host)
+        port = "" if ((self.secure and self.port == 443) or (not self.secure and self.port == 80)) else (":" + str(self.port))
+        s.add_header(":authority", self.host + port)
         s.add_header(":path", selector)
 
         # Save the stream.
