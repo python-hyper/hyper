@@ -1,8 +1,7 @@
 # -*- coding: utf-8 -*-
-import h2.settings
-
 from h2.frame_buffer import FrameBuffer
 from h2.connection import ConnectionState
+from h2.settings import SettingCodes
 from hyperframe.frame import (
     Frame, DataFrame, RstStreamFrame, SettingsFrame, PushPromiseFrame,
     WindowUpdateFrame, HeadersFrame, ContinuationFrame, GoAwayFrame,
@@ -766,7 +765,7 @@ class TestHyperConnection(object):
         # the default max frame size (16,384 bytes). That will, on the third
         # frame, trigger the processing to increment the flow control window,
         # which should then not happen.
-        f = SettingsFrame(0, settings={h2.settings.INITIAL_WINDOW_SIZE: 100})
+        f = SettingsFrame(0, settings={SettingCodes.INITIAL_WINDOW_SIZE: 100})
 
         c = HTTP20Connection('www.google.com')
         c._sock = DummySocket()
