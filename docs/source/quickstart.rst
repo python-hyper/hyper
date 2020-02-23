@@ -135,8 +135,8 @@ Using ``hyper`` with requests is super simple::
     >>> import requests
     >>> from hyper.contrib import HTTP20Adapter
     >>> s = requests.Session()
-    >>> s.mount('https://http2bin.org', HTTP20Adapter())
-    >>> r = s.get('https://http2bin.org/get')
+    >>> s.mount('https://', HTTP20Adapter())
+    >>> r = s.get('https://httpbin.org/get')
     >>> print(r.status_code)
     200
 
