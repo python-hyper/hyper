@@ -242,7 +242,7 @@ def canonical_form(k, v):
     canonical form. This means that the header is split on commas unless for
     any reason it's a super-special snowflake (I'm looking at you Set-Cookie).
     """
-    SPECIAL_SNOWFLAKES = set([b'set-cookie', b'set-cookie2'])
+    SPECIAL_SNOWFLAKES = set([b'set-cookie', b'set-cookie2', b':path'])
 
     k = k.lower()
 
