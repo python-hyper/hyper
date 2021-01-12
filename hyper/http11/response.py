@@ -9,10 +9,12 @@ httplib/http.client.
 import logging
 import weakref
 import zlib
+import brotli
 
 from ..common.decoder import DeflateDecoder
 from ..common.exceptions import ChunkedDecodeError, InvalidResponseError
 from ..common.exceptions import ConnectionResetError
+from ..common.util import HTTPVersion
 
 log = logging.getLogger(__name__)
 
@@ -23,7 +25,11 @@ class HTTP11Response(object):
     provides access to the response headers and the entity body. The response
     is an iterable object and can be used in a with statement.
     """
-    def __init__(self, code, reason, headers, sock, connection=None):
+
+    version = HTTPVersion.http11
+
+    def __init__(self, code, reason, headers, sock, connection=None,
+                 request_method=None):
         #: The reason phrase returned by the server.
         self.reason = reason
 
@@ -48,21 +54,32 @@ class HTTP11Response(object):
             self._expect_close = True
 
         # The expected length of the body.
-        try:
-            self._length = int(self.headers[b'content-length'][0])
-        except KeyError:
-            self._length = None
+        if request_method != b'HEAD':
+            try:
+                self._length = int(self.headers[b'content-length'][0])
+            except KeyError:
+                self._length = None
+        else:
+            self._length = 0
 
         # Whether we expect a chunked response.
         self._chunked = (
             b'chunked' in self.headers.get(b'transfer-encoding', [])
         )
 
-        # One of the following must be true: we must expect that the connection
-        # will be closed following the body, or that a content-length was sent,
-        # or that we're getting a chunked response.
-        # FIXME: Remove naked assert, replace with something better.
-        assert self._expect_close or self._length is not None or self._chunked
+        # When content-length is absent and response is not chunked,
+        # body length is determined by connection closure.
+        # https://tools.ietf.org/html/rfc7230#section-3.3.3
+        if self._length is None and not self._chunked:
+            # 200 response to a CONNECT request means that proxy has connected
+            # to the target host and it will start forwarding everything sent
+            # from the either side. Thus we must not try to read body of this
+            # response. Socket of current connection will be taken over by
+            # the code that has sent a CONNECT request.
+            if not (request_method is not None and
+                    b'CONNECT' == request_method.upper() and
+                    code == 200):
+                self._expect_close = True
 
         # This object is used for decompressing gzipped request bodies. Right
         # now we only support gzip because that's all the RFC mandates of us.
@@ -72,6 +89,8 @@ class HTTP11Response(object):
         # http://stackoverflow.com/a/2695466/1401686
         if b'gzip' in self.headers.get(b'content-encoding', []):
             self._decompressobj = zlib.decompressobj(16 + zlib.MAX_WBITS)
+        elif b'br' in self.headers.get(b'content-encoding', []):
+            self._decompressobj = brotli.Decompressor()
         elif b'deflate' in self.headers.get(b'content-encoding', []):
             self._decompressobj = DeflateDecoder()
         else:

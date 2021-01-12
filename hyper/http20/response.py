@@ -8,9 +8,11 @@ httplib/http.client.
 """
 import logging
 import zlib
+import brotli
 
 from ..common.decoder import DeflateDecoder
 from ..common.headers import HTTPHeaderMap
+from ..common.util import HTTPVersion
 
 log = logging.getLogger(__name__)
 
@@ -28,6 +30,13 @@ def strip_headers(headers):
             del headers[name]
 
 
+decompressors = {
+    b'gzip': lambda: zlib.decompressobj(16 + zlib.MAX_WBITS),
+    b'br': brotli.Decompressor,
+    b'deflate': DeflateDecoder
+}
+
+
 class HTTP20Response(object):
     """
     An ``HTTP20Response`` wraps the HTTP/2 response from the server. It
@@ -36,6 +45,10 @@ class HTTP20Response(object):
     the persistent connections used in HTTP/2 this has no effect, and is done
     soley for compatibility).
     """
+
+    version = HTTPVersion.http20
+    _decompressobj = None
+
     def __init__(self, headers, stream):
         #: The reason phrase returned by the server. This is not used in
         #: HTTP/2, and so is always the empty string.
@@ -67,12 +80,10 @@ class HTTP20Response(object):
         # This 16 + MAX_WBITS nonsense is to force gzip. See this
         # Stack Overflow answer for more:
         # http://stackoverflow.com/a/2695466/1401686
-        if b'gzip' in self.headers.get(b'content-encoding', []):
-            self._decompressobj = zlib.decompressobj(16 + zlib.MAX_WBITS)
-        elif b'deflate' in self.headers.get(b'content-encoding', []):
-            self._decompressobj = DeflateDecoder()
-        else:
-            self._decompressobj = None
+        for c in self.headers.get(b'content-encoding', []):
+            if c in decompressors:
+                self._decompressobj = decompressors.get(c)()
+                break
 
     @property
     def trailers(self):

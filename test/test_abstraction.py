@@ -10,7 +10,7 @@ class TestHTTPConnection(object):
         c = HTTPConnection(
             'test', 443, secure=False, window_manager=True, enable_push=True,
             ssl_context=False, proxy_host=False, proxy_port=False,
-            other_kwarg=True
+            proxy_headers=False, other_kwarg=True, timeout=5
         )
 
         assert c._h1_kwargs == {
@@ -18,14 +18,17 @@ class TestHTTPConnection(object):
             'ssl_context': False,
             'proxy_host': False,
             'proxy_port': False,
+            'proxy_headers': False,
             'other_kwarg': True,
+            'enable_push': True,
+            'timeout': 5,
         }
 
     def test_h2_kwargs(self):
         c = HTTPConnection(
             'test', 443, secure=False, window_manager=True, enable_push=True,
             ssl_context=True, proxy_host=False, proxy_port=False,
-            other_kwarg=True
+            proxy_headers=False, other_kwarg=True, timeout=(10, 30)
         )
 
         assert c._h2_kwargs == {
@@ -35,7 +38,9 @@ class TestHTTPConnection(object):
             'ssl_context': True,
             'proxy_host': False,
             'proxy_port': False,
+            'proxy_headers': False,
             'other_kwarg': True,
+            'timeout': (10, 30),
         }
 
     def test_tls_upgrade(self, monkeypatch):

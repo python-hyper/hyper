@@ -10,15 +10,18 @@ as a sanity check to confirm that the library itself appears to function and is
 capable of achieving basic tasks.
 """
 
-from concurrent.futures import as_completed, ThreadPoolExecutor
 import logging
 import random
+from concurrent.futures import as_completed, ThreadPoolExecutor
+
 import requests
-import threading
-from hyper import HTTP20Connection, HTTP11Connection
+
+from hyper import HTTP20Connection, HTTP11Connection, HTTPConnection
+from hyper.common.util import HTTPVersion
 from hyper.contrib import HTTP20Adapter
 
 logging.basicConfig(level=logging.INFO)
+
 
 class TestHyperActuallyWorks(object):
     def test_abusing_nghttp2_org(self):
@@ -92,32 +95,32 @@ class TestHyperActuallyWorks(object):
             assert text_data
 
         max_workers = len(paths)
-        with ThreadPoolExecutor(max_workers=len(paths)) as ex:
+        with ThreadPoolExecutor(max_workers=max_workers) as ex:
             futures = [ex.submit(do_one_page, p) for p in paths]
             for f in as_completed(futures):
                 f.result()
 
-    def test_hitting_http2bin_org(self):
+    def test_hitting_nghttp2_org(self):
         """
-        This test function uses the requests adapter and requests to talk to http2bin.
+        This test function uses the requests adapter and requests to talk to nghttp2.org/httpbin.
         """
         s = requests.Session()
         a = HTTP20Adapter()
-        s.mount('https://http2bin', a)
-        s.mount('https://www.http2bin', a)
+        s.mount('https://nghttp2', a)
+        s.mount('https://www.nghttp2', a)
 
         # Here are some nice URLs.
         urls = [
-            'https://www.http2bin.org/',
-            'https://www.http2bin.org/ip',
-            'https://www.http2bin.org/user-agent',
-            'https://www.http2bin.org/headers',
-            'https://www.http2bin.org/get',
-            'https://http2bin.org/',
-            'https://http2bin.org/ip',
-            'https://http2bin.org/user-agent',
-            'https://http2bin.org/headers',
-            'https://http2bin.org/get',
+            'https://www.nghttp2.org/httpbin/',
+            'https://www.nghttp2.org/httpbin/ip',
+            'https://www.nghttp2.org/httpbin/user-agent',
+            'https://www.nghttp2.org/httpbin/headers',
+            'https://www.nghttp2.org/httpbin/get',
+            'https://nghttp2.org/httpbin/',
+            'https://nghttp2.org/httpbin/ip',
+            'https://nghttp2.org/httpbin/user-agent',
+            'https://nghttp2.org/httpbin/headers',
+            'https://nghttp2.org/httpbin/get',
         ]
 
         # Go get everything.
@@ -131,7 +134,7 @@ class TestHyperActuallyWorks(object):
         """
         This test function uses hyper's HTTP/1.1 support to talk to httpbin
         """
-        c = HTTP11Connection('httpbin.org')
+        c = HTTP11Connection('httpbin.org:443')
 
         # Here are some nice URLs.
         urls = [
@@ -149,3 +152,43 @@ class TestHyperActuallyWorks(object):
 
             assert resp.status == 200
             assert resp.read()
+
+    def test_hitting_nghttp2_org_via_h2c_upgrade(self):
+        """
+        This tests our support for cleartext HTTP/1.1 -> HTTP/2 upgrade
+        against the most common open source HTTP/2 server implementation.
+        """
+        c = HTTPConnection('nghttp2.org:80')
+
+        # Make the request.
+        c.request('GET', '/')
+        response = c.get_response()
+
+        # Check that the response is OK and that we did upgrade to HTTP/2.
+        assert response.status == 200
+        assert response.read()
+        assert response.version == HTTPVersion.http20
+
+    def test_http11_response_body_length(self):
+        """
+        This test function uses check the expected length of the HTTP/1.1-response-body.
+        """
+        c = HTTP11Connection('httpbin.org:443')
+
+        # Make some HTTP/1.1 requests.
+        methods = ['GET', 'HEAD']
+        for method in methods:
+            c.request(method, '/')
+            resp = c.get_response()
+
+            # Check the expected length of the body.
+            if method == 'HEAD':
+                assert resp._length == 0
+                assert resp.read() == b''
+            else:
+                try:
+                    content_length = int(resp.headers[b'Content-Length'][0])
+                except KeyError:
+                    continue
+                assert resp._length == content_length
+                assert resp.read()

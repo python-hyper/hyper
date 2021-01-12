@@ -14,8 +14,11 @@ from ..tls import wrap_socket, H2_NPN_PROTOCOLS, H2C_PROTOCOL
 from ..common.exceptions import ConnectionResetError
 from ..common.bufsocket import BufferedSocket
 from ..common.headers import HTTPHeaderMap
-from ..common.util import to_host_port_tuple, to_native_string, to_bytestring
+from ..common.util import (
+    to_host_port_tuple, to_native_string, to_bytestring, HTTPVersion
+)
 from ..compat import unicode, bytes
+from ..http11.connection import _create_tunnel
 from .stream import Stream
 from .response import HTTP20Response, HTTP20Push
 from .window import FlowControlManager
@@ -27,6 +30,7 @@ import logging
 import socket
 import time
 import threading
+import itertools
 
 log = logging.getLogger(__name__)
 
@@ -88,12 +92,17 @@ class HTTP20Connection(object):
     :param proxy_host: (optional) The proxy to connect to.  This can be an IP
         address or a host name and may include a port.
     :param proxy_port: (optional) The proxy port to connect to. If not provided
-        and one also isn't provided in the ``proxy`` parameter, defaults to
-        8080.
+        and one also isn't provided in the ``proxy_host`` parameter, defaults
+        to 8080.
+    :param proxy_headers: (optional) The headers to send to a proxy.
     """
+
+    version = HTTPVersion.http20
+
     def __init__(self, host, port=None, secure=None, window_manager=None,
                  enable_push=False, ssl_context=None, proxy_host=None,
-                 proxy_port=None, force_proto=None, **kwargs):
+                 proxy_port=None, force_proto=None, proxy_headers=None,
+                 timeout=None, **kwargs):
         """
         Creates an HTTP/2 connection to a specific server.
         """
@@ -113,16 +122,16 @@ class HTTP20Connection(object):
         self.ssl_context = ssl_context
 
         # Setup proxy details if applicable.
-        if proxy_host:
-            if proxy_port is None:
-                self.proxy_host, self.proxy_port = to_host_port_tuple(
-                    proxy_host, default_port=8080
-                )
-            else:
-                self.proxy_host, self.proxy_port = proxy_host, proxy_port
+        if proxy_host and proxy_port is None:
+            self.proxy_host, self.proxy_port = to_host_port_tuple(
+                proxy_host, default_port=8080
+            )
+        elif proxy_host:
+            self.proxy_host, self.proxy_port = proxy_host, proxy_port
         else:
             self.proxy_host = None
             self.proxy_port = None
+        self.proxy_headers = proxy_headers
 
         #: The size of the in-memory buffer used to store data from the
         #: network. This is used as a performance optimisation. Increase buffer
@@ -134,40 +143,16 @@ class HTTP20Connection(object):
 
         # Concurrency
         #
-        # Use one lock (_lock) to synchronize any interaction with global
-        # connection state, e.g. stream creation/deletion.
-        #
-        # It's ok to use the same in lock all these cases as they occur at
-        # different/linked points in the connection's lifecycle.
-        #
-        # Use another 2 locks (_write_lock, _read_lock) to synchronize
-        # - _send_cb
-        # - _recv_cb
-        # respectively.
-        #
-        # I.e, send/recieve on the connection and its streams are serialized
-        # separately across the threads accessing the connection.  This is a
-        # simple way of providing thread-safety.
-        #
-        # _write_lock and _read_lock synchronize all interactions between
-        # streams and the connnection.  There is a third I/O callback,
-        # _close_stream, passed to a stream's constructor.  It does not need to
-        # be synchronized, it uses _send_cb internally (which is serialized);
-        # its other activity (safe deletion of the stream from self.streams)
-        # does not require synchronization.
-        #
-        # _read_lock may be acquired when already holding the _write_lock,
-        # when they both held it is always by acquiring _write_lock first.
-        #
-        # Either _read_lock or _write_lock may be acquired whilst holding _lock
-        # which should always be acquired before either of the other two.
+        # Use one universal lock (_lock) to synchronize all interaction
+        # with global connection state, _send_cb and _recv_cb.
         self._lock = threading.RLock()
-        self._write_lock = threading.RLock()
-        self._read_lock = threading.RLock()
 
         # Create the mutable state.
         self.__wm_class = window_manager or FlowControlManager
         self.__init_state()
+
+        # timeout
+        self._timeout = timeout
 
         return
 
@@ -227,7 +212,7 @@ class HTTP20Connection(object):
         :returns: Nothing
         """
         self.connect()
-        with self._write_lock:
+        with self._lock:
             with self._conn as conn:
                 conn.ping(to_bytestring(opaque_data))
             self._send_outstanding_data()
@@ -266,11 +251,19 @@ class HTTP20Connection(object):
         # If threads interleave these operations, it could result in messages
         # being sent in the wrong order, which can lead to the out-of-order
         # messages with lower stream IDs being closed prematurely.
-        with self._write_lock:
+        with self._lock:
+            # Unlike HTTP/1.1, HTTP/2 (according to RFC 7540) doesn't require
+            # to use absolute URI when proxying.
+
             stream_id = self.putrequest(method, url)
 
             default_headers = (':method', ':scheme', ':authority', ':path')
-            for name, value in headers.items():
+            all_headers = headers.items()
+            if self.proxy_host and not self.secure:
+                proxy_headers = self.proxy_headers or {}
+                all_headers = itertools.chain(all_headers,
+                                              proxy_headers.items())
+            for name, value in all_headers:
                 is_default = to_native_string(name) in default_headers
                 self.putheader(name, value, stream_id, replace=is_default)
 
@@ -353,26 +346,49 @@ class HTTP20Connection(object):
             if self._sock is not None:
                 return
 
-            if not self.proxy_host:
-                host = self.host
-                port = self.port
+            if isinstance(self._timeout, tuple):
+                connect_timeout = self._timeout[0]
+                read_timeout = self._timeout[1]
             else:
-                host = self.proxy_host
-                port = self.proxy_port
+                connect_timeout = self._timeout
+                read_timeout = self._timeout
 
-            sock = socket.create_connection((host, port))
+            if self.proxy_host and self.secure:
+                # Send http CONNECT method to a proxy and acquire the socket
+                sock = _create_tunnel(
+                    self.proxy_host,
+                    self.proxy_port,
+                    self.host,
+                    self.port,
+                    proxy_headers=self.proxy_headers,
+                    timeout=self._timeout
+                )
+            elif self.proxy_host:
+                # Simple http proxy
+                sock = socket.create_connection(
+                    (self.proxy_host, self.proxy_port),
+                    timeout=connect_timeout
+                )
+            else:
+                sock = socket.create_connection((self.host, self.port),
+                                                timeout=connect_timeout)
 
             if self.secure:
-                assert not self.proxy_host, "Proxy with HTTPS not supported."
-                sock, proto = wrap_socket(sock, host, self.ssl_context,
+                sock, proto = wrap_socket(sock, self.host, self.ssl_context,
                                           force_proto=self.force_proto)
             else:
                 proto = H2C_PROTOCOL
 
             log.debug("Selected NPN protocol: %s", proto)
-            assert proto in H2_NPN_PROTOCOLS or proto == H2C_PROTOCOL
+            assert proto in H2_NPN_PROTOCOLS or proto == H2C_PROTOCOL, (
+                "No suitable protocol found. Supported protocols: %s. "
+                "Check your OpenSSL version."
+            ) % ','.join(H2_NPN_PROTOCOLS + [H2C_PROTOCOL])
 
             self._sock = BufferedSocket(sock, self.network_buffer_size)
+
+            # Set read timeout
+            self._sock.settimeout(read_timeout)
 
             self._send_preamble()
 
@@ -456,10 +472,10 @@ class HTTP20Connection(object):
                                send_empty=True):
         # Concurrency
         #
-        # Hold _write_lock; getting and writing data from _conn is synchronized
+        # Hold _lock; getting and writing data from _conn is synchronized
         #
         # I/O occurs while the lock is held; waiting threads will see a delay.
-        with self._write_lock:
+        with self._lock:
             with self._conn as conn:
                 data = conn.data_to_send()
             if data or send_empty:
@@ -549,9 +565,9 @@ class HTTP20Connection(object):
 
         # Concurrency:
         #
-        # Hold _write_lock: synchronize access to the connection's HPACK
+        # Hold _lock: synchronize access to the connection's HPACK
         # encoder and decoder and the subsquent write to the connection
-        with self._write_lock:
+        with self._lock:
             stream.send_headers(headers_only)
 
             # Send whatever data we have.
@@ -614,10 +630,10 @@ class HTTP20Connection(object):
         """
         # Concurrency
         #
-        # Hold _write_lock: ensures only writer at a time
+        # Hold _lock: ensures only writer at a time
         #
         # I/O occurs while the lock is held; waiting threads will see a delay.
-        with self._write_lock:
+        with self._lock:
             try:
                 self._sock.sendall(data)
             except socket.error as e:
@@ -632,12 +648,12 @@ class HTTP20Connection(object):
         """
         # Concurrency
         #
-        # Hold _write_lock; synchronize the window manager update and the
+        # Hold _lock; synchronize the window manager update and the
         # subsequent potential write to the connection
         #
         # I/O may occur while the lock is held; waiting threads may see a
         # delay.
-        with self._write_lock:
+        with self._lock:
             increment = self.window_manager._handle_frame(frame_len)
 
             if increment:
@@ -659,7 +675,7 @@ class HTTP20Connection(object):
         # Synchronizes reading the data
         #
         # I/O occurs while the lock is held; waiting threads will see a delay.
-        with self._read_lock:
+        with self._lock:
             if self._sock is None:
                 raise ConnectionError('tried to read after connection close')
             self._sock.fill()
@@ -753,7 +769,7 @@ class HTTP20Connection(object):
         # re-acquired in the calls to self._single_read.
         #
         # I/O occurs while the lock is held; waiting threads will see a delay.
-        with self._read_lock:
+        with self._lock:
             log.debug('recv for stream %d with %s already present',
                       stream_id,
                       self.recent_recv_streams)
@@ -804,11 +820,11 @@ class HTTP20Connection(object):
         """
         # Concurrency
         #
-        # Hold _write_lock; synchronize generating the reset frame and writing
+        # Hold _lock; synchronize generating the reset frame and writing
         # it
         #
         # I/O occurs while the lock is held; waiting threads will see a delay.
-        with self._write_lock:
+        with self._lock:
             with self._conn as conn:
                 conn.reset_stream(stream_id, error_code=error_code)
             self._send_outstanding_data()

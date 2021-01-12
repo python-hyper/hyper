@@ -7,6 +7,7 @@ Unit tests for hyper's HTTP/1.1 implementation.
 """
 import os
 import zlib
+import brotli
 
 from collections import namedtuple
 from io import BytesIO, StringIO
@@ -19,6 +20,7 @@ from hyper.http11.connection import HTTP11Connection
 from hyper.http11.response import HTTP11Response
 from hyper.common.headers import HTTPHeaderMap
 from hyper.common.exceptions import ChunkedDecodeError, ConnectionResetError
+from hyper.common.util import HTTPVersion
 from hyper.compat import bytes, zlib_compressobj
 
 
@@ -109,6 +111,16 @@ class TestHTTP11Connection(object):
         assert c.proxy_host == 'ffff:aaaa::1'
         assert c.proxy_port == 8443
 
+    def test_initialization_timeout(self):
+        c = HTTP11Connection('httpbin.org', timeout=30)
+
+        assert c._timeout == 30
+
+    def test_initialization_tuple_timeout(self):
+        c = HTTP11Connection('httpbin.org', timeout=(5, 60))
+
+        assert c._timeout == (5, 60)
+
     def test_basic_request(self):
         c = HTTP11Connection('httpbin.org')
         c._sock = sock = DummySocket()
@@ -169,11 +181,70 @@ class TestHTTP11Connection(object):
         c.request('GET', '/get', headers={'User-Agent': 'hyper'})
 
         expected = (
-            b"GET /get HTTP/1.1\r\n"
+            b"GET http://httpbin.org/get HTTP/1.1\r\n"
             b"User-Agent: hyper\r\n"
             b"connection: Upgrade, HTTP2-Settings\r\n"
             b"upgrade: h2c\r\n"
             b"HTTP2-Settings: AAQAAP__\r\n"
+            b"host: httpbin.org\r\n"
+            b"\r\n"
+        )
+        received = b''.join(sock.queue)
+
+        assert received == expected
+
+    def test_proxy_request_with_non_standard_port(self):
+        c = HTTP11Connection('httpbin.org:8080', proxy_host='localhost')
+        c._sock = sock = DummySocket()
+
+        c.request('GET', '/get', headers={'User-Agent': 'hyper'})
+
+        expected = (
+            b"GET http://httpbin.org:8080/get HTTP/1.1\r\n"
+            b"User-Agent: hyper\r\n"
+            b"connection: Upgrade, HTTP2-Settings\r\n"
+            b"upgrade: h2c\r\n"
+            b"HTTP2-Settings: AAQAAP__\r\n"
+            b"host: httpbin.org\r\n"
+            b"\r\n"
+        )
+        received = b''.join(sock.queue)
+
+        assert received == expected
+
+    def test_proxy_headers_presence_for_insecure_request(self):
+        c = HTTP11Connection(
+            'httpbin.org', secure=False, proxy_host='localhost',
+            proxy_headers={'Proxy-Authorization': 'Basic ==='})
+        c._sock = sock = DummySocket()
+
+        c.request('GET', '/get', headers={'User-Agent': 'hyper'})
+
+        expected = (
+            b"GET http://httpbin.org/get HTTP/1.1\r\n"
+            b"User-Agent: hyper\r\n"
+            b"proxy-authorization: Basic ===\r\n"
+            b"connection: Upgrade, HTTP2-Settings\r\n"
+            b"upgrade: h2c\r\n"
+            b"HTTP2-Settings: AAQAAP__\r\n"
+            b"host: httpbin.org\r\n"
+            b"\r\n"
+        )
+        received = b''.join(sock.queue)
+
+        assert received == expected
+
+    def test_proxy_headers_absence_for_secure_request(self):
+        c = HTTP11Connection(
+            'httpbin.org', secure=True, proxy_host='localhost',
+            proxy_headers={'Proxy-Authorization': 'Basic ==='})
+        c._sock = sock = DummySocket()
+
+        c.request('GET', '/get', headers={'User-Agent': 'hyper'})
+
+        expected = (
+            b"GET /get HTTP/1.1\r\n"
+            b"User-Agent: hyper\r\n"
             b"host: httpbin.org\r\n"
             b"\r\n"
         )
@@ -327,6 +398,23 @@ class TestHTTP11Connection(object):
         received = b''.join(sock.queue)
 
         assert received == expected
+
+    def test_response_with_empty_reason(self):
+        c = HTTP11Connection('httpbin.org')
+        c._sock = sock = DummySocket()
+
+        sock._buffer = BytesIO(
+            b"HTTP/1.1 201 \r\n"
+            b"Connection: close\r\n"
+            b"Server: Socket\r\n"
+            b"Content-Length: 0\r\n"
+            b"\r\n"
+        )
+
+        r = c.get_response()
+
+        assert r.status == 201
+        assert r.reason == b''
 
     def test_get_response(self):
         c = HTTP11Connection('httpbin.org')
@@ -511,6 +599,10 @@ class TestHTTP11Connection(object):
         assert 'File-like bodies must return bytestrings. ' \
                'Got: {}'.format(int) in str(exc_info)
 
+    def test_close_with_uninitialized_socket(self):
+        c = HTTP11Connection('httpbin.org')
+        c.close()
+
 
 class TestHTTP11Response(object):
     def test_short_circuit_read(self):
@@ -546,9 +638,19 @@ class TestHTTP11Response(object):
         headers = {b'content-encoding': [b'gzip'], b'connection': [b'close']}
         r = HTTP11Response(200, 'OK', headers, d, None)
 
-        c = zlib_compressobj(wbits=24)
+        c = zlib_compressobj(wbits=25)
         body = c.compress(b'this is test data')
         body += c.flush()
+        d._buffer = BytesIO(body)
+
+        assert r.read() == b'this is test data'
+
+    def test_response_transparently_decrypts_brotli(self):
+        d = DummySocket()
+        headers = {b'content-encoding': [b'br'], b'connection': [b'close']}
+        r = HTTP11Response(200, 'OK', headers, d, None)
+
+        body = brotli.compress(b'this is test data')
         d._buffer = BytesIO(body)
 
         assert r.read() == b'this is test data'
@@ -628,7 +730,7 @@ class TestHTTP11Response(object):
         }
         r = HTTP11Response(200, 'OK', headers, d, None)
 
-        c = zlib_compressobj(wbits=24)
+        c = zlib_compressobj(wbits=25)
         body = c.compress(b'this is test data')
         body += c.flush()
 
@@ -713,7 +815,7 @@ class TestHTTP11Response(object):
     def test_compressed_bounded_read_expect_close(self):
         headers = {b'connection': [b'close'], b'content-encoding': [b'gzip']}
 
-        c = zlib_compressobj(wbits=24)
+        c = zlib_compressobj(wbits=25)
         body = c.compress(b'hello there sir')
         body += c.flush()
 
@@ -837,6 +939,30 @@ class TestHTTP11Response(object):
 
         assert r._sock is None
         assert connection.close.call_count == 1
+
+    def test_connection_version(self):
+        c = HTTP11Connection('httpbin.org')
+        assert c.version is HTTPVersion.http11
+
+    def test_response_version(self):
+        d = DummySocket()
+        headers = {
+            b'transfer-encoding': [b'chunked'], b'connection': [b'close']
+        }
+        r = HTTP11Response(200, 'OK', headers, d)
+        assert r.version is HTTPVersion.http11
+
+    def test_response_body_length(self):
+        methods = [b'HEAD', b'GET']
+        headers = {b'content-length': [b'15']}
+        d = DummySocket()
+        for method in methods:
+            d.queue = []
+            r = HTTP11Response(200, 'OK', headers, d, request_method=method)
+            if method == b'HEAD':
+                assert r._length == 0
+            else:
+                assert r._length == int(r.headers[b'content-length'][0])
 
 
 class DummySocket(object):

@@ -9,6 +9,7 @@ from hyperframe.frame import (
     PingFrame, FRAME_MAX_ALLOWED_LEN
 )
 from hpack.hpack_compat import Encoder
+from hyper.common.connection import HTTPConnection
 from hyper.http20.connection import HTTP20Connection
 from hyper.http20.response import HTTP20Response, HTTP20Push
 from hyper.http20.exceptions import ConnectionError, StreamResetError
@@ -16,8 +17,8 @@ from hyper.http20.util import (
     combine_repeated_headers, split_repeated_headers, h2_safe_headers
 )
 from hyper.common.headers import HTTPHeaderMap
-from hyper.common.util import to_bytestring
-from hyper.compat import zlib_compressobj, is_py2
+from hyper.common.util import to_bytestring, HTTPVersion
+from hyper.compat import zlib_compressobj, is_py2, ssl
 from hyper.contrib import HTTP20Adapter
 import hyper.http20.errors as errors
 import errno
@@ -25,11 +26,13 @@ import os
 import pytest
 import socket
 import zlib
+import brotli
 from io import BytesIO
 
 TEST_DIR = os.path.abspath(os.path.dirname(__file__))
 TEST_CERTS_DIR = os.path.join(TEST_DIR, 'certs')
 CLIENT_PEM_FILE = os.path.join(TEST_CERTS_DIR, 'nopassword.pem')
+SERVER_CERT_FILE = os.path.join(TEST_CERTS_DIR, 'server.crt')
 
 
 def decode_frame(frame_data):
@@ -65,6 +68,16 @@ class TestHyperConnection(object):
         assert c.proxy_host == 'localhost'
         assert c.proxy_port == 8443
 
+    def test_connections_can_parse_proxy_hosts_with_userinfo(self):
+        c = HTTP20Connection('www.google.com',
+                             proxy_host='azAz09!==:fakepaswd@localhost:8443')
+        # Note that the userinfo part is getting stripped out,
+        # it's not automatically added as Basic Auth header to
+        # the proxy_headers! It should be done manually.
+        assert c.host == 'www.google.com'
+        assert c.proxy_host == 'localhost'
+        assert c.proxy_port == 8443
+
     def test_connections_can_parse_proxy_hosts_and_ports(self):
         c = HTTP20Connection('www.google.com',
                              proxy_host='localhost',
@@ -81,6 +94,20 @@ class TestHyperConnection(object):
         assert c.port == 443
         assert c.proxy_host == 'ffff:aaaa::1'
         assert c.proxy_port == 8443
+
+    def test_connection_version(self):
+        c = HTTP20Connection('www.google.com')
+        assert c.version is HTTPVersion.http20
+
+    def test_connection_timeout(self):
+        c = HTTP20Connection('httpbin.org', timeout=30)
+
+        assert c._timeout == 30
+
+    def test_connection_tuple_timeout(self):
+        c = HTTP20Connection('httpbin.org', timeout=(5, 60))
+
+        assert c._timeout == (5, 60)
 
     def test_ping(self, frame_buffer):
         def data_callback(chunk, **kwargs):
@@ -184,6 +211,61 @@ class TestHyperConnection(object):
         assert isinstance(frames[1], DataFrame)
         assert frames[1].data == b'hello there'
         assert frames[1].flags == set(['END_STREAM'])
+
+    def test_request_correctly_sent_max_chunk(self, frame_buffer):
+        """
+        Test that request correctly sent when data length multiple
+        max chunk. We check last chunk has a end flag and correct number
+        of chunks.
+        """
+        def data_callback(chunk, **kwargs):
+            frame_buffer.add_data(chunk)
+
+        # one chunk
+        c = HTTP20Connection('www.google.com')
+        c._sock = DummySocket()
+        c._send_cb = data_callback
+        c.putrequest('GET', '/')
+        c.endheaders(message_body=b'1'*1024, final=True)
+
+        frames = list(frame_buffer)
+        assert len(frames) == 2
+        assert isinstance(frames[1], DataFrame)
+        assert frames[1].flags == set(['END_STREAM'])
+
+        # two chunks
+        c = HTTP20Connection('www.google.com')
+        c._sock = DummySocket()
+        c._send_cb = data_callback
+        c.putrequest('GET', '/')
+        c.endheaders(message_body=b'1' * 2024, final=True)
+
+        frames = list(frame_buffer)
+        assert len(frames) == 3
+        assert isinstance(frames[1], DataFrame)
+        assert frames[2].flags == set(['END_STREAM'])
+
+        # two chunks with last chunk < 1024
+        c = HTTP20Connection('www.google.com')
+        c._sock = DummySocket()
+        c._send_cb = data_callback
+        c.putrequest('GET', '/')
+        c.endheaders(message_body=b'1' * 2000, final=True)
+
+        frames = list(frame_buffer)
+        assert len(frames) == 3
+        assert isinstance(frames[1], DataFrame)
+        assert frames[2].flags == set(['END_STREAM'])
+
+        # no chunks
+        c = HTTP20Connection('www.google.com')
+        c._sock = DummySocket()
+        c._send_cb = data_callback
+        c.putrequest('GET', '/')
+        c.endheaders(message_body=b'', final=True)
+
+        frames = list(frame_buffer)
+        assert len(frames) == 1
 
     def test_that_we_correctly_send_over_the_socket(self):
         sock = DummySocket()
@@ -579,6 +661,41 @@ class TestHyperConnection(object):
             (b':path', b'/'),
         ]
 
+    def test_proxy_headers_presence_for_insecure_request(self):
+        sock = DummySocket()
+        c = HTTP20Connection(
+            'www.google.com', secure=False, proxy_host='localhost',
+            proxy_headers={'Proxy-Authorization': 'Basic ==='}
+        )
+        c._sock = sock
+        c.request('GET', '/')
+        s = c.recent_stream
+
+        assert list(s.headers.items()) == [
+            (b':method', b'GET'),
+            (b':scheme', b'http'),
+            (b':authority', b'www.google.com'),
+            (b':path', b'/'),
+            (b'proxy-authorization', b'Basic ==='),
+        ]
+
+    def test_proxy_headers_absence_for_secure_request(self):
+        sock = DummySocket()
+        c = HTTP20Connection(
+            'www.google.com', secure=True, proxy_host='localhost',
+            proxy_headers={'Proxy-Authorization': 'Basic ==='}
+        )
+        c._sock = sock
+        c.request('GET', '/')
+        s = c.recent_stream
+
+        assert list(s.headers.items()) == [
+            (b':method', b'GET'),
+            (b':scheme', b'https'),
+            (b':authority', b'www.google.com'),
+            (b':path', b'/'),
+        ]
+
     def test_recv_cb_n_times(self):
         sock = DummySocket()
         sock.can_read = True
@@ -695,7 +812,7 @@ class TestHyperConnection(object):
         assert len(originally_sent_data) + 1 == len(c._sock.queue)
 
 
-class TestServerPush(object):
+class FrameEncoderMixin(object):
     def setup_method(self, method):
         self.frames = []
         self.encoder = Encoder()
@@ -727,8 +844,10 @@ class TestServerPush(object):
             frame.flags.add('END_STREAM')
         self.frames.append(frame)
 
-    def request(self):
-        self.conn = HTTP20Connection('www.google.com', enable_push=True)
+
+class TestServerPush(FrameEncoderMixin):
+    def request(self, enable_push=True):
+        self.conn = HTTP20Connection('www.google.com', enable_push=enable_push)
         self.conn._sock = DummySocket()
         self.conn._sock.buffer = BytesIO(
             b''.join([frame.serialize() for frame in self.frames])
@@ -930,8 +1049,7 @@ class TestServerPush(object):
             1, [(':status', '200'), ('content-type', 'text/html')]
         )
 
-        self.request()
-        self.conn._enable_push = False
+        self.request(False)
         self.conn.get_response()
 
         f = RstStreamFrame(2)
@@ -964,9 +1082,18 @@ class TestResponse(object):
         headers = HTTPHeaderMap(
             [(':status', '200'), ('content-encoding', 'gzip')]
         )
-        c = zlib_compressobj(wbits=24)
+        c = zlib_compressobj(wbits=25)
         body = c.compress(b'this is test data')
         body += c.flush()
+        resp = HTTP20Response(headers, DummyStream(body))
+
+        assert resp.read() == b'this is test data'
+
+    def test_response_transparently_decrypts_brotli(self):
+        headers = HTTPHeaderMap(
+            [(':status', '200'), ('content-encoding', 'br')]
+        )
+        body = brotli.compress(b'this is test data')
         resp = HTTP20Response(headers, DummyStream(body))
 
         assert resp.read() == b'this is test data'
@@ -989,6 +1116,15 @@ class TestResponse(object):
         c = zlib_compressobj(wbits=-zlib.MAX_WBITS)
         body = c.compress(b'this is test data')
         body += c.flush()
+        resp = HTTP20Response(headers, DummyStream(body))
+
+        assert resp.read() == b'this is test data'
+
+    def test_response_ignored_unsupported_compression(self):
+        headers = HTTPHeaderMap(
+            [(':status', '200'), ('content-encoding', 'invalid')]
+        )
+        body = b'this is test data'
         resp = HTTP20Response(headers, DummyStream(body))
 
         assert resp.read() == b'this is test data'
@@ -1082,7 +1218,7 @@ class TestResponse(object):
         headers = HTTPHeaderMap(
             [(':status', '200'), ('content-encoding', 'gzip')]
         )
-        c = zlib_compressobj(wbits=24)
+        c = zlib_compressobj(wbits=25)
         body = c.compress(b'this is test data')
         body += c.flush()
 
@@ -1096,6 +1232,10 @@ class TestResponse(object):
             received += chunk
 
         assert received == b'this is test data'
+
+    def test_response_version(self):
+        r = HTTP20Response(HTTPHeaderMap([(':status', '200')]), None)
+        assert r.version is HTTPVersion.http20
 
 
 class TestHTTP20Adapter(object):
@@ -1119,6 +1259,29 @@ class TestHTTP20Adapter(object):
             'http',
             cert=CLIENT_PEM_FILE)
         assert conn1 is conn2
+        assert conn1._conn.ssl_context.check_hostname
+        assert conn1._conn.ssl_context.verify_mode == ssl.CERT_REQUIRED
+
+    def test_adapter_respects_disabled_ca_verification(self):
+        a = HTTP20Adapter()
+        conn = a.get_connection(
+            'http2bin.org',
+            80,
+            'http',
+            verify=False,
+            cert=CLIENT_PEM_FILE)
+        assert not conn._conn.ssl_context.check_hostname
+        assert conn._conn.ssl_context.verify_mode == ssl.CERT_NONE
+
+    def test_adapter_respects_custom_ca_verification(self):
+        a = HTTP20Adapter()
+        conn = a.get_connection(
+            'http2bin.org',
+            80,
+            'http',
+            verify=SERVER_CERT_FILE)
+        assert conn._conn.ssl_context.check_hostname
+        assert conn._conn.ssl_context.verify_mode == ssl.CERT_REQUIRED
 
 
 class TestUtilities(object):
@@ -1168,27 +1331,27 @@ class TestUtilities(object):
         assert True
 
     def test_stripping_connection_header(self):
-        headers = [('one', 'two'), ('connection', 'close')]
-        stripped = [('one', 'two')]
+        headers = [(b'one', b'two'), (b'connection', b'close')]
+        stripped = [(b'one', b'two')]
 
         assert h2_safe_headers(headers) == stripped
 
     def test_stripping_related_headers(self):
         headers = [
-            ('one', 'two'), ('three', 'four'), ('five', 'six'),
-            ('connection', 'close, three, five')
+            (b'one', b'two'), (b'three', b'four'), (b'five', b'six'),
+            (b'connection', b'close, three, five')
         ]
-        stripped = [('one', 'two')]
+        stripped = [(b'one', b'two')]
 
         assert h2_safe_headers(headers) == stripped
 
     def test_stripping_multiple_connection_headers(self):
         headers = [
-            ('one', 'two'), ('three', 'four'), ('five', 'six'),
-            ('connection', 'close'),
-            ('connection', 'three, five')
+            (b'one', b'two'), (b'three', b'four'), (b'five', b'six'),
+            (b'connection', b'close'),
+            (b'connection', b'three, five')
         ]
-        stripped = [('one', 'two')]
+        stripped = [(b'one', b'two')]
 
         assert h2_safe_headers(headers) == stripped
 
@@ -1293,6 +1456,158 @@ class TestUtilities(object):
         # "Read" the GoAway
         with pytest.raises(ConnectionError):
             c._single_read()
+
+
+class TestUpgradingPush(FrameEncoderMixin):
+    http101 = (b"HTTP/1.1 101 Switching Protocols\r\n"
+               b"Connection: upgrade\r\n"
+               b"Upgrade: h2c\r\n"
+               b"\r\n")
+
+    def request(self, enable_push=True):
+        self.frames = [SettingsFrame(0)] + self.frames  # Server side preface
+        self.conn = HTTPConnection('www.google.com', enable_push=enable_push)
+        self.conn._conn._sock = DummySocket()
+        self.conn._conn._sock.buffer = BytesIO(
+            self.http101 + b''.join([frame.serialize()
+                                     for frame in self.frames])
+        )
+        self.conn.request('GET', '/')
+
+    def assert_response(self):
+        self.response = self.conn.get_response()
+        assert self.response.status == 200
+        assert dict(self.response.headers) == {b'content-type': [b'text/html']}
+
+    def assert_pushes(self):
+        self.pushes = list(self.conn.get_pushes())
+        assert len(self.pushes) == 1
+        assert self.pushes[0].method == b'GET'
+        assert self.pushes[0].scheme == b'http'
+        assert self.pushes[0].authority == b'www.google.com'
+        assert self.pushes[0].path == b'/'
+        expected_headers = {b'accept-encoding': [b'gzip']}
+        assert dict(self.pushes[0].request_headers) == expected_headers
+
+    def assert_push_response(self):
+        push_response = self.pushes[0].get_response()
+        assert push_response.status == 200
+        assert dict(push_response.headers) == {
+            b'content-type': [b'application/javascript']
+        }
+        assert push_response.read() == b'bar'
+
+    def test_promise_before_headers(self):
+        # Current implementation only support get_pushes call
+        # after get_response
+        pass
+
+    def test_promise_after_headers(self):
+        self.add_headers_frame(
+            1, [(':status', '200'), ('content-type', 'text/html')]
+        )
+        self.add_push_frame(
+            1,
+            2,
+            [
+                (':method', 'GET'),
+                (':path', '/'),
+                (':authority', 'www.google.com'),
+                (':scheme', 'http'),
+                ('accept-encoding', 'gzip')
+            ]
+        )
+        self.add_data_frame(1, b'foo', end_stream=True)
+        self.add_headers_frame(
+            2, [(':status', '200'), ('content-type', 'application/javascript')]
+        )
+        self.add_data_frame(2, b'bar', end_stream=True)
+
+        self.request()
+        self.assert_response()
+        assert self.response.read() == b'foo'
+        self.assert_pushes()
+        self.assert_push_response()
+
+    def test_promise_after_data(self):
+        self.add_headers_frame(
+            1, [(':status', '200'), ('content-type', 'text/html')]
+        )
+        self.add_data_frame(1, b'fo')
+        self.add_push_frame(
+            1,
+            2,
+            [
+                (':method', 'GET'),
+                (':path', '/'),
+                (':authority', 'www.google.com'),
+                (':scheme', 'http'),
+                ('accept-encoding', 'gzip')
+            ]
+        )
+        self.add_data_frame(1, b'o', end_stream=True)
+        self.add_headers_frame(
+            2, [(':status', '200'), ('content-type', 'application/javascript')]
+        )
+        self.add_data_frame(2, b'bar', end_stream=True)
+
+        self.request()
+        self.assert_response()
+        assert self.response.read() == b'foo'
+        self.assert_pushes()
+        self.assert_push_response()
+
+    def test_capture_all_promises(self):
+        # Current implementation does not support capture_all
+        # for h2c upgrading connection.
+        pass
+
+    def test_cancel_push(self):
+        self.add_push_frame(
+            1,
+            2,
+            [
+                (':method', 'GET'),
+                (':path', '/'),
+                (':authority', 'www.google.com'),
+                (':scheme', 'http'),
+                ('accept-encoding', 'gzip')
+            ]
+        )
+        self.add_headers_frame(
+            1, [(':status', '200'), ('content-type', 'text/html')]
+        )
+
+        self.request()
+        self.conn.get_response()
+        list(self.conn.get_pushes())[0].cancel()
+
+        f = RstStreamFrame(2)
+        f.error_code = 8
+        assert self.conn._sock.queue[-1] == f.serialize()
+
+    def test_reset_pushed_streams_when_push_disabled(self):
+        self.add_push_frame(
+            1,
+            2,
+            [
+                (':method', 'GET'),
+                (':path', '/'),
+                (':authority', 'www.google.com'),
+                (':scheme', 'http'),
+                ('accept-encoding', 'gzip')
+            ]
+        )
+        self.add_headers_frame(
+            1, [(':status', '200'), ('content-type', 'text/html')]
+        )
+
+        self.request(False)
+        self.conn.get_response()
+
+        f = RstStreamFrame(2)
+        f.error_code = 7
+        assert self.conn._sock.queue[-1].endswith(f.serialize())
 
 
 # Some utility classes for the tests.

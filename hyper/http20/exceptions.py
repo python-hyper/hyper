@@ -5,6 +5,7 @@ hyper/http20/exceptions
 
 This defines exceptions used in the HTTP/2 portion of hyper.
 """
+from ..common.exceptions import ConnectionError as CommonConnectionError
 
 
 class HTTP20Error(Exception):
@@ -28,7 +29,7 @@ class HPACKDecodingError(HTTP20Error):
     pass
 
 
-class ConnectionError(HTTP20Error):
+class ConnectionError(CommonConnectionError, HTTP20Error):
     """
     The remote party signalled an error affecting the entire HTTP/2
     connection, and the connection has been closed.

@@ -1,6 +1,13 @@
 Release History
 ===============
 
+dev
+---
+
+*Bugfixes*
+
+- Stream end flag when length of last chunk equal to MAX_CHUNK
+
 v0.7.0 (2016-09-27)
 -------------------
 

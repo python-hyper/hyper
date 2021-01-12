@@ -1,4 +1,4 @@
-pytest
+pytest>=3.0
 pytest-xdist
 pytest-cov
 requests

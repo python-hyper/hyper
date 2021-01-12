@@ -9,14 +9,17 @@ try:
     from requests.adapters import HTTPAdapter
     from requests.models import Response
     from requests.structures import CaseInsensitiveDict
-    from requests.utils import get_encoding_from_headers
+    from requests.utils import (
+        get_encoding_from_headers, select_proxy, prepend_scheme_if_needed
+    )
     from requests.cookies import extract_cookies_to_jar
 except ImportError:  # pragma: no cover
     HTTPAdapter = object
 
 from hyper.common.connection import HTTPConnection
-from hyper.compat import urlparse
+from hyper.compat import urlparse, ssl
 from hyper.tls import init_context
+from hyper.common.util import to_native_string
 
 
 class HTTP20Adapter(HTTPAdapter):
@@ -25,11 +28,13 @@ class HTTP20Adapter(HTTPAdapter):
     HTTP/2. This implements some degree of connection pooling to maximise the
     HTTP/2 gain.
     """
-    def __init__(self, *args, **kwargs):
+    def __init__(self, window_manager=None, *args, **kwargs):
         #: A mapping between HTTP netlocs and ``HTTP20Connection`` objects.
         self.connections = {}
+        self.window_manager = window_manager
 
-    def get_connection(self, host, port, scheme, cert=None):
+    def get_connection(self, host, port, scheme, cert=None, verify=True,
+                       proxy=None, timeout=None):
         """
         Gets an appropriate HTTP/2 connection object based on
         host/port/scheme/cert tuples.
@@ -40,31 +45,64 @@ class HTTP20Adapter(HTTPAdapter):
             port = 80 if not secure else 443
 
         ssl_context = None
-        if cert is not None:
+        if not verify:
+            verify = False
             ssl_context = init_context(cert=cert)
+            ssl_context.check_hostname = False
+            ssl_context.verify_mode = ssl.CERT_NONE
+        elif verify is True and cert is not None:
+            ssl_context = init_context(cert=cert)
+        elif verify is not True:
+            ssl_context = init_context(cert_path=verify, cert=cert)
 
+        if proxy:
+            proxy_headers = self.proxy_headers(proxy)
+            proxy_netloc = urlparse(proxy).netloc
+        else:
+            proxy_headers = None
+            proxy_netloc = None
+
+        # We put proxy headers in the connection_key, because
+        # ``proxy_headers`` method might be overridden, so we can't
+        # rely on proxy headers being the same for the same proxies.
+        proxy_headers_key = (frozenset(proxy_headers.items())
+                             if proxy_headers else None)
+        connection_key = (host, port, scheme, cert, verify,
+                          proxy_netloc, proxy_headers_key)
         try:
-            conn = self.connections[(host, port, scheme, cert)]
+            conn = self.connections[connection_key]
         except KeyError:
             conn = HTTPConnection(
                 host,
                 port,
                 secure=secure,
-                ssl_context=ssl_context)
-            self.connections[(host, port, scheme, cert)] = conn
+                window_manager=self.window_manager,
+                ssl_context=ssl_context,
+                proxy_host=proxy_netloc,
+                proxy_headers=proxy_headers,
+                timeout=timeout)
+            self.connections[connection_key] = conn
 
         return conn
 
-    def send(self, request, stream=False, cert=None, **kwargs):
+    def send(self, request, stream=False, cert=None, verify=True, proxies=None,
+             timeout=None, **kwargs):
         """
         Sends a HTTP message to the server.
         """
+        proxy = select_proxy(request.url, proxies)
+        if proxy:
+            proxy = prepend_scheme_if_needed(proxy, 'http')
+
         parsed = urlparse(request.url)
         conn = self.get_connection(
             parsed.hostname,
             parsed.port,
             parsed.scheme,
-            cert=cert)
+            cert=cert,
+            verify=verify,
+            proxy=proxy,
+            timeout=timeout)
 
         # Build the selector.
         selector = parsed.path
@@ -89,7 +127,7 @@ class HTTP20Adapter(HTTPAdapter):
     def build_response(self, request, resp):
         """
         Builds a Requests' response object.  This emulates most of the logic of
-        the standard fuction but deals with the lack of the ``.headers``
+        the standard function but deals with the lack of the ``.headers``
         property on the HTTP20Response object.
 
         Additionally, this function builds in a number of features that are
@@ -99,7 +137,10 @@ class HTTP20Adapter(HTTPAdapter):
         response = Response()
 
         response.status_code = resp.status
-        response.headers = CaseInsensitiveDict(resp.headers.iter_raw())
+        response.headers = CaseInsensitiveDict((
+            map(to_native_string, h)
+            for h in resp.headers.iter_raw()
+        ))
         response.raw = resp
         response.reason = resp.reason
         response.encoding = get_encoding_from_headers(response.headers)
@@ -157,3 +198,8 @@ class HTTP20Adapter(HTTPAdapter):
         orig.msg = FakeOriginalResponse(resp.headers.iter_raw())
 
         return response
+
+    def close(self):
+        for connection in self.connections.values():
+            connection.close()
+        self.connections.clear()

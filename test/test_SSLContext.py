@@ -40,7 +40,6 @@ class TestSSLContext(object):
 
         assert not hyper.tls._context.check_hostname
         assert hyper.tls._context.verify_mode == ssl.CERT_NONE
-        assert hyper.tls._context.options & ssl.OP_NO_COMPRESSION == 0
 
     def test_HTTPConnection_with_custom_context(self):
         context = ssl.SSLContext(ssl.PROTOCOL_SSLv23)
@@ -70,7 +69,7 @@ class TestSSLContext(object):
             succeeded = True
         except hyper.common.exceptions.MissingCertFile:
             threw_expected_exception = True
-        except:
+        except Exception:
             pass
 
         assert not succeeded

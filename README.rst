@@ -2,10 +2,23 @@
 Hyper: HTTP/2 Client for Python
 ===============================
 
-.. image:: https://raw.github.com/Lukasa/hyper/development/docs/source/images/hyper.png
+**This project is no longer maintained!**
 
-.. image:: https://travis-ci.org/Lukasa/hyper.png?branch=master
-    :target: https://travis-ci.org/Lukasa/hyper
+Please use an alternative, such as `HTTPX`_ or others.
+
+.. _HTTPX: https://www.python-httpx.org/
+
+We will not publish further updates for ``hyper``.
+
+Potential security issues will not be addressed.
+
+----
+
+**So long, and thanks for all the fish!**
+
+----
+
+.. image:: https://raw.github.com/Lukasa/hyper/development/docs/source/images/hyper.png
 
 HTTP is changing under our feet. HTTP/1.1, our old friend, is being
 supplemented by the brand new HTTP/2 standard. HTTP/2 provides many benefits:
@@ -15,8 +28,8 @@ improved speed, lower bandwidth usage, better connection management, and more.
 
     from hyper import HTTPConnection
 
-    conn = HTTPConnection('http2bin.org:443')
-    conn.request('GET', '/get')
+    conn = HTTPConnection('nghttp2.org:443')
+    conn.request('GET', '/httpbin/get')
     resp = conn.get_response()
 
     print(resp.read())
