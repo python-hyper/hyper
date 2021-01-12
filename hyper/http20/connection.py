@@ -101,7 +101,7 @@ class HTTP20Connection(object):
 
     def __init__(self, host, port=None, secure=None, window_manager=None,
                  enable_push=False, ssl_context=None, proxy_host=None,
-                 proxy_port=None, force_proto=None, proxy_headers=None,
+                 proxy_port=None, proxy_type=None, force_proto=None, proxy_headers=None,
                  timeout=None, **kwargs):
         """
         Creates an HTTP/2 connection to a specific server.
@@ -126,11 +126,13 @@ class HTTP20Connection(object):
             self.proxy_host, self.proxy_port = to_host_port_tuple(
                 proxy_host, default_port=8080
             )
+            self.proxy_type = proxy_type
         elif proxy_host:
-            self.proxy_host, self.proxy_port = proxy_host, proxy_port
+            self.proxy_host, self.proxy_port, self.proxy_type = proxy_host, proxy_port, proxy_type
         else:
             self.proxy_host = None
             self.proxy_port = None
+            self.proxy_type = None
         self.proxy_headers = proxy_headers
 
         #: The size of the in-memory buffer used to store data from the
@@ -353,22 +355,49 @@ class HTTP20Connection(object):
                 connect_timeout = self._timeout
                 read_timeout = self._timeout
 
-            if self.proxy_host and self.secure:
-                # Send http CONNECT method to a proxy and acquire the socket
-                sock = _create_tunnel(
-                    self.proxy_host,
-                    self.proxy_port,
-                    self.host,
-                    self.port,
-                    proxy_headers=self.proxy_headers,
-                    timeout=self._timeout
-                )
-            elif self.proxy_host:
-                # Simple http proxy
-                sock = socket.create_connection(
-                    (self.proxy_host, self.proxy_port),
-                    timeout=connect_timeout
-                )
+            if self.proxy_host:
+                if self.proxy_type.startswith("socks"):
+                    import socks
+                    rdns = (self.proxy_type[-1]=="h")
+                    # any error will result in silently connecting without a proxy.
+                    # IDK why it is done this way.
+                    if not rdns:
+                        raise ValueError("RDNS is disabled. Proxying dns queries is disabled. NSA is spying you.")
+                    if rdns and self.proxy_type.startswith("socks4"):
+                        raise ValueError("RDNS is not supported for socks4. socks.create_connection ignores it silently.")
+                    if not isinstance(self.proxy_host, str):
+                        raise ValueError("self.proxy_host", repr(self.proxy_host), "is not str")
+                    if not isinstance(self.proxy_port, int):
+                        raise ValueError("self.proxy_port", repr(self.proxy_port), "is not int")
+                    socks_version_char = self.proxy_type[5]
+                    sock = socks.create_connection(
+                        (self.host, self.port),
+                        proxy_type=getattr(socks, "PROXY_TYPE_SOCKS" + socks_version_char),
+                        proxy_addr=self.proxy_host,
+                        proxy_port=self.proxy_port,
+                        #proxy_username=username,
+                        #proxy_password=password,
+                        proxy_rdns=rdns,
+                    )
+                    #sock.getsockopt(socket.SOL_SOCKET, socket.SO_KEEPALIVE, 1)
+                elif self.proxy_host and self.secure:
+                    # Send http CONNECT method to a proxy and acquire the socket
+                    sock = _create_tunnel(
+                        self.proxy_host,
+                        self.proxy_port,
+                        self.host,
+                        self.port,
+                        proxy_headers=self.proxy_headers,
+                        timeout=self._timeout
+                    )
+                elif self.proxy_host:
+                    # Simple http proxy
+                    sock = socket.create_connection(
+                        (self.proxy_host, self.proxy_port),
+                        timeout=connect_timeout
+                    )
+                else:
+                    raise Exception("Unsupported proxy type: "+repr(proxy_type))
             else:
                 sock = socket.create_connection((self.host, self.port),
                                                 timeout=connect_timeout)
@@ -403,7 +432,7 @@ class HTTP20Connection(object):
         with self._conn as conn:
             conn.initiate_upgrade_connection()
             conn.update_settings(
-                {h2.settings.ENABLE_PUSH: int(self._enable_push)}
+                {h2.settings.SettingCodes.ENABLE_PUSH: int(self._enable_push)}
             )
         self._send_outstanding_data()
 
@@ -424,7 +453,7 @@ class HTTP20Connection(object):
         with self._conn as conn:
             conn.initiate_connection()
             conn.update_settings(
-                {h2.settings.ENABLE_PUSH: int(self._enable_push)}
+                {h2.settings.SettingCodes.ENABLE_PUSH: int(self._enable_push)}
             )
         self._send_outstanding_data()
 
