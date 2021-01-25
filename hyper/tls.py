@@ -122,8 +122,8 @@ def init_context(cert_path=None, cert=None, cert_password=None):
 
     if cert is not None:
         try:
-            basestring
-        except NameError:
+            from builtins import basestring
+        except ImportError:
             basestring = (str, bytes)
         if not isinstance(cert, basestring):
             context.load_cert_chain(cert[0], cert[1], cert_password)

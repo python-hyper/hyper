@@ -1,5 +1,5 @@
 pytest>=3.0
-pytest-xdist
+pytest-xdist<=1.27.0
 pytest-cov
 requests
 mock
