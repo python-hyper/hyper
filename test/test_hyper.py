@@ -1355,6 +1355,12 @@ class TestUtilities(object):
 
         assert h2_safe_headers(headers) == stripped
 
+    def test_stripping_headers_leaves_commas_and_space_intact(self):
+        headers = HTTPHeaderMap(**{'one': 'two, three,  four'})
+        stripped = [(b'one', b'two, three,  four')]
+
+        assert h2_safe_headers(headers) == stripped
+
     def test_goaway_frame_PROTOCOL_ERROR(self):
         f = GoAwayFrame(0)
         # Set error code to PROTOCOL_ERROR
