@@ -180,8 +180,8 @@ class HTTP20Adapter(HTTPAdapter):
                 values = []
 
                 for n, v in self._headers:
-                    if n == name.lower():
-                        values.append(v)
+                    if n.decode('utf-8') == name.lower():
+                        values.append(v.decode('utf-8'))
 
                 if not values:
                     return default
@@ -195,7 +195,7 @@ class HTTP20Adapter(HTTPAdapter):
         orig.version = 20
         orig.status = resp.status
         orig.reason = resp.reason
-        orig.msg = FakeOriginalResponse(resp.headers.iter_raw())
+        orig.msg = FakeOriginalResponse(list(resp.headers.iter_raw()))
 
         return response
 
@@ -203,3 +203,4 @@ class HTTP20Adapter(HTTPAdapter):
         for connection in self.connections.values():
             connection.close()
         self.connections.clear()
+
