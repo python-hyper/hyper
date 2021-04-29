@@ -46,6 +46,7 @@ class HTTPConnection(object):
     :param proxy_port: (optional) The proxy port to connect to. If not provided
         and one also isn't provided in the ``proxy_host`` parameter, defaults
         to 8080.
+    :param proxy_type: (optional) type of the proxy to use. Allows usage of socks proxies
     :param proxy_headers: (optional) The headers to send to a proxy.
     """
     def __init__(self,
@@ -57,6 +58,7 @@ class HTTPConnection(object):
                  ssl_context=None,
                  proxy_host=None,
                  proxy_port=None,
+                 proxy_type=None,
                  proxy_headers=None,
                  timeout=None,
                  **kwargs):
@@ -66,14 +68,14 @@ class HTTPConnection(object):
         self._h1_kwargs = {
             'secure': secure, 'ssl_context': ssl_context,
             'proxy_host': proxy_host, 'proxy_port': proxy_port,
-            'proxy_headers': proxy_headers, 'enable_push': enable_push,
+            'proxy_headers': proxy_headers, "proxy_type": proxy_type, 'enable_push': enable_push,
             'timeout': timeout
         }
         self._h2_kwargs = {
             'window_manager': window_manager, 'enable_push': enable_push,
             'secure': secure, 'ssl_context': ssl_context,
             'proxy_host': proxy_host, 'proxy_port': proxy_port,
-            'proxy_headers': proxy_headers,
+            'proxy_headers': proxy_headers, "proxy_type": proxy_type,
             'timeout': timeout
         }
 
@@ -149,6 +151,17 @@ class HTTPConnection(object):
             # and is half-closed by the client
 
             return self._conn.get_response(1)
+
+    def reanimate(self):
+        """Reanimate connection reset because of proxy"""
+        if hasattr(self, "streams"):
+            for stream in list(self.streams.values()):
+                stream.remote_closed = True
+                stream.local_closed = True
+        self._conn.close()
+        self._conn = HTTP11Connection(
+            self._host, self._port, **self._h1_kwargs,
+        )
 
     # The following two methods are the implementation of the context manager
     # protocol.

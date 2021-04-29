@@ -56,11 +56,24 @@ class HTTP20Adapter(HTTPAdapter):
             ssl_context = init_context(cert_path=verify, cert=cert)
 
         if proxy:
+            proxy = prepend_scheme_if_needed(proxy, 'http')
             proxy_headers = self.proxy_headers(proxy)
-            proxy_netloc = urlparse(proxy).netloc
+            parsed = urlparse(proxy)
+            proxy_netloc = parsed.netloc
+            proxy_host_port = proxy_netloc.split(":")
+            if len(proxy_host_port) == 2:
+                proxy_host, proxy_port = proxy_host_port
+                proxy_port = int(proxy_port)
+            elif len(proxy_port_host) == 1:
+                raise ValueError("Specify proxy port!")
+            else:
+                raise ValueError("Invalid proxy netloc: ", repr(proxy_netloc))
+            proxy_type = parsed.scheme
         else:
             proxy_headers = None
-            proxy_netloc = None
+            proxy_host = None
+            proxy_port = None
+            proxy_type = None
 
         # We put proxy headers in the connection_key, because
         # ``proxy_headers`` method might be overridden, so we can't
@@ -68,7 +81,7 @@ class HTTP20Adapter(HTTPAdapter):
         proxy_headers_key = (frozenset(proxy_headers.items())
                              if proxy_headers else None)
         connection_key = (host, port, scheme, cert, verify,
-                          proxy_netloc, proxy_headers_key)
+                          proxy_host, proxy_port, proxy_type, proxy_headers_key)
         try:
             conn = self.connections[connection_key]
         except KeyError:
@@ -78,9 +91,13 @@ class HTTP20Adapter(HTTPAdapter):
                 secure=secure,
                 window_manager=self.window_manager,
                 ssl_context=ssl_context,
-                proxy_host=proxy_netloc,
+                proxy_host=proxy_host,
+                proxy_port=proxy_port,
                 proxy_headers=proxy_headers,
-                timeout=timeout)
+                proxy_type=proxy_type,
+                timeout=timeout,
+                enable_push=self.enable_push
+            )
             self.connections[connection_key] = conn
 
         return conn
@@ -95,6 +112,12 @@ class HTTP20Adapter(HTTPAdapter):
             proxy = prepend_scheme_if_needed(proxy, 'http')
 
         parsed = urlparse(request.url)
+
+        # Build the selector.
+        selector = parsed.path
+        selector += '?' + parsed.query if parsed.query else ''
+        selector += '#' + parsed.fragment if parsed.fragment else ''
+
         conn = self.get_connection(
             parsed.hostname,
             parsed.port,
@@ -104,18 +127,27 @@ class HTTP20Adapter(HTTPAdapter):
             proxy=proxy,
             timeout=timeout)
 
-        # Build the selector.
-        selector = parsed.path
-        selector += '?' + parsed.query if parsed.query else ''
-        selector += '#' + parsed.fragment if parsed.fragment else ''
+        def do_req():
+            conn.request(
+                request.method,
+                selector,
+                request.body,
+                request.headers
+            )
+            resp = conn.get_response()
+            return conn, resp
 
-        conn.request(
-            request.method,
-            selector,
-            request.body,
-            request.headers
-        )
-        resp = conn.get_response()
+        retried = 0
+        max_retries = 1
+        while True:
+            try:
+                conn, resp = do_req()
+                break
+            except ConnectionAbortedError as e:
+                if retried < max_retries:
+                    conn.reanimate()
+                else:
+                    raise
 
         r = self.build_response(request, resp)
 
