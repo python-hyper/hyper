@@ -4,6 +4,11 @@ Hyper: HTTP/2 Client for Python
 
 **This project is no longer maintained!**
 
+@Lukasa has long dropped its maintainment.
+The last maintainer was @Kriechi. He now has an own project, `HTTPX`_, that also supports HTTP/2 and is partially based on libs that were used in hyper, and now he develops it.
+
+He has left the message
+
 Please use an alternative, such as `HTTPX`_ or others.
 
 .. _HTTPX: https://www.python-httpx.org/
@@ -17,6 +22,12 @@ Potential security issues will not be addressed.
 **So long, and thanks for all the fish!**
 
 ----
+
+and archived the project.
+
+This fork is "maintained" by @KOLANICH. I don't really develop it, just add the stuff I need personally.
+
+
 
 .. image:: https://raw.github.com/Lukasa/hyper/development/docs/source/images/hyper.png
 

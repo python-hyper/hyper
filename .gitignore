@@ -7,3 +7,5 @@ __pycache__
 .coverage
 .tox/
 .cache/
+
+/hyper/version.py
