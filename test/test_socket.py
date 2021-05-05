@@ -239,6 +239,20 @@ class TestBufferedSocket(object):
         assert len(b.buffer) == 4
         assert b._index == 0
 
+    def test_socket_fill_resizes_if_needed_with_bytes_in_buffer(self):
+        s = DummySocket()
+        b = BufferedSocket(s)
+
+        b._index = 982
+        b._buffer_view[982:1000] = b'This is incomplete'
+        b._bytes_in_buffer += 18
+        assert len(b.buffer) == 18
+
+        s.inbound_packets = [b' not anymore']
+        b.fill()
+        assert len(b.buffer) == 30
+        assert b._index == 0
+
     def test_socket_fill_raises_connection_errors(self):
         s = DummySocket()
         b = BufferedSocket(s)
