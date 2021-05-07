@@ -87,6 +87,7 @@ setup(
         ],
     },
     extras_require={
+        'brotli': ['brotlipy'],
         'fast': ['pycohttpparser'],
         # Fallback to good SSL on bad Python versions.
         ':python_full_version < "2.7.9"': [
