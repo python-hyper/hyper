@@ -28,8 +28,10 @@ PREFERRED_ENCODING = locale.getpreferredencoding()
 SEP_HEADERS = ':'
 SEP_QUERY = '=='
 SEP_DATA = '='
+SEP_JSON = '@='
 
 SEP_GROUP_ITEMS = [
+    SEP_JSON,
     SEP_HEADERS,
     SEP_QUERY,
     SEP_DATA,
@@ -93,9 +95,13 @@ def make_positional_argument(parser):
 
             search==hyper
 
-        '=' Data fields to be serialized into a JSON object:
+        '=' String data fields to be serialized into a JSON object:
 
             name=Hyper  language=Python  description='CLI HTTP client'
+
+        '@=' JSON data fields
+
+            name@='{"name": "John", "surname": "Doe"}' list@='[1, 2, 3]'
         """))
 
 
@@ -167,7 +173,13 @@ def set_url_info(args):
 def set_request_data(args):
     body, headers, params = {}, {}, {}
     for i in args.items:
-        if i.sep == SEP_HEADERS:
+        if i.sep == SEP_JSON:
+            try:
+                value = json.loads(i.value)
+                body[i.key] = value
+            except ValueError:
+                log.warning('Unable to decode JSON, ignoring it (%s)', i.value)
+        elif i.sep == SEP_HEADERS:
             if i.key:
                 headers[i.key] = i.value
             else:

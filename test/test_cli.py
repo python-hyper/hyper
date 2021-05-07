@@ -111,6 +111,8 @@ def test_cli_with_system_exit(argv):
      {'method': 'GET', 'url.path': '/?param=test'}),
     (['POST', 'example.com', 'data=test'],
      {'method': 'POST', 'body': '{"data": "test"}'}),
+    (['POST', 'example.com', 'data@={"json":[1,2,3]}'],
+     {'method': 'POST', 'body': '{"data": {"json": [1, 2, 3]}}'}),
     (['GET', 'example.com', ':authority:example.org'],
      {'method': 'GET', 'headers': {
                             ':authority': 'example.org'}}),
@@ -118,14 +120,18 @@ def test_cli_with_system_exit(argv):
      {'method': 'GET', 'headers': {
                             ':authority': 'example.org',
                             'x-test': 'header'}}),
+    (['POST', 'example.com', 'data@={"invalidjson":1,2,3}'],
+     {'body': None}),
 ], ids=[
     'specified "--debug" option',
     'specify host with lower get method',
     'specified host and additional header',
     'specified host and get parameter',
     'specified host and post data',
+    'specified host and post JSON data',
     'specified host and override default header',
     'specified host and override default header and additional header',
+    'specified host and post invalid JSON data',
 ])
 def test_parse_argument(argv, expected):
     args = parse_argument(argv)
